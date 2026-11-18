@@ -1,0 +1,21 @@
+format: 1
+id: regressions/issue-19
+feature: film.effects.keyframes
+intent: >-
+  A keyframe asked for at a clip's exact end (seconds 6 on a 6 s clip) is kept at the end, not a
+  tick before; keyframes of a value that cannot interpolate (Source Text) are hold keyframes and
+  say so; and a shape's path points, its bounds and its corners read back as they were given
+  (-196.2), not as f32 noise (-196.1999969482422).
+layer: gate
+source:
+  kind: issue
+  from: Kition Film regression suite
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-film-kit, test: keyframe_values }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

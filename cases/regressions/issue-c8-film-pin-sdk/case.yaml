@@ -1,0 +1,18 @@
+format: 1
+id: regressions/issue-c8-film-pin-sdk
+feature: film.agent.premises
+intent: The public SDK compares literal/scoped dependencies, plans prefix steps, and completes a terminal close without saving or describing the closed document.
+layer: gate
+dimension: ai
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_derived_r4 }
+  - cargo-test: { package: kition-film, test: read_metadata_r5 }
+  - cargo-test: { package: kition-film, test: read_mixer_order_r5 }
+  - cargo-test: { package: kition-film, test: read_ripple_r5 }
+  - cargo-test: { package: kition-film, test: read_join_r5 }
+  - cargo-test: { package: kition-film, test: read_pin_sdk }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

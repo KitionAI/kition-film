@@ -1,0 +1,13 @@
+format: 1
+id: film.agent.premises/join-path-comparison
+feature: film.agent.premises
+intent: Through-edit joins compare independent mapping predicates, selection expansion, removed recipients and large-plan fallback holds.
+layer: unit
+dimension: collab
+source: {kind: synthetic, from: C8-film-pin independent join-handler comparison, license: owned}
+input: []
+steps:
+  - cargo-test: {package: kition-film-kit, test: declarations_independent, filter: joins_compare}
+expected:
+  - {actual: out:exit, compare: exit, value: 0}
+since: "2026-11-17"

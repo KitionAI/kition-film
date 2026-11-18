@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-14
+feature: film.sequence.manage
+intent: >-
+  The sequence's preset name follows sequence.settings (a frame size or rate change renames it),
+  and Motion's Scale Width is refused while Uniform Scale is on, where it would silently do
+  nothing.
+layer: gate
+source:
+  kind: issue
+  from: Kition Film regression suite
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-engine
+      filter: "settings_preset_follows_and_scale_width_needs_uniform_scale_off"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

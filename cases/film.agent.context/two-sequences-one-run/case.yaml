@@ -1,0 +1,43 @@
+format: 1
+id: film.agent.context/two-sequences-one-run
+feature: film.agent.context
+intent: >-
+  The project has two sequences, Main (open) and Other. The agent cuts V1 at 3.5 s in Main and at
+  1 s in Other in one film_run, naming each step's time (`at.time`, seconds) instead of moving the
+  playhead first, and opening Other inside the run; each cut lands in its own sequence at its own
+  time.
+layer: eval
+source:
+  kind: synthetic
+  from: 'agent context work (C4-film); two 24 fps sequences of colour mattes the film engine wrote'
+  license: owned
+input: [input/edit.kfilm]
+steps:
+  - task:
+      prompt: >-
+        In edit.kfilm, cut the clips on track V1 at 3.5 seconds in the sequence "Main" and at 1
+        second in the sequence "Other", in one film_run call. Change nothing else.
+      max_turns: 20
+  - run: { path: edit.kfilm, args: { save: false }, steps: [{ command: sequence.inspect, params: { item: 23 } }], as: main }
+  - run: { path: edit.kfilm, args: { save: false }, steps: [{ command: sequence.inspect, params: { item: 14 } }], as: other }
+expected:
+  - actual: out:main
+    compare: values
+    value:
+      completed.0.result.video.0.items: { count: 3 }
+      completed.0.result.video.0.items.2.start: 889056000000
+  - actual: out:other
+    compare: values
+    value:
+      completed.0.result.video.0.items: { count: 2 }
+      completed.0.result.video.0.items.1.start: 254016000000
+solution:
+  - tool: film_run
+    args:
+      path: edit.kfilm
+      steps:
+        - { command: timeline.razor, at: { time: 3.5 }, params: { track: V1 } }
+        - { command: sequence.open, params: { item: 14 } }
+        - { command: timeline.razor, at: { time: 1 }, params: { track: V1 } }
+since: "2026-11-17"
+timeout_s: 600

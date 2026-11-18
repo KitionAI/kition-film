@@ -1,0 +1,41 @@
+import { test, expect, clips, editState, TICKS } from './fixtures.mjs'
+
+for (const operation of ['insert', 'overwrite']) {
+  test(`F13 source In/Out ${operation} uses the inclusive source range, keeps sequence marks and survives undo/save`, async ({ film, page }) => {
+    await film.open()
+    const source = clips(await film.sequence())[0].item
+    await film.command('file.newSequence', { name: 'Source edit', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
+    const red = await film.command('file.newColorMatte', { color: '#ff0000', seconds: 4 })
+    await film.command('timeline.place', { item: red.item, track: 'V1', seconds: 0 })
+    await film.command('source.open', { item: source })
+    await film.command('source.setPlayhead', { frame: 12 })
+    await film.kit.getByTestId('film-source').click()
+    await film.focus()
+    await page.keyboard.press('i')
+    await expect.poll(async () => (await film.command('source.inspect')).markIn).toBe(TICKS / 2)
+    await film.command('source.setPlayhead', { frame: 23 })
+    await film.focus()
+    await page.keyboard.press('o')
+    await expect.poll(async () => (await film.command('source.inspect')).markOut).toBe(23 * TICKS / 24)
+    await expect(film.kit.getByTestId('film-source-duration')).toHaveText('00:00:00:12')
+    await film.command('playhead.set', { frame: 24 })
+    const before = await film.sequence()
+    await film.focus()
+    await page.keyboard.press(operation === 'insert' ? ',' : '.')
+    await expect.poll(async () => clips(await film.sequence()).length).toBe(3)
+    const after = await film.sequence()
+    expect(clips(after).map(clip => [clip.startFrame, clip.durationFrames])).toEqual(operation === 'insert' ? [[0, 24], [24, 12], [36, 72]] : [[0, 24], [24, 12], [36, 60]])
+    const placed = clips(after)[1]
+    expect(placed.item).toBe(source)
+    expect([placed.sourceIn, placed.sourceOut]).toEqual([TICKS / 2, TICKS])
+    expect(clips(after, 'audio').map(clip => [clip.startFrame, clip.durationFrames, clip.sourceIn, clip.sourceOut])).toEqual([[24, 12, TICKS / 2, TICKS]])
+    expect([after.in, after.out]).toEqual([before.in, before.out])
+    expect(after.duration).toBe(operation === 'insert' ? TICKS * 4.5 : TICKS * 4)
+    await film.undo()
+    await expect.poll(async () => editState(await film.sequence())).toEqual(editState(before))
+    await film.redo()
+    await expect.poll(async () => editState(await film.sequence())).toEqual(editState(after))
+    await film.saveReopen()
+    expect(editState(await film.sequence())).toEqual(editState(after))
+  })
+}

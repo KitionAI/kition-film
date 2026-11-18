@@ -1,0 +1,21 @@
+format: 1
+id: regressions/issue-c8-film-pin-analysis
+feature: film.agent.premises
+intent: Beat, remix and scene analysis retain source profiles, timebases and downstream recipients before using an observed basis.
+layer: gate
+dimension: collab
+source:
+  kind: synthetic
+  from: C8-film-pin independent handler comparison
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-kit
+      test: declarations_independent
+      filter: analysis_compare
+expected:
+  - actual: out:exit
+    compare: exit
+    value: 0
+since: "2026-11-17"

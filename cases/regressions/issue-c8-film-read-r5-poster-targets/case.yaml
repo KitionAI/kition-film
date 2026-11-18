@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-film-read-r5-poster-targets
+feature: film.agent.premises
+intent: Poster writes guard the assigned key on the explicit, Project-selected or Source item and allow unrelated source metadata and Program clip changes.
+layer: gate
+dimension: ai
+source: { kind: synthetic, from: C8-film-read, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_poster_r5, filter: poster_writes_hold_the_resolved_assignment_but_not_other_metadata_or_program_clips }
+  - cargo-test: { package: kition-film, test: read_poster_r5, filter: poster_set_holds_the_parent_timebase_while_clear_ignores_it }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

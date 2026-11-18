@@ -1,0 +1,13 @@
+format: 1
+id: film.agent.premises/track-transition-comparison
+feature: film.agent.premises
+intent: Single-track deletion and transition patch declarations are compared with independent identity, ordinal and assignment masks.
+layer: unit
+dimension: collab
+source: {kind: synthetic, from: C8-film-pin independent track and transition comparison, license: owned}
+input: []
+steps:
+  - cargo-test: {package: kition-film-kit, test: declarations_independent, filter: track_transition_compare}
+expected:
+  - {actual: out:exit, compare: exit, value: 0}
+since: "2026-11-17"

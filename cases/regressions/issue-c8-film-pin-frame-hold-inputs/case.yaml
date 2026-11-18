@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-film-pin-frame-hold-inputs
+feature: film.agent.premises
+intent: Frame Hold Options retains the source timebase used to snap every held frame and the source timecode origin when parsing a source timecode.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film-kit, test: frame_hold_inputs_pin }
+  - cargo-test: { package: kition-film, test: read_frame_hold_pin }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

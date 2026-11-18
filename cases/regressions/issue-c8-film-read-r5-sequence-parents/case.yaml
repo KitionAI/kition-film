@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-read-r5-sequence-parents
+feature: film.agent.premises
+intent: Sequence From Clip holds subclip parent geometry and existence, and inherits the timebase only from the first accepted source, allowing unrelated parent metadata and later-source rates.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-read, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_new_sequence_r5, filter: sequence_from_clip_holds_parent_placement_and_only_the_first_inherited_rate }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-pin-source-markers
+feature: film.agent.premises
+intent: Source marker navigation and marker edits retain the Source bounds and timebase they consume after resolving the Source item.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_navigation_pin, filter: source_marker_routes_retain_bounds_and_destination_timebases }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

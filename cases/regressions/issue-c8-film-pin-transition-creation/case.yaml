@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-pin-transition-creation
+feature: film.agent.premises
+intent: New transitions retain cut lookup, frame timebase, destination locks and replaced transition membership for both dispatch paths.
+layer: gate
+dimension: collab
+source: {kind: synthetic, from: C8-film-pin independent transition creation review, license: owned}
+input: []
+steps:
+  - cargo-test: {package: kition-film-kit, test: declarations_independent, filter: transition_creation_compare}
+expected:
+  - {actual: out:exit, compare: exit, value: 0}
+since: "2026-11-17"

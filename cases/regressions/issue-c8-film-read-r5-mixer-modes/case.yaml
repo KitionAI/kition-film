@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-film-read-r5-mixer-modes
+feature: film.agent.premises
+intent: Agent runs restore the person's default video and audio transitions and per-track clip mixer automation modes.
+layer: gate
+dimension: ai
+source: { kind: synthetic, from: C8-film-read, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_modes_r5, filter: agent_runs_restore_default_transition_choices }
+  - cargo-test: { package: kition-film, test: read_modes_r5, filter: agent_runs_restore_the_persons_clip_mixer_modes }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

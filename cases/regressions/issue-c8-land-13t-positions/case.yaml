@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-land-13t-positions
+feature: film.agent.premises
+intent: A numeric track insertion holds its destination gap against earlier insertions and permits later insertions.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-land-13t, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: land13_positions }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

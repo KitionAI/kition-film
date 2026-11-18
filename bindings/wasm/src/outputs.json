@@ -1,0 +1,4179 @@
+{
+ "captions.list": {
+  "additionalProperties": true,
+  "properties": {
+   "selection": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   },
+   "tracks": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "clip.audioPeak": {
+  "additionalProperties": true,
+  "properties": {
+   "clips": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   },
+   "peakDb": {
+    "type": "json"
+   }
+  },
+  "type": "object"
+ },
+ "clip.generateAudioWaveform": {
+  "description": "The command's answer",
+  "type": "json"
+ },
+ "clip.sourceSettings": {
+  "description": "The command's answer",
+  "type": "json"
+ },
+ "clipMixer.setMode": {
+  "description": "The command's answer",
+  "type": "json"
+ },
+ "clipMixer.touch": {
+  "description": "The command's answer",
+  "type": "json"
+ },
+ "color.spaces": {
+  "additionalProperties": true,
+  "properties": {
+   "colorSpaces": {
+    "items": {
+     "additionalProperties": true,
+     "properties": {
+      "gamut": {
+       "type": "string"
+      },
+      "hdr": {
+       "type": "boolean"
+      },
+      "id": {
+       "type": "string"
+      },
+      "label": {
+       "type": "string"
+      },
+      "log": {
+       "type": "boolean"
+      }
+     },
+     "type": "object"
+    },
+    "type": "array"
+   },
+   "workingSpaces": {
+    "items": {
+     "additionalProperties": true,
+     "properties": {
+      "hdr": {
+       "type": "boolean"
+      },
+      "id": {
+       "type": "string"
+      },
+      "label": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "command.list": {
+  "items": {
+   "additionalProperties": true,
+   "properties": {
+    "defaultShortcut": {
+     "type": "string"
+    },
+    "enabled": {
+     "type": "boolean"
+    },
+    "id": {
+     "type": "string"
+    },
+    "label": {
+     "type": "string"
+    },
+    "menu": {
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "params": {
+     "type": "string"
+    },
+    "shortcut": {
+     "type": "string"
+    },
+    "shortcuts": {
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    }
+   },
+   "type": "object"
+  },
+  "type": "array"
+ },
+ "edit.editOriginal": {
+  "additionalProperties": true,
+  "properties": {
+   "paths": {
+    "items": {
+     "type": "string"
+    },
+    "type": "array",
+    "required": true
+   }
+  },
+  "type": "object"
+ },
+ "effects.list": {
+  "items": {
+   "additionalProperties": true,
+   "properties": {
+    "badges": {
+     "additionalProperties": true,
+     "properties": {
+      "accelerated": {
+       "type": "boolean"
+      },
+      "float32": {
+       "type": "boolean"
+      },
+      "yuv": {
+       "type": "boolean"
+      }
+     },
+     "type": "object"
+    },
+    "category": {
+     "items": {
+      "type": "json"
+     },
+     "type": "array"
+    },
+    "folder": {
+     "type": "json"
+    },
+    "id": {
+     "type": "string"
+    },
+    "kind": {
+     "type": "string"
+    },
+    "name": {
+     "type": "string"
+    },
+    "params": {
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "path": {
+     "type": "string"
+    }
+   },
+   "type": "object"
+  },
+  "type": "array"
+ },
+ "audioMixing.inspect": {
+  "additionalProperties": true,
+  "properties": {
+   "clips": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   },
+   "eqPresets": {
+    "items": {
+     "type": "string"
+    },
+    "type": "array"
+   },
+   "presets": {
+    "additionalProperties": true,
+    "properties": {
+     "Ambience": {
+      "items": {
+       "additionalProperties": true,
+       "properties": {
+        "builtin": {
+         "type": "boolean"
+        },
+        "name": {
+         "type": "string"
+        }
+       },
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "Dialogue": {
+      "items": {
+       "additionalProperties": true,
+       "properties": {
+        "builtin": {
+         "type": "boolean"
+        },
+        "name": {
+         "type": "string"
+        }
+       },
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "Music": {
+      "items": {
+       "additionalProperties": true,
+       "properties": {
+        "builtin": {
+         "type": "boolean"
+        },
+        "name": {
+         "type": "string"
+        }
+       },
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "SFX": {
+      "items": {
+       "additionalProperties": true,
+       "properties": {
+        "builtin": {
+         "type": "boolean"
+        },
+        "name": {
+         "type": "string"
+        }
+       },
+       "type": "object"
+      },
+      "type": "array"
+     }
+    },
+    "type": "object"
+   },
+   "reverbPresets": {
+    "items": {
+     "type": "string"
+    },
+    "type": "array"
+   },
+   "sections": {
+    "additionalProperties": true,
+    "properties": {
+     "Ambience": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array"
+     },
+     "Dialogue": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array"
+     },
+     "Music": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array"
+     },
+     "SFX": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array"
+     }
+    },
+    "type": "object"
+   },
+   "targets": {
+    "additionalProperties": true,
+    "properties": {
+     "Ambience": {
+      "type": "number"
+     },
+     "Dialogue": {
+      "type": "number"
+     },
+     "Music": {
+      "type": "number"
+     },
+     "SFX": {
+      "type": "number"
+     }
+    },
+    "type": "object"
+   },
+   "type": {
+    "type": "json"
+   }
+  },
+  "type": "object"
+ },
+ "events.list": {
+  "additionalProperties": true,
+  "properties": {
+   "counts": {
+    "additionalProperties": true,
+    "properties": {
+     "error": {
+      "type": "integer"
+     },
+     "info": {
+      "type": "integer"
+     },
+     "warning": {
+      "type": "integer"
+     }
+    },
+    "type": "object"
+   },
+   "entries": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "export.formats": {
+  "items": {
+   "additionalProperties": true,
+   "properties": {
+    "audio": {
+     "type": "boolean"
+    },
+    "available": {
+     "type": "boolean"
+    },
+    "extension": {
+     "type": "string"
+    },
+    "id": {
+     "type": "string"
+    },
+    "imageSequence": {
+     "type": "boolean"
+    },
+    "label": {
+     "type": "string"
+    },
+    "video": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  },
+  "type": "array"
+ },
+ "export.presets.export": {
+  "description": "The command's answer",
+  "type": "json"
+ },
+ "export.presets.get": {
+  "description": "The command's answer",
+  "type": "json"
+ },
+ "export.presets.list": {
+  "additionalProperties": true,
+  "properties": {
+   "default": {
+    "type": "string"
+   },
+   "presets": {
+    "items": {
+     "additionalProperties": true,
+     "properties": {
+      "builtin": {
+       "type": "boolean"
+      },
+      "category": {
+       "type": "string"
+      },
+      "description": {
+       "type": "string"
+      },
+      "extension": {
+       "type": "string"
+      },
+      "favorite": {
+       "type": "boolean"
+      },
+      "format": {
+       "type": "string"
+      },
+      "formatLabel": {
+       "type": "string"
+      },
+      "frameSize": {
+       "type": "json"
+      },
+      "name": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "export.queue.list": {
+  "additionalProperties": true,
+  "properties": {
+   "items": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   },
+   "running": {
+    "type": "boolean"
+   }
+  },
+  "type": "object"
+ },
+ "export.resolve": {
+  "additionalProperties": true,
+  "properties": {
+   "frames": {
+    "type": "integer"
+   },
+   "output": {
+    "additionalProperties": true,
+    "properties": {
+     "channels": {
+      "type": "integer"
+     },
+     "fps": {
+      "type": "string"
+     },
+     "height": {
+      "type": "integer"
+     },
+     "keyframeDistance": {
+      "type": "integer"
+     },
+     "maxKbps": {
+      "type": "integer"
+     },
+     "sampleRate": {
+      "type": "integer"
+     },
+     "targetKbps": {
+      "type": "integer"
+     },
+     "width": {
+      "type": "integer"
+     }
+    },
+    "type": "object"
+   },
+   "preset": {
+    "type": "json"
+   },
+   "range": {
+    "additionalProperties": true,
+    "properties": {
+     "duration": {
+      "type": "integer"
+     },
+     "seconds": {
+      "type": "number"
+     },
+     "start": {
+      "type": "integer"
+     }
+    },
+    "type": "object"
+   },
+   "settings": {
+    "additionalProperties": true,
+    "properties": {
+     "adaptiveBitrate": {
+      "type": "json"
+     },
+     "alpha": {
+      "type": "boolean"
+     },
+     "apvProfile": {
+      "type": "string"
+     },
+     "audio": {
+      "additionalProperties": true,
+      "properties": {
+       "bitrate_kbps": {
+        "type": "integer"
+       },
+       "bits": {
+        "type": "integer"
+       },
+       "channels": {
+        "type": "integer"
+       },
+       "codec": {
+        "type": "string"
+       },
+       "sample_rate": {
+        "type": "json"
+       }
+      },
+      "type": "object"
+     },
+     "bitrateKbps": {
+      "type": "integer"
+     },
+     "bitrateMode": {
+      "type": "string"
+     },
+     "burnCaptions": {
+      "type": "boolean"
+     },
+     "captionSidecar": {
+      "type": "json"
+     },
+     "dnxProfile": {
+      "type": "string"
+     },
+     "effects": {
+      "additionalProperties": true,
+      "properties": {
+       "image_overlay": {
+        "additionalProperties": true,
+        "properties": {
+         "enabled": {
+          "type": "boolean"
+         },
+         "offset": {
+          "items": {
+           "type": "json"
+          },
+          "type": "array"
+         },
+         "opacity": {
+          "type": "number"
+         },
+         "path": {
+          "type": "string"
+         },
+         "placement": {
+          "type": "string"
+         },
+         "size_percent": {
+          "type": "number"
+         }
+        },
+        "type": "object"
+       },
+       "loudness": {
+        "additionalProperties": true,
+        "properties": {
+         "enabled": {
+          "type": "boolean"
+         },
+         "target_lufs": {
+          "type": "number"
+         },
+         "true_peak_dbtp": {
+          "type": "number"
+         }
+        },
+        "type": "object"
+       },
+       "name_overlay": {
+        "additionalProperties": true,
+        "properties": {
+         "enabled": {
+          "type": "boolean"
+         },
+         "offset": {
+          "items": {
+           "type": "json"
+          },
+          "type": "array"
+         },
+         "opacity": {
+          "type": "number"
+         },
+         "placement": {
+          "type": "string"
+         },
+         "size_percent": {
+          "type": "number"
+         },
+         "text": {
+          "type": "string"
+         }
+        },
+        "type": "object"
+       },
+       "timecode_overlay": {
+        "additionalProperties": true,
+        "properties": {
+         "enabled": {
+          "type": "boolean"
+         },
+         "offset": {
+          "items": {
+           "type": "json"
+          },
+          "type": "array"
+         },
+         "opacity": {
+          "type": "number"
+         },
+         "placement": {
+          "type": "string"
+         },
+         "size_percent": {
+          "type": "number"
+         },
+         "text": {
+          "type": "string"
+         }
+        },
+        "type": "object"
+       },
+       "video_limiter": {
+        "additionalProperties": true,
+        "properties": {
+         "enabled": {
+          "type": "boolean"
+         },
+         "max_percent": {
+          "type": "number"
+         },
+         "min_percent": {
+          "type": "number"
+         }
+        },
+        "type": "object"
+       }
+      },
+      "type": "object"
+     },
+     "fieldOrder": {
+      "type": "string"
+     },
+     "format": {
+      "type": "string"
+     },
+     "frameRate": {
+      "type": "json"
+     },
+     "frameSize": {
+      "type": "json"
+     },
+     "h264Level": {
+      "type": "json"
+     },
+     "h264Profile": {
+      "type": "string"
+     },
+     "hardwareEncoding": {
+      "type": "string"
+     },
+     "includeAudio": {
+      "type": "boolean"
+     },
+     "keyframeDistance": {
+      "type": "json"
+     },
+     "maxBitrateKbps": {
+      "type": "json"
+     },
+     "maxRenderQuality": {
+      "type": "boolean"
+     },
+     "metadata": {
+      "additionalProperties": true,
+      "properties": {
+       "comment": {
+        "type": "string"
+       },
+       "copyright": {
+        "type": "string"
+       },
+       "creator": {
+        "type": "string"
+       },
+       "description": {
+        "type": "string"
+       },
+       "title": {
+        "type": "string"
+       }
+      },
+      "type": "object"
+     },
+     "multiplexer": {
+      "type": "string"
+     },
+     "mxfVideoCodec": {
+      "type": "string"
+     },
+     "partOfBatch": {
+      "type": "boolean"
+     },
+     "path": {
+      "type": "string"
+     },
+     "pixelAspect": {
+      "type": "json"
+     },
+     "proresProfile": {
+      "type": "string"
+     },
+     "quality": {
+      "type": "integer"
+     },
+     "range": {
+      "type": "json"
+     },
+     "renderAtMaxDepth": {
+      "type": "boolean"
+     },
+     "scale": {
+      "type": "number"
+     },
+     "scaling": {
+      "type": "string"
+     },
+     "sdr": {
+      "type": "boolean"
+     }
+    },
+    "type": "object"
+   },
+   "source": {
+    "type": "string"
+   },
+   "summary": {
+    "additionalProperties": true,
+    "properties": {
+     "audio": {
+      "type": "string"
+     },
+     "estimated_bytes": {
+      "type": "integer"
+     },
+     "estimated_size": {
+      "type": "string"
+     },
+     "format": {
+      "type": "string"
+     },
+     "video": {
+      "type": "string"
+     }
+    },
+    "type": "object"
+   }
+  },
+  "type": "object"
+ },
+ "file.autoSaveStatus": {
+  "additionalProperties": true,
+  "properties": {
+   "prefs": {
+    "additionalProperties": true,
+    "properties": {
+     "enabled": {
+      "type": "boolean"
+     },
+     "intervalMinutes": {
+      "type": "integer"
+     },
+     "maxVersions": {
+      "type": "integer"
+     },
+     "recoveryIntervalSeconds": {
+      "type": "integer"
+     },
+     "recoveryJournal": {
+      "type": "boolean"
+     },
+     "saveCurrentProject": {
+      "type": "boolean"
+     }
+    },
+    "type": "object"
+   },
+   "running": {
+    "type": "boolean"
+   }
+  },
+  "type": "object"
+ },
+ "file.listAutoSaves": {
+  "additionalProperties": true,
+  "properties": {
+   "dir": {
+    "type": "string"
+   },
+   "files": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "file.mediaProperties": {
+  "description": "The command's answer",
+  "type": "json"
+ },
+ "file.mediaPropertiesFile": {
+  "description": "The command's answer",
+  "type": "json"
+ },
+ "file.projectManager": {
+  "description": "The command's answer",
+  "type": "json"
+ },
+ "file.recoveryList": {
+  "items": {
+   "type": "json"
+  },
+  "type": "array"
+ },
+ "file.templates": {
+  "items": {
+   "type": "json"
+  },
+  "type": "array"
+ },
+ "fonts.list": {
+  "items": {
+   "additionalProperties": true,
+   "properties": {
+    "family": {
+     "type": "string"
+    },
+    "styles": {
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    }
+   },
+   "type": "object"
+  },
+  "type": "array"
+ },
+ "graphics.fonts.used": {
+  "items": {
+   "type": "json"
+  },
+  "type": "array"
+ },
+ "graphics.list": {
+  "description": "The command's answer",
+  "type": "json"
+ },
+ "graphics.template.controls": {
+  "description": "The command's answer",
+  "type": "json"
+ },
+ "graphics.template.list": {
+  "items": {
+   "additionalProperties": true,
+   "properties": {
+    "author": {
+     "type": "string"
+    },
+    "canvas": {
+     "items": {
+      "type": "integer"
+     },
+     "type": "array"
+    },
+    "category": {
+     "type": "string"
+    },
+    "controls": {
+     "items": {
+      "additionalProperties": true,
+      "properties": {
+       "id": {
+        "type": "string"
+       },
+       "kind": {
+        "type": "string"
+       },
+       "layer": {
+        "type": "integer"
+       },
+       "max": {
+        "type": "json"
+       },
+       "min": {
+        "type": "json"
+       },
+       "name": {
+        "type": "string"
+       },
+       "param": {
+        "type": "string"
+       }
+      },
+      "type": "object"
+     },
+     "type": "array"
+    },
+    "description": {
+     "type": "string"
+    },
+    "duration": {
+     "type": "integer"
+    },
+    "fonts": {
+     "items": {
+      "type": "json"
+     },
+     "type": "array"
+    },
+    "id": {
+     "type": "string"
+    },
+    "layers": {
+     "type": "integer"
+    },
+    "license": {
+     "type": "string"
+    },
+    "name": {
+     "type": "string"
+    },
+    "path": {
+     "type": "json"
+    },
+    "roll": {
+     "type": "string"
+    },
+    "seconds": {
+     "type": "number"
+    },
+    "source": {
+     "type": "string"
+    },
+    "tags": {
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    }
+   },
+   "type": "object"
+  },
+  "type": "array"
+ },
+ "graphics.template.thumbnail": {
+  "description": "The command's answer",
+  "type": "json"
+ },
+ "help.systemReport": {
+  "additionalProperties": true,
+  "properties": {
+   "app": {
+    "type": "string"
+   },
+   "arch": {
+    "type": "string"
+   },
+   "checks": {
+    "items": {
+     "additionalProperties": true,
+     "properties": {
+      "detail": {
+       "type": "string"
+      },
+      "name": {
+       "type": "string"
+      },
+      "ok": {
+       "type": "boolean"
+      }
+     },
+     "type": "object"
+    },
+    "type": "array"
+   },
+   "containers": {
+    "items": {
+     "type": "string"
+    },
+    "type": "array"
+   },
+   "cpuThreads": {
+    "type": "integer"
+   },
+   "decoders": {
+    "items": {
+     "type": "string"
+    },
+    "type": "array"
+   },
+   "exportFormats": {
+    "items": {
+     "additionalProperties": true,
+     "properties": {
+      "available": {
+       "type": "boolean"
+      },
+      "format": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "type": "array"
+   },
+   "family": {
+    "type": "string"
+   },
+   "os": {
+    "type": "string"
+   },
+   "speechToText": {
+    "type": "boolean"
+   }
+  },
+  "type": "object"
+ },
+ "history.list": {
+  "additionalProperties": true,
+  "properties": {
+   "redo": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   },
+   "undo": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "jobs.list": {
+  "items": {
+   "type": "json"
+  },
+  "type": "array"
+ },
+ "color.presetThumbnails": {
+  "additionalProperties": true,
+  "properties": {
+   "cell": {
+    "items": {
+     "type": "integer"
+    },
+    "type": "array"
+   },
+   "columns": {
+    "type": "integer"
+   },
+   "height": {
+    "type": "integer"
+   },
+   "presets": {
+    "items": {
+     "type": "string"
+    },
+    "type": "array"
+   },
+   "source": {
+    "type": "string"
+   },
+   "width": {
+    "type": "integer"
+   }
+  },
+  "type": "object"
+ },
+ "color.presets": {
+  "additionalProperties": true,
+  "properties": {
+   "folders": {
+    "items": {
+     "type": "string"
+    },
+    "type": "array"
+   },
+   "presets": {
+    "items": {
+     "additionalProperties": true,
+     "properties": {
+      "description": {
+       "type": "string"
+      },
+      "folder": {
+       "type": "string"
+      },
+      "name": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "lut.export": {
+  "description": "The command's answer",
+  "type": "json"
+ },
+ "lut.list": {
+  "additionalProperties": true,
+  "properties": {
+   "builtin": {
+    "items": {
+     "additionalProperties": true,
+     "properties": {
+      "input": {
+       "type": "boolean"
+      },
+      "name": {
+       "type": "string"
+      },
+      "ref": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "type": "array"
+   },
+   "library": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "masks.list": {
+  "additionalProperties": true,
+  "properties": {
+   "masks": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "media.colorInfo": {
+  "description": "The command's answer",
+  "type": "json"
+ },
+ "media.findMissing": {
+  "additionalProperties": true,
+  "properties": {
+   "missing": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "media.linkMedia": {
+  "additionalProperties": true,
+  "properties": {
+   "missing": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "media.offlineAll": {
+  "additionalProperties": true,
+  "properties": {
+   "offline": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "media.proxyPresets": {
+  "items": {
+   "additionalProperties": true,
+   "properties": {
+    "extension": {
+     "type": "string"
+    },
+    "id": {
+     "type": "string"
+    },
+    "label": {
+     "type": "string"
+    },
+    "prores": {
+     "type": "string"
+    },
+    "proxy": {
+     "type": "boolean"
+    },
+    "scale": {
+     "type": "number"
+    }
+   },
+   "type": "object"
+  },
+  "type": "array"
+ },
+ "media.search": {
+  "description": "The command's answer",
+  "type": "json"
+ },
+ "media.status": {
+  "items": {
+   "additionalProperties": true,
+   "properties": {
+    "identity": {
+     "type": "json"
+    },
+    "item": {
+     "type": "integer"
+    },
+    "name": {
+     "type": "string"
+    },
+    "path": {
+     "type": "json"
+    },
+    "proxy": {
+     "type": "json"
+    },
+    "status": {
+     "type": "string"
+    }
+   },
+   "type": "object"
+  },
+  "type": "array"
+ },
+ "media.toggleProxies": {
+  "additionalProperties": true,
+  "properties": {
+   "clipsWithProxies": {
+    "type": "integer"
+   },
+   "enabled": {
+    "type": "boolean"
+   }
+  },
+  "type": "object"
+ },
+ "mediaBrowser.list": {
+  "description": "The command's answer",
+  "type": "json"
+ },
+ "mediaBrowser.probe": {
+  "description": "The command's answer",
+  "type": "json"
+ },
+ "mediaBrowser.roots": {
+  "additionalProperties": true,
+  "properties": {
+   "favorites": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   },
+   "home": {
+    "type": "json"
+   },
+   "localDrives": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   },
+   "network": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   },
+   "recent": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "mediaCache.info": {
+  "additionalProperties": true,
+  "properties": {
+   "bytes": {
+    "type": "integer"
+   },
+   "files": {
+    "type": "integer"
+   },
+   "location": {
+    "type": "json"
+   },
+   "policy": {
+    "type": "string"
+   }
+  },
+  "type": "object"
+ },
+ "metadata.get": {
+  "description": "The command's answer",
+  "type": "json"
+ },
+ "mixer.inspect": {
+  "additionalProperties": true,
+  "properties": {
+   "automatchTime": {
+    "type": "number"
+   },
+   "clipModes": {
+    "items": {
+     "additionalProperties": true,
+     "properties": {
+      "mode": {
+       "type": "string"
+      },
+      "track": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "type": "array"
+   },
+   "gestures": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   },
+   "latencySamples": {
+    "type": "integer"
+   },
+   "recording": {
+    "type": "boolean"
+   },
+   "strips": {
+    "items": {
+     "additionalProperties": true,
+     "properties": {
+      "at": {
+       "additionalProperties": true,
+       "properties": {
+        "mute": {
+         "type": "boolean"
+        },
+        "pan": {
+         "type": "number"
+        },
+        "time": {
+         "type": "integer"
+        },
+        "volumeDb": {
+         "type": "number"
+        }
+       },
+       "type": "object"
+      },
+      "channels": {
+       "type": "string"
+      },
+      "id": {
+       "type": "integer"
+      },
+      "inputMap": {
+       "type": "string"
+      },
+      "inserts": {
+       "items": {
+        "type": "json"
+       },
+       "type": "array"
+      },
+      "kind": {
+       "type": "string"
+      },
+      "lanes": {
+       "additionalProperties": true,
+       "properties": {},
+       "type": "object"
+      },
+      "mode": {
+       "type": "string"
+      },
+      "muted": {
+       "type": "boolean"
+      },
+      "name": {
+       "type": "string"
+      },
+      "output": {
+       "type": "string"
+      },
+      "outputChannels": {
+       "type": "string"
+      },
+      "pan": {
+       "type": "number"
+      },
+      "pan51": {
+       "additionalProperties": true,
+       "properties": {
+        "center": {
+         "type": "number"
+        },
+        "lfeDb": {
+         "type": "number"
+        },
+        "x": {
+         "type": "number"
+        },
+        "y": {
+         "type": "number"
+        }
+       },
+       "type": "object"
+      },
+      "pans51": {
+       "type": "boolean"
+      },
+      "recordArm": {
+       "type": "boolean"
+      },
+      "ref": {
+       "type": "string"
+      },
+      "sends": {
+       "items": {
+        "type": "json"
+       },
+       "type": "array"
+      },
+      "solo": {
+       "type": "boolean"
+      },
+      "soloSafe": {
+       "type": "boolean"
+      },
+      "volumeDb": {
+       "type": "number"
+      }
+     },
+     "type": "object"
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "mixer.recordStart": {
+  "additionalProperties": true,
+  "properties": {
+   "recording": {
+    "type": "boolean"
+   },
+   "writing": {
+    "type": "integer"
+   }
+  },
+  "type": "object"
+ },
+ "mixer.touch": {
+  "description": "The command's answer",
+  "type": "json"
+ },
+ "multicam.grid": {
+  "additionalProperties": true,
+  "properties": {
+   "clip": {
+    "type": "json"
+   },
+   "view": {
+    "additionalProperties": true,
+    "properties": {
+     "autoQuality": {
+      "type": "boolean"
+     },
+     "layout": {
+      "type": "json"
+     },
+     "page": {
+      "type": "integer"
+     },
+     "showPreview": {
+      "type": "boolean"
+     },
+     "topDown": {
+      "type": "boolean"
+     },
+     "transmit": {
+      "type": "boolean"
+     }
+    },
+    "type": "object"
+   }
+  },
+  "type": "object"
+ },
+ "multicam.inspect": {
+  "additionalProperties": true,
+  "properties": {
+   "audioFollowsVideo": {
+    "type": "boolean"
+   },
+   "clip": {
+    "type": "json"
+   },
+   "recorder": {
+    "additionalProperties": true,
+    "properties": {
+     "cuts": {
+      "items": {
+       "type": "json"
+      },
+      "type": "array"
+     },
+     "recording": {
+      "type": "boolean"
+     }
+    },
+    "type": "object"
+   }
+  },
+  "type": "object"
+ },
+ "multicam.recordStart": {
+  "additionalProperties": true,
+  "properties": {
+   "recording": {
+    "type": "boolean"
+   },
+   "start": {
+    "type": "integer"
+   }
+  },
+  "type": "object"
+ },
+ "perf.stats": {
+  "additionalProperties": true,
+  "properties": {
+   "decode": {
+    "additionalProperties": true,
+    "properties": {
+     "cacheBudgetMB": {
+      "type": "number"
+     },
+     "cacheHitRate": {
+      "type": "number"
+     },
+     "cacheHits": {
+      "type": "integer"
+     },
+     "cacheMB": {
+      "type": "number"
+     },
+     "cacheMisses": {
+      "type": "integer"
+     },
+     "decodeMs": {
+      "type": "number"
+     },
+     "decodeMsPerSample": {
+      "type": "number"
+     },
+     "draftFrames": {
+      "type": "integer"
+     },
+     "evicted": {
+      "type": "integer"
+     },
+     "framesDecoded": {
+      "type": "integer"
+     },
+     "h264Threads": {
+      "type": "integer"
+     },
+     "hardware": {
+      "additionalProperties": true,
+      "properties": {
+       "backend": {
+        "type": "json"
+       },
+       "declined": {
+        "type": "integer"
+       },
+       "enabled": {
+        "type": "boolean"
+       },
+       "fallbacks": {
+        "type": "integer"
+       },
+       "frames": {
+        "type": "integer"
+       },
+       "sessions": {
+        "type": "integer"
+       },
+       "softwareFrames": {
+        "type": "integer"
+       }
+      },
+      "type": "object"
+     },
+     "liveDecoders": {
+      "type": "integer"
+     },
+     "planePoolMB": {
+      "type": "number"
+     },
+     "planesReused": {
+      "type": "integer"
+     },
+     "requests": {
+      "type": "integer"
+     },
+     "samplesDecoded": {
+      "type": "integer"
+     },
+     "samplesSkipped": {
+      "type": "integer"
+     },
+     "seeks": {
+      "type": "integer"
+     }
+    },
+    "type": "object"
+   },
+   "export": {
+    "additionalProperties": true,
+    "properties": {
+     "hardware": {
+      "additionalProperties": true,
+      "properties": {
+       "declined": {
+        "type": "integer"
+       },
+       "frames": {
+        "type": "integer"
+       },
+       "sessions": {
+        "type": "integer"
+       }
+      },
+      "type": "object"
+     },
+     "stages": {
+      "additionalProperties": true,
+      "properties": {
+       "audioMs": {
+        "type": "number"
+       },
+       "convertMs": {
+        "type": "number"
+       },
+       "encodeMs": {
+        "type": "number"
+       },
+       "finishMs": {
+        "type": "number"
+       },
+       "loudnessMs": {
+        "type": "number"
+       },
+       "muxMs": {
+        "type": "number"
+       },
+       "renderMs": {
+        "type": "number"
+       },
+       "setupMs": {
+        "type": "number"
+       },
+       "waitMs": {
+        "type": "number"
+       }
+      },
+      "type": "object"
+     }
+    },
+    "type": "object"
+   },
+   "jobs": {
+    "additionalProperties": true,
+    "properties": {
+     "running": {
+      "type": "integer"
+     },
+     "total": {
+      "type": "integer"
+     }
+    },
+    "type": "object"
+   },
+   "media": {
+    "additionalProperties": true,
+    "properties": {
+     "openSources": {
+      "type": "integer"
+     }
+    },
+    "type": "object"
+   }
+  },
+  "type": "object"
+ },
+ "prefs.get": {
+  "additionalProperties": true,
+  "properties": {
+   "keys": {
+    "items": {
+     "type": "string"
+    },
+    "type": "array"
+   },
+   "values": {
+    "additionalProperties": true,
+    "properties": {
+     "appearance": {
+      "additionalProperties": true,
+      "properties": {
+       "accessibleContrast": {
+        "type": "boolean"
+       },
+       "colorTheme": {
+        "type": "string"
+       },
+       "highlightColor": {
+        "type": "string"
+       }
+      },
+      "type": "object"
+     },
+     "audio": {
+      "additionalProperties": true,
+      "properties": {
+       "alwaysOverrideAudioTags": {
+        "type": "boolean"
+       },
+       "ambienceTargetLufs": {
+        "type": "number"
+       },
+       "autoTagAudioTypes": {
+        "type": "boolean"
+       },
+       "automatchTime": {
+        "type": "number"
+       },
+       "dialogueTargetLufs": {
+        "type": "number"
+       },
+       "editInAuditionLocation": {
+        "type": "string"
+       },
+       "generateWaveformsOnImport": {
+        "type": "boolean"
+       },
+       "largeVolumeAdjustment": {
+        "type": "number"
+       },
+       "linearKeyframeThinning": {
+        "type": "boolean"
+       },
+       "maintainPitchShuttling": {
+        "type": "boolean"
+       },
+       "minimumTimeIntervalThinning": {
+        "type": "boolean"
+       },
+       "minimumTimeMs": {
+        "type": "integer"
+       },
+       "mixdownType": {
+        "type": "string"
+       },
+       "multithreadedWaveforms": {
+        "type": "boolean"
+       },
+       "musicTargetLufs": {
+        "type": "number"
+       },
+       "muteInputDuringRecording": {
+        "type": "boolean"
+       },
+       "renderAudioWithVideo": {
+        "type": "boolean"
+       },
+       "scrubAudio": {
+        "type": "boolean"
+       },
+       "sfxTargetLufs": {
+        "type": "number"
+       },
+       "sumToMonoInSource": {
+        "type": "boolean"
+       },
+       "switchToTouchAfterWrite": {
+        "type": "boolean"
+       }
+      },
+      "type": "object"
+     },
+     "audioHardware": {
+      "additionalProperties": true,
+      "properties": {
+       "bufferSize": {
+        "type": "integer"
+       },
+       "defaultInput": {
+        "type": "string"
+       },
+       "defaultOutput": {
+        "type": "string"
+       },
+       "deviceClass": {
+        "type": "string"
+       },
+       "forceDocumentRate": {
+        "type": "boolean"
+       },
+       "mapLeft": {
+        "type": "integer"
+       },
+       "mapRight": {
+        "type": "integer"
+       },
+       "sampleRate": {
+        "type": "integer"
+       }
+      },
+      "type": "object"
+     },
+     "autoSave": {
+      "additionalProperties": true,
+      "properties": {
+       "enabled": {
+        "type": "boolean"
+       },
+       "intervalMinutes": {
+        "type": "integer"
+       },
+       "maxVersions": {
+        "type": "integer"
+       },
+       "recoveryIntervalSeconds": {
+        "type": "integer"
+       },
+       "recoveryJournal": {
+        "type": "boolean"
+       },
+       "saveCurrentProject": {
+        "type": "boolean"
+       }
+      },
+      "type": "object"
+     },
+     "color": {
+      "additionalProperties": true,
+      "properties": {
+       "displayColorManagement": {
+        "type": "boolean"
+       },
+       "extendedDynamicRange": {
+        "type": "boolean"
+       },
+       "hdrGraphicsWhite": {
+        "type": "string"
+       }
+      },
+      "type": "object"
+     },
+     "audioMixing": {
+      "additionalProperties": true,
+      "properties": {
+       "userPresets": {
+        "items": {
+         "type": "json"
+        },
+        "type": "array"
+       }
+      },
+      "type": "object"
+     },
+     "general": {
+      "additionalProperties": true,
+      "properties": {
+       "atStartup": {
+        "type": "string"
+       },
+       "binsCmdDoubleClick": {
+        "type": "string"
+       },
+       "binsDoubleClick": {
+        "type": "string"
+       },
+       "binsOptDoubleClick": {
+        "type": "string"
+       },
+       "interfaceLanguage": {
+        "type": "string"
+       },
+       "projectsDoubleClick": {
+        "type": "string"
+       },
+       "projectsOptDoubleClick": {
+        "type": "string"
+       },
+       "recentProjects": {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       "showCompatibilityIssues": {
+        "type": "boolean"
+       },
+       "showEventIndicator": {
+        "type": "boolean"
+       },
+       "showMaskTrackerPreview": {
+        "type": "boolean"
+       },
+       "showProjectBinInTab": {
+        "type": "boolean"
+       },
+       "showProjectLoadErrors": {
+        "type": "boolean"
+       },
+       "showRichToolTips": {
+        "type": "boolean"
+       },
+       "showToolTips": {
+        "type": "boolean"
+       },
+       "showWorkspaceResetWarning": {
+        "type": "boolean"
+       },
+       "whenOpeningProject": {
+        "type": "string"
+       }
+      },
+      "type": "object"
+     },
+     "graphics": {
+      "additionalProperties": true,
+      "properties": {
+       "backgroundFill": {
+        "type": "string"
+       },
+       "captionFont": {
+        "type": "string"
+       },
+       "captionMonospaceOnly": {
+        "type": "boolean"
+       },
+       "cea708Wide": {
+        "type": "boolean"
+       },
+       "defaultFont": {
+        "type": "string"
+       },
+       "emojiFont": {
+        "type": "string"
+       },
+       "hindiDigits": {
+        "type": "boolean"
+       },
+       "ligatures": {
+        "type": "boolean"
+       },
+       "missingFontReplacement": {
+        "type": "string"
+       },
+       "paragraphDirection": {
+        "type": "string"
+       },
+       "shapeLineCap": {
+        "type": "string"
+       },
+       "shapeLineJoin": {
+        "type": "string"
+       },
+       "shapeMiterLimit": {
+        "type": "number"
+       },
+       "smartQuotes": {
+        "type": "boolean"
+       },
+       "textLineCap": {
+        "type": "string"
+       },
+       "textLineJoin": {
+        "type": "string"
+       },
+       "textMiterLimit": {
+        "type": "number"
+       }
+      },
+      "type": "object"
+     },
+     "guides": {
+      "additionalProperties": true,
+      "properties": {
+       "templates": {
+        "items": {
+         "type": "json"
+        },
+        "type": "array"
+       }
+      },
+      "type": "object"
+     },
+     "labels": {
+      "additionalProperties": true,
+      "properties": {
+       "colors": {
+        "additionalProperties": true,
+        "properties": {
+         "blue": {
+          "type": "json"
+         },
+         "brown": {
+          "type": "json"
+         },
+         "caribbean": {
+          "type": "json"
+         },
+         "cerulean": {
+          "type": "json"
+         },
+         "forest": {
+          "type": "json"
+         },
+         "green": {
+          "type": "json"
+         },
+         "iris": {
+          "type": "json"
+         },
+         "lavender": {
+          "type": "json"
+         },
+         "magenta": {
+          "type": "json"
+         },
+         "mango": {
+          "type": "json"
+         },
+         "purple": {
+          "type": "json"
+         },
+         "rose": {
+          "type": "json"
+         },
+         "tan": {
+          "type": "json"
+         },
+         "teal": {
+          "type": "json"
+         },
+         "violet": {
+          "type": "json"
+         },
+         "yellow": {
+          "type": "json"
+         }
+        },
+        "type": "object"
+       },
+       "defaults": {
+        "additionalProperties": true,
+        "properties": {
+         "audio": {
+          "type": "string"
+         },
+         "bin": {
+          "type": "string"
+         },
+         "captions": {
+          "type": "string"
+         },
+         "dynamicLink": {
+          "type": "string"
+         },
+         "movie": {
+          "type": "string"
+         },
+         "sequence": {
+          "type": "string"
+         },
+         "still": {
+          "type": "string"
+         },
+         "video": {
+          "type": "string"
+         }
+        },
+        "type": "object"
+       }
+      },
+      "type": "object"
+     },
+     "media": {
+      "additionalProperties": true,
+      "properties": {
+       "allowDuplicateMedia": {
+        "type": "boolean"
+       },
+       "autoHideDependentClips": {
+        "type": "boolean"
+       },
+       "createFolderForImportedProjects": {
+        "type": "boolean"
+       },
+       "defaultMediaScaling": {
+        "type": "string"
+       },
+       "enableProxies": {
+        "type": "boolean"
+       },
+       "enableXmpLinking": {
+        "type": "boolean"
+       },
+       "frameCount": {
+        "type": "string"
+       },
+       "growingRefreshSeconds": {
+        "type": "integer"
+       },
+       "hardwareDecoding": {
+        "type": "boolean"
+       },
+       "importImageSequences": {
+        "type": "boolean"
+       },
+       "includeCaptionsOnImport": {
+        "type": "boolean"
+       },
+       "indeterminateTimebase": {
+        "type": "string"
+       },
+       "proresHardwareEncoding": {
+        "type": "boolean"
+       },
+       "refreshGrowingFiles": {
+        "type": "boolean"
+       },
+       "resumeGrowingPlayback": {
+        "type": "boolean"
+       },
+       "timecode": {
+        "type": "string"
+       },
+       "validateContentCredentials": {
+        "type": "boolean"
+       },
+       "writeClipMarkersToXmp": {
+        "type": "boolean"
+       },
+       "writeXmpId": {
+        "type": "boolean"
+       }
+      },
+      "type": "object"
+     },
+     "mediaAnalysis": {
+      "additionalProperties": true,
+      "properties": {
+       "analyzeImportedMedia": {
+        "type": "boolean"
+       },
+       "autoTranscribe": {
+        "type": "boolean"
+       },
+       "autoTranscribeScope": {
+        "type": "string"
+       },
+       "cacheResults": {
+        "type": "string"
+       },
+       "defaultLanguage": {
+        "type": "string"
+       },
+       "languageAutoDetect": {
+        "type": "boolean"
+       },
+       "speakerLabeling": {
+        "type": "string"
+       },
+       "whisperModel": {
+        "type": "string"
+       }
+      },
+      "type": "object"
+     },
+     "mediaBrowser": {
+      "additionalProperties": true,
+      "properties": {
+       "columns": {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       "favorites": {
+        "items": {
+         "type": "json"
+        },
+        "type": "array"
+       },
+       "fileTypes": {
+        "type": "string"
+       },
+       "hoverScrub": {
+        "type": "boolean"
+       },
+       "importAsImageSequence": {
+        "type": "boolean"
+       },
+       "lastDir": {
+        "type": "string"
+       },
+       "recent": {
+        "items": {
+         "type": "json"
+        },
+        "type": "array"
+       },
+       "thumbnailSize": {
+        "type": "number"
+       },
+       "view": {
+        "type": "string"
+       }
+      },
+      "type": "object"
+     },
+     "mediaCache": {
+      "additionalProperties": true,
+      "properties": {
+       "databaseLocation": {
+        "type": "string"
+       },
+       "location": {
+        "type": "string"
+       },
+       "management": {
+        "type": "string"
+       },
+       "maxSizeGb": {
+        "type": "integer"
+       },
+       "olderThanDays": {
+        "type": "integer"
+       },
+       "saveNextToMedia": {
+        "type": "boolean"
+       }
+      },
+      "type": "object"
+     },
+     "memory": {
+      "additionalProperties": true,
+      "properties": {
+       "frameCacheMb": {
+        "type": "integer"
+       },
+       "ramReservedGb": {
+        "type": "integer"
+       }
+      },
+      "type": "object"
+     },
+     "playback": {
+      "additionalProperties": true,
+      "properties": {
+       "disableVideoInBackground": {
+        "type": "boolean"
+       },
+       "draftDecode": {
+        "type": "boolean"
+       },
+       "enableTransmit": {
+        "type": "boolean"
+       },
+       "hardwareDecoding": {
+        "type": "string"
+       },
+       "pauseEncoderQueue": {
+        "type": "boolean"
+       },
+       "postrollSeconds": {
+        "type": "number"
+       },
+       "prerollSeconds": {
+        "type": "number"
+       },
+       "stepManyFrames": {
+        "type": "integer"
+       }
+      },
+      "type": "object"
+     },
+     "plugins": {
+      "additionalProperties": true,
+      "properties": {
+       "developerMode": {
+        "type": "boolean"
+       }
+      },
+      "type": "object"
+     },
+     "projectPanel": {
+      "additionalProperties": true,
+      "properties": {
+       "currentPreset": {
+        "type": "json"
+       },
+       "freeform": {
+        "additionalProperties": true,
+        "properties": {
+         "cardSize": {
+          "type": "number"
+         },
+         "grid": {
+          "type": "number"
+         },
+         "showDurations": {
+          "type": "boolean"
+         },
+         "showNames": {
+          "type": "boolean"
+         },
+         "snap": {
+          "type": "boolean"
+         }
+        },
+        "type": "object"
+       },
+       "hoverScrub": {
+        "type": "boolean"
+       },
+       "presets": {
+        "items": {
+         "type": "json"
+        },
+        "type": "array"
+       },
+       "previewArea": {
+        "type": "boolean"
+       },
+       "thumbnailControlsAllDevices": {
+        "type": "boolean"
+       },
+       "thumbnails": {
+        "type": "boolean"
+       },
+       "thumbnailsShowEffects": {
+        "type": "boolean"
+       },
+       "view": {
+        "additionalProperties": true,
+        "properties": {
+         "columns": {
+          "items": {
+           "type": "json"
+          },
+          "type": "array"
+         },
+         "fontSize": {
+          "type": "string"
+         },
+         "iconSize": {
+          "type": "number"
+         },
+         "iconSort": {
+          "type": "json"
+         },
+         "mode": {
+          "type": "string"
+         },
+         "sort": {
+          "type": "json"
+         }
+        },
+        "type": "object"
+       }
+      },
+      "type": "object"
+     },
+     "timeline": {
+      "additionalProperties": true,
+      "properties": {
+       "addTracksAutomatically": {
+        "type": "boolean"
+       },
+       "audioTransitionDuration": {
+        "type": "number"
+       },
+       "audioTransitionUnit": {
+        "type": "string"
+       },
+       "autoScroll": {
+        "type": "string"
+       },
+       "clipMismatchWarning": {
+        "type": "boolean"
+       },
+       "focusTimelineOnEdit": {
+        "type": "boolean"
+       },
+       "matchFrameSetsIn": {
+        "type": "boolean"
+       },
+       "monoMediaTracks": {
+        "type": "string"
+       },
+       "mouseScrolling": {
+        "type": "string"
+       },
+       "multichannelMonoMediaTracks": {
+        "type": "string"
+       },
+       "outOfSyncUnlinked": {
+        "type": "boolean"
+       },
+       "playAfterRendering": {
+        "type": "boolean"
+       },
+       "restoreOpenSequences": {
+        "type": "boolean"
+       },
+       "returnToBeginning": {
+        "type": "boolean"
+       },
+       "snapPlayhead": {
+        "type": "boolean"
+       },
+       "stereoMediaTracks": {
+        "type": "string"
+       },
+       "stillImageDuration": {
+        "type": "number"
+       },
+       "stillImageUnit": {
+        "type": "string"
+       },
+       "surroundMediaTracks": {
+        "type": "string"
+       },
+       "videoTransitionDuration": {
+        "type": "number"
+       },
+       "videoTransitionUnit": {
+        "type": "string"
+       }
+      },
+      "type": "object"
+     },
+     "trim": {
+      "additionalProperties": true,
+      "properties": {
+       "dynamicRippleUpdates": {
+        "type": "boolean"
+       },
+       "largeTrimOffset": {
+        "type": "integer"
+       },
+       "largeTrimOffsetAudio": {
+        "type": "integer"
+       },
+       "playheadDeterminesLoop": {
+        "type": "boolean"
+       },
+       "rippleAddsEdits": {
+        "type": "boolean"
+       },
+       "selectionToolRollRipple": {
+        "type": "boolean"
+       },
+       "shiftOverlappingClips": {
+        "type": "boolean"
+       },
+       "toolChangesTrimType": {
+        "type": "boolean"
+       }
+      },
+      "type": "object"
+     },
+     "version": {
+      "type": "integer"
+     },
+     "voiceOver": {
+      "additionalProperties": true,
+      "properties": {
+       "countdownSoundCues": {
+        "type": "boolean"
+       },
+       "inputChannel": {
+        "type": "integer"
+       },
+       "name": {
+        "type": "string"
+       },
+       "postrollSeconds": {
+        "type": "number"
+       },
+       "prerollSeconds": {
+        "type": "number"
+       },
+       "source": {
+        "type": "string"
+       }
+      },
+      "type": "object"
+     }
+    },
+    "type": "object"
+   }
+  },
+  "type": "object"
+ },
+ "prefs.schema": {
+  "additionalProperties": true,
+  "properties": {
+   "categories": {
+    "items": {
+     "additionalProperties": true,
+     "properties": {
+      "command": {
+       "type": "string"
+      },
+      "fields": {
+       "items": {
+        "type": "json"
+       },
+       "type": "array"
+      },
+      "id": {
+       "type": "string"
+      },
+      "title": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "presets.export": {
+  "description": "The command's answer",
+  "type": "json"
+ },
+ "presets.list": {
+  "additionalProperties": true,
+  "properties": {
+   "presets": {
+    "items": {
+     "additionalProperties": true,
+     "properties": {
+      "animated": {
+       "type": "boolean"
+      },
+      "builtin": {
+       "type": "boolean"
+      },
+      "description": {
+       "type": "string"
+      },
+      "effects": {
+       "items": {
+        "type": "string"
+       },
+       "type": "array"
+      },
+      "keyframes": {
+       "type": "string"
+      },
+      "masks": {
+       "type": "integer"
+      },
+      "name": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "project.columns.list": {
+  "additionalProperties": true,
+  "properties": {
+   "available": {
+    "items": {
+     "additionalProperties": true,
+     "properties": {
+      "name": {
+       "type": "string"
+      },
+      "shown": {
+       "type": "boolean"
+      }
+     },
+     "type": "object"
+    },
+    "type": "array"
+   },
+   "columns": {
+    "items": {
+     "additionalProperties": true,
+     "properties": {
+      "name": {
+       "type": "string"
+      },
+      "width": {
+       "type": "number"
+      }
+     },
+     "type": "object"
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "project.freeform.arrangements": {
+  "additionalProperties": true,
+  "properties": {
+   "arrangements": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "project.freeform.layout": {
+  "additionalProperties": true,
+  "properties": {
+   "bin": {
+    "type": "json"
+   },
+   "cards": {
+    "items": {
+     "additionalProperties": true,
+     "properties": {
+      "item": {
+       "type": "integer"
+      },
+      "placed": {
+       "type": "boolean"
+      },
+      "size": {
+       "type": "number"
+      },
+      "stack": {
+       "type": "json"
+      },
+      "x": {
+       "type": "number"
+      },
+      "y": {
+       "type": "number"
+      }
+     },
+     "type": "object"
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "project.inspect": {
+  "additionalProperties": true,
+  "properties": {
+   "activeSequence": {
+    "type": "integer"
+   },
+   "dirty": {
+    "type": "boolean"
+   },
+   "epoch": {
+    "type": "integer"
+   },
+   "name": {
+    "type": "string"
+   },
+   "path": {
+    "type": "string"
+   },
+   "revision": {
+    "type": "integer"
+   },
+   "root": {
+    "additionalProperties": true,
+    "properties": {
+     "children": {
+      "items": {
+       "additionalProperties": true,
+       "properties": {
+        "duration": {
+         "type": "integer"
+        },
+        "item": {
+         "type": "integer"
+        },
+        "label": {
+         "type": "string"
+        },
+        "name": {
+         "type": "string"
+        },
+        "type": {
+         "type": "string"
+        }
+       },
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "id": {
+      "type": "integer"
+     },
+     "name": {
+      "type": "string"
+     }
+    },
+    "type": "object"
+   },
+   "safeAreas": {
+    "additionalProperties": true,
+    "properties": {
+     "action": {
+      "items": {
+       "type": "number"
+      },
+      "type": "array"
+     },
+     "title": {
+      "items": {
+       "type": "number"
+      },
+      "type": "array"
+     }
+    },
+    "type": "object"
+   },
+   "sourceItem": {
+    "type": "json"
+   }
+  },
+  "type": "object"
+ },
+ "project.items": {
+  "additionalProperties": true,
+  "properties": {
+   "bin": {
+    "type": "integer"
+   },
+   "columns": {
+    "items": {
+     "additionalProperties": true,
+     "properties": {
+      "name": {
+       "type": "string"
+      },
+      "width": {
+       "type": "number"
+      }
+     },
+     "type": "object"
+    },
+    "type": "array"
+   },
+   "rows": {
+    "items": {
+     "additionalProperties": true,
+     "properties": {
+      "cells": {
+       "additionalProperties": true,
+       "properties": {
+        "Audio Info": {
+         "type": "string"
+        },
+        "Description": {
+         "type": "string"
+        },
+        "Frame Rate": {
+         "type": "string"
+        },
+        "Media Duration": {
+         "type": "string"
+        },
+        "Media End": {
+         "type": "string"
+        },
+        "Media Start": {
+         "type": "string"
+        },
+        "Name": {
+         "type": "string"
+        },
+        "Tape Name": {
+         "type": "string"
+        },
+        "Video Duration": {
+         "type": "string"
+        },
+        "Video In Point": {
+         "type": "string"
+        },
+        "Video Info": {
+         "type": "string"
+        },
+        "Video Out Point": {
+         "type": "string"
+        }
+       },
+       "type": "object"
+      },
+      "depth": {
+       "type": "integer"
+      },
+      "duration": {
+       "type": "integer"
+      },
+      "file": {
+       "type": "boolean"
+      },
+      "frame": {
+       "type": "integer"
+      },
+      "hasAudio": {
+       "type": "boolean"
+      },
+      "hasVideo": {
+       "type": "boolean"
+      },
+      "icon": {
+       "type": "string"
+      },
+      "in": {
+       "type": "json"
+      },
+      "info": {
+       "additionalProperties": true,
+       "properties": {
+        "audioInfo": {
+         "type": "string"
+        },
+        "frameRate": {
+         "type": "string"
+        },
+        "mediaDuration": {
+         "type": "string"
+        },
+        "videoInfo": {
+         "type": "string"
+        }
+       },
+       "type": "object"
+      },
+      "item": {
+       "type": "integer"
+      },
+      "kind": {
+       "type": "string"
+      },
+      "label": {
+       "type": "string"
+      },
+      "matte": {
+       "type": "boolean"
+      },
+      "name": {
+       "type": "string"
+      },
+      "offline": {
+       "type": "boolean"
+      },
+      "offlineText": {
+       "type": "json"
+      },
+      "out": {
+       "type": "json"
+      },
+      "poster": {
+       "type": "json"
+      },
+      "proxy": {
+       "type": "boolean"
+      },
+      "stamp": {
+       "type": "string"
+      },
+      "start": {
+       "type": "integer"
+      },
+      "type": {
+       "type": "string"
+      },
+      "usage": {
+       "items": {
+        "type": "integer"
+       },
+       "type": "array"
+      }
+     },
+     "type": "object"
+    },
+    "type": "array"
+   },
+   "sort": {
+    "additionalProperties": true,
+    "properties": {
+     "column": {
+      "type": "string"
+     },
+     "descending": {
+      "type": "boolean"
+     }
+    },
+    "type": "object"
+   }
+  },
+  "type": "object"
+ },
+ "project.searchBinItems": {
+  "description": "The command's answer",
+  "type": "json"
+ },
+ "project.searchBins": {
+  "items": {
+   "type": "json"
+  },
+  "type": "array"
+ },
+ "project.view.get": {
+  "additionalProperties": true,
+  "properties": {
+   "available": {
+    "items": {
+     "type": "string"
+    },
+    "type": "array"
+   },
+   "currentPreset": {
+    "type": "json"
+   },
+   "freeform": {
+    "additionalProperties": true,
+    "properties": {
+     "cardSize": {
+      "type": "number"
+     },
+     "grid": {
+      "type": "number"
+     },
+     "showDurations": {
+      "type": "boolean"
+     },
+     "showNames": {
+      "type": "boolean"
+     },
+     "snap": {
+      "type": "boolean"
+     }
+    },
+    "type": "object"
+   },
+   "hoverScrub": {
+    "type": "boolean"
+   },
+   "previewArea": {
+    "type": "boolean"
+   },
+   "thumbnailControlsAllDevices": {
+    "type": "boolean"
+   },
+   "thumbnails": {
+    "type": "boolean"
+   },
+   "thumbnailsShowEffects": {
+    "type": "boolean"
+   },
+   "view": {
+    "additionalProperties": true,
+    "properties": {
+     "columns": {
+      "items": {
+       "additionalProperties": true,
+       "properties": {
+        "name": {
+         "type": "string"
+        },
+        "width": {
+         "type": "number"
+        }
+       },
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "fontSize": {
+      "type": "string"
+     },
+     "iconSize": {
+      "type": "number"
+     },
+     "iconSort": {
+      "additionalProperties": true,
+      "properties": {
+       "column": {
+        "type": "string"
+       },
+       "descending": {
+        "type": "boolean"
+       }
+      },
+      "type": "object"
+     },
+     "mode": {
+      "type": "string"
+     },
+     "sort": {
+      "additionalProperties": true,
+      "properties": {
+       "column": {
+        "type": "string"
+       },
+       "descending": {
+        "type": "boolean"
+       }
+      },
+      "type": "object"
+     }
+    },
+    "type": "object"
+   }
+  },
+  "type": "object"
+ },
+ "project.viewPreset.list": {
+  "additionalProperties": true,
+  "properties": {
+   "current": {
+    "type": "json"
+   },
+   "presets": {
+    "items": {
+     "additionalProperties": true,
+     "properties": {
+      "name": {
+       "type": "json"
+      },
+      "slot": {
+       "type": "integer"
+      }
+     },
+     "type": "object"
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "scopes.read": {
+  "additionalProperties": true,
+  "properties": {
+   "clamp": {
+    "type": "boolean"
+   },
+   "colorSpace": {
+    "type": "string"
+   },
+   "frame": {
+    "type": "integer"
+   },
+   "histogram": {
+    "additionalProperties": true,
+    "properties": {
+     "above": {
+      "items": {
+       "type": "integer"
+      },
+      "type": "array"
+     },
+     "b": {
+      "items": {
+       "type": "integer"
+      },
+      "type": "array"
+     },
+     "below": {
+      "items": {
+       "type": "integer"
+      },
+      "type": "array"
+     },
+     "g": {
+      "items": {
+       "type": "integer"
+      },
+      "type": "array"
+     },
+     "peakBin": {
+      "additionalProperties": true,
+      "properties": {
+       "b": {
+        "type": "integer"
+       },
+       "g": {
+        "type": "integer"
+       },
+       "r": {
+        "type": "integer"
+       },
+       "y": {
+        "type": "integer"
+       }
+      },
+      "type": "object"
+     },
+     "r": {
+      "items": {
+       "type": "integer"
+      },
+      "type": "array"
+     },
+     "samples": {
+      "type": "integer"
+     },
+     "y": {
+      "items": {
+       "type": "integer"
+      },
+      "type": "array"
+     }
+    },
+    "type": "object"
+   },
+   "matrix": {
+    "type": "string"
+   },
+   "parade": {
+    "additionalProperties": true,
+    "properties": {
+     "columns": {
+      "type": "integer"
+     },
+     "hi": {
+      "type": "number"
+     },
+     "lo": {
+      "type": "number"
+     },
+     "traces": {
+      "additionalProperties": true,
+      "properties": {
+       "B": {
+        "items": {
+         "type": "json"
+        },
+        "type": "array"
+       },
+       "G": {
+        "items": {
+         "type": "json"
+        },
+        "type": "array"
+       },
+       "R": {
+        "items": {
+         "type": "json"
+        },
+        "type": "array"
+       }
+      },
+      "type": "object"
+     },
+     "type": {
+      "type": "string"
+     }
+    },
+    "type": "object"
+   },
+   "samples": {
+    "items": {
+     "type": "integer"
+    },
+    "type": "array"
+   },
+   "stats": {
+    "additionalProperties": true,
+    "properties": {
+     "b": {
+      "additionalProperties": true,
+      "properties": {
+       "max": {
+        "type": "number"
+       },
+       "mean": {
+        "type": "number"
+       },
+       "min": {
+        "type": "number"
+       }
+      },
+      "type": "object"
+     },
+     "chromaMean": {
+      "items": {
+       "type": "number"
+      },
+      "type": "array"
+     },
+     "g": {
+      "additionalProperties": true,
+      "properties": {
+       "max": {
+        "type": "number"
+       },
+       "mean": {
+        "type": "number"
+       },
+       "min": {
+        "type": "number"
+       }
+      },
+      "type": "object"
+     },
+     "hueDeg": {
+      "type": "number"
+     },
+     "r": {
+      "additionalProperties": true,
+      "properties": {
+       "max": {
+        "type": "number"
+       },
+       "mean": {
+        "type": "number"
+       },
+       "min": {
+        "type": "number"
+       }
+      },
+      "type": "object"
+     },
+     "saturation": {
+      "type": "number"
+     },
+     "y": {
+      "additionalProperties": true,
+      "properties": {
+       "max": {
+        "type": "number"
+       },
+       "mean": {
+        "type": "number"
+       },
+       "min": {
+        "type": "number"
+       }
+      },
+      "type": "object"
+     }
+    },
+    "type": "object"
+   },
+   "time": {
+    "type": "integer"
+   },
+   "unit": {
+    "type": "string"
+   },
+   "vectorscopeHls": {
+    "additionalProperties": true,
+    "properties": {
+     "mean": {
+      "items": {
+       "type": "number"
+      },
+      "type": "array"
+     },
+     "meanAngleDeg": {
+      "type": "number"
+     },
+     "peaks": {
+      "items": {
+       "additionalProperties": true,
+       "properties": {
+        "angleDeg": {
+         "type": "number"
+        },
+        "cb": {
+         "type": "number"
+        },
+        "cr": {
+         "type": "number"
+        },
+        "magnitude": {
+         "type": "number"
+        },
+        "share": {
+         "type": "number"
+        },
+        "x": {
+         "type": "integer"
+        },
+        "y": {
+         "type": "integer"
+        }
+       },
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "samples": {
+      "type": "integer"
+     }
+    },
+    "type": "object"
+   },
+   "vectorscopeYuv": {
+    "additionalProperties": true,
+    "properties": {
+     "mean": {
+      "items": {
+       "type": "number"
+      },
+      "type": "array"
+     },
+     "meanAngleDeg": {
+      "type": "number"
+     },
+     "peaks": {
+      "items": {
+       "additionalProperties": true,
+       "properties": {
+        "angleDeg": {
+         "type": "number"
+        },
+        "cb": {
+         "type": "number"
+        },
+        "cr": {
+         "type": "number"
+        },
+        "magnitude": {
+         "type": "number"
+        },
+        "share": {
+         "type": "number"
+        },
+        "x": {
+         "type": "integer"
+        },
+        "y": {
+         "type": "integer"
+        }
+       },
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "samples": {
+      "type": "integer"
+     }
+    },
+    "type": "object"
+   },
+   "waveform": {
+    "additionalProperties": true,
+    "properties": {
+     "columns": {
+      "type": "integer"
+     },
+     "hi": {
+      "type": "number"
+     },
+     "lo": {
+      "type": "number"
+     },
+     "traces": {
+      "additionalProperties": true,
+      "properties": {
+       "B": {
+        "items": {
+         "type": "json"
+        },
+        "type": "array"
+       },
+       "G": {
+        "items": {
+         "type": "json"
+        },
+        "type": "array"
+       },
+       "R": {
+        "items": {
+         "type": "json"
+        },
+        "type": "array"
+       }
+      },
+      "type": "object"
+     },
+     "type": {
+      "type": "string"
+     }
+    },
+    "type": "object"
+   }
+  },
+  "type": "object"
+ },
+ "sequence.inspect": {
+  "additionalProperties": true,
+  "properties": {
+   "audio": {
+    "items": {
+     "additionalProperties": true,
+     "properties": {
+      "enabled": {
+       "type": "boolean"
+      },
+      "id": {
+       "type": "integer"
+      },
+      "items": {
+       "items": {
+        "type": "json"
+       },
+       "type": "array"
+      },
+      "locked": {
+       "type": "boolean"
+      },
+      "muted": {
+       "type": "boolean"
+      },
+      "name": {
+       "type": "string"
+      },
+      "solo": {
+       "type": "boolean"
+      },
+      "syncLock": {
+       "type": "boolean"
+      },
+      "transitions": {
+       "items": {
+        "type": "json"
+       },
+       "type": "array"
+      }
+     },
+     "type": "object"
+    },
+    "type": "array"
+   },
+   "duration": {
+    "type": "integer"
+   },
+   "durationFrames": {
+    "type": "integer"
+   },
+   "id": {
+    "type": "integer"
+   },
+   "in": {
+    "type": "json"
+   },
+   "markers": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   },
+   "name": {
+    "type": "string"
+   },
+   "out": {
+    "type": "json"
+   },
+   "playhead": {
+    "type": "json"
+   },
+   "selection": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   },
+   "settings": {
+    "additionalProperties": true,
+    "properties": {
+     "audio_master": {
+      "type": "string"
+     },
+     "color": {
+      "additionalProperties": true,
+      "properties": {
+       "auto_tone_map": {
+        "type": "boolean"
+       },
+       "wide_gamut": {
+        "type": "boolean"
+       },
+       "working": {
+        "type": "string"
+       }
+      },
+      "type": "object"
+     },
+     "drop_frame": {
+      "type": "boolean"
+     },
+     "frame_rate": {
+      "additionalProperties": true,
+      "properties": {
+       "den": {
+        "type": "integer"
+       },
+       "num": {
+        "type": "integer"
+       }
+      },
+      "type": "object"
+     },
+     "height": {
+      "type": "integer"
+     },
+     "max_bit_depth": {
+      "type": "boolean"
+     },
+     "max_render_quality": {
+      "type": "boolean"
+     },
+     "par": {
+      "items": {
+       "type": "integer"
+      },
+      "type": "array"
+     },
+     "preset": {
+      "type": "string"
+     },
+     "preview_codec": {
+      "type": "string"
+     },
+     "sample_rate": {
+      "type": "integer"
+     },
+     "width": {
+      "type": "integer"
+     },
+     "working_space": {
+      "type": "string"
+     }
+    },
+    "type": "object"
+   },
+   "split": {
+    "additionalProperties": true,
+    "properties": {
+     "audioIn": {
+      "type": "json"
+     },
+     "audioOut": {
+      "type": "json"
+     },
+     "videoIn": {
+      "type": "json"
+     },
+     "videoOut": {
+      "type": "json"
+     }
+    },
+    "type": "object"
+   },
+   "video": {
+    "items": {
+     "additionalProperties": true,
+     "properties": {
+      "enabled": {
+       "type": "boolean"
+      },
+      "id": {
+       "type": "integer"
+      },
+      "items": {
+       "items": {
+        "type": "json"
+       },
+       "type": "array"
+      },
+      "locked": {
+       "type": "boolean"
+      },
+      "muted": {
+       "type": "boolean"
+      },
+      "name": {
+       "type": "string"
+      },
+      "solo": {
+       "type": "boolean"
+      },
+      "syncLock": {
+       "type": "boolean"
+      },
+      "transitions": {
+       "items": {
+        "type": "json"
+       },
+       "type": "array"
+      }
+     },
+     "type": "object"
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "sequence.renderBar": {
+  "additionalProperties": true,
+  "properties": {
+   "dir": {
+    "type": "string"
+   },
+   "files": {
+    "type": "integer"
+   },
+   "segments": {
+    "items": {
+     "additionalProperties": true,
+     "properties": {
+      "budgetMs": {
+       "type": "number"
+      },
+      "costMs": {
+       "type": "number"
+      },
+      "end": {
+       "type": "integer"
+      },
+      "endSeconds": {
+       "type": "number"
+      },
+      "frames": {
+       "type": "integer"
+      },
+      "hash": {
+       "type": "string"
+      },
+      "start": {
+       "type": "integer"
+      },
+      "startFrame": {
+       "type": "integer"
+      },
+      "startSeconds": {
+       "type": "number"
+      },
+      "state": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "sequence.throughEdits": {
+  "items": {
+   "type": "json"
+  },
+  "type": "array"
+ },
+ "shortcuts.audit": {
+  "additionalProperties": true,
+  "properties": {
+   "assigned": {
+    "items": {
+     "additionalProperties": true,
+     "properties": {
+      "command": {
+       "type": "string"
+      },
+      "keys": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "type": "array"
+   },
+   "count": {
+    "type": "integer"
+   }
+  },
+  "type": "object"
+ },
+ "shortcuts.conflicts": {
+  "additionalProperties": true,
+  "properties": {
+   "conflicts": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   },
+   "panelOverrides": {
+    "items": {
+     "additionalProperties": true,
+     "properties": {
+      "command": {
+       "type": "string"
+      },
+      "keys": {
+       "type": "string"
+      },
+      "overrides": {
+       "type": "string"
+      },
+      "panel": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "shortcuts.forKey": {
+  "description": "The command's answer",
+  "type": "json"
+ },
+ "shortcuts.get": {
+  "description": "The command's answer",
+  "type": "json"
+ },
+ "shortcuts.list": {
+  "items": {
+   "additionalProperties": true,
+   "properties": {
+    "category": {
+     "type": "string"
+    },
+    "id": {
+     "type": "string"
+    },
+    "label": {
+     "type": "string"
+    },
+    "menu": {
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "shortcuts": {
+     "items": {
+      "additionalProperties": true,
+      "properties": {
+       "display": {
+        "type": "string"
+       },
+       "keys": {
+        "type": "string"
+       },
+       "panel": {
+        "type": "json"
+       }
+      },
+      "type": "object"
+     },
+     "type": "array"
+    }
+   },
+   "type": "object"
+  },
+  "type": "array"
+ },
+ "shortcuts.presets": {
+  "additionalProperties": true,
+  "properties": {
+   "active": {
+    "type": "string"
+   },
+   "builtin": {
+    "items": {
+     "type": "string"
+    },
+    "type": "array"
+   },
+   "canRedo": {
+    "type": "boolean"
+   },
+   "canUndo": {
+    "type": "boolean"
+   },
+   "custom": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   },
+   "modified": {
+    "type": "boolean"
+   }
+  },
+  "type": "object"
+ },
+ "shortcuts.registerExternal": {
+  "description": "The command's answer",
+  "type": "json"
+ },
+ "shortcuts.resolve": {
+  "description": "The command's answer",
+  "type": "json"
+ },
+ "source.inspect": {
+  "additionalProperties": true,
+  "properties": {
+   "item": {
+    "type": "json"
+   }
+  },
+  "type": "object"
+ },
+ "state.inspect": {
+  "additionalProperties": true,
+  "properties": {
+   "active_sequence": {
+    "type": "integer"
+   },
+   "caption_selection": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   },
+   "clip_mixer_modes": {
+    "additionalProperties": true,
+    "properties": {},
+    "type": "object"
+   },
+   "copy_paste_sequence_markers": {
+    "type": "boolean"
+   },
+   "default_audio_transition": {
+    "type": "string"
+   },
+   "default_video_transition": {
+    "type": "string"
+   },
+   "edit_points": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   },
+   "find": {
+    "type": "json"
+   },
+   "graphic_layers": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   },
+   "hidden_marker_colors": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   },
+   "linked_selection": {
+    "type": "boolean"
+   },
+   "multicam_audio_follows_video": {
+    "type": "boolean"
+   },
+   "multicam_view": {
+    "additionalProperties": true,
+    "properties": {
+     "autoQuality": {
+      "type": "boolean"
+     },
+     "layout": {
+      "type": "json"
+     },
+     "page": {
+      "type": "integer"
+     },
+     "showPreview": {
+      "type": "boolean"
+     },
+     "topDown": {
+      "type": "boolean"
+     },
+     "transmit": {
+      "type": "boolean"
+     }
+    },
+    "type": "object"
+   },
+   "open_sequences": {
+    "items": {
+     "type": "integer"
+    },
+    "type": "array"
+   },
+   "playheads": {
+    "additionalProperties": true,
+    "properties": {},
+    "type": "object"
+   },
+   "project_selection": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   },
+   "ripple_sequence_markers": {
+    "type": "boolean"
+   },
+   "selected_mask": {
+    "type": "json"
+   },
+   "selection": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   },
+   "selection_follows_playhead": {
+    "type": "boolean"
+   },
+   "sequences_as_clips": {
+    "type": "boolean"
+   },
+   "show_through_edits": {
+    "type": "boolean"
+   },
+   "snapping": {
+    "type": "boolean"
+   },
+   "source_item": {
+    "type": "json"
+   },
+   "source_playhead": {
+    "type": "integer"
+   },
+   "targeting": {
+    "additionalProperties": true,
+    "properties": {},
+    "type": "object"
+   },
+   "timeline_views": {
+    "additionalProperties": true,
+    "properties": {},
+    "type": "object"
+   },
+   "trim_shift": {
+    "additionalProperties": true,
+    "properties": {
+     "inShift": {
+      "type": "integer"
+     },
+     "outShift": {
+      "type": "integer"
+     }
+    },
+    "type": "object"
+   }
+  },
+  "type": "object"
+ },
+ "transcript.inspect": {
+  "additionalProperties": true,
+  "properties": {
+   "current": {
+    "type": "json"
+   },
+   "items": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   },
+   "paragraphs": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   },
+   "speakers": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   },
+   "words": {
+    "items": {
+     "type": "json"
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "transcript.models": {
+  "additionalProperties": true,
+  "properties": {
+   "available": {
+    "type": "boolean"
+   },
+   "default": {
+    "type": "string"
+   },
+   "dir": {
+    "type": "string"
+   },
+   "models": {
+    "items": {
+     "additionalProperties": true,
+     "properties": {
+      "description": {
+       "type": "string"
+      },
+      "id": {
+       "type": "string"
+      },
+      "installed": {
+       "type": "boolean"
+      },
+      "license": {
+       "type": "string"
+      },
+      "multilingual": {
+       "type": "boolean"
+      },
+      "name": {
+       "type": "string"
+      },
+      "size": {
+       "type": "integer"
+      },
+      "source": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "transcript.search": {
+  "description": "The command's answer",
+  "type": "json"
+ },
+ "trim.monitor": {
+  "additionalProperties": true,
+  "properties": {
+   "active": {
+    "type": "boolean"
+   }
+  },
+  "type": "object"
+ },
+ "trim.tick": {
+  "additionalProperties": true,
+  "properties": {
+   "dynamic": {
+    "type": "json"
+   },
+   "playhead": {
+    "type": "integer"
+   },
+   "playing": {
+    "type": "boolean"
+   }
+  },
+  "type": "object"
+ }
+}

@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-film-repin-snap
+feature: film.agent.premises
+intent: Place Clip with snap holds the sequence markers (and, for beats, the audio clips) it lands on, so a colleague's marker near the time refuses it as changed while another change of the same sequence applies.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin repin fix, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: premises, filter: place_clip_with_snap_needs_the_markers_near_its_time }
+  - cargo-test: { package: kition-film-kit, test: declarations_independent, filter: placement_compare }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

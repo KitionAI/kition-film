@@ -1,0 +1,36 @@
+format: 1
+id: film.agent.act/trim-frames
+feature: film.agent.act
+intent: >-
+  The agent trims a clip to an exact length in frames, choosing the frame parameter (or converting
+  to ticks) rather than seconds; the clip keeps its start.
+layer: eval
+source:
+  kind: synthetic
+  from: repo:conformance/basic.kfilm
+  license: Apache-2.0
+  note: A copy of the conformance project the film engine writes (one 48-frame matte on Video 1, 23.976 fps).
+input: [input/edit.kfilm]
+steps:
+  - task:
+      prompt: >-
+        In edit.kfilm, trim the end of the clip on Video 1 so that it lasts exactly 24 frames.
+      max_turns: 20
+  - inspect: { path: edit.kfilm, as: after }
+expected:
+  - actual: out:after
+    compare: values
+    value:
+      details.sequence.video.0.items.0.durationFrames: 24
+  - actual: out:after
+    compare: values
+    collateral: true
+    value:
+      details.sequence.video.0.items: { count: 1 }
+      details.sequence.video.0.items.0.startFrame: 0
+      details.sequence.video.0.items.0.sourceIn: 0
+solution:
+  - tool: film_run
+    args: { path: edit.kfilm, steps: [{ command: timeline.trim, params: { clip: 9, edge: out, deltaFrames: -24 } }] }
+since: "2026-11-17"
+timeout_s: 600

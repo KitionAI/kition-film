@@ -1,0 +1,24 @@
+format: 1
+id: film.platform.engine-contract-2/replica-room
+feature: film.platform.engine-contract-2
+intent: >-
+  kit.json declares engine contract 2 with the KDM schema the engine's replica uses, and the
+  headless kit serves the replica methods: it opens a sync room with no file, takes and gives
+  changes, saves it, refuses a replica it cannot read instead of opening an empty project, and runs
+  an agent's call as the agent so it undoes in the agent's scope, never the person's.
+layer: gate
+source:
+  kind: synthetic
+  from: bindings/headless/tests/replica.rs
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film
+      test: replica
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+tags: [headless]
+since: "2026-11-17"

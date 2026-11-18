@@ -1,0 +1,21 @@
+format: 1
+id: regressions/issue-c8-film-pin-project-queries
+feature: film.agent.premises
+intent: Project and timeline queries retain their complete candidate containers, including candidates away from the Program playhead and empty sets that can gain a match.
+layer: gate
+dimension: collab
+source:
+  kind: synthetic
+  from: C8-film-pin independent handler comparison
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-kit
+      test: declarations_independent
+      filter: project_queries_compare
+expected:
+  - actual: out:exit
+    compare: exit
+    value: 0
+since: "2026-11-17"

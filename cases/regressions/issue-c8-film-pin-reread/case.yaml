@@ -1,0 +1,16 @@
+format: 1
+id: regressions/issue-c8-film-pin-reread
+feature: film.agent.premises
+intent: Outside file changes retain the observed selection and user preset library; preceding Source steps are planned in isolation before any live write.
+layer: gate
+dimension: ai
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film-kit, test: reread_continuity }
+  - cargo-test: { package: kition-film, test: read_presets_r5 }
+  - cargo-test: { package: kition-film, test: read_label_owners_r5 }
+  - cargo-test: { package: kition-film, test: read_source_r5 }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

@@ -1,0 +1,38 @@
+format: 1
+id: film.agent.observe/gap-in-out
+feature: film.agent.observe
+intent: >-
+  The agent reads where the clips sit on the timeline and marks the black gap between them with the
+  sequence In and Out points, working in the kit's time units (ticks), without moving any clip.
+layer: eval
+source:
+  kind: synthetic
+  from: repo:conformance/check-gap.kfilm
+  license: Apache-2.0
+  note: A copy of the conformance fixture for film.gap (two 48-frame mattes with a 23-frame gap at 23.976 fps), written by the film engine.
+input: [input/cut.kfilm]
+steps:
+  - task:
+      prompt: >-
+        On Video 1 of cut.kfilm there is a gap of black between the two clips. Set the sequence In
+        point where the gap starts and the Out point where it ends. Do not move any clip.
+      max_turns: 20
+  - inspect: { path: cut.kfilm, as: after }
+expected:
+  - actual: out:after
+    compare: values
+    value:
+      details.sequence.in: { approx: 508540032000, tol: 10594584000 }
+      details.sequence.out: { approx: 762048000000, tol: 10594584000 }
+  - actual: out:after
+    compare: values
+    collateral: true
+    value:
+      details.sequence.video.0.items: { count: 2 }
+      details.sequence.video.0.items.0.startFrame: 0
+      details.sequence.video.0.items.1.startFrame: 71
+solution:
+  - tool: film_run
+    args: { path: cut.kfilm, steps: [{ command: markers.markIn, params: { time: 508540032000 } }, { command: markers.markOut, params: { time: 762048000000 } }] }
+since: "2026-11-17"
+timeout_s: 600

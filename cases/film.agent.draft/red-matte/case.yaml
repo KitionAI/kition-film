@@ -1,0 +1,44 @@
+format: 1
+id: film.agent.draft/red-matte
+feature: film.agent.draft
+intent: >-
+  Over two messages the agent adds a clip in a draft for the person to review and then disables it
+  there; the project file keeps its one clip (KHP Recover, A12–A14).
+layer: eval
+source:
+  kind: synthetic
+  from: repo:conformance/basic.kfilm
+  license: Apache-2.0
+  note: A copy of the conformance project the film engine writes (one 48-frame matte on Video 1).
+input: [input/edit.kfilm]
+steps:
+  - task:
+      turns:
+        - >-
+          As a draft for me to review (leave edit.kfilm itself unchanged), make a 1-second red
+          color matte and place it on Video 1 directly after the existing clip.
+        - In the same draft, disable that new clip so it does not play.
+      max_turns: 25
+  - inspect: { path: edit.kfilm, args: { draft: true }, as: draft, missing_ok: true }
+  - inspect: { path: edit.kfilm, as: after }
+expected:
+  - actual: out:draft
+    compare: values
+    value:
+      details.sequence.video.0.items: { count: 2 }
+      details.sequence.video.0.items.1.startFrame: 48
+      details.sequence.video.0.items.1.enabled: false
+      details.sequence.video.0.items.0.enabled: true
+  - actual: out:after
+    compare: values
+    collateral: true
+    value:
+      details.sequence.video.0.items: { count: 1 }
+      details.sequence.video.0.items.0.enabled: true
+solution:
+  - tool: film_run
+    args: { path: edit.kfilm, draft: true, steps: [{ command: file.newColorMatte, params: { color: "#ff0000" } }, { command: source.open, params: {} }, { command: playhead.end, params: {} }, { command: source.overwrite, params: {} }, { command: playhead.set, params: { frame: 72 } }, { command: sequence.addEdit, params: {} }, { command: timeline.selectClipAtPlayhead, params: {} }, { command: edit.clear, params: {} }] }
+  - tool: film_run
+    args: { path: edit.kfilm, draft: true, steps: [{ command: playhead.set, params: { frame: 48 } }, { command: timeline.selectClipAtPlayhead, params: {} }, { command: clip.enable, params: {} }] }
+since: "2026-11-17"
+timeout_s: 600

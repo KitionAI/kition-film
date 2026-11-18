@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-read-graphics
+feature: film.agent.premises
+intent: A graphics command reconciles its edited source instance and preserves divergences in unrelated source graphics.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-read, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_graphics }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

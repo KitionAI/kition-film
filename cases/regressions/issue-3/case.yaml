@@ -1,0 +1,21 @@
+format: 1
+id: regressions/issue-3
+feature: film.graphics.titles
+intent: >-
+  With its fill off, a graphic's Outer stroke draws only the outline outside the shape, as Center
+  and Inner strokes do, instead of filling the whole shape in the stroke colour.
+layer: gate
+source:
+  kind: issue
+  from: Kition Film regression suite
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-engine
+      filter: "outer_stroke_without_fill_draws_only_the_outline"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

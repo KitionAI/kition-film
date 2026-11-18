@@ -1,0 +1,223 @@
+{
+  "kdm": 1,
+  "kit": "kit.film",
+  "schemaVersion": 3,
+  "root": "Project",
+  "types": {
+    "SearchPremises": {
+      "projected": true,
+      "readOnly": true,
+      "fields": {},
+      "derived": {
+        "project": { "description": "Searchable displayed column text and candidate order used by project queries.", "premiseOnly": true }
+      }
+    },
+    "EditorPremises": {
+      "projected": true,
+      "readOnly": true,
+      "fields": {
+        "selection": { "kind": "json" }
+      }
+    },
+    "ItemPremises": {
+      "projected": true,
+      "readOnly": true,
+      "fields": {
+        "items": { "kind": "json" }
+      }
+    },
+    "PremiseFact": {
+      "projected": true,
+      "readOnly": true,
+      "fields": {
+        "key": { "kind": "string", "readOnly": true },
+        "value": { "kind": "json", "optional": true }
+      },
+      "toolId": { "field": "key" }
+    },
+    "Project": {
+      "batchIndependent": true,
+      "batchOps": { "*": { "direct": true } },
+      "derived": {
+        "placementOptions": { "description": "Local media and linked-placement options consumed by compound sound edits.", "premiseOnly": true },
+        "importOptions": { "description": "Local media import, analysis and label options consumed by import dispatch.", "premiseOnly": true },
+        "voiceoverOptions": { "description": "Recording settings, input hardware and active take used by voice-over commands.", "premiseOnly": true },
+        "binNames": { "description": "Distinct child-bin names used to choose an unused default bin name.", "premiseOnly": true },
+        "subclipOptions": { "description": "Still-image duration and unit used for default subclip ranges.", "premiseOnly": true },
+        "itemIds": { "description": "Ordered project item identities selected by Select All Project Items.", "premiseOnly": true },
+        "renameSelection": { "description": "First timeline clip used by an implicit rename.", "premiseOnly": true, "onDemand": true },
+        "interpolationSelection": { "description": "Timeline clips used by implicit time interpolation.", "premiseOnly": true, "onDemand": true },
+        "sequenceCount": { "description": "Number of sequence items used by the unnamed new-sequence default.", "premiseOnly": true },
+        "processedBin": { "description": "Identity of the first root bin named Processed Clips, or null.", "premiseOnly": true },
+        "metadataColumns": { "description": "Canonical project metadata column names, excluding internal layout bookkeeping.", "premiseOnly": true },
+        "fontUses": { "description": "Replace Fonts recipient and assignment facts indexed by canonical family and style.", "premiseOnly": true }
+      },
+      "fields": {
+        "name": { "kind": "string" },
+        "settings": { "kind": "json" },
+        "bins": { "kind": "tree", "of": "Bin" },
+        "docState": { "kind": "json", "optional": true }
+      }
+    },
+    "Bin": {
+      "batchIndependent": true,
+      "batchOps": { "*": { "direct": true } },
+      "derived": {
+        "entryOrder": { "description": "Ordered direct item ids, independent of the items' content.", "premiseOnly": true }
+      },
+      "fields": {
+        "name": { "kind": "string" },
+        "entries": { "kind": "list", "of": "Item" },
+        "binId": { "kind": "integer", "optional": true, "readOnly": true }
+      },
+      "toolId": { "field": "binId" }
+    },
+    "Item": {
+      "batchIndependent": true,
+      "batchOps": { "*": { "direct": true } },
+      "derived": {
+        "clipIds": { "description": "Ordered sequence clip identities selected by Select All.", "premiseOnly": true },
+        "offlineEligible": { "description": "Whether this source resolves to offline media for Edit Offline target selection.", "premiseOnly": true },
+        "audioClipIds": { "description": "Ordered audio clip identities considered for ducking triggers, independent of empty lanes and clip names.", "premiseOnly": true },
+        "cameraMap": { "description": "Effective ordered camera video/audio identities and enabled flags, independent of inferred or explicit representation and display names.", "premiseOnly": true },
+        "sourceStart": { "description": "Source monitor lower bound used by navigation.", "premiseOnly": true },
+        "sourceEnd": { "description": "Source monitor exclusive upper bound used by navigation.", "premiseOnly": true },
+        "sourceRate": { "description": "Source monitor frame rate used by navigation.", "premiseOnly": true },
+        "sourceMarkIn": { "description": "Source monitor In mark used by navigation.", "premiseOnly": true },
+        "sourceMarkOut": { "description": "Source monitor Out mark used by navigation.", "premiseOnly": true },
+        "sourceMedia": { "description": "Resolved Source marker owner identity.", "premiseOnly": true },
+        "sourceMarkerStarts": { "description": "Source marker destinations after filtering a subclip's range.", "premiseOnly": true },
+        "editPoints": { "description": "Sorted unique sequence clip edges used by edit-point navigation.", "premiseOnly": true },
+        "mixerRoutes": { "description": "Pairwise eligibility for a strip to feed a named submix; bounded to mixers with at most 64 ordinary strips, null beyond that cap.", "premiseOnly": true },
+        "metadataVideoReadOnly": { "description": "Whether Video Info and Color Space are read-only metadata for this item.", "premiseOnly": true },
+        "metadataVideoCodecReadOnly": { "description": "Whether Video Codec is read-only metadata for this item.", "premiseOnly": true },
+        "metadataAudioReadOnly": { "description": "Whether Audio Info and Audio Codec are read-only metadata for this item.", "premiseOnly": true },
+        "metadataMarksReadOnly": { "description": "Whether both ordinary marks exist, making In Point and Out Point read-only metadata.", "premiseOnly": true },
+        "parentBin": { "description": "First containing bin used as the merged clip destination, or null.", "premiseOnly": true, "onDemand": true },
+        "projectOrder": { "description": "Index of this item in the bins' depth-first order, which Automate to Sequence's sort ordering reads, independent of the items' content.", "premiseOnly": true },
+        "sourceGraphic": { "description": "This source item's shared graphic definition and sorted recipient clip identities.", "premiseOnly": true },
+        "sourceGraphicDefinition": { "description": "Shared layers and graphic metadata copied into a newly placed video clip, without recipient identities.", "premiseOnly": true },
+        "sourceAudioPlacement": { "description": "Effective audio stream/channel placements computed by the shared command planner, empty for silent media and null for nonmedia.", "premiseOnly": true },
+        "newSequenceVideoMaterial": { "description": "Copied video clip and transition identities by nonempty lane over a new sequence source’s full duration, independent of monitor marks.", "premiseOnly": true },
+        "newSequenceAudioMaterial": { "description": "Copied audio clip and transition identities by nonempty lane over a new sequence source’s full duration, independent of monitor marks.", "premiseOnly": true },
+        "sourceHasAudio": { "description": "Whether a sequence source has any audio track (nest placement capability).", "premiseOnly": true },
+        "sourceVideoMaterial": { "description": "Copied video clip and transition identities by nonempty Source lane in its actual marked/split copy range.", "premiseOnly": true },
+        "sourceAudioMaterial": { "description": "Copied audio clip and transition identities by nonempty Source lane in its actual marked/split copy range.", "premiseOnly": true },
+        "allJoinPlan": { "description": "Survivors, removed pieces and affected transition identities of every unlocked through join.", "premiseOnly": true },
+        "captionTrackOrder": { "description": "Ordered caption track identities, without descendant caption content.", "premiseOnly": true },
+        "captionTrackCount": { "description": "Number of caption tracks used by the ordinal returned for a newly appended track.", "premiseOnly": true },
+        "videoTrackOrder": { "description": "Ordered video track identities, without audio tracks or descendant content.", "premiseOnly": true },
+        "videoTrackNames": { "description": "Outside name assignments to video lanes observed at the checkpoint.", "premiseOnly": true, "onDemand": true },
+        "audioTrackNames": { "description": "Outside name assignments to audio lanes observed at the checkpoint.", "premiseOnly": true, "onDemand": true },
+        "submixTrackNames": { "description": "Outside name assignments to submix lanes observed at the checkpoint.", "premiseOnly": true, "onDemand": true },
+        "audioTrackOrder": { "description": "Ordered audio track identities, without video tracks or descendant content.", "premiseOnly": true },
+        "submixTrackOrder": { "description": "Ordered submix track identities, without other tracks or descendant content.", "premiseOnly": true },
+        "markedMaterial": { "description": "Track and clip identities intersecting stored inclusive In/Out marks, excluding empty tracks.", "premiseOnly": true },
+        "markedCaptionMaterial": { "description": "Caption identities consumed by Extract's stored marked range.", "premiseOnly": true },
+        "motionScale": { "description": "Video clip Motion parameters and refit switches consumed by proportional frame-size scaling.", "premiseOnly": true }
+      },
+      "fields": {
+        "kind": { "kind": "enum", "values": ["media", "sequence", "subclip", "adjustment", "graphic"], "sample": false },
+        "name": { "kind": "string" },
+        "props": { "kind": "json", "optional": true },
+        "sequence": { "kind": "ref", "of": "Sequence", "optional": true, "owns": true },
+        "itemId": { "kind": "integer", "optional": true, "readOnly": true }
+      },
+      "toolId": { "field": "itemId" }
+    },
+    "Sequence": {
+      "batchIndependent": true,
+      "batchOps": { "*": { "direct": true } },
+      "fields": {
+        "settings": { "kind": "json" },
+        "duration": { "kind": "string", "optional": true, "readOnly": true, "position": true },
+        "videoTracks": { "kind": "list", "of": "Track" },
+        "audioTracks": { "kind": "list", "of": "Track" },
+        "submixTracks": { "kind": "list", "of": "Track" },
+        "captionTracks": { "kind": "json", "optional": true },
+        "markers": { "kind": "json", "optional": true },
+        "mixer": { "kind": "json", "optional": true },
+        "masterVolumeDb": { "kind": "number", "optional": true, "minimum": -96, "maximum": 15 }
+      }
+    },
+    "Track": {
+      "batchIndependent": true,
+      "batchOps": { "*": { "direct": true } },
+      "derived": {
+        "submixDependants": { "description": "Strip identities and send positions that a submix deletion reroutes or removes.", "premiseOnly": true },
+        "joinLock": { "description": "Lock eligibility used by historical through-join membership.", "premiseOnly": true },
+        "nextVideoTrack": { "description": "Identity of this video track’s next video sibling, or null; independent of tracks before it and clip content.", "premiseOnly": true },
+        "nextAudioTrack": { "description": "Identity of this audio track’s next audio sibling, or null; independent of tracks before it and clip content.", "premiseOnly": true },
+        "clipOrder": { "description": "Ordered direct clip ids, without descendant content.", "premiseOnly": true },
+        "editEdges": { "description": "Ordered clip identities, starts and durations searched by geometry edits, without appearance.", "premiseOnly": true },
+        "editPoints": { "description": "Sorted unique track clip edges used by targeted edit-point navigation.", "premiseOnly": true }
+      },
+      "fields": {
+        "props": { "kind": "json", "optional": true },
+        "volumeDb": { "kind": "number", "optional": true, "minimum": -96, "maximum": 15 },
+        "pan": { "kind": "number", "optional": true, "minimum": -100, "maximum": 100 },
+        "effects": { "kind": "list", "of": "Effect" },
+        "clips": { "kind": "list", "of": "Clip" },
+        "transitions": { "kind": "list", "of": "Transition" },
+        "trackId": { "kind": "integer", "optional": true, "readOnly": true }
+      },
+      "toolId": { "field": "trackId" },
+      "label": "props.name"
+    },
+    "Clip": {
+      "batchIndependent": true,
+      "batchOps": { "*": { "direct": true } },
+      "derived": {
+        "joinInput": { "description": "Bounded predicate values and owner used to reconstruct historical through-join recipients.", "premiseOnly": true },
+        "assignedStart": { "description": "Start assigned by a command, held as content for same-field protection.", "premiseOnly": true },
+        "singleJoinPlan": { "description": "Survivor, removed pieces and affected transition identities for a single named through join.", "premiseOnly": true },
+        "linkedGroup": { "description": "Least recipient clip id representing this clip's linked group, or null.", "premiseOnly": true },
+        "linkedMembers": { "description": "Sorted recipient ids on the group's least clip id; null on other clips.", "premiseOnly": true }
+      },
+      "fields": {
+        "item": { "kind": "ref", "of": "Item", "optional": true },
+        "missingItem": { "kind": "integer", "optional": true, "readOnly": true },
+        "start": { "kind": "string", "position": true, "display": { "kind": "time", "perSecond": 254016000000 } },
+        "duration": { "kind": "string", "position": true, "display": { "kind": "time", "perSecond": 254016000000 } },
+        "sourceIn": { "kind": "string", "display": { "kind": "time", "perSecond": 254016000000 } },
+        "speed": { "kind": "number", "minimum": 0 },
+        "reverse": { "kind": "boolean" },
+        "link": { "kind": "string", "optional": true },
+        "group": { "kind": "string", "optional": true },
+        "gain": { "kind": "json", "optional": true },
+        "markers": { "kind": "json", "optional": true },
+        "props": { "kind": "json", "optional": true },
+        "effects": { "kind": "list", "of": "Effect" },
+        "clipId": { "kind": "integer", "optional": true, "readOnly": true, "position": true }
+      },
+      "toolId": { "field": "clipId" },
+      "label": "props.name"
+    },
+    "Effect": {
+      "batchIndependent": true,
+      "batchOps": { "*": { "direct": true } },
+      "fields": {
+        "def": { "kind": "string", "readOnly": true, "sample": false },
+        "params": { "kind": "json", "optional": true }
+      }
+    },
+    "Transition": {
+      "batchIndependent": true,
+      "batchOps": { "*": { "direct": true } },
+      "derived": {
+        "assignedStart": { "description": "Start assigned by a command, held as content for same-field protection.", "premiseOnly": true }
+      },
+      "fields": {
+        "effect": { "kind": "ref", "of": "Effect", "owns": true },
+        "start": { "kind": "string", "position": true },
+        "duration": { "kind": "string", "position": true },
+        "from": { "kind": "ref", "of": "Clip", "optional": true },
+        "to": { "kind": "ref", "of": "Clip", "optional": true },
+        "align": { "kind": "string" },
+        "reverse": { "kind": "boolean" },
+        "transitionId": { "kind": "integer", "optional": true, "readOnly": true }
+      },
+      "toolId": { "field": "transitionId" }
+    }
+  }
+}

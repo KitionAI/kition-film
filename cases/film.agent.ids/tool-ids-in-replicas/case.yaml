@@ -1,0 +1,22 @@
+format: 1
+id: film.agent.ids/tool-ids-in-replicas
+feature: film.agent.ids
+intent: >-
+  Each object's tool id field holds the engine's id, a replica reads every object with it, and the
+  post-merge repair numbers an object a batch or a collaborator created without one, or two that
+  share one, the same on every replica.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/kdm/kdm-model/tests/tool_ids.rs
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kdm-model
+      test: tool_ids
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

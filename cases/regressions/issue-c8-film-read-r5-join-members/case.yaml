@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-read-r5-join-members
+feature: film.agent.premises
+intent: All-track and multiple-target through joins refuse after an observed recipient departs and allow distant name changes.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-read, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_join_r5 }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

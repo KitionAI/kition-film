@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-read-r5-editor-bindings
+feature: film.agent.premises
+intent: Editor dependency projection follows function callbacks and does not treat local values with handler names as callbacks.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-read, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film-kit, test: acts, filter: scanner_distinguishes_local_values_and_function_pointer_callbacks }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

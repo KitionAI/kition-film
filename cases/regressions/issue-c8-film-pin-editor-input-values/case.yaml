@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-pin-editor-input-values
+feature: film.agent.premises
+intent: Consumed trim edges, clipboard contents and Find cursor values are represented in their declared editor input classes.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film-kit, test: editor_inputs_pin }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

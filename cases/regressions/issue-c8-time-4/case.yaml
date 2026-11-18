@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-time-4
+feature: film.agent.premises
+intent: Missing sources remain readable and relink honestly, receipts include owned deletions and chronological order, caption-track and automation premises exclude unrelated edits, and incompatible clip moves and effect definition swaps are refused.
+layer: gate
+source: { kind: synthetic, from: bindings/headless/tests/time4.rs, license: Apache-2.0 }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: time4 }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"
+timeout_s: 60

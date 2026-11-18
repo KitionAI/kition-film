@@ -1,0 +1,15 @@
+format: 1
+id: regressions/issue-c8-film-repin-automate
+feature: film.agent.premises
+intent: Automate to Sequence holds the bins' order of its items (not the bins' items), the default transitions only when it applies them, and the sync-locked caption tracks its marker inserts shift; a colleague's caption added after a marker refuses it as changed.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin repin fix, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: premises, filter: automate }
+  - cargo-test: { package: kition-film, test: time4, filter: automation }
+  - cargo-test: { package: kition-film-kit, test: declarations_independent, filter: placement_compare }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

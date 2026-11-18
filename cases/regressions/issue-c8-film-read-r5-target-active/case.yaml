@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-read-r5-target-active
+feature: film.agent.premises
+intent: Editor dependency projection classifies track targeting as Active input and follows its callers.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-read, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film-kit, test: acts, filter: scanner_classifies_track_targeting_as_active_input }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

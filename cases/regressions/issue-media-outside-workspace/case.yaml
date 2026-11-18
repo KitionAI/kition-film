@@ -1,0 +1,28 @@
+format: 1
+id: regressions/issue-media-outside-workspace
+feature: film.media.management
+intent: >-
+  A project names its media by path, and a project file is the agent's data: media it names
+  outside the workspace (an absolute path, or one that climbs out with ..) is read from nowhere.
+  The host does not lend it, film_check reports the clip as film.missing-media, and the program
+  shows the offline slate, never the outside picture; media inside the workspace is read through
+  the host and shown (KHP A29, A21).
+layer: gate
+tags: [headless, security]
+source:
+  kind: probe
+  from: workspace-escape audit (film section)
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film
+      test: workspace_only
+  - cargo-test:
+      package: kition-film-kit
+      test: checks
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

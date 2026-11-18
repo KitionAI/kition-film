@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-pin-direct-move
+feature: film.agent.premises
+intent: Named moves retain linked recipient membership, source and destination kinds, and ordinal destination addresses.
+layer: gate
+dimension: collab
+source: {kind: synthetic, from: C8-film-pin independent Move Clips review, license: owned}
+input: []
+steps:
+  - cargo-test: {package: kition-film-kit, test: declarations_independent, filter: direct_move_compare}
+expected:
+  - {actual: out:exit, compare: exit, value: 0}
+since: "2026-11-17"

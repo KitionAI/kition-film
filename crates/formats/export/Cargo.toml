@@ -1,0 +1,38 @@
+[package]
+name = "kition-film-export"
+description = "Export pipeline: parallel render → encode → mux, presets, progress/cancel"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+kition-film-time = { workspace = true }
+kition-film-frame = { workspace = true }
+kition-film-color = { workspace = true }
+kition-film-media = { workspace = true }
+kition-film-project = { workspace = true }
+kition-film-render = { workspace = true }
+kition-film-audio-dsp = { workspace = true }
+kition-film-geom = { workspace = true }
+kition-film-text = { workspace = true }
+kition-film-isobmff = { workspace = true }
+kition-film-prores = { workspace = true }
+kition-film-dnx = { workspace = true }
+kition-film-apv = { workspace = true }
+kition-film-mxf = { workspace = true }
+kition-film-aac = { workspace = true }
+kition-film-h264enc = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+rayon = { workspace = true }
+web-time = "1"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "tiff", "bmp"] }
+
+[dev-dependencies]
+kition-film-testkit = { workspace = true }
+kition-film-codecs = { workspace = true }

@@ -1,0 +1,8 @@
+asset:        basic.png
+title:        Expected preview of conformance/basic.kfilm (basic)
+author:       Kition contributors
+source:       Rendered by bindings/wasm/examples/checks.rs with this kit's own engine (a solid colour matte)
+license:      Apache-2.0
+license-file: LICENSE
+added:        2026-11-17 by Claude (agent)
+notes:        KHP conformance golden for khp check (phase 7); regenerate with the example.

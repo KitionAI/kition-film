@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-18
+feature: film.markers.basics
+intent: >-
+  A marker reads back in the marker colour it was given (Red, Orange, Cyan, not the label names
+  Rose, Mango, Teal for the same colours); a label colour that is no marker colour (Violet) reads
+  back as its label name, and the editor's colour choices use the same marker names.
+layer: gate
+source:
+  kind: issue
+  from: Kition Film regression suite
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-film-kit, test: marker_colours }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

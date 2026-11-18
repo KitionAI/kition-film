@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-agent-state-refresh
+feature: film.agent.act
+intent: >-
+  A preference or an editor-state change an agent's step makes (Metadata Display's columns, the
+  Project panel's selection) makes no revision, yet must change what `inspect` answers, so the
+  editor hears of it: its panels redraw, its other pages get the preference, and its dialogs open
+  on the agent's selection.
+layer: gate
+source:
+  kind: probe
+  from: kition-film web/tests/flow.mjs (project.columns.set, guide templates across pages, Update Metadata, Info after project.select)
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-kit
+      filter: "inspect_answers"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

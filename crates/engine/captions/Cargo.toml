@@ -1,0 +1,21 @@
+[package]
+name = "kition-film-captions"
+description = "Kition Film captions: SRT, WebVTT, SCC, MCC, EBU STL and TTML/IMSC1/DFXP import/export, caption layout and burn-in rasterisation"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+kition-film-time = { workspace = true }
+kition-film-color = { workspace = true }
+kition-film-project = { workspace = true }
+kition-film-text = { workspace = true }
+thiserror = { workspace = true }
+roxmltree = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }

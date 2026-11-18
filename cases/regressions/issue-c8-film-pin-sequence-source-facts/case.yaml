@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-film-pin-sequence-source-facts
+feature: film.agent.premises
+intent: A later subclip source holds copied stored fields and inherited dimensions without holding its parent's unused navigation rate.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_new_sequence_r5, filter: sequence_from_clip_holds_parent_placement_and_only_the_first_inherited_rate }
+  - cargo-test: { package: kition-film-kit, test: declarations_independent, filter: later_subclip_parent_dimensions_do_not_hold_its_unused_rate }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

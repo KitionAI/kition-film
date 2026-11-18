@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-read-r4-membership-size
+feature: film.agent.premises
+intent: Linear-sized linked and through-edit chains do not create quadratic-sized dependency snapshots.
+layer: gate
+dimension: robustness
+source: { kind: synthetic, from: C8-film-read, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_membership_size_r4 }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

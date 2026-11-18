@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-film-pin-project-sources
+feature: film.agent.premises
+intent: Subclip defaults retain the selected timeline clip and resolved media ancestry; unnamed bins retain names used to choose the next free name.
+layer: gate
+dimension: collab
+source: {kind: synthetic, from: C8-film-pin independent project source comparison, license: owned}
+input: []
+steps:
+  - cargo-test: {package: kition-film-kit, test: declarations_independent, filter: project_sources_compare}
+  - cargo-test: {package: kition-film, test: read_project_sources_pin}
+expected:
+  - {actual: out:exit, compare: exit, value: 0}
+since: "2026-11-17"

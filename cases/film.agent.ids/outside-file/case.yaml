@@ -1,0 +1,25 @@
+format: 1
+id: film.agent.ids/outside-file
+feature: film.agent.ids
+intent: >-
+  A colleague's program changes the .kfilm file between the agent's inspect and its write: an
+  unrelated clip's change applies and is named alone in others; the target's change is refused
+  changed; a ripple insert before the target refuses it as relocated; its deletion as deleted; a
+  file saved again unchanged is no change; epoch and off modes; 50 unrelated changes refuse 0
+  writes under premise and 50 under epoch. Writes by time are guarded by their place
+  (film.agent.places).
+layer: gate
+source:
+  kind: synthetic
+  from: bindings/headless/tests/outside.rs
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film
+      test: outside
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

@@ -1,0 +1,15 @@
+format: 1
+id: regressions/issue-c8-film-pin-fact-projection
+feature: film.agent.premises
+intent: An absent following graphic remains a valid nullable fact, and deleting a sequence receipts only its public owned objects while literal arrangement holds retain their exact scope.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_graphics }
+  - cargo-test: { package: kition-film, test: time4, filter: deleting_a_sequence_receipts_every_owned_track_and_clip }
+  - cargo-test: { package: kition-film, test: read_arrangement_keys_pin }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

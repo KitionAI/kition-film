@@ -1,0 +1,16 @@
+format: 1
+id: regressions/issue-c8-film-repin-scan-and-range
+feature: film.agent.premises
+intent: Apply Transition at a time holds the lanes before its cut rather than the whole lane order, Lift and Extract hold the transitions of lanes with material, and Extract holds its captions by identity, so empty lanes apply and caption changes refuse as changed.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin repin fix, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: premises, filter: transition_at_a_time_holds_the_lanes_before_its_cut_not_the_lane_order }
+  - cargo-test: { package: kition-film, test: time5 }
+  - cargo-test: { package: kition-film-kit, test: declarations_independent, filter: range_gap_compare }
+  - cargo-test: { package: kition-film-kit, test: declarations_independent, filter: transition_creation_compare }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

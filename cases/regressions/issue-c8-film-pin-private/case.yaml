@@ -1,0 +1,15 @@
+format: 1
+id: regressions/issue-c8-film-pin-private
+feature: film.agent.premises
+intent: Private dependency facts protect writes without appearing as public receipt changes, while ripple receipts retain their duration and shift results.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: ids }
+  - cargo-test: { package: kition-film, test: outside }
+  - cargo-test: { package: kition-film, test: land13_model }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

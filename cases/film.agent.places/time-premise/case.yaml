@@ -1,0 +1,34 @@
+format: 1
+id: film.agent.places/time-premise
+feature: film.agent.places
+intent: >-
+  A step that names no clip and acts at a time and on tracks (a razor cut, Add Edit, select the
+  clip at the playhead, an insert or overwrite, a marker) answers what is under that place
+  (context.under), as a span over the clips' start and duration that the guard replays: after a
+  colleague's ripple insert before the time it is refused as relocated, naming the clip under the
+  place now and where the clip seen there went; after a change after that time, next to it or on
+  another track it applies; after a slip of the clip under it, refused as changed. A write by id
+  that does not depend on where its clip is (clip.enable, an effect parameter with no time on an
+  unanimated clip) applies after a move, with the shift in one footprint; one that does (a cut of
+  that clip) is refused relocated. Fifty unrelated changes refuse no write by time, by id or by
+  `on` under premise and every one under epoch; a mixed fifty-round run and ten rounds each of a
+  slip, an uncovering trim and an overwrite of the clip under the time print, per change and
+  write, what applied and which refusals were necessary.
+layer: gate
+source:
+  kind: synthetic
+  from: bindings/wasm/tests/places.rs
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-kit
+      test: places
+  - cargo-test:
+      package: kition-film
+      test: outside
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

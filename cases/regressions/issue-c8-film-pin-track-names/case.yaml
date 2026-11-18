@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-film-pin-track-names
+feature: film.agent.premises
+intent: Renumbering holds names from the observed checkpoint and the destination gap while allowing a distant newly appended lane.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: land13_positions }
+  - cargo-test: { package: kition-film, test: read_pin_sdk, filter: track_renumbering_guards_observed_names_and_rebases_a_distant_append }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

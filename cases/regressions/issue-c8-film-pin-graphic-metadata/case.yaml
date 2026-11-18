@@ -1,0 +1,21 @@
+format: 1
+id: regressions/issue-c8-film-pin-graphic-metadata
+feature: film.agent.premises
+intent: Graphic metadata duration inputs retain the sequence rate when specified in frames, alongside template controls and shared graphic recipients.
+layer: gate
+dimension: collab
+source:
+  kind: synthetic
+  from: C8-film-pin independent handler comparison
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-kit
+      test: declarations_independent
+      filter: graphic_metadata_compare
+expected:
+  - actual: out:exit
+    compare: exit
+    value: 0
+since: "2026-11-17"

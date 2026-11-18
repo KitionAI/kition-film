@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-pin-geometry-marks
+feature: film.agent.premises
+intent: Mark Clip and Mark Selection refuse another writer's changes to the In and Out marks they assign.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_navigation_pin, filter: marking_clip_and_selection_preserves_same_field_protection }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

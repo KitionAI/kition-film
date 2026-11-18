@@ -1,0 +1,23 @@
+format: 1
+id: film.agent.context/reads-declared
+feature: film.agent.context
+intent: >-
+  Every command declares the editor state it reads (`reads`: selection, part, time) as its code
+  reads it: a scan follows each command's definition through the engine's functions, Session
+  methods, macros and the commands it runs to the selections, the open sequence and the
+  playheads, and fails on any difference with the declarations.
+layer: gate
+source:
+  kind: synthetic
+  from: bindings/wasm/tests/acts.rs
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-kit
+      test: acts
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

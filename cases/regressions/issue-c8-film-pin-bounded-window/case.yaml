@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-pin-bounded-window
+feature: film.agent.premises
+intent: Non-ripple neighbour dependencies use the same bounded ordinal and historical time window, allowing distant later placements.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: land13, filter: non_ripple_speed_does_not_hold_distant_later_placements }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

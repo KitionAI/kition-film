@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-read-r5-mode-scan
+feature: film.agent.premises
+intent: The editor-input scan traces restored timeline, marker and multicamera switches as Mode reads through handlers and eligibility checks.
+layer: gate
+dimension: ai
+source: { kind: synthetic, from: C8-film-read, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film-kit, test: acts, filter: scanner_classifies_restored_timeline_marker_and_camera_switches_as_mode }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

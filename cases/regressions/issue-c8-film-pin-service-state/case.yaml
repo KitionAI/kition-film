@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-pin-service-state
+feature: film.agent.premises
+intent: Local service commands declare their consumed editor state, including shortcut revisions, queued snapshots and export favorites, without holding unrelated Program material.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film-kit, test: declarations_independent, filter: service }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

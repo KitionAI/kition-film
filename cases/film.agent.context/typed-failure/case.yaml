@@ -1,0 +1,22 @@
+format: 1
+id: film.agent.context/typed-failure
+feature: film.agent.context
+intent: >-
+  An unknown command, a command that cannot run now, wrong or unknown parameters and a call
+  context the project lacks carry their reason typed (kition_kit::failure), so a host answers
+  command_not_found, command_disabled or invalid_params without reading the wording.
+layer: gate
+source:
+  kind: synthetic
+  from: bindings/wasm/tests/typed_failure.rs
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-kit
+      test: typed_failure
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-pin-camera-recording
+feature: film.agent.premises
+intent: Live camera switching retains the effective source map used to resolve an angle while permitting display-name changes.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_multicam_pin, filter: live_camera_switch_retains_its_source_map }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

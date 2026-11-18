@@ -1,0 +1,28 @@
+format: 1
+id: film.agent.premises/call-premises
+feature: film.agent.premises
+intent: >-
+  Each command family whose premise the kit states (kition_film_engine::premise) is refused for a
+  colleague's change inside it and applies after one outside it: an effect parameter by clip id
+  with no time (effects; a ripple insert applies, but not on an animated clip), keyframe edits by
+  mediaTime, clip.enable (enabled and links), clip.rename (name), caption and marker edits (their
+  path in the sequence's item), Add Edit to All Tracks (captions), Place Clip with snap (markers).
+  A cut at a place is refused after a slip of the clip under it, a trim that uncovers the time or
+  a clip placed over it, and applies after a trim that leaves it covered or a change next to it.
+  Automate to Sequence by items and caption or marker writes after a change of any clip are
+  pinned where the guard is still wrong.
+layer: gate
+source:
+  kind: synthetic
+  from: bindings/headless/tests/premises.rs
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film
+      test: premises
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

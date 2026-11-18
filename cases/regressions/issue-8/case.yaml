@@ -1,0 +1,21 @@
+format: 1
+id: regressions/issue-8
+feature: film.captions.edit
+intent: >-
+  A new caption track goes after the existing ones, so C1 stays the track it was; a caption's In
+  and Out given in seconds both land on the frame that shows their time, snapped the same way.
+layer: gate
+source:
+  kind: issue
+  from: Kition Film regression suite
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-engine
+      filter: "new_caption_track_keeps_labels_and_times_snap_to_frames"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

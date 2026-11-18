@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-pin-trim-targets
+feature: film.agent.premises
+intent: Trim point selection holds its named identity and nearest-edge candidate geometry, including targeted and empty-track branches.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film-kit, test: declarations_independent, filter: trim_paths_compare }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

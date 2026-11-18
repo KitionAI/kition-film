@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-film-pin-attribute-stream
+feature: film.agent.premises
+intent: Paste Attributes retains the track kind and owner used to choose its clipboard stream, alongside linked recipients and copied effect timing inputs.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film-kit, test: declarations_independent, filter: attributes_and_replacements_compare_links_stream_eligibility_source_routes_and_parameter_masks }
+  - cargo-test: { package: kition-film, test: read_attribute_stream_pin }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

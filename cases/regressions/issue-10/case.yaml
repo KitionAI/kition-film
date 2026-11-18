@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-10
+feature: film.agent.observe
+intent: >-
+  sequence.inspect and the document's inspect answer effect parameter values as JSON (numbers, [x,
+  y], #rrggbb, choice indexes with their option name) instead of Rust Debug text, each keyframe
+  with its media and sequence time, value and interpolation, frame-hold segments as frame holds,
+  and each audio track's volume and pan.
+layer: gate
+source:
+  kind: issue
+  from: Kition Film regression suite
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-engine
+      filter: "inspect_answers_json_values_keyframes_holds_and_track_mix"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

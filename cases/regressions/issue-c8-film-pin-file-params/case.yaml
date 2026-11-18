@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-pin-file-params
+feature: film.agent.premises
+intent: Excluded host file commands validate unknown parameters before reporting their agent dispatch barrier, without running the handler.
+layer: gate
+dimension: robustness
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film-kit, test: unknown_params }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

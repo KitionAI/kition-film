@@ -1,0 +1,19 @@
+format: 1
+id: film.timeline.basics/save-reopen
+feature: film.timeline.basics
+intent: >-
+  Razor cuts, trims, track settings, clip names and speed survive saving and reopening: a new project edited only with engine commands is saved as .kfilm, reopened and
+  compared whole (project, active sequence, graphic layers, mixer, program frames), and a second
+  save reopens the same.
+layer: unit
+source:
+  kind: synthetic
+  from: bindings/wasm/tests/round_trip.rs (tracks_and_clips_survive_save_and_reopen)
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: kition-film-kit, test: round_trip, filter: tracks_and_clips_survive_save_and_reopen }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-17"

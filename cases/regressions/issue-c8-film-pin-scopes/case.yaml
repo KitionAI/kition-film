@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-pin-scopes
+feature: film.agent.premises
+intent: Explicit target forms avoid selection holds, implicit targets retain observed selection, and track insertion holds only names observed at the checkpoint, including intermediate assignments.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_pin_scopes }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

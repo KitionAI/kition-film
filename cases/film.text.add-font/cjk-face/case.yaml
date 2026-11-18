@@ -1,0 +1,26 @@
+format: 1
+id: film.text.add-font/cjk-face
+feature: film.text.add-font
+intent: >-
+  A program running the WebAssembly engine (which has no system fonts) adds a font file's faces
+  with addFont, so titles and burned-in captions in Chinese can name that family and fall back to
+  it; bytes that are not a font add nothing and raise no error.
+layer: gate
+source:
+  kind: synthetic
+  from: bindings/wasm/src/lib.rs
+  license: Apache-2.0
+  note: >-
+    The test reads Droid Sans Fallback (Apache-2.0) from a kition-fonts checkout beside this
+    repository when there is one; no font file is copied into the case.
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-kit
+      filter: tests::takes_a_font_for_text_its_bundled_faces_do_not_cover
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+tags: [cjk]
+since: "2026-11-17"

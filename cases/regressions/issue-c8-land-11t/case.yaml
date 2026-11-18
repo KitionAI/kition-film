@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-land-11t
+feature: film.agent.premises
+intent: Nested ids and mixer references hold their resolved objects, moves hold their destinations and affected transitions and captions, batch bounds and stored precision agree with the file, and caption and automation premises describe the observed target.
+layer: gate
+source: { kind: synthetic, from: bindings/headless/tests/land11.rs, license: Apache-2.0 }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: land11 }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"
+timeout_s: 60

@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-read-r3-effects
+feature: film.agent.premises
+intent: Linked audio, source graphic peers, mixer dependencies and automation defaults are held while unrelated fields survive.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-read, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_effects_r3 }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

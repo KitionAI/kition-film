@@ -1,0 +1,21 @@
+format: 1
+id: regressions/issue-c8-film-pin-root-actions
+feature: film.agent.premises
+intent: Whole-project serialization and replacement retain every observed field, including content outside the Program playhead.
+layer: gate
+dimension: collab
+source:
+  kind: synthetic
+  from: C8-film-pin independent handler comparison
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-kit
+      test: declarations_independent
+      filter: root_actions_compare
+expected:
+  - actual: out:exit
+    compare: exit
+    value: 0
+since: "2026-11-17"

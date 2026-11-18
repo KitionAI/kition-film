@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-read-r3-media
+feature: film.agent.premises
+intent: Implicit freeform card writes hold computed sibling geometry and named arrangements; geometric presets hold source dimensions and allow unrelated names.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-read, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_media_r3 }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-read-r5-marker-modes
+feature: film.agent.premises
+intent: Marker, timeline-follow and multicamera switches are restored after an agent run, as live user toggles verify.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-read, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_modes_r5, filter: agent_runs_restore_marker_and_multicamera_switches }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

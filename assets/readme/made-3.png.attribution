@@ -1,0 +1,8 @@
+asset:        made-3.png
+title:        README picture: the showcase sample neon-glitch-stream-intro
+author:       The Kition authors
+source:       Rendered by Kition Film from the showcase sample neon-glitch-stream-intro (its thumb.png in kition-showcase)
+license:      Apache-2.0
+license-file: LICENSE
+added:        2026-11-17 by the Kition authors
+notes:        Copied unchanged from kition-showcase film/neon-glitch-stream-intro/thumb.png. The pictures in it are the kit's procedural demo footage (crates/media/media/src/generators.rs) and the sample's titles; no third-party media.

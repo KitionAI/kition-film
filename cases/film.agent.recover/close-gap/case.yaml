@@ -1,0 +1,42 @@
+format: 1
+id: film.agent.recover/close-gap
+feature: film.agent.recover
+intent: >-
+  The agent runs the kit's check, which reports a gap of black, and closes it by moving the later
+  clip up (ripple), keeping both clips at their full length (KHP Verify).
+layer: eval
+source:
+  kind: synthetic
+  from: repo:conformance/check-gap.kfilm
+  license: Apache-2.0
+  note: A copy of the conformance fixture for film.gap, written by the film engine.
+input: [input/cut.kfilm]
+steps:
+  - task:
+      prompt: >-
+        Run the kit's check on cut.kfilm and fix what it reports. Keep both clips at their full
+        length.
+      max_turns: 20
+  - inspect: { path: cut.kfilm, as: after }
+  - check: { path: cut.kfilm, as: diagnostics }
+expected:
+  - actual: out:diagnostics
+    compare: diagnostics
+    value: { absent: [film.gap], max_errors: 0 }
+  - actual: out:after
+    compare: values
+    value:
+      details.sequence.video.0.items.1.startFrame: 48
+  - actual: out:after
+    compare: values
+    collateral: true
+    value:
+      details.sequence.video.0.items: { count: 2 }
+      details.sequence.video.0.items.0.startFrame: 0
+      details.sequence.video.0.items.0.durationFrames: 48
+      details.sequence.video.0.items.1.durationFrames: 48
+solution:
+  - tool: film_run
+    args: { path: cut.kfilm, steps: [{ command: sequence.closeGap, params: { time: 508540032000, track: V1 } }] }
+since: "2026-11-17"
+timeout_s: 600

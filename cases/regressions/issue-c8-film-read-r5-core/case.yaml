@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-film-read-r5-core
+feature: film.agent.premises
+intent: Project replacement, inherited offline-file defaults, Source mark assignment and linked nesting hold their consumed or assigned facts and permit unrelated changes.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-read, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_core_r5 }
+  - cargo-test: { package: kition-film, test: outside, filter: s5_a_cut_at_a_time_naming_its_clip_is_refused_when_the_clip_moved_and_applies_when_it_stayed }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

@@ -1,0 +1,23 @@
+[package]
+name = "kdm-model"
+description = "Bridges the Film engine's Project to a kit.film KDM replica (kition-sdk session)."
+version.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+rust-version.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+kition-kit = { workspace = true, features = ["session"] }
+kition-film-time = { workspace = true }
+kition-film-media = { workspace = true }
+kition-film-project = { workspace = true }
+kition-film-format = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+kition-film-media = { workspace = true }

@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-read-r4-derived
+feature: film.agent.premises
+intent: Video-track insertion holds its own ordered membership and permits an audio-only membership change.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-read, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_derived_r4, filter: per_track_kind_membership_does_not_hold_other_track_kinds }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

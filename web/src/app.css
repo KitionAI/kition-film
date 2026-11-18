@@ -1,0 +1,4045 @@
+/* The Film editor's own layout; colors and shapes come from @kition/kit-editor's tokens. */
+
+/* The header (upstream `header.rs`), in the shell's top row: modes, menus, title, workspace. */
+/* The header's row: 34 px, below the menu bar (kit-editor's options bar is 40 px). */
+.kui-options-bar:has(> .film-header) {
+  height: 34px;
+}
+
+/* Modes at the left, the title centred in the row, the workspace and quick actions at the right. */
+.film-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+}
+
+.film-modes {
+  display: flex;
+  justify-self: start;
+  align-items: stretch;
+  gap: 4px;
+  height: 100%;
+  margin-right: 8px;
+}
+
+/* A mode tab: 14 px text, the active one underlined 2 px (upstream's mode tabs). */
+.film-mode {
+  position: relative;
+  padding: 0 6px;
+  border: 0;
+  background: transparent;
+  color: var(--kit-text-muted);
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.film-mode:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.film-mode[aria-selected='true'] {
+  color: var(--kit-text);
+}
+
+.film-mode[aria-selected='true']::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 7px;
+  height: 2px;
+  background: var(--kit-text);
+}
+
+.film-title {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--kit-text);
+  font-size: 14px;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.film-header-end {
+  display: flex;
+  justify-self: end;
+  align-items: center;
+  gap: 2px;
+}
+
+/* The workspace name in capitals and its menu (upstream's `header.workspaceName` and `header.workspaces`). */
+.film-header-workspace {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--kit-radius-control);
+  background: transparent;
+  color: var(--kit-text-muted);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.film-header-workspace:hover,
+.film-header-workspace[aria-expanded='true'] {
+  color: var(--kit-text);
+  background: var(--kit-primary-soft);
+}
+
+/* A panel's content fills its frame's body. */
+.film-panel-column {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.film-panel-scroll {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+/* Upstream's placeholder: one faint line in the middle of the frame. */
+.film-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+  color: var(--kit-text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+
+/* Save as New Workspace and Edit Workspaces. */
+.film-dialog-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.film-dialog-row .kui-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.film-workspace-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 260px;
+  overflow-y: auto;
+  border-bottom: 1px solid var(--kit-border);
+  padding-bottom: 8px;
+}
+
+.film-workspace-row {
+  padding: 4px 8px;
+  border: 0;
+  border-radius: var(--kit-radius-control);
+  background: transparent;
+  color: var(--kit-text);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.film-workspace-row:hover,
+.film-workspace-row[aria-selected='true'] {
+  background: var(--kit-primary-soft);
+}
+
+/*
+ * The Source and Program monitors (upstream `panels/monitor.rs`): the picture area, then a 26 px
+ * row (playhead timecode, zoom, resolution, wrench, duration), the 22 px scrub bar, and the
+ * 32 px transport row.
+ */
+.film-monitor {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.film-monitor-picture-area {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  margin: 4px 4px 0;
+  overflow: hidden;
+}
+
+/* The program monitor's picture: the document canvas region fills it. */
+.film-program {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* The Program picture's own region (the current picture in the Comparison View): the canvas and what is drawn over it. */
+.film-program-current {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/*
+ * The Comparison View (upstream monitor.rs show): the reference on the left and the current
+ * picture on the right, 4 px apart, over a 22 px bar that runs under both.
+ */
+.film-program[data-display='comparison'] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) 20px;
+  gap: 2px 4px;
+}
+
+.film-program[data-display='comparison'] > .film-program-current {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.film-compare-reference {
+  position: relative;
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--kit-canvas);
+}
+
+.film-compare-picture {
+  position: absolute;
+  background: #000;
+}
+
+.film-compare-bar {
+  display: flex;
+  grid-column: 1 / span 2;
+  grid-row: 2;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding-left: 4px;
+  color: var(--kit-text-muted);
+  font-size: 11px;
+}
+
+.film-compare-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: pre;
+}
+
+.film-compare-button {
+  flex: none;
+  width: 32px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--kit-border);
+  border-radius: 3px;
+  background: var(--kit-surface);
+  color: var(--kit-text);
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.film-compare-button:hover:not(:disabled) {
+  border-color: var(--kit-primary);
+}
+
+.film-compare-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* A channel display mode's picture over the canvas, placed as the safe margins are (upstream channel_view). */
+.film-program-channel {
+  position: absolute;
+  pointer-events: none;
+  background: #000;
+}
+
+.film-program-channel[data-shown='false'] {
+  visibility: hidden;
+}
+
+/* The display mode at the picture area's top right, in upstream's dim 10 px text. */
+.film-monitor-mode {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  color: var(--kit-text-muted);
+  font-size: 10px;
+  pointer-events: none;
+}
+
+/* Upstream's dropped-frame dot, 4 px in radius, 10 px in from the picture's top left while the Program plays. */
+.film-program-dropped {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2d9d78;
+  pointer-events: none;
+}
+
+.film-program-dropped[data-dropped='true'] {
+  background: #f0f04f;
+}
+
+/*
+ * The Source monitor's audio waveform (upstream monitor_view.rs waveform): on the monitor's dark
+ * ground in either theme, the marked range shaded, the centre line, and the source playhead.
+ */
+.film-source-waveform {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #1d1d1d;
+  touch-action: none;
+  user-select: none;
+}
+
+.film-source-waveform-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.film-source-waveform-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--kit-primary);
+  pointer-events: none;
+}
+
+.film-source-waveform-note {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #b0b0b0;
+  font-size: 12px;
+  pointer-events: none;
+}
+
+/* The graphics tools' overlay on the Program picture (upstream graphics.rs): the Pen's path and a drag's outline. */
+.film-gfx-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.film-gfx-outline {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.film-gfx-edit {
+  stroke: var(--kit-danger);
+}
+
+.film-gfx-pen {
+  fill: none;
+  stroke: var(--kit-primary);
+  stroke-width: 1;
+}
+
+.film-gfx-rubber {
+  stroke-opacity: 0.5;
+}
+
+/* A selected layer's box (upstream draws it in the accent with the graphics tools). */
+.film-gfx-selected {
+  fill: none;
+  stroke: var(--kit-primary);
+  stroke-width: 1;
+}
+
+/* Its handles (white squares, the corners outlined in the accent), the red plus where a paragraph box hides text, and its anchor point. */
+.film-gfx-handle {
+  fill: #fff;
+  stroke: var(--kit-primary);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.film-gfx-edge {
+  stroke: none;
+}
+
+.film-gfx-overflow {
+  fill: var(--kit-danger);
+  stroke: none;
+}
+
+.film-gfx-plus {
+  stroke: #fff;
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.film-gfx-anchor {
+  fill: none;
+  stroke: var(--kit-primary);
+  stroke-width: 1;
+}
+
+/* A layer drag's live outline and anchor point, in white as upstream draws them. */
+.film-gfx-live {
+  stroke: #fff;
+}
+
+.film-gfx-point {
+  fill: #fff;
+  shape-rendering: crispEdges;
+}
+
+.film-gfx-first {
+  fill: var(--kit-primary);
+}
+
+/* The in-place field over the text layer being typed into: the engine draws the text, the field
+   shows the caret and the selection, in upstream's red box. */
+.film-text-edit {
+  position: absolute;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--kit-danger);
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  color: transparent;
+  caret-color: #fff;
+  font-family: var(--kit-font-sans);
+  white-space: pre;
+  overflow: hidden;
+  resize: none;
+}
+
+.film-text-edit::selection {
+  background: color-mix(in srgb, var(--kit-primary) 40%, transparent);
+}
+
+.film-text-edit[data-vertical] {
+  writing-mode: vertical-rl;
+}
+
+.film-source {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--kit-canvas);
+}
+
+.film-source[data-hand='true'] {
+  cursor: grab;
+}
+
+.film-source-picture {
+  position: absolute;
+  background: #000;
+}
+
+/*
+ * Rulers and guides (upstream monitor_view.rs rulers, guides): 16 px rulers along the top and left
+ * of the picture area, and the guides in upstream's guide blue, each with a 7 px grab area. A
+ * dialog's preview guide is dashed; a guide dragged out of the picture area to be removed fades.
+ */
+.film-program[data-rulers='true'] {
+  padding: 16px 0 0 16px;
+}
+
+.film-ruler-corner,
+.film-ruler {
+  position: absolute;
+  z-index: 3;
+  background: var(--kit-surface);
+}
+
+.film-ruler-corner {
+  left: 0;
+  top: 0;
+  width: 16px;
+  height: 16px;
+}
+
+.film-ruler {
+  overflow: hidden;
+  touch-action: none;
+}
+
+.film-ruler-top {
+  top: 0;
+  height: 16px;
+  cursor: row-resize;
+}
+
+.film-ruler-left {
+  left: 0;
+  width: 16px;
+  cursor: col-resize;
+}
+
+.film-ruler-ticks {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.film-ruler-ticks line {
+  stroke: var(--kit-text-muted);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.film-ruler-ticks text {
+  fill: var(--kit-text-muted);
+  font-size: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.film-guides {
+  position: absolute;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.film-guide {
+  position: absolute;
+  display: block;
+  touch-action: none;
+}
+
+.film-guide[data-vertical='true'] {
+  top: 0;
+  bottom: 0;
+}
+
+.film-guide[data-vertical='false'] {
+  left: 0;
+  right: 0;
+}
+
+.film-guide::before {
+  position: absolute;
+  content: '';
+  border: 0 solid #3da5ff;
+}
+
+.film-guide[data-vertical='true']::before {
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  border-left-width: 1px;
+}
+
+.film-guide[data-vertical='false']::before {
+  left: 0;
+  right: 0;
+  top: 3px;
+  border-top-width: 1px;
+}
+
+.film-guide[data-preview='true']::before,
+.film-guide-new::before {
+  border-style: dashed;
+}
+
+.film-guide[data-removing='true']::before {
+  opacity: 0.35;
+}
+
+.film-guide[data-movable='true'] {
+  pointer-events: auto;
+}
+
+.film-guide[data-vertical='true'][data-movable='true'] {
+  cursor: col-resize;
+}
+
+.film-guide[data-vertical='false'][data-movable='true'] {
+  cursor: row-resize;
+}
+
+/* Snap in Program Monitor's lines (upstream draw_snap_lines), while a drag snaps. */
+.film-gfx-snap {
+  stroke: #ff4fd8;
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.film-safe-margins {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.film-safe-action,
+.film-safe-title {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.47);
+}
+
+.film-safe-title {
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.film-safe-cross {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  transform: translate(-50%, -50%);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.47), rgba(255, 255, 255, 0.47)) center / 16px 1px no-repeat,
+    linear-gradient(rgba(255, 255, 255, 0.47), rgba(255, 255, 255, 0.47)) center / 1px 16px no-repeat;
+}
+
+.film-monitor-row {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  margin: 2px 14px 0;
+  min-width: 0;
+}
+
+.film-monitor-row .kui-timecode {
+  flex: none;
+  font-size: 15px;
+}
+
+.film-monitor-middle {
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.film-monitor-dropdown {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  box-sizing: border-box;
+  min-width: 62px;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid var(--kit-border);
+  border-radius: var(--kit-radius-control);
+  background: var(--kit-surface);
+  color: var(--kit-text);
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.film-monitor-dropdown:hover:not(:disabled),
+.film-monitor-dropdown[aria-expanded='true'] {
+  border-color: var(--kit-primary);
+}
+
+.film-monitor-wrench,
+.film-monitor-button-editor,
+.film-source-drag {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--kit-text-muted);
+  cursor: pointer;
+}
+
+.film-monitor-wrench:hover:not(:disabled),
+.film-monitor-wrench[aria-expanded='true'],
+.film-source-drag:hover:not(:disabled) {
+  background: var(--kit-primary-soft);
+  color: var(--kit-text);
+}
+
+.film-monitor-button-editor:disabled,
+.film-source-drag:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.film-source-drags {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.film-source-drag {
+  width: auto;
+  min-width: 24px;
+  padding: 0 3px;
+  cursor: grab;
+}
+
+.film-monitor-duration {
+  flex: none;
+  margin-left: auto;
+  color: var(--kit-text-muted);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* The scrub bar (upstream `mini_timeline`). */
+.film-monitor-bar {
+  position: relative;
+  flex: none;
+  height: 22px;
+  margin: 2px 14px 0;
+  touch-action: none;
+  cursor: default;
+}
+
+.film-monitor-bar-art {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.film-monitor-tick {
+  stroke: color-mix(in srgb, var(--kit-text) 35%, transparent);
+  stroke-width: 1;
+}
+
+.film-monitor-range {
+  fill: rgba(92, 92, 92, 0.5);
+}
+
+.film-monitor-brace,
+.film-monitor-playhead-line {
+  fill: none;
+  stroke: var(--kit-primary);
+  stroke-width: 1;
+}
+
+.film-monitor-playhead {
+  fill: var(--kit-primary);
+}
+
+.film-monitor-trim-cue {
+  fill: none;
+  stroke: #e34850;
+  stroke-width: 1.2;
+}
+
+.film-monitor-handle {
+  position: absolute;
+  bottom: 0;
+}
+
+.film-monitor-handle[data-edge='move'] {
+  cursor: grab;
+}
+
+.film-monitor-handle[data-edge='in'],
+.film-monitor-handle[data-edge='out'],
+.film-monitor-playhead-hit {
+  cursor: ew-resize;
+}
+
+.film-monitor-playhead-hit {
+  position: absolute;
+  bottom: 0;
+  width: 14px;
+  height: 12px;
+}
+
+.film-monitor-transport {
+  position: relative;
+  flex: none;
+  height: 32px;
+  margin-top: 4px;
+}
+
+.film-monitor-transport .kui-transport {
+  height: 32px;
+  padding: 0 30px;
+}
+
+/* Upstream draws the Source drag buttons only where the row has room between the dropdowns. */
+@container (max-width: 422px) {
+  .film-source-drags {
+    display: none;
+  }
+}
+
+/* A narrow monitor (two side by side at 1100 px) keeps its row and its 12 transport buttons in view. */
+@container (max-width: 400px) {
+  .film-monitor-row {
+    gap: 3px;
+    margin: 2px 6px 0;
+  }
+
+  .film-monitor-row .kui-timecode,
+  .film-monitor-duration {
+    font-size: 12px;
+  }
+
+  .film-monitor-row .kui-timecode {
+    padding: 0 2px;
+  }
+
+  .film-monitor-dropdown {
+    min-width: 0;
+    padding: 0 3px;
+  }
+
+  .film-monitor-bar {
+    margin: 2px 6px 0;
+  }
+
+  .film-monitor-transport .kui-transport {
+    gap: 0;
+    padding: 0 24px;
+  }
+
+  .film-monitor-transport .kui-transport-button {
+    width: 22px;
+  }
+
+  .film-monitor-transport .film-monitor-button-editor {
+    right: 2px;
+  }
+}
+
+.film-monitor-button-editor {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+}
+
+/* The Timeline (upstream `panels/timeline.rs`): chrome from the theme tokens, clips in their label colours. */
+.film-tl {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--kit-surface);
+  color: var(--kit-text);
+  font-size: 12px;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+.film-tl-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  height: 100%;
+  color: var(--kit-text-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.film-tl-empty p {
+  margin: 0;
+}
+
+.film-tl-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.film-tl-timecode {
+  position: absolute;
+  top: 4px;
+  left: 10px;
+  right: 6px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+}
+
+.film-tl-timecode .kui-timecode {
+  font-size: 16px;
+}
+
+/* Upstream's 28 px toggles, 30 px apart, the "on" ones filled. */
+.film-tl-toolbar {
+  position: absolute;
+  top: 26px;
+  left: 12px;
+  right: 0;
+  display: flex;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.film-tl-toggle {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--kit-text-muted);
+  cursor: pointer;
+}
+
+.film-tl-toggle:hover:not(:disabled) {
+  background: var(--kit-primary-soft);
+}
+
+.film-tl-toggle[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--kit-text) 22%, transparent);
+  color: var(--kit-text);
+}
+
+.film-tl-toggle:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.film-tl-ruler-wrap {
+  position: absolute;
+  height: 44px;
+  overflow: hidden;
+}
+
+.film-tl-ruler {
+  position: relative;
+  overflow: hidden;
+  background: var(--kit-surface);
+  cursor: ew-resize;
+}
+
+.film-tl-ruler-canvas {
+  position: absolute;
+  inset: 0;
+  color: var(--kit-text-muted);
+}
+
+.film-tl-render {
+  position: absolute;
+  bottom: 0;
+  height: 2px;
+}
+
+.film-tl-marker {
+  position: absolute;
+  top: 2px;
+  height: 12px;
+}
+
+.film-tl-marker-head {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 8px;
+  height: 12px;
+  clip-path: polygon(0 0, 100% 0, 100% 67%, 50% 100%, 0 67%);
+}
+
+.film-tl-marker-span {
+  position: absolute;
+  left: 4px;
+  top: 0;
+  height: 8px;
+  opacity: 0.6;
+}
+
+.film-tl-half {
+  position: absolute;
+  left: 0;
+  right: 0;
+  overflow: hidden;
+}
+
+.film-tl-header {
+  position: absolute;
+  left: 0;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--kit-border);
+  background: var(--kit-surface);
+}
+
+/* A locked track: a darker strip at the header's right edge. */
+.film-tl-header[data-locked]::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 4px;
+  background: color-mix(in srgb, var(--kit-text) 25%, transparent);
+}
+
+/* Source patch and target: full-height buttons with the track's label, the project primary while on (upstream was a hardcoded blue). */
+.film-tl-patch {
+  position: absolute;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: var(--kit-primary-soft);
+  color: var(--kit-text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.film-tl-patch:hover {
+  box-shadow: inset 0 0 0 1px var(--kit-border);
+}
+
+.film-tl-patch[aria-pressed='true'] {
+  background: var(--kit-primary);
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.film-tl-icon,
+.film-tl-letter {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--kit-text-muted);
+  cursor: pointer;
+}
+
+.film-tl-icon:hover,
+.film-tl-letter:hover {
+  background: var(--kit-primary-soft);
+}
+
+.film-tl-icon[aria-pressed='true'] {
+  color: var(--kit-text);
+}
+
+.film-tl-letter {
+  box-shadow: inset 0 0 0 1px var(--kit-border);
+  font-size: 9px;
+  font-weight: 600;
+}
+
+/* Mute green and solo yellow while on, as upstream. */
+.film-tl-letter[aria-pressed='true'][data-kit-ui-id='control:track.mute'] {
+  background: #2d9d78;
+  color: #fff;
+  box-shadow: none;
+}
+
+.film-tl-letter[aria-pressed='true'][data-kit-ui-id='control:track.solo'] {
+  background: #f0f04f;
+  color: #111;
+  box-shadow: none;
+}
+
+.film-tl-track-name {
+  position: absolute;
+  max-width: calc(100% - 100px);
+  overflow: hidden;
+  color: var(--kit-text-muted);
+  font-size: 11px;
+  line-height: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transform: translateY(-50%);
+}
+
+.film-tl-header-edge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 5px;
+  cursor: ns-resize;
+}
+
+.film-tl-lane {
+  position: absolute;
+  overflow: hidden;
+  box-sizing: border-box;
+  border-bottom: 1px solid color-mix(in srgb, var(--kit-text) 6%, transparent);
+  background: var(--kit-surface);
+}
+
+.film-tl-lane[data-alt] {
+  background: color-mix(in srgb, var(--kit-surface) 96%, var(--kit-text));
+}
+
+.film-tl-inout {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in srgb, var(--kit-text) 12%, transparent);
+}
+
+.film-tl-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 0;
+}
+
+/* A clip: square, its label colour, a lighter top edge and a black left edge (upstream `draw_clip`). */
+.film-clip {
+  position: absolute;
+  top: 1px;
+  left: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  box-shadow: inset 1px 0 0 #000, inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  color: #d9d9d9;
+  cursor: inherit;
+}
+
+.film-clip[data-disabled] {
+  color: color-mix(in srgb, #d9d9d9 45%, transparent);
+}
+
+/*
+ * A selected clip's outline (upstream `draw_clip`: 2 px clip_selected_border, a 1 px black line
+ * inside it). In the theme's text colour with the surface colour inside, so it shows in Light
+ * too, where upstream's near-white outline does not.
+ */
+.film-clip[data-selected]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--kit-text);
+  box-shadow: inset 0 0 0 1px var(--kit-surface);
+  pointer-events: none;
+}
+
+.film-clip-name {
+  position: absolute;
+  top: 0;
+  left: 6px;
+  right: 6px;
+  overflow: hidden;
+  font-size: 11.5px;
+  line-height: 17px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.film-clip-fx {
+  position: absolute;
+  top: 0;
+  right: 6px;
+  color: #91a2ac;
+  font-size: 11px;
+  font-style: italic;
+  font-weight: 600;
+  line-height: 17px;
+  pointer-events: none;
+}
+
+.film-clip-fx[data-standard] {
+  color: #e8c54a;
+}
+
+.film-clip-corner {
+  position: absolute;
+  top: 0;
+  width: 5px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.86);
+  pointer-events: none;
+}
+
+.film-clip-corner[data-side='head'] {
+  left: 0;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+.film-clip-corner[data-side='tail'] {
+  right: 0;
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+}
+
+.film-clip-thumb,
+.film-clip-wave {
+  position: absolute;
+  pointer-events: none;
+}
+
+.film-clip-wave {
+  top: 0;
+}
+
+/* Transitions: hatched, outlined (upstream `draw_transition`). */
+.film-tl-transition {
+  position: absolute;
+  top: 17px;
+  left: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid #ebebeb;
+  background: repeating-linear-gradient(-45deg, rgba(217, 217, 217, 0.43) 0 1px, rgba(0, 0, 0, 0.35) 1px 4px);
+  pointer-events: none;
+}
+
+.film-tl-transition span {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  max-width: 80px;
+  padding: 0 3px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.67);
+  color: #d9d9d9;
+  font-size: 10.5px;
+  line-height: 13px;
+  white-space: nowrap;
+}
+
+/* An audio transition's crossing fade curves. */
+.film-tl-fades {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1;
+}
+
+/* Keyboard focus on the Timeline's controls: drawn inside the control, so the clipped halves and toolbar never cut it off. */
+.film-tl-toggle:focus-visible,
+.film-tl-patch:focus-visible,
+.film-tl-icon:focus-visible,
+.film-tl-letter:focus-visible,
+.film-seq-label:focus-visible,
+.film-seq-close:focus-visible {
+  outline: 2px solid var(--kit-primary);
+  outline-offset: -2px;
+}
+
+/* A through edit: a dashed line through the cut and two small triangles pointing at it. */
+.film-tl-through {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  border-left: 1px dashed rgba(255, 255, 255, 0.55);
+  pointer-events: none;
+}
+
+.film-tl-through::before {
+  content: '';
+  position: absolute;
+  top: calc(50% - 4px);
+  left: -5px;
+  width: 9px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  clip-path: polygon(0 0, 50% 50%, 0 100%, 100% 0, 50% 50%, 100% 100%);
+}
+
+.film-tl-divider {
+  position: absolute;
+  left: 0;
+  background: var(--kit-canvas, var(--kit-surface-muted));
+  cursor: ns-resize;
+}
+
+.film-tl-mix {
+  position: absolute;
+  left: 0;
+  display: flex;
+  align-items: center;
+  background: var(--kit-surface);
+  font-size: 11.5px;
+}
+
+.film-tl-mix-name {
+  position: absolute;
+  left: 44px;
+}
+
+.film-tl-mix-level {
+  position: absolute;
+  color: var(--kit-primary);
+  font-variant-numeric: tabular-nums;
+  transform: translateX(-100%);
+}
+
+.film-tl-column {
+  position: absolute;
+  width: 1px;
+  background: var(--kit-border);
+  pointer-events: none;
+}
+
+.film-tl-vbar {
+  position: absolute;
+  right: 1px;
+  width: 7px;
+}
+
+.film-tl-vbar span {
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--kit-text) 30%, transparent);
+}
+
+.film-tl-playhead-area {
+  position: absolute;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.film-tl-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 0;
+}
+
+/* The head in the ruler (12 px wide, pointing down), and the 1 px line through the tracks. */
+.film-tl-playhead-head {
+  position: absolute;
+  top: 2px;
+  left: -6px;
+  width: 12px;
+  height: 38px;
+  background: var(--kit-primary);
+  clip-path: polygon(0 0, 100% 0, 100% 79%, 50% 100%, 0 79%);
+}
+
+.film-tl-playhead-line {
+  position: absolute;
+  top: 40px;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  background: var(--kit-primary);
+}
+
+.film-tl-zoombar-wrap {
+  position: absolute;
+  height: 13px;
+}
+
+/* The zoom scroll bar: a pill track, its thumb with a round handle at each end. */
+.film-tl-zoombar {
+  position: relative;
+  height: 13px;
+  border-radius: 7px;
+  background: var(--kit-border);
+}
+
+.film-tl-zoombar-thumb {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--kit-text) 28%, var(--kit-surface));
+  cursor: grab;
+}
+
+.film-tl-zoombar-thumb span {
+  position: absolute;
+  top: 2px;
+  width: 9px;
+  height: 9px;
+  box-sizing: border-box;
+  border: 1.5px solid #d1d1d1;
+  border-radius: 50%;
+  background: var(--kit-surface);
+  cursor: ew-resize;
+}
+
+.film-tl-zoombar-thumb span[data-end='start'] {
+  left: 2px;
+}
+
+.film-tl-zoombar-thumb span[data-end='end'] {
+  right: 2px;
+}
+
+/* The Timeline frame's strip: its open sequences, the shown one with × and its name underlined. */
+.film-seq-tabs,
+.film-seq-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.film-seq-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.film-seq-label,
+.film-seq-close {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--kit-text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.film-seq-tab[data-active] .film-seq-label {
+  color: var(--kit-text);
+}
+
+.film-seq-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+}
+
+.film-seq-close:hover {
+  color: var(--kit-text);
+}
+
+.kui-spin {
+  animation: kui-spin 1s linear infinite;
+}
+
+@keyframes kui-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Why the last command failed (upstream's status message), after the summary. */
+/*
+ * The status bar (upstream `lib.rs`): one line. The message or hint on the left gives way first,
+ * cut with an ellipsis; the summary, the unsaved and agent notes, the job, and the timings keep
+ * their width.
+ */
+.kui-status-bar {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.kui-status-bar > * {
+  flex: none;
+}
+
+.film-message {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--kit-text-muted);
+}
+
+.kui-status-bar > .kui-status-spacer {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.film-status-job {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.film-status-job-bar {
+  position: relative;
+  width: 120px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--kit-border);
+}
+
+.film-status-job-bar > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 3px;
+  background: var(--kit-primary);
+}
+
+.film-status-job .kui-icon-button {
+  width: 18px;
+  height: 18px;
+}
+
+/* Help ▸ Keyboard Shortcuts: a scrolling list of commands and their keys, by menu. */
+.film-shortcuts {
+  max-height: 60vh;
+  overflow: auto;
+  font-size: 13px;
+}
+
+.film-shortcuts h3 {
+  margin: 12px 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.film-shortcuts dl {
+  margin: 0;
+}
+
+.film-shortcuts dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--kit-border);
+}
+
+.film-shortcuts dt {
+  color: var(--kit-text);
+}
+
+.film-shortcuts dd {
+  margin: 0;
+  color: var(--kit-text-muted);
+  white-space: nowrap;
+}
+
+.film-about p {
+  margin: 0 0 8px;
+}
+
+/* The Tools panel (upstream panels/tools.rs): one centered column of the 8 groups, from the top. */
+.film-tools {
+  display: flex;
+  justify-content: center;
+  height: 100%;
+  overflow: hidden;
+}
+
+/*
+ * The rail is one button wide, with no band or border of its own: the frame is the panel. Its
+ * padding and gap are `groupsThatFit`'s (tools/catalog.ts), which leaves out the groups that do
+ * not fit, as upstream stops drawing (`break`).
+ */
+.film-tools .kui-tool-rail {
+  box-sizing: border-box;
+  width: 32px;
+  height: 100%;
+  padding: 4px 2px;
+  gap: 4px;
+  border-right: 0;
+  background: transparent;
+  overflow: hidden;
+}
+
+/* The active group's button: upstream fills it with the accent and draws its icon in white. */
+.film-tools .kui-icon-button[aria-pressed='true'] {
+  background: var(--kit-primary);
+  color: var(--kit-primary-text);
+}
+
+/* What a gesture draws over the tracks (upstream `interact`): never in the way of the pointer. */
+.film-tl-gesture {
+  position: absolute;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/*
+ * The gesture overlays. Upstream draws them white on its dark timeline (its Light theme too, where
+ * they barely show); here they take the theme's text colour, white-ish on Dark Gray and dark on
+ * Light, at upstream's strengths.
+ */
+
+/* The snap indicator: a line with a small triangle at each end, pointing in (upstream `show`). */
+.film-tl-snap {
+  position: absolute;
+  width: 1px;
+  background: var(--kit-text);
+}
+
+.film-tl-snap::before,
+.film-tl-snap::after {
+  content: '';
+  position: absolute;
+  left: -4px;
+  border-left: 4.5px solid transparent;
+  border-right: 4.5px solid transparent;
+}
+
+.film-tl-snap::before {
+  top: 0;
+  border-top: 5px solid var(--kit-text);
+}
+
+.film-tl-snap::after {
+  bottom: 0;
+  border-bottom: 5px solid var(--kit-text);
+}
+
+.film-tl-marquee {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px solid color-mix(in srgb, var(--kit-text) 55%, transparent);
+  background: color-mix(in srgb, var(--kit-text) 7%, transparent);
+}
+
+.film-tl-razor {
+  position: absolute;
+  width: 1px;
+  background: var(--kit-text);
+}
+
+/* An edge's bracket: yellow for a trim or roll, red for a ripple, half strength while hovering. */
+.film-tl-bracket {
+  position: absolute;
+  box-sizing: border-box;
+  width: 6px;
+  border: 2px solid rgba(240, 200, 60, 0.5);
+  border-right: 0;
+}
+
+.film-tl-bracket[data-out] {
+  border-right: 2px solid rgba(240, 200, 60, 0.5);
+  border-left: 0;
+}
+
+.film-tl-bracket[data-ripple] {
+  border-color: rgba(230, 60, 60, 0.5);
+}
+
+/* A selected edit point: the same bracket at full strength, on the track's scrolling layer. */
+.film-tl-bracket[data-selected] {
+  left: 0;
+  z-index: 1;
+  border-color: #f0c83c;
+  pointer-events: none;
+}
+
+.film-tl-bracket[data-selected][data-ripple] {
+  border-color: #e63c3c;
+}
+
+.film-tl-drop {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1.5px solid var(--kit-text);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--kit-text) 16%, transparent);
+}
+
+.film-tl-drop span {
+  position: absolute;
+  bottom: 100%;
+  left: 4px;
+  color: var(--kit-text);
+  font-size: 10px;
+}
+
+/* The workspace and the floating bin windows over it (kit-editor `FloatingPanels` fills this area). */
+.film-workspace-area {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* The Project panel (upstream panels/project.rs, project_views.rs). */
+.film-project {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  font-size: var(--film-project-font, 12px);
+  color: var(--kit-text);
+  container-type: inline-size;
+}
+
+.film-project-tabs {
+  display: flex;
+  gap: 4px;
+  flex: none;
+  height: 24px;
+  padding: 2px 6px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--kit-border);
+  overflow: hidden;
+}
+
+.film-project-tab {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  border-radius: 3px;
+}
+
+.film-project-tab button,
+button.film-project-tab {
+  height: 20px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--kit-text-muted);
+  font: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.film-project-tab[aria-selected='true'],
+.film-project-tab[aria-selected='true'] button {
+  background: var(--kit-primary-soft);
+  color: var(--kit-text);
+}
+
+.film-project-tab .film-project-tab-close {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 4px;
+}
+
+.film-project-head,
+.film-project-search-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  min-width: 0;
+  padding: 0 8px;
+}
+
+.film-project-head {
+  height: 24px;
+  margin-top: 2px;
+}
+
+.film-project-up,
+.film-project-tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 22px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--kit-text);
+  cursor: pointer;
+}
+
+.film-project-tool {
+  width: 24px;
+  height: 22px;
+}
+
+.film-project-up:hover:not(:disabled),
+.film-project-tool:hover:not(:disabled) {
+  background: var(--kit-primary-soft);
+}
+
+.film-project-up:disabled,
+.film-project-tool:disabled {
+  color: var(--kit-text-muted);
+  opacity: 0.5;
+  cursor: default;
+}
+
+.film-project-crumb {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--kit-text-muted);
+  font-size: calc(var(--film-project-font, 12px) - 0.5px);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.film-project-search-row {
+  height: 24px;
+  margin-top: 2px;
+}
+
+/* Upstream's search field: 45% of the row, 80 to 240 px. */
+.film-project-search {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  width: clamp(80px, 45%, 240px);
+  height: 22px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  border: 1px solid var(--kit-border);
+  border-radius: var(--kit-radius-control);
+  background: var(--kit-surface-muted, var(--kit-surface));
+  color: var(--kit-text-muted);
+}
+
+.film-project-search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--kit-text);
+  font: inherit;
+  font-size: 12px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.film-project-search:focus-within {
+  border-color: var(--kit-primary);
+}
+
+.film-project-count {
+  margin-left: auto;
+  flex: none;
+  color: var(--kit-text-muted);
+  font-size: calc(var(--film-project-font, 12px) - 1px);
+  white-space: nowrap;
+}
+
+/* Upstream's Preview Area: 92 px, the poster frame and five lines. */
+.film-project-preview {
+  display: flex;
+  gap: 10px;
+  flex: none;
+  height: 92px;
+  margin: 6px 8px 0;
+  padding: 6px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--kit-surface) 92%, var(--kit-text));
+}
+
+.film-project-preview-empty {
+  margin: auto;
+  color: var(--kit-text-muted);
+  font-size: 11px;
+}
+
+.film-project-preview-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  color: var(--kit-text-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.film-project-preview-lines strong {
+  overflow: hidden;
+  color: var(--kit-text);
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+}
+
+.film-project-content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  margin: 6px 4px 0;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--kit-surface) 92%, var(--kit-canvas, var(--kit-surface)));
+  overflow: hidden;
+}
+
+.film-project-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  flex: none;
+  height: 32px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.film-project-footer-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.film-project-footer .kui-icon-button {
+  width: 26px;
+  height: 22px;
+}
+
+/* Upstream's thumbnail size slider: the bar's width less 300 px, 40 to 120 px; a slim track
+   filled up to a small round handle, in the theme's colours. */
+.film-project-size {
+  width: clamp(40px, calc(100cqw - 300px), 120px);
+  height: 16px;
+  margin: 0 6px 0 8px;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.film-project-size::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--kit-primary) var(--film-project-size-fill, 0%), color-mix(in srgb, var(--kit-text) 22%, transparent) var(--film-project-size-fill, 0%));
+}
+
+.film-project-size::-webkit-slider-thumb {
+  width: 10px;
+  height: 10px;
+  margin-top: -3.5px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--kit-text);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.film-project-size::-moz-range-track {
+  height: 3px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--kit-text) 22%, transparent);
+}
+
+.film-project-size::-moz-range-progress {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--kit-primary);
+}
+
+.film-project-size::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--kit-text);
+}
+
+.film-project-size:focus-visible {
+  outline: 2px solid var(--kit-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* At 1100 × 700 the frame is narrow: the slider gives way before the buttons. */
+@container (max-width: 300px) {
+  .film-project-size {
+    display: none;
+  }
+}
+
+.film-project-thumb {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  overflow: hidden;
+  border-radius: 2px;
+  background: #0c0c0c;
+}
+
+.film-project-thumb canvas {
+  display: block;
+}
+
+.film-project-thumb-glyph {
+  position: absolute;
+  color: color-mix(in srgb, #ffffff 45%, transparent);
+}
+
+/* List view. */
+.film-project-list {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+}
+
+.film-project-list-header {
+  flex: none;
+  overflow: hidden;
+  border-bottom: 1px solid var(--kit-border);
+  background: var(--kit-surface);
+}
+
+.film-project-list-header-row {
+  display: flex;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.film-project-column {
+  position: relative;
+  display: flex;
+  flex: none;
+  height: 100%;
+}
+
+.film-project-column-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+  padding: 0 6px;
+  border: 0;
+  background: transparent;
+  color: var(--kit-text-muted);
+  font: inherit;
+  font-size: calc(var(--film-project-font, 12px) - 0.5px);
+  text-align: left;
+  cursor: pointer;
+}
+
+.film-project-column-label span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.film-project-column-label:hover {
+  background: var(--kit-primary-soft);
+}
+
+.film-project-column-resize {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  bottom: 0;
+  z-index: 1;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.film-project-column-resize::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: 1px;
+  background: var(--kit-border);
+}
+
+.film-project-list-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.film-project-row {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Every other row shaded by its place, not a prop: a row a preview puts in draws no other row again. */
+.film-project-list-body .film-project-row:nth-child(even) {
+  background: color-mix(in srgb, var(--kit-text) 3%, transparent);
+}
+
+.film-project-row[aria-selected='true'] {
+  background: var(--kit-primary-soft);
+}
+
+.film-project-row[data-drop],
+.film-project-card[data-drop] {
+  outline: 1.5px solid var(--kit-primary);
+  outline-offset: -1.5px;
+}
+
+.film-project-lead {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  height: 100%;
+}
+
+.film-project-chip {
+  width: 12px;
+  height: 12px;
+  border-radius: 2.5px;
+}
+
+.film-project-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  min-width: 0;
+  height: 100%;
+  padding: 0 6px;
+  box-sizing: border-box;
+  overflow: hidden;
+  color: var(--kit-text-muted);
+  font-size: calc(var(--film-project-font, 12px) - 0.5px);
+}
+
+.film-project-name-cell {
+  padding-right: 4px;
+  color: var(--kit-text);
+  font-size: var(--film-project-font, 12px);
+}
+
+.film-project-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.film-project-row > .film-project-name {
+  flex: none;
+  margin-left: 6px;
+}
+
+.film-project-text {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.film-project-glyph {
+  flex: none;
+  color: var(--kit-text-muted);
+}
+
+.film-project-fold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-right: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--kit-text-muted);
+  cursor: pointer;
+}
+
+.film-project-swatch {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.film-project-offline-dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #e85c5c;
+}
+
+.film-project-proxy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 16px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--kit-primary);
+  color: var(--kit-primary-text, #ffffff);
+  font-size: 10px;
+}
+
+.film-project-rename {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+.film-project-empty {
+  min-height: 40px;
+  flex: 1;
+}
+
+/* Icon view: cells of the icon size + 20 by its 16:9 picture + 34 (upstream icon_view). */
+.film-project-icons {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.film-project-grid {
+  display: grid;
+  flex: none;
+  padding: 8px 0 0 12px;
+}
+
+.film-project-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-self: start;
+  padding: 0;
+  border-radius: 4px;
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.film-project-card[aria-selected='true']::before {
+  content: '';
+  position: absolute;
+  inset: -6px -6px -2px;
+  border: 1.5px solid var(--kit-primary);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--kit-primary) 10%, transparent);
+  pointer-events: none;
+}
+
+.film-project-card-art,
+.film-project-bin-art {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 2px;
+}
+
+.film-project-bin-art {
+  background: color-mix(in srgb, var(--kit-text) 10%, var(--kit-surface));
+}
+
+.film-project-card-line {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 18px;
+  min-width: 0;
+}
+
+.film-project-card-line .film-project-text {
+  flex: 1;
+}
+
+.film-project-card-chip {
+  flex: none;
+  width: 8px;
+  height: 10px;
+  border-radius: 1.5px;
+}
+
+.film-project-card-duration {
+  flex: none;
+  color: var(--kit-text-muted);
+}
+
+.film-project-inout {
+  position: absolute;
+  bottom: 0;
+  height: 4px;
+}
+
+.film-project-scrub {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  pointer-events: none;
+}
+
+.film-project-streams {
+  position: absolute;
+  right: 4px;
+  bottom: 5px;
+  display: flex;
+  gap: 2px;
+  pointer-events: none;
+}
+
+.film-project-streams svg {
+  padding: 1px 2px;
+  border-radius: 2px;
+  background: rgb(0 0 0 / 63%);
+  color: #8fb8f5;
+}
+
+.film-project-offline-band {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 20px;
+  padding-left: 8px;
+  background: rgb(92 16 22 / 90%);
+  color: #ffffff;
+  font-size: 10.5px;
+  line-height: 20px;
+}
+
+.film-project-proxy-card {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+}
+
+/*
+ * Freeform view (upstream `freeform_view`): cards on a canvas where the engine's layout puts them,
+ * scrolled both ways, with the grid drawn while snapping. A card's box is where a press reaches it
+ * (upstream's `r.expand(2)`); its opaque face reaches 4 px further out (upstream's `card_bg`), so
+ * stacked cards hide the ones behind them. A later card is drawn over an earlier one.
+ */
+.film-freeform {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.film-freeform-canvas {
+  position: relative;
+}
+
+.film-freeform-canvas[data-snap] {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--kit-border) 70%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--kit-border) 70%, transparent) 1px, transparent 1px);
+}
+
+.film-freeform-card {
+  position: absolute;
+  z-index: 0;
+  box-sizing: border-box;
+  padding: 2px;
+  gap: 0;
+}
+
+.film-freeform-card::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -4px -4px 0;
+  border-radius: 4px;
+  background: var(--kit-surface);
+  pointer-events: none;
+}
+
+.film-freeform-card[aria-selected='true']::before {
+  inset: -4px -4px 0;
+  border: 1.5px solid var(--kit-primary);
+  background: color-mix(in srgb, var(--kit-primary) 10%, var(--kit-surface));
+}
+
+.film-freeform-card .film-project-card-line {
+  height: 20px;
+}
+
+.film-freeform-card[data-moving] {
+  opacity: 0.85;
+}
+
+/* Upstream's stack badge: "×N" on the accent, at the stack's first card's corner. */
+.film-freeform-stack {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  min-width: 26px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: var(--kit-primary);
+  color: #ffffff;
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Upstream's drag ghost out of the Freeform view: the item's name beside the pointer. */
+.film-freeform-drag-label {
+  position: fixed;
+  z-index: 1000;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 4px;
+  background: rgb(0 0 0 / 78%);
+  color: #ffffff;
+  font-size: 11.5px;
+  line-height: 20px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* The drag's picture: nothing to see (the cards themselves move). */
+.film-freeform-ghost {
+  position: fixed;
+  top: -10px;
+  left: -10px;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+/*
+ * Effect Controls (upstream `effect_controls::show`): the parameters on the left, up to 58 % of the
+ * frame (at least 260 px, leaving the lane 60 px), the clip's stretch of the sequence on the right.
+ */
+.film-ec {
+  --ec-split: min(max(260px, 58%), calc(100% - 60px));
+  --ec-lane-left: calc(var(--ec-split) + 4px);
+  --ec-lane-width: calc(100% - var(--ec-split) - 10px);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  font-size: 12px;
+  color: var(--kit-text);
+  overflow: hidden;
+}
+
+/* The lane's background, down the right side above the footer. */
+.film-ec::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  bottom: 26px;
+  left: var(--ec-lane-left);
+  width: var(--ec-lane-width);
+  background: var(--kit-surface-muted);
+  pointer-events: none;
+}
+
+.film-ec-head,
+.film-ec-row {
+  position: relative;
+  display: grid;
+  /* minmax(0, …): the head's clip name never widens its lane column past the rows'. */
+  grid-template-columns: var(--ec-split) minmax(0, 1fr);
+  flex: none;
+}
+
+.film-ec-head {
+  height: 50px;
+  padding-top: 4px;
+  box-sizing: border-box;
+}
+
+.film-ec-pills {
+  display: flex;
+  gap: 6px;
+  padding: 0 4px 0 8px;
+  height: 24px;
+  min-width: 0;
+}
+
+.film-ec-pill {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0 8px;
+  line-height: 22px;
+  border: 1px solid var(--kit-border);
+  border-radius: 4px;
+  color: var(--kit-text-muted);
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.film-ec-pill[data-active='true'] {
+  border-color: transparent;
+  background: var(--kit-primary-soft);
+  color: var(--kit-text);
+}
+
+.film-ec-scrub {
+  position: relative;
+  min-width: 0;
+  z-index: 1;
+  margin-right: 6px;
+  margin-left: 4px;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.film-ec-ruler {
+  position: relative;
+  height: 24px;
+  border-bottom: 1px solid var(--kit-border);
+}
+
+.film-ec-ruler-ticks {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.film-ec-tick {
+  position: absolute;
+  bottom: 0;
+  width: 1px;
+  height: 3px;
+  background: var(--kit-text-muted);
+}
+
+.film-ec-tick[data-labelled] {
+  height: 7px;
+}
+
+.film-ec-tick-label {
+  position: absolute;
+  bottom: 9px;
+  left: 0;
+  transform: translateX(-50%);
+  color: var(--kit-text-muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.film-ec-clipbar {
+  min-width: 0;
+  height: 14px;
+  margin-top: 6px;
+  padding: 0 4px;
+  border-radius: 2px;
+  background: var(--kit-primary-soft);
+  font-size: 10px;
+  line-height: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.film-ec-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.film-ec-heading {
+  padding: 0 8px;
+  line-height: 18px;
+  color: var(--kit-text-muted);
+  font-weight: 600;
+  font-size: 11.5px;
+}
+
+.film-ec-row {
+  height: 22px;
+  align-items: center;
+}
+
+.film-ec-effect:hover .film-ec-left {
+  background: var(--kit-primary-soft);
+}
+
+.film-ec-left {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  min-width: 0;
+  height: 22px;
+  padding-right: 4px;
+  box-sizing: border-box;
+}
+
+.film-ec-lanecell {
+  position: relative;
+  margin: 0 6px 0 4px;
+  min-width: 0;
+}
+
+.film-ec-fold,
+.film-ec-fx,
+.film-ec-reset,
+.film-ec-stopwatch,
+.film-kf-arrow,
+.film-kf-add,
+.film-props-reset,
+.film-props-fold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--kit-text-muted);
+  cursor: pointer;
+}
+
+.film-ec-fold {
+  width: 20px;
+  height: 22px;
+}
+
+.film-ec-fx {
+  position: relative;
+  width: 18px;
+  height: 14px;
+  margin-right: 6px;
+  color: var(--kit-text);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+/* A switched-off effect: its fx faint and struck through, as upstream. */
+.film-ec-fx[data-off] {
+  color: var(--kit-text-muted);
+  opacity: 0.6;
+}
+
+.film-ec-fx[data-off]::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  top: 50%;
+  border-top: 1px solid currentColor;
+  transform: rotate(-35deg);
+}
+
+.film-ec-effect-name {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: default;
+}
+
+.film-ec-reset,
+.film-props-reset {
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  border-radius: 3px;
+}
+
+.film-ec-reset:hover,
+.film-props-reset:hover,
+.film-ec-stopwatch:hover,
+.film-kf-add:hover,
+.film-kf-arrow:not(:disabled):hover {
+  color: var(--kit-text);
+}
+
+.film-ec-twirl {
+  flex: none;
+  width: 19px;
+}
+
+.film-ec-stopwatch {
+  width: 14px;
+  height: 14px;
+}
+
+.film-ec-stopwatch[data-on] {
+  color: var(--kit-primary);
+}
+
+.film-ec-name {
+  /* The name gives way first (upstream's values start at half the row, at least 150 px in): digits are never clipped. */
+  flex: 0 1 calc(50% - 39px);
+  min-width: 40px;
+  padding-left: 6px;
+  box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.film-ec-value {
+  display: flex;
+  align-items: center;
+  flex: 1 0 auto;
+  margin-right: 8px;
+}
+
+/* A choice can narrow; a number cannot. */
+.film-ec-value:has(.film-ec-choice, .film-ec-readonly) {
+  flex: 1 1 0;
+  min-width: 60px;
+  overflow: hidden;
+}
+
+.film-ec-pair {
+  display: inline-flex;
+  gap: 10px;
+  min-width: 0;
+}
+
+.film-ec-readonly {
+  color: var(--kit-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.film-ec-text {
+  width: 160px;
+  max-width: 100%;
+  height: 20px;
+  padding: 0 4px;
+}
+
+.film-ec-choice .kui-field {
+  height: 20px;
+  width: 130px;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.film-ec-choice,
+.film-ec-choice .kui-choice {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.film-ec-color {
+  position: relative;
+  display: inline-flex;
+}
+
+.film-ec-swatch {
+  width: 28px;
+  height: 14px;
+  padding: 0;
+  border: 1px solid var(--kit-border);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.film-ec-color-popover {
+  position: fixed;
+  z-index: 50;
+  margin-top: 18px;
+  padding: 8px;
+  border: 1px solid var(--kit-border);
+  border-radius: 8px;
+  background: var(--kit-surface);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.18);
+}
+
+/* The keyframe navigator: previous, add/remove, next (upstream `keyframe_nav`, 16 px apart). */
+.film-kf-nav {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  width: 48px;
+  margin-right: 10px;
+}
+
+.film-kf-arrow,
+.film-kf-add {
+  width: 16px;
+  height: 16px;
+}
+
+.film-kf-arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.film-kf-add[data-on] {
+  color: var(--kit-primary);
+}
+
+/* The playhead: a handle on the lane's ruler and a line down the lane. */
+.film-ec-playhead {
+  position: absolute;
+  z-index: 2;
+  top: 15px;
+  bottom: 26px;
+  left: calc(var(--ec-lane-left) + var(--ec-lane-width) * var(--ph));
+  width: 1px;
+  background: var(--kit-primary);
+  pointer-events: none;
+}
+
+.film-ec-playhead-head {
+  position: absolute;
+  top: 0;
+  left: -5px;
+  width: 11px;
+  height: 13px;
+  background: var(--kit-primary);
+  clip-path: polygon(0 0, 100% 0, 100% 62%, 50% 100%, 0 62%);
+}
+
+.film-ec-foot {
+  flex: none;
+  height: 26px;
+  padding: 0 10px;
+  line-height: 26px;
+  color: var(--kit-primary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.film-menu-heading {
+  padding: 4px 10px 2px;
+  color: var(--kit-text-muted);
+  font-size: 12px;
+}
+
+/* Properties (upstream `properties_panel`): a compact inspector, rows 32 px tall. */
+.film-props {
+  width: 100%;
+  height: 100%;
+  padding: 8px 14px;
+  box-sizing: border-box;
+  overflow: auto;
+  font-size: 12px;
+  color: var(--kit-text);
+}
+
+.film-props-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding-left: 2px;
+}
+
+.film-props-swatch {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.film-props-name {
+  min-width: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.film-props-section {
+  margin-top: 4px;
+  border-top: 1px solid var(--kit-border);
+}
+
+.film-props-section-head {
+  display: flex;
+  align-items: center;
+  height: 30px;
+}
+
+.film-props-fold {
+  flex: 1;
+  justify-content: flex-start;
+  gap: 6px;
+  height: 30px;
+  color: var(--kit-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.film-props-fold svg {
+  color: var(--kit-text-muted);
+}
+
+.film-props-reset {
+  margin-right: 18px;
+}
+
+.film-props-row {
+  display: flex;
+  align-items: center;
+  height: 32px;
+}
+
+.film-props-label {
+  flex: 0 0 132px;
+  min-width: 0;
+  padding-left: 18px;
+  color: var(--kit-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.film-props-value {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: 8px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.film-props-speed {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 0 12px;
+  line-height: 24px;
+  border: 1px solid var(--kit-border);
+  border-radius: 4px;
+}
+
+/*
+ * Audio Meters (upstream `panels/meters.rs`): the meter fills the frame, 8 px in; the channels'
+ * boxes lie over its bars, for their ids and levels only.
+ */
+.film-meters {
+  width: 100%;
+  height: 100%;
+  padding: 4px 0 4px 4px;
+  box-sizing: border-box;
+}
+
+.film-meters-area {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.film-meters-channel {
+  position: absolute;
+  pointer-events: none;
+}
+
+/*
+ * Markers (upstream `misc.rs` `markers`): the colour filter's 16 px chips, then 38 px rows with a
+ * 4 px colour bar, the name, and the start timecode.
+ */
+.film-markers {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  padding: 6px;
+  box-sizing: border-box;
+}
+
+.film-markers-filter {
+  display: flex;
+  gap: 2px;
+  flex: none;
+  margin-bottom: 4px;
+}
+
+.film-markers-chip {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 1px solid var(--film-marker);
+  border-radius: 3px;
+  background: transparent;
+  background-clip: content-box;
+  cursor: pointer;
+}
+
+.film-markers-chip[data-on='true'] {
+  border-width: 2px;
+  border-color: transparent;
+  background-color: var(--film-marker);
+}
+
+.film-markers-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.film-markers-row {
+  display: grid;
+  grid-template-columns: 4px 1fr;
+  grid-template-rows: 15px 15px;
+  column-gap: 8px;
+  align-items: center;
+  width: 100%;
+  height: 38px;
+  padding: 4px 4px 4px 4px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--kit-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.film-markers-row:hover {
+  background: var(--kit-primary-soft);
+}
+
+.film-markers-bar {
+  grid-row: 1 / span 2;
+  width: 4px;
+  height: 26px;
+  border-radius: 2px;
+}
+
+.film-markers-name {
+  overflow: hidden;
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.film-markers-time {
+  overflow: hidden;
+  color: var(--kit-primary);
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 11px;
+  white-space: pre;
+  text-overflow: ellipsis;
+}
+
+.film-markers-empty {
+  padding: 4px 2px;
+  color: var(--kit-text-muted);
+  font-size: 12px;
+}
+
+/* History (upstream `misc.rs` `history`): 20 px rows, the current step selected, undone steps faint. */
+.film-history {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  padding: 6px;
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+.film-history-row {
+  flex: none;
+  height: 20px;
+  padding: 0 8px;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  color: var(--kit-text);
+  font-size: 12px;
+  text-align: left;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.film-history-row:hover {
+  background: var(--kit-surface-muted);
+}
+
+.film-history-row[aria-current='step'] {
+  background: var(--kit-primary-soft);
+}
+
+.film-history-row[data-undone] {
+  color: var(--kit-text-muted);
+  opacity: 0.7;
+}
+
+/* Info (upstream `misc.rs` `info`): a bold title, then 90 px keys and their values. */
+.film-info {
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+  overflow: auto;
+  color: var(--kit-text);
+  font-size: 12px;
+}
+
+.film-info-title {
+  margin-bottom: 2px;
+  font-weight: 600;
+}
+
+.film-info-line {
+  display: flex;
+  min-height: 16px;
+  align-items: baseline;
+}
+
+.film-info-key {
+  flex: none;
+  width: 90px;
+  color: var(--kit-text-muted);
+}
+
+.film-info-value {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.film-info-separator {
+  height: 1px;
+  margin: 6px 0;
+  background: var(--kit-border);
+}
+
+/* The caught-fault window's detail (upstream `error_window`): the message, small and monospaced. */
+.film-error-detail {
+  max-height: 160px;
+  margin: 8px 0 0;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  white-space: pre-wrap;
+  color: var(--kit-text-muted);
+}
+
+/* Film's dialogs (dialogs/fields.tsx): upstream's rows, one under the other. */
+.film-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 300px;
+  font-size: 13px;
+}
+
+.film-dialog-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.film-dialog-row > span:first-child {
+  flex: none;
+  color: var(--kit-text-muted);
+}
+
+.film-dialog-row > .kui-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.film-dialog-multiline {
+  align-items: flex-start;
+}
+
+.film-dialog-multiline textarea {
+  min-height: 64px;
+  resize: vertical;
+}
+
+.film-dialog-heading {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* A plain label in a dialog (upstream's `ui.label`: Automate's "To <sequence>"). */
+.film-dialog-label {
+  margin: 0;
+  font-size: 13px;
+}
+
+.film-dialog-radios {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.film-dialog-readout {
+  font-family: var(--kit-font-mono, ui-monospace, monospace);
+  color: var(--kit-text);
+}
+
+/* Upstream's colour row (menu_dialogs.rs color): a swatch that opens the picker under the row. */
+.film-dialog-swatch {
+  flex: none;
+  width: 40px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--kit-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.film-dialog-swatch:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.film-dialog-color-picker {
+  position: fixed;
+  z-index: 1000;
+  width: 248px;
+  padding: 8px;
+  border: 1px solid var(--kit-border);
+  border-radius: 8px;
+  background: var(--kit-surface);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.18);
+}
+
+/* Delete Tracks' track lists sit under their checkboxes, 22 px in (upstream's add_space(22)). */
+[data-dialog='deleteTracks'] label.film-dialog-row {
+  padding-left: 22px;
+}
+
+/* Simplify Sequence's Keep radios sit beside their label, as upstream's horizontal_wrapped row. */
+[data-dialog='simplify'] .film-dialog-row > .film-dialog-radios {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+/* Audio Gain's peak after the gain (Kition's preview beside upstream's Peak Amplitude). */
+.film-dialog-after {
+  color: var(--kit-text);
+  font-weight: 600;
+}
+
+.film-dialog-separator {
+  width: 100%;
+  margin: 2px 0;
+  border: 0;
+  border-top: 1px solid var(--kit-border);
+}
+
+.film-dialog-empty {
+  margin: 0;
+}
+
+/* Properties (menu_dialogs.rs): each file's lines, scrolled within 420 px. */
+.film-dialog-properties {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 420px;
+  min-width: 360px;
+  overflow-y: auto;
+}
+
+.film-dialog-properties-file {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--kit-border);
+}
+
+.film-dialog-properties-line {
+  margin: 0;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+/* Audio Gain's rows (upstream's two-column grid): a radio, then its dB field. */
+.film-dialog-grid {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  justify-content: start;
+  gap: 8px 12px;
+}
+
+/* A list of radios that can grow long (Interpret Footage's colour spaces, upstream's 300 px scroll area). */
+.film-dialog-scroll {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* A row whose controls wrap (Audio Channels' formats and source channels). */
+.film-dialog-wrap {
+  flex-wrap: wrap;
+}
+
+/* Audio Channels' clip × source channel matrix (upstream's striped grid), scrolling when wide. */
+.film-dialog-matrix {
+  max-width: 100%;
+  max-height: 240px;
+  overflow: auto;
+}
+
+.film-dialog-matrix table {
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.film-dialog-matrix th,
+.film-dialog-matrix td {
+  padding: 2px 8px;
+  text-align: center;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.film-dialog-matrix th[scope='row'] {
+  text-align: left;
+  color: var(--kit-text-muted);
+}
+
+.film-dialog-matrix tbody tr:nth-child(odd) {
+  background: var(--kit-surface-muted);
+}
+
+/* Synchronize's and Merge Clips' Synchronize Point (upstream's ui.group). */
+.film-dialog-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--kit-border);
+  border-radius: var(--kit-radius-control);
+}
+
+.film-dialog-group > legend {
+  padding: 0 4px;
+}
+
+/* Upstream's sections (Sequence Settings' Video, Audio, Video Previews: a strong title over a group). */
+.film-dialog-section > legend {
+  font-weight: 600;
+}
+
+/* Upstream's greyed rows (add_enabled(false, ...)): the label and the control both read as disabled. */
+.film-dialog-row[data-disabled] > span:first-child {
+  opacity: 0.55;
+}
+
+/* A greyed label after its value (VR Properties' "0° Horizontal"). */
+.film-dialog-after-label {
+  color: var(--kit-text-muted);
+  opacity: 0.55;
+}
+
+/* A greyed number upstream shows as a button (fixed_value), at its 64 px minimum. */
+.film-dialog-fixed {
+  min-width: 64px;
+  justify-content: flex-start;
+}
+
+/*
+ * A previewing dialog (non-modal, in a corner of the workspace) never runs past the workspace's
+ * bottom: the menu bar, the header, and the status bar take about 100 px of the page, and the
+ * corner insets 24; its fields scroll inside it.
+ */
+.kui-dialog-layer > .kui-dialog:has(.film-dialog) {
+  box-sizing: border-box;
+  max-height: min(85vh, calc(100vh - 130px));
+}
+
+/* A greyed list (upstream's disabled ComboBox) reads as disabled, as a greyed field does. */
+.film-dialog select.kui-field:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* Sequence Settings is upstream's 620 px window: wider than the other dialogs, never scrolling sideways. */
+.kui-dialog:has(.film-dialog[data-dialog='sequenceSettings']) {
+  max-width: min(660px, 94vw);
+}
+
+.film-dialog[data-dialog='sequenceSettings'] {
+  width: 600px;
+  max-width: 100%;
+}
+
+.film-dialog-section {
+  min-width: 0;
+}
+
+/* Sequence Settings' labels in one column, right-aligned, as upstream's `row` lays them out. */
+.film-dialog[data-dialog='sequenceSettings'] .film-dialog > .film-dialog-row > span:first-child,
+.film-dialog[data-dialog='sequenceSettings'] .film-dialog-section > .film-dialog-row > span:first-child,
+.film-dialog[data-dialog='sequenceSettings'] .film-dialog-section > .film-dialog-row > .film-dialog-row:first-child > span:first-child,
+.film-dialog[data-dialog='sequenceSettings'] .film-dialog > .film-dialog-row > .film-dialog-row:first-child > span:first-child {
+  width: 140px;
+  text-align: right;
+}
+
+/* Upstream's weak, small lines (Merge Clips' clips, Synchronize's count). */
+.film-dialog-small {
+  font-size: 12px;
+}
+
+/* The preview strip: what the preview changed, a small frame, Play, and a job's progress. */
+.film-preview-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.film-preview-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.film-preview-lines li + li {
+  margin-top: 2px;
+}
+
+.film-preview-thumb {
+  width: 240px;
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  border-radius: var(--kit-radius-control);
+  background: #000;
+}
+
+.film-preview-progress {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--kit-border);
+  overflow: hidden;
+}
+
+.film-preview-progress > span {
+  display: block;
+  height: 100%;
+  background: var(--kit-primary);
+}
+
+/*
+ * A dialog's picture preview over the Program monitor's picture, placed as the safe margins are;
+ * a preview of another frame size (Sequence Settings) shows at its own aspect inside that box.
+ */
+.film-program-preview {
+  position: absolute;
+  pointer-events: none;
+  background: #000;
+  object-fit: contain;
+}
+
+.film-program-preview[data-shown='false'] {
+  visibility: hidden;
+}
+
+.film-preview-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 2px 8px;
+  border-radius: var(--kit-radius-control);
+  background: var(--kit-primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+/* Top right on the Program monitor, clear of a dialog in the layout's bottom-left corner. */
+.film-program-preview-badge {
+  left: auto;
+  right: 8px;
+}
+
+/*
+ * A dialog's preview drawn in the panels (Task 10; upstream draws none): what it adds has a dashed
+ * accent outline, what it removes is faded and struck through, what it changes has an accent
+ * outline (and on the Timeline a dashed ghost where it was), and its selection a dashed highlight.
+ * Ghosts take no press.
+ */
+.film-tl-preview-badge {
+  top: 6px;
+  right: 6px;
+  left: auto;
+  padding: 1px 6px;
+  font-size: 10px;
+}
+
+.film-project-preview-badge,
+.film-markers-preview-badge {
+  position: static;
+  flex: none;
+  margin-left: auto;
+  padding: 1px 6px;
+  font-size: 10px;
+}
+
+.film-clip[data-preview]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border: 2px solid var(--kit-primary);
+  pointer-events: none;
+}
+
+.film-clip[data-preview='added']::before {
+  border-style: dashed;
+}
+
+.film-clip[data-preview-selected] {
+  outline: 2px dashed var(--kit-text);
+  outline-offset: -2px;
+}
+
+.film-tl-ghost {
+  position: absolute;
+  top: 1px;
+  left: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  color: #d9d9d9;
+  pointer-events: none;
+}
+
+.film-tl-ghost[data-preview='was'] {
+  border: 1.5px dashed color-mix(in srgb, var(--kit-text) 55%, transparent);
+  background: color-mix(in srgb, var(--film-ghost) 18%, transparent);
+}
+
+.film-tl-ghost[data-preview='removed'] {
+  background: color-mix(in srgb, var(--film-ghost) 40%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--kit-text) 35%, transparent);
+}
+
+.film-tl-ghost[data-preview='removed']::after,
+.film-tl-track-mark[data-preview='removed']::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: 1.5px solid var(--kit-danger, #e34850);
+}
+
+.film-tl-ghost[data-preview='removed'] .film-clip-name {
+  text-decoration: line-through;
+}
+
+.film-tl-track-mark {
+  position: absolute;
+  left: 0;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.film-tl-track-mark[data-preview='added'] {
+  border: 1.5px dashed var(--kit-primary);
+  background: color-mix(in srgb, var(--kit-primary) 8%, transparent);
+}
+
+.film-tl-track-mark[data-preview='removed'] {
+  background: color-mix(in srgb, var(--kit-surface) 55%, transparent);
+}
+
+.film-tl-track-mark[data-preview='changed'] {
+  border: 1.5px solid var(--kit-primary);
+}
+
+.film-tl-marker[data-preview='added'] .film-tl-marker-head,
+.film-tl-marker[data-preview='changed'] .film-tl-marker-head {
+  outline: 1.5px dashed var(--kit-primary);
+  outline-offset: 1px;
+}
+
+.film-tl-marker[data-preview='removed'] {
+  opacity: 0.35;
+}
+
+/* A marker a dialog's preview highlights (Find's matches), as a highlighted clip is. */
+.film-tl-marker[data-preview-selected] .film-tl-marker-head {
+  outline: 2px dashed var(--kit-text);
+  outline-offset: 1px;
+}
+
+.film-monitor-marker[data-preview='added'],
+.film-monitor-marker[data-preview='changed'] {
+  stroke: var(--kit-primary);
+  stroke-width: 1.5;
+  stroke-dasharray: 2 1.5;
+}
+
+.film-monitor-marker[data-preview='removed'] {
+  opacity: 0.35;
+}
+
+/* The safe areas a Project Settings preview draws on the Program monitor: dashed, in the accent. */
+.film-safe-margins[data-preview='changed'] .film-safe-action,
+.film-safe-margins[data-preview='changed'] .film-safe-title {
+  border: 1.5px dashed var(--kit-primary);
+}
+
+.film-seq-tab[data-preview='added'] {
+  padding: 0 4px;
+  border: 1px dashed var(--kit-primary);
+  border-radius: var(--kit-radius-control);
+}
+
+.film-project-row[data-preview],
+.film-project-card[data-preview],
+.film-markers-row[data-preview] {
+  outline: 1.5px solid var(--kit-primary);
+  outline-offset: -1.5px;
+}
+
+.film-project-card[data-preview] {
+  outline-offset: 2px;
+}
+
+.film-project-row[data-preview='added'],
+.film-project-card[data-preview='added'],
+.film-markers-row[data-preview='added'] {
+  outline-style: dashed;
+}
+
+.film-project-row[data-preview='removed'],
+.film-project-card[data-preview='removed'],
+.film-markers-row[data-preview='removed'] {
+  outline-color: color-mix(in srgb, var(--kit-text) 35%, transparent);
+  opacity: 0.45;
+}
+
+.film-project-row[data-preview='removed'] .film-project-text,
+.film-project-card[data-preview='removed'] .film-project-text,
+.film-markers-row[data-preview='removed'] .film-markers-name {
+  text-decoration: line-through;
+}
+
+.film-project-row[data-preview='added'],
+.film-project-row[data-preview='removed'],
+.film-project-card[data-preview='added'],
+.film-project-card[data-preview='removed'] {
+  pointer-events: none;
+}
+
+/* A column only the preview shows (Metadata Display), outlined in the List view's header. */
+.film-project-column[data-preview='added'] {
+  outline: 1.5px dashed var(--kit-primary);
+  outline-offset: -1.5px;
+}
+
+.film-project-cell[data-preview-cell] .film-project-text {
+  color: var(--kit-primary);
+  font-weight: 600;
+}
+
+.film-project-row[data-preview-selected],
+.film-project-card[data-preview-selected] {
+  box-shadow: inset 0 0 0 1.5px var(--kit-text);
+  outline: 1.5px dashed var(--kit-text);
+  outline-offset: -1.5px;
+}
+
+/* About's tabs (upstream dialogs.rs about: selectable labels in a row, then a separator). */
+/*
+ * Film's dialogs scroll their fields alone: the preview strip under them stays whole, and a tabbed
+ * dialog's tab row (with what leads it) stays pinned over its tab's rows.
+ */
+[data-testid='film-dialog'] .kui-dialog-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+[data-testid='film-dialog'] .kui-preview-fields {
+  flex: 1 1 auto;
+  min-height: 96px;
+  overflow-y: auto;
+}
+
+[data-testid='film-dialog'] .kui-preview-strip,
+[data-testid='film-dialog'] .kui-dialog-notice {
+  flex: none;
+}
+
+.film-dialog-pinned {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--kit-surface);
+}
+
+.film-about-tabs {
+  display: flex;
+  gap: 4px;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--kit-border);
+}
+
+.film-about-tab {
+  padding: 4px 10px;
+  border: 0;
+  border-radius: var(--kit-radius-control);
+  background: transparent;
+  color: var(--kit-text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.film-about-tab:hover {
+  color: var(--kit-text);
+}
+
+.film-about-tab[aria-selected='true'] {
+  background: var(--kit-primary-soft);
+  color: var(--kit-text);
+}
+
+.film-about-body {
+  min-width: 380px;
+  min-height: 120px;
+}
+
+/*
+ * A dialog that previews on a panel (non-modal: picture, sound, timeline, markers) sits at the
+ * bottom left, over the Project panel, so the Program monitor it previews on stays in view.
+ * Upstream centres its windows, but they preview nothing.
+ */
+.kui-dialog-layer:has(> .kui-dialog[data-testid='film-dialog']) {
+  align-items: flex-end;
+  justify-content: flex-start;
+  padding: 0 0 36px 12px;
+}
+
+/* Link Media is upstream's 760 px window (media_dialogs.rs link_media): wider than the other
+   dialogs, never scrolling sideways. Its rows of missing clips are in upstream's four columns,
+   striped, the chosen row marked; the status red (upstream's #e05a5a), or online with its
+   picture while the preview relinks it. The rows scroll past 200 px, so the options and the
+   buttons stay in view. */
+.kui-dialog:has(.film-dialog[data-dialog='linkMedia']) {
+  max-width: min(800px, 94vw);
+}
+
+.film-dialog[data-dialog='linkMedia'] {
+  width: 720px;
+  max-width: 100%;
+}
+
+.film-link-rows {
+  display: flex;
+  flex-direction: column;
+  max-height: 200px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border: 1px solid var(--kit-border);
+  border-radius: var(--kit-radius-control);
+}
+
+.film-link-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 2fr) minmax(96px, auto);
+  align-items: center;
+  gap: 14px;
+  min-height: 28px;
+  padding: 2px 8px;
+}
+
+.film-link-row:nth-child(even) {
+  background: var(--kit-surface-muted);
+}
+
+.film-link-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--kit-surface);
+  border-bottom: 1px solid var(--kit-border);
+}
+
+.film-link-row > * {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.film-link-name {
+  padding: 2px 6px;
+  border: 1px solid transparent;
+  border-radius: var(--kit-radius-control);
+  background: none;
+  color: var(--kit-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.film-link-row[data-chosen] .film-link-name {
+  border-color: var(--kit-primary);
+  background: var(--kit-primary-soft);
+}
+
+.film-link-path {
+  color: var(--kit-text-muted);
+  font-size: 11px;
+}
+
+.film-link-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.film-link-missing {
+  color: #e05a5a;
+}
+
+.film-link-online {
+  color: var(--kit-text);
+  font-weight: 600;
+}
+
+.film-link-icon {
+  flex: none;
+  width: 36px;
+  height: 20px;
+  border-radius: 3px;
+  background: #0c0c0c;
+}
+
+.film-link-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.film-link-located {
+  overflow-wrap: anywhere;
+  color: var(--kit-text-muted);
+}
+
+.film-link-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Metadata Display (project_dialogs.rs metadata_display): upstream's fixed 480 × 470 window, the
+   fields beside the column order, each list scrolling within 340 px. */
+.film-columns {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 456px;
+  max-width: 100%;
+}
+
+.film-columns-lists {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.film-columns-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.film-columns-scroll {
+  display: flex;
+  flex-direction: column;
+  height: 340px;
+  max-height: 40vh;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--kit-border);
+  border-radius: var(--kit-radius-control);
+}
+
+.film-columns-field {
+  flex: none;
+  min-height: 22px;
+}
+
+.film-columns-field > span,
+.film-columns-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.film-columns-order-row {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  min-height: 24px;
+}
+
+.film-columns-move {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--kit-border);
+  border-radius: var(--kit-radius-control);
+  background: var(--kit-surface);
+  color: var(--kit-text);
+  cursor: pointer;
+}
+
+.film-columns-move:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Manage Saved View Presets (project_dialogs.rs manage_presets): the ten slots as selectable rows
+   in a 300 px wide list, then the name and the actions. */
+.film-presets {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 340px;
+}
+
+.film-presets-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--kit-border);
+  border-radius: var(--kit-radius-control);
+}
+
+.film-presets-row {
+  padding: 3px 6px;
+  border: 1px solid transparent;
+  border-radius: var(--kit-radius-control);
+  background: none;
+  color: var(--kit-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.film-presets-row[data-empty] {
+  color: var(--kit-text-muted);
+}
+
+.film-presets-row[aria-pressed='true'] {
+  border-color: var(--kit-primary);
+  background: var(--kit-primary-soft);
+}
+
+.film-presets-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Focus (kit-editor's display modes): the Program monitor's picture alone fills the editor. */
+.film-focus-program {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}

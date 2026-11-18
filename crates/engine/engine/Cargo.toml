@@ -1,0 +1,47 @@
+[package]
+name = "kition-film-engine"
+description = "Kition Film engine façade: session, command registry, history, media pool"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+default = []
+# Speech-to-text with Whisper (candle, CPU). Off by default and in wasm builds.
+whisper = ["kition-film-speech/whisper"]
+# Speech-model downloads over HTTPS.
+speech-download = ["kition-film-speech/download"]
+
+[dependencies]
+kition-film-time = { workspace = true }
+kition-film-geom = { workspace = true }
+kition-film-color = { workspace = true }
+kition-film-frame = { workspace = true }
+kition-film-media = { workspace = true }
+kition-film-codecs = { workspace = true }
+kition-film-project = { workspace = true }
+kition-film-edit = { workspace = true }
+kition-film-render = { workspace = true }
+kition-film-scopes = { workspace = true }
+kition-film-text = { workspace = true }
+kition-film-audio-dsp = { workspace = true }
+kition-film-export = { workspace = true }
+kition-film-mxf = { workspace = true }
+kition-film-format = { workspace = true }
+kition-film-interchange = { workspace = true }
+kition-film-captions = { workspace = true }
+kition-film-speech = { workspace = true }
+kdm-model = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+log = { workspace = true }
+web-time = "1"
+
+[dev-dependencies]
+kition-film-testkit = { workspace = true }
+image = { version = "0.25", default-features = false, features = ["png"] }

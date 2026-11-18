@@ -1,0 +1,21 @@
+format: 1
+id: regressions/issue-12
+feature: film.color.grade
+intent: >-
+  color.presetThumbnails grades the program frame at the playhead, as its description says,
+  instead of a built-in test picture; with no sequence open it says it used the sample picture.
+layer: gate
+source:
+  kind: issue
+  from: Kition Film regression suite
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-engine
+      filter: "preset_thumbnails_show_the_program_frame"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

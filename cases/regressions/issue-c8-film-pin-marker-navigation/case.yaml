@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-pin-marker-navigation
+feature: film.agent.premises
+intent: Marker jumps and Source navigation retain the observed marks, marker destinations and Source timebase used to calculate their result.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_navigation_pin, filter: marker_and_source_navigation_retain_their_destination_inputs }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

@@ -1,0 +1,25 @@
+format: 1
+id: film.agent.context/explicit-call-context
+feature: film.agent.context
+intent: >-
+  An agent's step names its sequence (`at.part` {sequence}), its time (`at.time`, seconds, on the
+  sequence's frames) and its clips (`on`): Razor cuts at the time given, two steps act at two
+  times, a step acts in another sequence, a selection-only command acts on the ids given, and
+  afterwards the open sequence, the playhead and the selection are as the person left them.
+  Unknown ids, sequences and out-of-range times are refused with what is valid, and an agent's
+  command given its clips, item or time leaves the editor as it was.
+layer: gate
+source:
+  kind: synthetic
+  from: bindings/wasm/tests/context.rs
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-kit
+      test: context
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

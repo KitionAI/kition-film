@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-1
+feature: film.effects.basics
+intent: >-
+  masks.add, masks.set, masks.moveVertex, masks.translate, masks.addVertex and masks.list take and
+  answer mask geometry in frame pixels, where the mask is seen: a mask asked for at a frame point
+  lands there even when Motion moves or scales the clip (1920x1080 footage in a 1280x720 sequence
+  put the mask at the wrong place).
+layer: gate
+source:
+  kind: issue
+  from: Kition Film regression suite
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-engine
+      filter: "masks_are_placed_in_frame_pixels"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

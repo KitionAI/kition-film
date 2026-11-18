@@ -1,0 +1,26 @@
+format: 1
+id: regressions/issue-resize-observer-loop
+feature: film.editor.display-modes
+intent: >-
+  Laying the editor out raises no page error in WebKit: when the Program monitor's canvas was
+  placed inside a ResizeObserver delivery, its first view published the guides' geometry there,
+  which re-rendered the editor synchronously and observed the tab strip anew mid-delivery, so
+  WebKit reported "ResizeObserver loop completed with undelivered notifications" in Single line
+  and in Classic at Kition's editor widths.
+layer: gate
+source:
+  kind: probe
+  from: web/tests/modes.mjs webkit (mode smoke)
+  license: Apache-2.0
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/modes.mjs, webkit]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [webkit]
+timeout_s: 60
+since: "2026-11-17"

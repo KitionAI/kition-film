@@ -1,0 +1,354 @@
+//! Workspace automation: `cargo xtask <layers|wasm|ci>`.
+//!
+//! - `layers`: enforces the dependency layering of `docs/architecture.md` §1 (downward-only edges,
+//!   listed same-layer edges, L0 codec crates depend on `bitstream` only, no UI/OS crates below L5).
+//! - `wasm`: `cargo check --target wasm32-unknown-unknown` for every crate in L0–L4, plus the kit's
+//!   WebAssembly SDK.
+//! - `assets`: every asset file (image, icon, font, LUT, audio, video…) has a complete
+//!   `<file>.attribution` sidecar and an entry in `docs/attribution.md` (AGENTS.md §1).
+//! - `fixtures [crate…]`: pre-generate the ffmpeg fixture matrix of the oracle tests (runs each
+//!   crate's ignored `generate_fixtures` test, i.e. the same generators the tests use) and print
+//!   what was made, reused or skipped.
+//! - `ci`: fmt check, clippy -D warnings, tests, layers, assets, wasm.
+//! - `eval [options]`: the real-model layer, the eval cases (docs/quality.md, decision F-QA-16), run
+//!   by kition-sdk's `tools/eval-cases.mjs` (KITION_SDK_DIR, or ../kition-sdk beside this
+//!   repository). Only a maintainer starts it; it asks at the terminal before calling any model.
+//!   `--dry-run` calls none.
+
+use std::process::{Command, ExitCode};
+
+use serde_json::Value;
+
+/// (crate name without the `kition-film-` prefix, layer).
+const LAYERS: &[(&str, u8)] = &[
+    ("testkit", 0),
+    ("time", 0),
+    ("geom", 0),
+    ("color", 0),
+    ("bitstream", 0),
+    ("isobmff", 0),
+    ("matroska", 0),
+    ("mxf", 0),
+    ("cfb", 0),
+    ("mpegts", 0),
+    ("mpeg2v", 0),
+    ("ac3", 0),
+    ("ogg", 0),
+    ("riff", 0),
+    ("h264", 0),
+    ("h264enc", 0),
+    ("hevc", 0),
+    ("vp9", 0),
+    ("prores", 0),
+    ("mjpeg", 0),
+    ("dnx", 0),
+    ("apv", 0),
+    ("av1", 0),
+    ("aac", 0),
+    ("opus", 0),
+    ("frame", 1),
+    ("media", 1),
+    ("project", 1),
+    ("audio-dsp", 1),
+    ("text", 1),
+    ("edit", 2),
+    ("codecs", 2),
+    ("keyframe", 2),
+    ("effects", 2),
+    ("audio", 2),
+    ("captions", 2),
+    ("speech", 2),
+    ("interchange", 2),
+    ("render", 3),
+    ("scopes", 3),
+    ("playback", 3),
+    ("export", 3),
+    ("format", 3),
+    ("engine", 4),
+    // Kition's `kit.film` KDM bridge (phase 3b): above `project`/`format`, below `engine`'s own
+    // consumer of it (Task 2); given `engine`'s own layer, with `engine -> kdm-model` listed below,
+    // since there is no integer layer strictly between `format` (3) and `engine` (4).
+    ("kdm-model", 4),
+    // Kition's in-page Film engine (WebAssembly): the kit's editor and headless executable.
+    ("kit", 5),
+    ("kition-film", 6),
+];
+
+/// L0 crates that are not codecs/containers (no `bitstream`-only restriction).
+const L0_FOUNDATION: &[&str] = &["time", "geom", "color", "bitstream", "testkit"];
+
+/// Allowed same-layer edges (from, to).
+const SAME_LAYER: &[(&str, &str)] = &[
+    ("media", "frame"),
+    ("project", "media"),
+    ("project", "frame"),
+    ("effects", "keyframe"),
+    ("audio", "keyframe"),
+    ("playback", "render"),
+    ("export", "render"),
+    // Task 2 (the engine command bridge) has `engine` depend on `kdm-model`, its same-layer sibling.
+    ("engine", "kdm-model"),
+];
+
+/// Crates that must not appear below L5 (UI toolkits, windowing, OS audio/menus).
+const UI_ONLY: &[&str] = &["egui", "eframe", "egui-wgpu", "winit", "rfd", "cpal", "muda"];
+
+fn short(name: &str) -> &str {
+    name.strip_prefix("kition-film-").unwrap_or(name)
+}
+
+fn layer_of(name: &str) -> Option<u8> {
+    LAYERS.iter().find(|(n, _)| *n == short(name)).map(|(_, l)| *l)
+}
+
+fn metadata() -> Result<Value, String> {
+    let out = Command::new(env!("CARGO")).args(["metadata", "--format-version", "1", "--no-deps"]).output().map_err(|e| e.to_string())?;
+    if !out.status.success() {
+        return Err(String::from_utf8_lossy(&out.stderr).into());
+    }
+    serde_json::from_slice(&out.stdout).map_err(|e| e.to_string())
+}
+
+fn workspace_crates(md: &Value) -> Vec<(String, Vec<String>)> {
+    md["packages"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter(|p| p["name"] != "xtask")
+        .map(|p| {
+            let deps = p["dependencies"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter(|d| d["kind"].is_null() || d["kind"] == "build")
+                .filter_map(|d| d["name"].as_str().map(str::to_string))
+                .collect();
+            (p["name"].as_str().unwrap_or_default().to_string(), deps)
+        })
+        .collect()
+}
+
+fn layers() -> Result<(), String> {
+    let md = metadata()?;
+    let mut errors = Vec::new();
+    for (name, deps) in workspace_crates(&md) {
+        let Some(l) = layer_of(&name) else {
+            errors.push(format!("{name}: not assigned a layer (add it to xtask LAYERS and docs/architecture.md §1)"));
+            continue;
+        };
+        for d in &deps {
+            if l < 5 && UI_ONLY.contains(&d.as_str()) {
+                errors.push(format!("{name} (L{l}) depends on UI/OS crate `{d}`"));
+            }
+            if !d.starts_with("kition-film-") {
+                continue;
+            }
+            let Some(dl) = layer_of(d) else { continue };
+            let (a, b) = (short(&name), short(d));
+            if l == 0 && !L0_FOUNDATION.contains(&a) && b != "bitstream" {
+                errors.push(format!("{a} (L0 codec/container) may depend only on bitstream, found {b}"));
+            } else if dl > l {
+                errors.push(format!("{a} (L{l}) depends upward on {b} (L{dl})"));
+            } else if dl == l && l > 0 && !SAME_LAYER.contains(&(a, b)) {
+                errors.push(format!("{a} → {b}: same-layer edge (L{l}) not in the allowed list"));
+            }
+        }
+    }
+    if errors.is_empty() {
+        println!("layers: ok");
+        Ok(())
+    } else {
+        Err(errors.join("\n"))
+    }
+}
+
+/// File extensions that count as assets (AGENTS.md §1).
+const ASSET_EXT: &[&str] = &[
+    "png", "jpg", "jpeg", "gif", "webp", "svg", "ico", "icns", "bmp", "tif", "tiff", "heic", "avif", "exr", "ttf", "otf", "ttc", "woff", "woff2", "cube",
+    "3dl", "lut", "look", "wav", "mp3", "aac", "flac", "ogg", "opus", "m4a", "aif", "aiff", "mp4", "mov", "m4v", "mkv", "webm", "avi", "mxf", "psd", "ai",
+    "eps", "pdf", "prproj", "ffx", "prfpset", "mogrt", "aep",
+];
+
+/// Sidecar fields that must be present and non-empty.
+const REQUIRED_FIELDS: &[&str] = &["asset", "title", "author", "source", "license", "added"];
+
+fn repo_files() -> Result<Vec<String>, String> {
+    let out = Command::new("git").args(["ls-files", "--cached", "--others", "--exclude-standard"]).output().map_err(|e| e.to_string())?;
+    if !out.status.success() {
+        return Err(String::from_utf8_lossy(&out.stderr).into());
+    }
+    Ok(String::from_utf8_lossy(&out.stdout).lines().map(str::to_string).filter(|f| std::path::Path::new(f).exists()).collect())
+}
+
+fn is_asset(path: &str) -> bool {
+    std::path::Path::new(path).extension().and_then(|e| e.to_str()).is_some_and(|e| ASSET_EXT.contains(&e.to_ascii_lowercase().as_str()))
+}
+
+fn assets() -> Result<(), String> {
+    let files = repo_files()?;
+    let index = std::fs::read_to_string("docs/attribution.md").map_err(|e| format!("docs/attribution.md: {e}"))?;
+    let mut errors = Vec::new();
+    let mut n = 0;
+    for f in files.iter().filter(|f| is_asset(f)) {
+        n += 1;
+        let lower = f.to_ascii_lowercase();
+        if lower.contains("adobe") || lower.contains("premiere") {
+            errors.push(format!("{f}: asset paths must not reference Adobe/Premiere (AGENTS.md §1)"));
+        }
+        let side = format!("{f}.attribution");
+        match std::fs::read_to_string(&side) {
+            Err(_) => errors.push(format!("{f}: missing attribution sidecar {side}")),
+            Ok(text) => {
+                for field in REQUIRED_FIELDS {
+                    let ok = text.lines().any(|l| l.split_once(':').is_some_and(|(k, v)| k.trim() == *field && !v.trim().is_empty()));
+                    if !ok {
+                        errors.push(format!("{side}: field `{field}` missing or empty"));
+                    }
+                }
+                let lic = text.lines().find_map(|l| l.split_once(':').filter(|(k, _)| k.trim() == "license").map(|(_, v)| v.trim().to_ascii_lowercase()));
+                if lic.is_some_and(|l| l.contains("-nc") || l.contains("-nd") || l.contains("adobe") || l.contains("proprietary")) {
+                    errors.push(format!("{side}: licence not allowed (no NC/ND, Adobe or proprietary licences)"));
+                }
+            }
+        }
+        if !index.contains(&format!("`{f}`")) {
+            errors.push(format!("{f}: not listed in docs/attribution.md"));
+        }
+    }
+    for f in files.iter().filter(|f| f.ends_with(".attribution")) {
+        let asset = f.trim_end_matches(".attribution");
+        if !std::path::Path::new(asset).exists() {
+            errors.push(format!("{f}: sidecar for a file that does not exist"));
+        }
+    }
+    if errors.is_empty() {
+        println!("assets: ok ({n} assets attributed)");
+        Ok(())
+    } else {
+        Err(errors.join("\n"))
+    }
+}
+
+fn run(cmd: &mut Command) -> Result<(), String> {
+    eprintln!("$ {cmd:?}");
+    let st = cmd.status().map_err(|e| e.to_string())?;
+    if st.success() { Ok(()) } else { Err(format!("failed: {cmd:?}")) }
+}
+
+/// Crates above L4 that must also build for the web.
+const WEB_CRATES: &[&str] = &["kition-film-kit"];
+
+fn wasm() -> Result<(), String> {
+    let md = metadata()?;
+    let mut cmd = Command::new(env!("CARGO"));
+    cmd.args(["check", "--target", "wasm32-unknown-unknown"]);
+    let mut n = 0;
+    for (name, _) in workspace_crates(&md) {
+        if layer_of(&name).is_some_and(|l| l <= 4) || WEB_CRATES.contains(&name.as_str()) {
+            cmd.args(["-p", &name]);
+            n += 1;
+        }
+    }
+    if n == 0 {
+        return Ok(());
+    }
+    run(&mut cmd)?;
+    println!("wasm: ok ({n} crates)");
+    Ok(())
+}
+
+/// (crate, test target) whose ignored `generate_fixtures` test builds that crate's fixture matrix.
+const FIXTURE_GENERATORS: &[(&str, &str)] = &[
+    ("h264", "conformance"),
+    ("hevc", "conformance"),
+    ("isobmff", "oracle_demux"),
+    ("matroska", "oracle"),
+    ("prores", "oracle_decode"),
+    ("dnx", "oracle_decode"),
+    ("codecs", "mxf_oracle"),
+    ("codecs", "mpeg_oracle"),
+    ("mpeg2v", "oracle"),
+    ("ac3", "oracle"),
+    ("codecs", "ogg_oracle"),
+];
+
+fn fixtures(only: &[String]) -> Result<(), String> {
+    let unknown: Vec<&String> = only.iter().filter(|o| !FIXTURE_GENERATORS.iter().any(|(c, _)| *c == short(o))).collect();
+    if !unknown.is_empty() {
+        let known: Vec<&str> = FIXTURE_GENERATORS.iter().map(|(c, _)| *c).collect();
+        return Err(format!("no fixture generator for {unknown:?} (known: {})", known.join(", ")));
+    }
+    let Some(ff) = kition_film_testkit::ffmpeg() else {
+        return Err("ffmpeg not found: set KITION_FILM_FFMPEG=/path/to/ffmpeg or put ffmpeg on PATH".into());
+    };
+    println!("ffmpeg:   {}", ff.display());
+    println!("fixtures: {}", kition_film_testkit::fixtures::fixtures_root().display());
+    let (mut made, mut cached, mut skipped) = (0, 0, 0);
+    let mut failed = Vec::new();
+    for (krate, target) in FIXTURE_GENERATORS.iter().filter(|(c, _)| only.is_empty() || only.iter().any(|o| short(o) == *c)) {
+        let pkg = format!("kition-film-{krate}");
+        println!("\n== {pkg} ({target})");
+        let mut cmd = Command::new(env!("CARGO"));
+        cmd.args(["test", "--release", "-p", &pkg, "--test", target, "--", "--ignored", "--exact", "generate_fixtures", "--nocapture"]);
+        cmd.stderr(std::process::Stdio::inherit());
+        let out = cmd.output().map_err(|e| e.to_string())?;
+        for line in String::from_utf8_lossy(&out.stdout).lines() {
+            let Some(rest) = line.strip_prefix("FIXTURE ") else { continue };
+            match rest.split_whitespace().next() {
+                Some("made") => made += 1,
+                Some("cached") => cached += 1,
+                _ => skipped += 1,
+            }
+            println!("  {rest}");
+        }
+        if !out.status.success() {
+            failed.push(pkg);
+        }
+    }
+    println!("\nfixtures: {made} made, {cached} already present, {skipped} skipped");
+    if failed.is_empty() { Ok(()) } else { Err(format!("fixture generation failed in {}", failed.join(", "))) }
+}
+
+fn ci() -> Result<(), String> {
+    let cargo = env!("CARGO");
+    run(Command::new(cargo).args(["fmt", "--check"]))?;
+    run(Command::new(cargo).args(["clippy", "--workspace", "--all-targets", "--release", "--", "-D", "warnings"]))?;
+    run(Command::new(cargo).args(["test", "--workspace", "--release"]))?;
+    layers()?;
+    assets()?;
+    wasm()
+}
+
+/// The eval cases, run by kition-sdk's `tools/eval-cases.mjs` on this repository.
+fn eval(args: &[String]) -> Result<(), String> {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("..").join("..");
+    let sdk = std::env::var_os("KITION_SDK_DIR").map(std::path::PathBuf::from).unwrap_or_else(|| root.join("..").join("kition-sdk"));
+    let status = Command::new("node")
+        .arg(sdk.join("tools").join("eval-cases.mjs"))
+        .arg("--repo")
+        .arg(&root)
+        .args(args)
+        .status()
+        .map_err(|e| format!("could not start node: {e}"))?;
+    if status.success() { Ok(()) } else { Err(format!("eval cases: {status}")) }
+}
+
+fn main() -> ExitCode {
+    let task = std::env::args().nth(1).unwrap_or_default();
+    let r = match task.as_str() {
+        "layers" => layers(),
+        "wasm" => wasm(),
+        "assets" => assets(),
+        "fixtures" => fixtures(&std::env::args().skip(2).collect::<Vec<_>>()),
+        "ci" => ci(),
+        "eval" => eval(&std::env::args().skip(2).collect::<Vec<_>>()),
+        _ => Err("usage: cargo xtask <layers|assets|wasm|fixtures [crate…]|ci|eval [options]>".into()),
+    };
+    match r {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(e) => {
+            eprintln!("{e}");
+            ExitCode::FAILURE
+        }
+    }
+}

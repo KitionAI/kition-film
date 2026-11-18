@@ -1,0 +1,971 @@
+{
+ "audio.voiceover.start": {
+  "track": {
+   "description": "\"A1\"|id?",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "captions.add": {
+  "track": {
+   "description": "id|\"C1\"?",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "captions.deleteTrack": {
+  "track": {
+   "description": "id|\"C1\"",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "captions.export": {
+  "track": {
+   "description": "id|\"C1\"?",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "captions.list": {
+  "track": {
+   "description": "id|\"C1\"?",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "captions.setStyle": {
+  "track": {
+   "description": "id|\"C1\"",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "captions.setTrack": {
+  "track": {
+   "description": "id|\"C1\"",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "captions.showActiveOnly": {
+  "track": {
+   "description": "id|\"C1\"?",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "clip.createMulticam": {
+  "reference": {
+   "description": "item?",
+   "type": "integer"
+  }
+ },
+ "clip.synchronize": {
+  "reference": {
+   "description": "clip?",
+   "type": "integer"
+  }
+ },
+ "clipMixer.release": {
+  "track": {
+   "description": "\"A1\"|id",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "clipMixer.setMode": {
+  "track": {
+   "description": "\"A1\"|id",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "clipMixer.touch": {
+  "track": {
+   "description": "\"A1\"|id",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "edit.pasteAttributes": {
+  "effects": {
+   "description": "bool|[effectId]=true; default true",
+   "items": {
+    "type": "json"
+   },
+   "type": "array"
+  }
+ },
+ "edit.removeAttributes": {
+  "effects": {
+   "description": "bool|[effectId]=true; default true",
+   "items": {
+    "type": "json"
+   },
+   "type": "array"
+  }
+ },
+ "effects.addKeyframe": {
+  "effect": {
+   "description": "str|index",
+   "type": "string"
+  }
+ },
+ "effects.deleteKeyframe": {
+  "effect": {
+   "description": "str|index",
+   "type": "string"
+  }
+ },
+ "effects.moveKeyframe": {
+  "effect": {
+   "description": "str|index",
+   "type": "string"
+  }
+ },
+ "effects.setInterpolation": {
+  "effect": {
+   "description": "str|index",
+   "type": "string"
+  }
+ },
+ "effects.setKeyframe": {
+  "effect": {
+   "description": "str|index",
+   "type": "string"
+  }
+ },
+ "effects.setParam": {
+  "effect": {
+   "description": "\"motion\"|index",
+   "type": "string"
+  }
+ },
+ "effects.toggleAnimation": {
+  "effect": {
+   "description": "str|index",
+   "type": "string"
+  }
+ },
+ "file.import": {
+  "bin": {
+   "description": "binId?",
+   "type": "integer"
+  }
+ },
+ "file.importImageSequence": {
+  "bin": {
+   "description": "binId?",
+   "type": "integer"
+  }
+ },
+ "file.newBin": {
+  "parent": {
+   "description": "binId?",
+   "type": "integer"
+  }
+ },
+ "file.newSequence": {
+  "fromItem": {
+   "description": "a project item id",
+   "type": "integer"
+  }
+ },
+ "file.replaceFonts": {
+  "from": {
+   "description": "family|{\"family\",\"style\"?}",
+   "type": "string"
+  }
+ },
+ "graphics.arrangeLayer": {
+  "to": {
+   "description": "\"front|back|forward|backward\"|index",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "graphics.pin": {
+  "layer": {
+   "description": "n|name?",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  },
+  "to": {
+   "description": "\"frame\"|\"none\"|layer index|layer name",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "graphics.set": {
+  "layer": {
+   "description": "n|name?",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "graphics.setCharStyle": {
+  "end": {
+   "description": "char=len; default len",
+   "type": "integer"
+  },
+  "layer": {
+   "description": "n|name?",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  },
+  "start": {
+   "description": "char=0; default 0",
+   "type": "number"
+  }
+ },
+ "graphics.setText": {
+  "layer": {
+   "description": "n|name?",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "graphics.setTextType": {
+  "layer": {
+   "description": "n|name?",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "graphics.template.apply": {
+  "template": {
+   "description": "id|name|path",
+   "type": "string"
+  }
+ },
+ "graphics.template.remove": {
+  "template": {
+   "description": "id|name (a user template); a user template",
+   "type": "string"
+  }
+ },
+ "graphics.template.thumbnail": {
+  "template": {
+   "description": "id|name|path",
+   "type": "string"
+  }
+ },
+ "markers.add": {
+  "color": {
+   "description": "marker colour (Red, Orange, Yellow, Green, Cyan, Blue, Purple) or label name (Violet, Iris, …)?",
+   "type": "string"
+  }
+ },
+ "markers.addChapter": {
+  "color": {
+   "description": "marker colour (Red, Orange, Yellow, Green, Cyan, Blue, Purple) or label name (Violet, Iris, …)?",
+   "type": "string"
+  }
+ },
+ "markers.addFlashCue": {
+  "color": {
+   "description": "marker colour (Red, Orange, Yellow, Green, Cyan, Blue, Purple) or label name (Violet, Iris, …)?",
+   "type": "string"
+  }
+ },
+ "markers.addRange": {
+  "color": {
+   "description": "marker colour (Red, Orange, Yellow, Green, Cyan, Blue, Purple) or label name (Violet, Iris, …)?",
+   "type": "string"
+  }
+ },
+ "markers.addRangeInOut": {
+  "color": {
+   "description": "marker colour (Red, Orange, Yellow, Green, Cyan, Blue, Purple) or label name (Violet, Iris, …)?",
+   "type": "string"
+  }
+ },
+ "markers.edit": {
+  "color": {
+   "description": "marker colour (Red, Orange, Yellow, Green, Cyan, Blue, Purple) or label name (Violet, Iris, …)?",
+   "type": "string"
+  }
+ },
+ "masks.add": {
+  "effect": {
+   "description": "index|id?=\"opacity\"; default \"opacity\"",
+   "type": "string"
+  },
+  "path": {
+   "description": "[[x,y]\u2026]|{vertices}?",
+   "type": "string"
+  }
+ },
+ "masks.set": {
+  "opacity": {
+   "description": "pct?",
+   "type": "number"
+  }
+ },
+ "mediaBrowser.import": {
+  "bin": {
+   "description": "binId?",
+   "type": "integer"
+  }
+ },
+ "mixer.addInsert": {
+  "strip": {
+   "description": "\"A1\"|\"S1\"|\"Mix\"|id",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "mixer.addSend": {
+  "strip": {
+   "description": "\"A1\"|\"S1\"|id",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  },
+  "target": {
+   "description": "\"S1\"|id",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "mixer.clearLane": {
+  "strip": {
+   "description": "\"A1\"|\"S1\"|\"Mix\"|id",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "mixer.deleteKeyframe": {
+  "strip": {
+   "description": "\"A1\"|\"S1\"|\"Mix\"|id",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "mixer.deleteSubmix": {
+  "strip": {
+   "description": "\"S1\"|id",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "mixer.moveKeyframe": {
+  "strip": {
+   "description": "\"A1\"|\"S1\"|\"Mix\"|id",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "mixer.release": {
+  "strip": {
+   "description": "\"A1\"|\"S1\"|\"Mix\"|id",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "mixer.removeInsert": {
+  "strip": {
+   "description": "\"A1\"|\"S1\"|\"Mix\"|id",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "mixer.removeSend": {
+  "strip": {
+   "description": "\"A1\"|\"S1\"|id",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "mixer.setInsert": {
+  "strip": {
+   "description": "\"A1\"|\"S1\"|\"Mix\"|id",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "mixer.setKeyframe": {
+  "strip": {
+   "description": "\"A1\"|\"S1\"|\"Mix\"|id",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "mixer.setSend": {
+  "strip": {
+   "description": "\"A1\"|\"S1\"|id",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "mixer.setStrip": {
+  "strip": {
+   "description": "\"A1\"|\"S1\"|\"Mix\"|id",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "mixer.setValue": {
+  "strip": {
+   "description": "\"A1\"|\"S1\"|\"Mix\"|id",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "mixer.touch": {
+  "strip": {
+   "description": "\"A1\"|\"S1\"|\"Mix\"|id",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "mixer.writeAutomation": {
+  "strip": {
+   "description": "\"A1\"|\"S1\"|\"Mix\"|id",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "multicam.cut": {
+  "angle": {
+   "description": "0-based; one of several alternative parameters",
+   "type": "integer"
+  }
+ },
+ "multicam.cutToCamera": {
+  "angle": {
+   "description": "0-based; one of several alternative parameters",
+   "type": "integer"
+  }
+ },
+ "multicam.page": {
+  "page": {
+   "description": "0-based|\"next\"|\"prev\"",
+   "type": "integer"
+  }
+ },
+ "multicam.switchAngle": {
+  "angle": {
+   "description": "0-based; one of several alternative parameters",
+   "type": "integer"
+  }
+ },
+ "project.freeform.alignToGrid": {
+  "bin": {
+   "description": "binId?",
+   "type": "integer"
+  }
+ },
+ "project.freeform.arrangements": {
+  "bin": {
+   "description": "binId?",
+   "type": "integer"
+  }
+ },
+ "project.freeform.deleteArrangement": {
+  "bin": {
+   "description": "binId?",
+   "type": "integer"
+  }
+ },
+ "project.freeform.layout": {
+  "bin": {
+   "description": "binId?",
+   "type": "integer"
+  }
+ },
+ "project.freeform.reset": {
+  "bin": {
+   "description": "binId?",
+   "type": "integer"
+  }
+ },
+ "project.freeform.restoreArrangement": {
+  "bin": {
+   "description": "binId?",
+   "type": "integer"
+  }
+ },
+ "project.freeform.saveArrangement": {
+  "bin": {
+   "description": "binId?",
+   "type": "integer"
+  }
+ },
+ "project.items": {
+  "bin": {
+   "description": "binId?",
+   "type": "integer"
+  }
+ },
+ "project.moveToBin": {
+  "bin": {
+   "description": "binId|null",
+   "type": "integer"
+  }
+ },
+ "project.renameBin": {
+  "bin": {
+   "description": "binId",
+   "type": "integer"
+  }
+ },
+ "project.setMarks": {
+  "in": {
+   "description": "ticks?|null",
+   "type": "number"
+  },
+  "out": {
+   "description": "ticks?|null",
+   "type": "number"
+  }
+ },
+ "scopes.read": {
+  "time": {
+   "description": "ticks?|\"frame\"|\"seconds\"|\"timecode\"",
+   "type": "integer"
+  }
+ },
+ "sequence.addTracks": {
+  "audioAfter": {
+   "description": "\"first\"|\"A2\"|n?",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  },
+  "submixAfter": {
+   "description": "\"first\"|\"S1\"|n?",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  },
+  "videoAfter": {
+   "description": "\"first\"|\"V2\"|n?",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "sequence.closeGap": {
+  "track": {
+   "description": "\"V1\"|id",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "sequence.deleteTrack": {
+  "track": {
+   "description": "\"V3\"|id",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "sequence.goToNextGapInTrack": {
+  "track": {
+   "description": "\"V1\"|id?",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "sequence.goToPrevGapInTrack": {
+  "track": {
+   "description": "\"V1\"|id?",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "sequence.transcribe": {
+  "track": {
+   "description": "\"mix\"|\"A1\"|id?",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "timeline.place": {
+  "audioTrack": {
+   "description": "\"A1\"|id?",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  },
+  "track": {
+   "description": "\"V1\"|id|\"A1\" (sound only)?; sound only",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "timeline.razor": {
+  "track": {
+   "description": "\"V1\"|id?",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "timeline.setTargeting": {
+  "track": {
+   "description": "\"V1\"|id",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "timeline.setTrack": {
+  "track": {
+   "description": "\"V1\"|id",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "transcript.createCaptions": {
+  "maxSeconds": {
+   "description": "f?",
+   "type": "number"
+  },
+  "minSeconds": {
+   "description": "f?",
+   "type": "number"
+  }
+ },
+ "transcript.extract": {
+  "from": {
+   "description": "word",
+   "type": "integer"
+  },
+  "to": {
+   "description": "word?",
+   "type": "integer"
+  }
+ },
+ "transcript.inspect": {
+  "paragraphGapSeconds": {
+   "description": "f?",
+   "type": "number"
+  }
+ },
+ "transcript.lift": {
+  "from": {
+   "description": "word",
+   "type": "integer"
+  },
+  "to": {
+   "description": "word?",
+   "type": "integer"
+  }
+ },
+ "transcript.removePauses": {
+  "keepSeconds": {
+   "description": "f?",
+   "type": "number"
+  },
+  "minSeconds": {
+   "description": "f?",
+   "type": "number"
+  }
+ },
+ "transcript.renameSpeaker": {
+  "speaker": {
+   "description": "\"Speaker 1\"|index",
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  }
+ },
+ "transcript.select": {
+  "from": {
+   "description": "word",
+   "type": "integer"
+  },
+  "to": {
+   "description": "word?",
+   "type": "integer"
+  }
+ }
+}

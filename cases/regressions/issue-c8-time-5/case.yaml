@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-time-5
+feature: film.agent.premises
+intent: Dense timeline addresses preserve observed identities, content and positions across independent saved-file changes and permit unrelated edits.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-time-5, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: time5 }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

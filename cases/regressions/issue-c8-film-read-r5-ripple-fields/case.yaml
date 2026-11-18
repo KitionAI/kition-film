@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-read-r5-ripple-fields
+feature: film.agent.premises
+intent: A ripple insertion refuses changed suffix start assignments since observation while allowing an unrelated suffix name and preserving both edits.
+layer: gate
+dimension: ai
+source: { kind: synthetic, from: C8-film-read, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_ripple_r5, filter: ripple_insert_holds_assigned_suffix_starts_but_not_suffix_names }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

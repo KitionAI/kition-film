@@ -1,0 +1,5 @@
+{
+  "maxChannelDelta": 2,
+  "maxDifferentPixels": 200,
+  "note": "The engine's own renderer draws the program monitor of basic.kfilm (a solid colour matte); edges may differ by a step between SIMD paths."
+}

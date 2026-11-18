@@ -1,0 +1,24 @@
+format: 1
+id: film.agent.ids/one-id-space
+feature: film.agent.ids
+intent: >-
+  The object model, receipts and others name bins, items, tracks, clips and transitions by the
+  numbers film_inspect lists and commands take (tool ids, no prefix, one project-wide counter),
+  stored in the .kfilm file: they survive a save, a reopen and another program rewriting the file;
+  a change inside a clip (an effect parameter, a keyframe) is told under the clip at a path; a
+  ripple names every clip whose start moved; a sequence is a part named by its item id.
+layer: gate
+source:
+  kind: synthetic
+  from: bindings/headless/tests/ids.rs
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film
+      test: ids
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

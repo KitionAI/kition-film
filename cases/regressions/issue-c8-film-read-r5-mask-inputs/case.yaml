@@ -1,0 +1,15 @@
+format: 1
+id: regressions/issue-c8-film-read-r5-mask-inputs
+feature: film.agent.premises
+intent: Hostile mask insertion indices, exhausted generated-name counters and empty animated paths return without crashing or losing work.
+layer: gate
+dimension: ai
+source: { kind: synthetic, from: C8-film-read, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film-engine, filter: masks_tests::hostile_vertex_index_and_mask_name_counters_do_not_panic }
+  - cargo-test: { package: kition-film-engine, filter: masks_tests::an_empty_animated_mask_path_reports_an_error_without_panicking }
+  - cargo-test: { package: kition-film-engine, filter: masks_tests::a_zero_duration_clip_cannot_panic_mask_commands }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

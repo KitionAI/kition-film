@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-pin-effect-inputs
+feature: film.agent.premises
+intent: Effect keyframe addresses retain their frame timebase and frame-space mask paths retain the source geometry and conditional frame size used by their conversion.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_effect_inputs_pin }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

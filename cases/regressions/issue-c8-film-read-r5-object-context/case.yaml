@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-film-read-r5-object-context
+feature: film.agent.premises
+intent: Editor-input declarations trace the Source monitor, selected mask and edit points, and open sequence tabs as Active inputs.
+layer: gate
+dimension: ai
+source: { kind: synthetic, from: C8-film-read, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film-kit, test: acts, filter: scanner_classifies_restored_object_contexts_as_active }
+  - cargo-test: { package: kition-film-kit, test: acts, filter: mask_commands_declare_the_selected_mask_input }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

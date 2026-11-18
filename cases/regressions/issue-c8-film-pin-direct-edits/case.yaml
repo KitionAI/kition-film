@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-film-pin-direct-edits
+feature: film.agent.premises
+intent: Implicit speed operands and named trim, roll and slide operands retain source and neighbourhood facts, including ripple suffixes.
+layer: gate
+dimension: collab
+source: {kind: synthetic, from: C8-film-pin independent direct-edit comparison, license: owned}
+input: []
+steps:
+  - cargo-test: {package: kition-film-kit, test: declarations_independent, filter: direct_edits_compare}
+  - cargo-test: {package: kition-film, test: read_direct_edits_pin}
+expected:
+  - {actual: out:exit, compare: exit, value: 0}
+since: "2026-11-17"

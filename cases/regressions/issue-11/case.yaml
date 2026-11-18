@@ -1,0 +1,33 @@
+format: 1
+id: regressions/issue-11
+feature: film.text.add-font
+intent: >-
+  Fonts render the same on every machine when asked to (KITION_FILM_NO_SYSTEM_FONTS), a title or
+  caption track naming an unavailable family is reported (film.font-missing) instead of silently
+  drawing another font, a variable font's named instances (Lora Bold) are listed and drawn as the
+  font's own styles, and faux bold does not spike at repeated outline points.
+layer: gate
+source:
+  kind: issue
+  from: Kition Film regression suite
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-text
+      filter: "embolden_does_not_spike_at_repeated_points"
+  - cargo-test:
+      package: kition-film-text
+      filter: "variable_font_lists_and_resolves_its_named_instances"
+  - cargo-test:
+      package: kition-film-text
+      test: system_fonts_off
+  - cargo-test:
+      package: kition-film-kit
+      test: checks
+      filter: "every_fixture_reports_its_code"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

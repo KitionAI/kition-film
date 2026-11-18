@@ -1,0 +1,16 @@
+format: 1
+id: regressions/issue-c8-film-demo-ids
+feature: film.file.projects
+intent: >-
+  The demo project takes every id (transitions and markers included) from the project's id
+  counter, so its counter is past every id it holds and a demo saved with file.saveAs reopens with
+  file.open instead of being refused as "next_id would reuse an existing id".
+layer: gate
+dimension: data-safety
+source: { kind: synthetic, from: film-ids, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film-engine, test: demo_ids }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

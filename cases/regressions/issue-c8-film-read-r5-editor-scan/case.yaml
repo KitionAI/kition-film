@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-read-r5-editor-scan
+feature: film.agent.premises
+intent: Editor-input scanning follows multiline field accesses and command delegation inside called helpers.
+layer: gate
+dimension: ai
+source: { kind: synthetic, from: C8-film-read, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film-kit, test: acts, filter: scanner_ }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

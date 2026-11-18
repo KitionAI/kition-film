@@ -1,0 +1,21 @@
+format: 1
+id: regressions/issue-4
+feature: film.transitions.basics
+intent: >-
+  Push (and Slide) with Motion Blur smear the moving frame into one continuous streak along the
+  move, keeping its light, instead of drawing 3 to 8 separate ghost copies.
+layer: gate
+source:
+  kind: issue
+  from: Kition Film regression suite
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-render
+      filter: "push_motion_blur_is_a_streak_not_ghost_copies"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

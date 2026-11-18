@@ -1,0 +1,38 @@
+import { test, expect, clips } from './fixtures.mjs'
+
+for (const edits of [0, 205]) {
+  test(`F77 failed New Sequence From Clip restores the original project, active sequence and redo branch after ${edits} prior edits`, async ({ film, page }) => {
+    await film.open()
+    await film.command('file.newProject', { name: 'Sequence creation refusal' })
+    const { sequence: empty } = await film.command('file.newSequence', { name: 'Empty source', width: 64, height: 36, fps: 24 })
+    const { item } = await film.command('file.newColorMatte', { color: '#ff0000', seconds: 0.5 })
+    await film.command('sequence.nestSequences', { on: false })
+    const renamed = await page.evaluate(async ([item, edits]) => window.devHost.connection().ai.run(Array.from({ length: edits }, (_, i) => ({ command: 'clip.rename', params: { item, name: `Take ${i}` } })), false), [item, edits])
+    expect(renamed.failed).toBeFalsy()
+    expect(renamed.completed).toHaveLength(edits)
+    await film.command('clip.rename', { item, name: 'Redo must survive' })
+    await film.command('edit.undo')
+    const before = await film.command('project.items'), sequenceBefore = await film.sequence(), history = await film.history()
+    const error = await page.evaluate(async items => {
+      try { await window.devHost.connection().ai.run([{ command: 'file.newSequenceFromClip', params: { items } }], false); return null }
+      catch (error) { return String(error) }
+    }, [item, empty])
+    expect(error).toContain('no destination track')
+    expect(await film.command('project.items')).toEqual(before)
+    expect(await film.sequence()).toEqual(sequenceBefore)
+    expect(await film.history()).toEqual(history)
+    await film.command('edit.redo')
+    expect((await film.command('project.items')).rows.find(row => row.item === item).name).toBe('Redo must survive')
+    const recovered = await film.command('project.items')
+    const { sequence } = await film.command('file.newSequenceFromClip', { items: [item] })
+    expect(clips(await film.sequence()).map(clip => clip.item)).toEqual([item])
+    await film.undo()
+    await expect.poll(async () => film.command('project.items')).toEqual(recovered)
+    expect((await film.sequence()).id).toBe(empty)
+    await film.redo()
+    await expect.poll(async () => (await film.command('project.items')).rows.some(row => row.item === sequence)).toBe(true)
+    await film.command('sequence.open', { item: sequence })
+    await film.saveReopen()
+    expect(clips(await film.sequence()).map(clip => clip.item)).toEqual([item])
+  })
+}

@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-read-r5-placement-channels
+feature: film.agent.premises
+intent: New Sequence placement ignores unused channel format and preserves the effective default channel map.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-read, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_new_sequence_r5, filter: new_sequence_media_ignores_an_unused_channel_format }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

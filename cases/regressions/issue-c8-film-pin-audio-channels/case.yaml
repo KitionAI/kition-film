@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-c8-film-pin-audio-channels
+feature: film.agent.premises
+intent: Audio-channel mapping treats channel indices as values and retains same-field conflicts for assigned routing maps.
+layer: gate
+dimension: collab
+source:
+  kind: synthetic
+  from: C8-film-pin independent handler comparison
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-film
+      test: read_audio_channels_pin
+expected:
+  - actual: out:exit
+    compare: exit
+    value: 0
+since: "2026-11-17"

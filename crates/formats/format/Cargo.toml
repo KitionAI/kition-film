@@ -1,0 +1,21 @@
+[package]
+name = "kition-film-format"
+description = "Kition Film .kfilm files: schema versions + migrations, atomic saves, auto-save naming and rotation"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+kition-film-project = { workspace = true }
+kition-film-media = { workspace = true }
+log = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+kition-film-time = { workspace = true }

@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-pin-camera-pages
+feature: film.agent.premises
+intent: Camera page navigation retains the shown-camera count used to clamp the destination and report the number of pages.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_multicam_pin, filter: camera_page_navigation_retains_the_shown_camera_count }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

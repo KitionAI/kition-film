@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-2
+feature: film.graphics.titles
+intent: >-
+  graphics.newShape takes a path's points in frame pixels, like position: a triangle given in
+  frame coordinates draws where its points are, not offset by the frame centre a second time (off-
+  screen).
+layer: gate
+source:
+  kind: issue
+  from: Kition Film regression suite
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-engine
+      filter: "path_shape_points_are_frame_pixels"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-read-r5-camera-reread
+feature: film.agent.premises
+intent: A live camera stop retains its pending pass across unrelated file rereads and refuses changed clip content that replay would restore.
+layer: gate
+dimension: ai
+source: { kind: synthetic, from: C8-film-read, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_multicam_r5, filter: live_camera_stop_preserves_its_pass_across_unrelated_file_refreshes }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

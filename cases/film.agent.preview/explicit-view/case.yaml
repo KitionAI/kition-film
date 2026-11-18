@@ -1,0 +1,27 @@
+format: 1
+id: film.agent.preview/explicit-view
+feature: film.agent.preview
+intent: >-
+  file.render, the kit's agent preview, draws an explicit sequence at an explicit time (or a
+  labelled contact sheet of frames over a range) as a pure function of the project: the same call
+  answers the same bytes wherever the playhead is and whichever sequence is open, and rendering
+  moves no playhead, opens no sequence, selects nothing and leaves the document clean. A time
+  outside the sequence, an unknown sequence, or a project with several top-level sequences and
+  none named answer typed invalid-params errors that give the valid range or list the sequences;
+  scale (up to 2) and maxSize (16 to 4096 on the longer side) size the picture as KHP A39 says.
+layer: gate
+source:
+  kind: synthetic
+  from: bindings/wasm/tests/agent_render.rs
+  license: Apache-2.0
+  note: A 320 x 180 sequence of two one-second colour mattes (red, then blue), made by the test.
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-kit
+      test: agent_render
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

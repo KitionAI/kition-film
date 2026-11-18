@@ -1,0 +1,19 @@
+format: 1
+id: film.effects.basics/save-reopen
+feature: film.effects.basics
+intent: >-
+  Applied effects, parameter values, keyframes and masks survive saving and reopening: a new project edited only with engine commands is saved as .kfilm, reopened and
+  compared whole (project, active sequence, graphic layers, mixer, program frames), and a second
+  save reopens the same.
+layer: unit
+source:
+  kind: synthetic
+  from: bindings/wasm/tests/round_trip.rs (effects_keyframes_and_masks_survive_save_and_reopen)
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: kition-film-kit, test: round_trip, filter: effects_keyframes_and_masks_survive_save_and_reopen }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-17"

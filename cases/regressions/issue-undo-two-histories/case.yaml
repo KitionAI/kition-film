@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-undo-two-histories
+feature: film.agent.draft
+intent: >-
+  The person and the agent undo their own steps (KitModel 1.1 M12a), and undoing one origin's step
+  after the other edited the same bin leaves each project item listed once: the replica's bin
+  entries were rewritten whole (remove all, insert all), so an undo put every entry back beside
+  the other origin's and the Project panel listed bars.mp4 and Sequence 01 twice.
+layer: gate
+source:
+  kind: probe
+  from: kition-film web/tests/flow.mjs (Make Offline found bars.mp4 listed twice after the Merge Clips cleanup)
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-kit
+      filter: "collab::tests::undo_in_two_histories_keeps_each_item_once"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

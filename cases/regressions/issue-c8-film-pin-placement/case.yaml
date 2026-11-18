@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-pin-placement
+feature: film.agent.premises
+intent: Placement retains source ranges and stream mappings, free-lane eligibility, destination locks, overwritten material and assigned insert suffix starts.
+layer: gate
+dimension: collab
+source: {kind: synthetic, from: C8-film-pin independent placement review, license: owned}
+input: []
+steps:
+  - cargo-test: {package: kition-film-kit, test: declarations_independent, filter: placement_compare}
+expected:
+  - {actual: out:exit, compare: exit, value: 0}
+since: "2026-11-17"

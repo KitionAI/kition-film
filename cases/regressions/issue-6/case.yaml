@@ -1,0 +1,21 @@
+format: 1
+id: regressions/issue-6
+feature: film.timeline.basics
+intent: >-
+  timeline.razor answers the ids of the clips its cuts made (and which clip each was cut from), as
+  its description promises, so an agent can address the new pieces.
+layer: gate
+source:
+  kind: issue
+  from: Kition Film regression suite
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-engine
+      filter: "razor_answers_the_new_clip_ids"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-read-r5-equal-split
+feature: film.agent.premises
+intent: Equal audio and video split marks still replace the ordinary Source range for media and flattened sequences.
+layer: gate
+dimension: ai
+source: { kind: synthetic, from: C8-film-read, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_split_copy_r5, filter: equal_channel_split_marks_still_replace_the_ordinary_source_range }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

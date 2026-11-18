@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-7
+feature: film.markers.basics
+intent: >-
+  Marker commands take the marker colour names (Red, Orange, Cyan, Purple, Blue, Yellow, Green) as
+  well as label names, refuse an unknown colour instead of silently saving Green, and take seconds
+  (snapped to a frame) like timeline.place.
+layer: gate
+source:
+  kind: issue
+  from: Kition Film regression suite
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-engine
+      filter: "markers_take_colour_names_and_seconds"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

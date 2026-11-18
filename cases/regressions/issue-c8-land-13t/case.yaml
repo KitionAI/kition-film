@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-land-13t
+feature: film.agent.premises
+intent: Content-copying and ripple edits hold their actual source and destination dependencies while local authored edits permit independent appearance changes.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-land-13t, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: land13 }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

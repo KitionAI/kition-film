@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-film-pin-edit-geometry
+feature: film.agent.premises
+intent: Keyboard slide, nearest-edge trim, frame-hold insertion and rate stretch retain searched lanes and media handles before applying a stale edit.
+layer: gate
+dimension: collab
+source: {kind: synthetic, from: C8-film-pin independent edit-handler comparison, license: owned}
+input: []
+steps:
+  - cargo-test: {package: kition-film-kit, test: declarations_independent, filter: geometry_commands_compare}
+  - cargo-test: {package: kition-film, test: read_edit_geometry_pin}
+expected:
+  - {actual: out:exit, compare: exit, value: 0}
+since: "2026-11-17"

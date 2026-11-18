@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-film-pin-subclip-parent
+feature: film.agent.premises
+intent: Edit Subclip retains the parent's timebase for frame inputs and the parent media copied by Convert to Master.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film-kit, test: subclip_inputs_pin }
+  - cargo-test: { package: kition-film, test: read_subclip_parent_pin }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

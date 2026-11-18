@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-pin-graphic-defaults
+feature: film.agent.premises
+intent: New horizontal and vertical text layers retain the observed graphic preferences that supply their font and typography defaults.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_graphic_keyboard_pin, filter: text_layer_creation_holds_graphics_defaults }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

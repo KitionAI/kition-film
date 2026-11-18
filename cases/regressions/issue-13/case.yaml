@@ -1,0 +1,25 @@
+format: 1
+id: regressions/issue-13
+feature: film.effects.keyframes
+intent: >-
+  Wave Warp has Premiere Pro's Pinning, so pinned edges stay still instead of rippling into the
+  frame; effects.list names the exact id first (dynamics before the Dynamics rack); the keyframe
+  commands document mask and refuse an unknown interpolation instead of making it linear.
+layer: gate
+source:
+  kind: issue
+  from: Kition Film regression suite
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-render
+      filter: "wave_warp_pinning_keeps_the_edges_still"
+  - cargo-test:
+      package: kition-film-engine
+      filter: "effects_list_ranks_the_exact_id_and_keyframe_commands_take_mask"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

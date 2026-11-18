@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-9
+feature: film.multicam.edit
+intent: >-
+  multicam.recordStop answers the edit points the pass made: four cuts to new angles are four edit
+  points (five segments), counted once however many tracks follow the video; a press of the angle
+  already showing adds none.
+layer: gate
+source:
+  kind: issue
+  from: Kition Film regression suite
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-engine
+      filter: "record_stop_counts_every_edit_point"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

@@ -1,0 +1,16 @@
+format: 1
+id: regressions/issue-c8-film-read-markers
+feature: film.agent.premises
+intent: Split points hold their channel's assigned and opposite facts; range markers hold In/Out, frame rate, and the marked material while allowing unrelated marker text and material elsewhere.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-read, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_markers, filter: split_points_hold_the_assigned_side_and_opposite_eligibility_but_not_the_other_channel }
+  - cargo-test: { package: kition-film, test: read_markers, filter: a_range_marker_holds_its_in_out_and_rate_but_not_existing_marker_text }
+  - cargo-test: { package: kition-film, test: read_markers, filter: a_range_marker_holds_the_marked_material_and_allows_material_at_the_playhead_outside_it }
+  - cargo-test: { package: kition-film, test: read_markers, filter: source_split_points_hold_the_source_item_not_the_program_sequence }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

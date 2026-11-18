@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-pin-camera
+feature: film.agent.premises
+intent: A camera pass stops at its requested time across caller changes and clean file rereads, retaining unrelated edits and refusing overwritten recorded clip content.
+layer: gate
+dimension: ai
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_multicam_r5 }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

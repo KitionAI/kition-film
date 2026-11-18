@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-land-13t-model
+feature: film.agent.premises
+intent: A model creation is settled to the saved format before its receipt and survives reopening.
+layer: gate
+dimension: conversion
+source: { kind: synthetic, from: C8-land-13t, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: land13_model }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

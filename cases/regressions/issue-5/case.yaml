@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-5
+feature: film.effects.basics
+intent: >-
+  effects.setParam and the keyframe commands take an effect by its display name (Gaussian Blur) as
+  well as its id or index, and a choice by its option's name (blend Screen, dimensions Horizontal)
+  as well as its index; an unknown option is refused with the options it has.
+layer: gate
+source:
+  kind: issue
+  from: Kition Film regression suite
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-engine
+      filter: "set_param_takes_effect_names_and_choice_names"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

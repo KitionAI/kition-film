@@ -1,0 +1,25 @@
+format: 1
+id: regressions/issue-focus-shows-workspace
+feature: film.editor.display-modes
+intent: >-
+  Focus shows the Program monitor's picture alone, with the Focus bar naming the active tool:
+  the whole workspace (Source, Project, Tools, the Timeline, the meters, and the monitor's own
+  row, scrub bar, and transport) stayed in Focus, and the Focus bar covered the Timeline's track
+  buttons above its Mix row. Classic stays Classic at Kition's editor widths (1165 and 749 px).
+layer: gate
+source:
+  kind: probe
+  from: kit display modes work (DM-film)
+  license: Apache-2.0
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/modes.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 60
+since: "2026-11-17"

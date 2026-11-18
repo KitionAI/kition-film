@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-pin-navigation
+feature: film.agent.premises
+intent: Navigation and selection retain the observed sequence timebase and membership used to compute their results.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_navigation_pin, filter: navigation_retains_timebase_and_sequence_geometry }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-read-r5-split-destinations
+feature: film.agent.premises
+intent: Split media holds secondary destination content, eligibility and membership plus inherited new-track settings, while unrelated lanes and names remain independent.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-read, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_source_r5, filter: split_media_source_holds_secondary_destinations_and_new_track_templates }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

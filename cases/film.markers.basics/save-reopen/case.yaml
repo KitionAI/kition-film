@@ -1,0 +1,19 @@
+format: 1
+id: film.markers.basics/save-reopen
+feature: film.markers.basics
+intent: >-
+  Sequence markers with names, comments, colours and durations, and In/Out points survive saving and reopening: a new project edited only with engine commands is saved as .kfilm, reopened and
+  compared whole (project, active sequence, graphic layers, mixer, program frames), and a second
+  save reopens the same.
+layer: unit
+source:
+  kind: synthetic
+  from: bindings/wasm/tests/round_trip.rs (markers_and_in_out_survive_save_and_reopen)
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: kition-film-kit, test: round_trip, filter: markers_and_in_out_survive_save_and_reopen }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-17"

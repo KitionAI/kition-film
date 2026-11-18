@@ -1,0 +1,24 @@
+format: 1
+id: film.agent.preview/headless-agent-view
+feature: film.agent.preview
+intent: >-
+  Served headless, kit.json names file.render as the agent's render command and the agent runs it
+  without changing the document; what view.describe answers (film_inspect's details) leaves out
+  the editor's state (playhead, selection, open sequence, state digest), so moving the playhead or
+  selecting clips changes nothing the agent reads of the document.
+layer: gate
+tags: [headless]
+source:
+  kind: synthetic
+  from: bindings/headless/tests/agent_render.rs
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film
+      test: agent_render
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-pin-submix-delete
+feature: film.agent.premises
+intent: Deleting a submix refuses changed removed fields and new routing recipients while accepting unrelated clip names.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_submix_delete_pin }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-pin-generators
+feature: film.agent.premises
+intent: Generator duration parameters do not declare timeline places, and every combination of explicit dimensions holds exactly the sequence defaults it consumes.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film-kit, test: declarations_independent, filter: generators_compare }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-pin-range-gap
+feature: film.agent.premises
+intent: Range edits retain transitions and assigned marks; closing a gap retains searched edges and shifted sync-lane material.
+layer: gate
+dimension: collab
+source: {kind: synthetic, from: C8-film-pin independent range and gap review, license: owned}
+input: []
+steps:
+  - cargo-test: {package: kition-film-kit, test: declarations_independent, filter: range_gap_compare}
+expected:
+  - {actual: out:exit, compare: exit, value: 0}
+since: "2026-11-17"

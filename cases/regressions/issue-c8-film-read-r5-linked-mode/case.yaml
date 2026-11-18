@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-read-r5-linked-mode
+feature: film.agent.premises
+intent: Editor dependency projection follows the linked-selection mode through handlers and their helpers.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-read, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film-kit, test: acts, filter: scanner_finds_linked_selection_as_a_mode_input }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

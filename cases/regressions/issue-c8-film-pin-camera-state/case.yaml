@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-pin-camera-state
+feature: film.agent.premises
+intent: Stopping a recording refuses when the observed live pass was replaced, even when replacing the pass changed no document content.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_multicam_pin, filter: camera_stop_retains_the_observed_recording_pass }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-film-pin-trim-playback
+feature: film.agent.premises
+intent: Dynamic trim replay preserves outside edits, refuses changed pass material, and retains its local playback inputs across rereads.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film-engine, filter: trim_tests::dynamic_replay }
+  - cargo-test: { package: kition-film-kit, test: trim_playback_pin }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

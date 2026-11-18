@@ -1,0 +1,13 @@
+format: 1
+id: film.agent.premises/independent-readings
+feature: film.agent.premises
+intent: Every registered write has a committed handler reading, and reviewed declaration projections preserve exact assigned-field and resolved-source facts.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-read, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film-kit, test: declarations_independent }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

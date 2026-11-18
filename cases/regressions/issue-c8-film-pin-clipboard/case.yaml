@@ -1,0 +1,12 @@
+format: 1
+id: regressions/issue-c8-film-pin-clipboard
+feature: film.agent.premises
+intent: Clipboard and deletion declarations retain copied rates and track ordinals, source existence, destination material, caption recipients and ripple assignments.
+layer: gate
+source: {kind: synthetic, from: C8-film-pin handler comparison, license: owned}
+input: []
+steps:
+  - cargo-test: {package: kition-film-kit, test: declarations_independent, filter: clipboard_compare}
+expected:
+  - {actual: out:exit, compare: exit, value: 0}
+since: "2026-11-17"

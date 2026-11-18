@@ -1,0 +1,475 @@
+format: 1
+kit: film
+updated: "2026-11-17"
+gate_budget_s: 600
+protected: []
+features:
+  - id: film.agent.observe
+    title: An agent reads the timeline and marks what it finds
+    dimension: [ai]
+    priority: P0
+    status: has
+    requirements: [AX13]
+    cases: [film.agent.observe/gap-in-out, regressions/issue-10]
+    since: "2026-11-17"
+  - id: film.agent.act
+    title: An agent trims clips in frames
+    dimension: [ai]
+    priority: P0
+    status: has
+    requirements: [AX13]
+    cases: [film.agent.act/trim-frames, regressions/issue-agent-state-refresh, regressions/issue-schema-additional-properties]
+    since: "2026-11-17"
+  - id: film.agent.recover
+    title: An agent fixes what the check reports
+    dimension: [ai]
+    priority: P0
+    status: has
+    requirements: [AX13]
+    cases: [film.agent.recover/close-gap, regressions/issue-unknown-params]
+    since: "2026-11-17"
+  - id: film.agent.draft
+    title: An agent works in a draft over a conversation
+    dimension: [ai]
+    priority: P1
+    status: has
+    requirements: [AX13]
+    cases: [film.agent.draft/red-matte, regressions/issue-undo-two-histories]
+    since: "2026-11-17"
+  - id: film.agent.preview
+    title: An agent previews a sequence at a time, or a contact sheet over a range, whatever the editor shows
+    dimension: [ai]
+    priority: P1
+    status: has
+    commands: [file.render]
+    paths: [bindings/wasm/src/render.rs, crates/render/render/src/label.rs, bindings/headless/src/main.rs, kit.json, agent/guide.md]
+    cases: [film.agent.preview/explicit-view, film.agent.preview/headless-agent-view]
+    since: "2026-11-17"
+  - id: film.agent.context
+    title: An agent's call names the sequence, time and clips it acts on, and leaves the editor's playhead, open sequence, targets and selection as they were
+    dimension: [ai]
+    priority: P0
+    status: has
+    commands: [timeline.razor, timeline.select, playhead.set, sequence.open]
+    paths: [bindings/wasm/src/lib.rs, bindings/wasm/src/acts.rs, bindings/wasm/src/reads.json, bindings/wasm/src/collab.rs, crates/engine/engine/src/context.rs, bindings/headless/src/main.rs, bindings/headless/tests/context.rs, bindings/wasm/tests/context.rs, bindings/wasm/tests/typed_failure.rs, agent/guide.md]
+    requirements: [AX13]
+    cases: [film.agent.context/explicit-call-context, film.agent.context/reads-declared, film.agent.context/two-sequences-one-run, regressions/issue-inspect-editor-state, film.agent.context/typed-failure]
+    since: "2026-11-17"
+  - id: film.agent.ids
+    title: Receipts, others and the premise guard name bins, items, tracks, clips and transitions by the ids film_inspect lists, which the file keeps
+    dimension: [ai]
+    priority: P0
+    status: has
+    paths: [crates/kdm/kdm-model/model/schema.json, crates/kdm/kdm-model/src/read.rs, crates/kdm/kdm-model/src/write.rs, crates/kdm/kdm-model/src/validate.rs, kit.json, bindings/headless/tests/ids.rs, bindings/headless/tests/outside.rs, agent/guide.md]
+    requirements: [AX13]
+    cases: [film.agent.ids/one-id-space, film.agent.ids/tool-ids-in-replicas, film.agent.ids/outside-file]
+    since: "2026-11-17"
+  - id: film.agent.places
+    title: A write by time or track has as premise the clips under that place, and a clip's start and duration are its place, not its content
+    dimension: [ai]
+    priority: P0
+    status: has
+    paths: [crates/engine/engine/src/place.rs, bindings/wasm/src/acts.rs, bindings/wasm/src/lib.rs, crates/kdm/kdm-model/model/schema.json, bindings/wasm/tests/places.rs, bindings/headless/tests/outside.rs, agent/guide.md]
+    requirements: [AX13]
+    cases: [film.agent.places/time-premise]
+    since: "2026-11-17"
+  - id: film.agent.premises
+    title: A write with basis is refused only for others' changes to what its command reads, and a place in time is replayed exactly
+    dimension: [ai]
+    priority: P0
+    status: partial
+    paths: [crates/engine/engine/src/commands.rs, crates/engine/engine/src/lib.rs, crates/engine/engine/src/clip_ops.rs, crates/engine/engine/src/mixer.rs, crates/engine/engine/src/keyboard.rs, crates/engine/engine/src/context.rs, crates/engine/engine/src/kdm_bridge.rs, crates/engine/engine/src/project_tools.rs, crates/engine/project/src/lib.rs, crates/formats/format/src/lib.rs, crates/kdm/kdm-model/src/read.rs, crates/engine/engine/src/premise.rs, crates/engine/engine/src/place.rs, crates/engine/engine/src/masks.rs, crates/engine/engine/src/masks_tests.rs, crates/kdm/kdm-model/model/schema.json, bindings/wasm/src/lib.rs, bindings/wasm/src/rests_*.rs, crates/engine/edit/src/through.rs, crates/engine/engine/src/sequence_extras.rs, bindings/wasm/src/reads.json, bindings/wasm/tests/acts.rs, bindings/wasm/tests/declarations_independent*.rs, bindings/wasm/tests/declarations_independent/*.rs, bindings/headless/tests/read_*.rs, bindings/headless/tests/premises.rs, bindings/headless/tests/outside.rs, agent/guide.md]
+    requirements: [AX13]
+    cases: [regressions/issue-c8-film-repin-snap, regressions/issue-c8-film-repin-automate, regressions/issue-c8-film-repin-placement-sources, regressions/issue-c8-film-repin-scan-and-range, regressions/issue-c8-film-pin-project-management, regressions/issue-c8-film-pin-range-gap, regressions/issue-c8-film-pin-transition-creation, regressions/issue-c8-film-pin-direct-move, regressions/issue-c8-film-pin-placement, regressions/issue-c8-film-pin-nest-flatten, regressions/issue-c8-film-pin-cut-inputs, regressions/issue-c8-film-pin-direct-edits, regressions/issue-c8-film-pin-project-sources, film.agent.premises/track-transition-comparison, film.agent.premises/join-path-comparison, regressions/issue-c8-film-pin-edit-geometry, regressions/issue-c8-film-pin-composites, regressions/issue-c8-film-pin-clipboard, regressions/issue-c8-film-pin-graphic-placement, regressions/issue-c8-film-pin-frame-lookups, regressions/issue-c8-film-pin-analysis, regressions/issue-c8-film-pin-media-targets, regressions/issue-c8-film-pin-audio-channels, regressions/issue-c8-film-pin-root-actions, regressions/issue-c8-film-pin-graphic-metadata, regressions/issue-c8-film-pin-project-queries, regressions/issue-c8-film-pin-attribute-stream, regressions/issue-c8-film-pin-subclip-parent, regressions/issue-c8-film-pin-frame-hold-inputs, regressions/issue-c8-film-pin-keyboard-moves, regressions/issue-c8-film-pin-selection-steps, regressions/issue-c8-film-pin-caption-creation, regressions/issue-c8-film-pin-trim-neighbours, regressions/issue-c8-film-pin-transcript-inputs, regressions/issue-c8-film-pin-trim-targets,regressions/issue-c8-film-pin-trim-playback,regressions/issue-c8-film-pin-submix-delete, regressions/issue-c8-film-pin-mixer-recording, regressions/issue-c8-film-pin-slip-inputs, regressions/issue-c8-film-pin-search-results, regressions/issue-c8-film-pin-editor-input-values, regressions/issue-c8-film-pin-loudness-rate, regressions/issue-c8-film-pin-ducking-membership, regressions/issue-c8-film-pin-sequence-source-facts, regressions/issue-c8-film-pin-selection-follow, regressions/issue-c8-film-pin-automation-mode, regressions/issue-c8-film-pin-gap-selection, regressions/issue-c8-film-pin-volume-partners, regressions/issue-c8-film-pin-targeted-flags, regressions/issue-c8-film-pin-camera-state, regressions/issue-c8-film-pin-camera-pass, regressions/issue-c8-film-pin-camera-recording, regressions/issue-c8-film-pin-camera-map, regressions/issue-c8-film-pin-camera-lookup, regressions/issue-c8-film-pin-navigation-order, regressions/issue-c8-film-pin-source-markers, regressions/issue-c8-film-pin-geometry-marks, regressions/issue-c8-film-pin-marker-navigation, regressions/issue-c8-film-pin-navigation, regressions/issue-c8-film-pin-color-settings, regressions/issue-c8-film-pin-preference-reset, regressions/issue-c8-film-pin-nudge-lane, regressions/issue-c8-film-pin-nudge-recipient, regressions/issue-c8-film-pin-gap-timebase, regressions/issue-c8-film-pin-file-params, regressions/issue-c8-film-pin-graphic-defaults, regressions/issue-c8-film-pin-keyboard-motion, regressions/issue-c8-film-pin-fact-projection, regressions/issue-c8-film-pin-caption-routes, regressions/issue-c8-film-pin-file-boundaries, regressions/issue-c8-film-pin-caption-split, regressions/issue-c8-film-pin-mask-tracking, regressions/issue-c8-film-pin-effect-inputs, regressions/issue-c8-film-pin-arrangement-keys, regressions/issue-c8-film-pin-column-empty, regressions/issue-c8-film-pin-sync-parent, regressions/issue-c8-film-pin-service-state, regressions/issue-c8-film-pin-marker-timebase, regressions/issue-c8-film-pin-editor-settings, regressions/issue-c8-film-pin-graphic-limits, regressions/issue-c8-film-pin-clip-scope, regressions/issue-c8-film-pin-targeting, regressions/issue-c8-film-pin-generators, regressions/issue-c8-film-pin-scopes, regressions/issue-c8-film-pin-private, film.agent.premises/call-premises, regressions/issue-c8-film-pin-reread, regressions/issue-c8-film-pin-sdk, regressions/issue-c8-film-pin-camera, regressions/issue-c8-film-pin-bounded-window, regressions/issue-c8-film-pin-track-names, regressions/issue-c8-film-pin-content-region, regressions/issue-c8-time-4, regressions/issue-c8-land-11t, regressions/issue-c8-land-13t, regressions/issue-c8-land-13t-positions, regressions/issue-c8-land-13t-model, regressions/issue-c8-time-5, regressions/issue-c8-film-read-core, regressions/issue-c8-film-read-captions, regressions/issue-c8-film-read-masks, regressions/issue-c8-film-read-graphics, regressions/issue-c8-film-read-graphics-track, regressions/issue-c8-film-read-clip-fields, regressions/issue-c8-film-read-media, regressions/issue-c8-film-read-markers, regressions/issue-c8-film-read-join, regressions/issue-c8-film-read-join-narrow, film.agent.premises/independent-readings, regressions/issue-c8-film-read-r3-core, regressions/issue-c8-film-read-r3-effects, regressions/issue-c8-film-read-r3-media, regressions/issue-c8-film-read-r3-sequences, regressions/issue-c8-film-read-r4-core, regressions/issue-c8-film-read-r4-derived, regressions/issue-c8-film-read-r4-effects, regressions/issue-c8-film-read-r4-luts, regressions/issue-c8-film-read-r4-markers, regressions/issue-c8-film-read-r4-sequences, regressions/issue-c8-film-read-r4-through, regressions/issue-c8-film-read-schema-version, regressions/issue-c8-film-read-r4-membership-size, regressions/issue-c8-film-read-r5-core, regressions/issue-c8-film-read-r5-editor-scan, regressions/issue-c8-film-read-r5-editor-inputs, regressions/issue-c8-film-read-r5-source, regressions/issue-c8-film-read-r5-mask-inputs, regressions/issue-c8-film-read-r5-metadata, regressions/issue-c8-film-read-r5-mask-mapping, regressions/issue-c8-film-read-r5-join-members, regressions/issue-c8-film-read-r5-source-sequence, regressions/issue-c8-film-read-r5-source-members, regressions/issue-c8-film-read-r5-nested-bounds, regressions/issue-c8-film-read-r5-nested-placement, regressions/issue-c8-film-read-r5-modes, regressions/issue-c8-film-read-r5-editor-bindings, regressions/issue-c8-film-read-r5-linked-mode, regressions/issue-c8-film-read-r5-new-sequence, regressions/issue-c8-film-read-r5-placement-channels, regressions/issue-c8-film-read-r5-target-active, regressions/issue-c8-film-read-r5-marker-modes, regressions/issue-c8-film-read-r5-split-destinations, regressions/issue-c8-film-read-r5-unsorted-copy, regressions/issue-c8-film-read-r5-new-seq-atomic, regressions/issue-c8-film-read-r5-sequence-parents, regressions/issue-c8-film-read-r5-graphic-selection, regressions/issue-c8-film-read-r5-mixer-modes, regressions/issue-c8-film-read-r5-camera-wrappers, regressions/issue-c8-film-read-r5-ripple-fields, regressions/issue-c8-film-read-r5-poster-targets, regressions/issue-c8-film-read-r5-preset-reread, regressions/issue-c8-film-read-r5-split-copy, regressions/issue-c8-film-read-r5-text-source-fields, regressions/issue-c8-film-read-r5-equal-split, regressions/issue-c8-film-read-r5-mode-scan, regressions/issue-c8-film-read-r5-camera-reread, regressions/issue-c8-film-read-r5-preset-size, regressions/issue-c8-film-read-r5-mixer-order, regressions/issue-c8-film-read-r5-id-counter, regressions/issue-c8-film-read-r5-object-context, regressions/issue-c8-film-read-r5-replacement-source, regressions/issue-c8-film-read-r5-label-owners, regressions/issue-c8-film-read-r5-numeric]
+    since: "2026-11-17"
+  - id: film.text.add-font
+    title: A program adds a font file for text the bundled faces do not cover
+    dimension: [function]
+    priority: P1
+    status: has
+    paths: [bindings/wasm/src/lib.rs, crates/support/text/src/fonts.rs]
+    cases: [film.text.add-font/cjk-face, regressions/issue-11]
+    since: "2026-11-17"
+  - id: film.platform.engine-contract-2
+    title: Engine contract 2 with the KDM schema, served headless with the replica methods and the object model
+    dimension: [collab, ai, platform]
+    priority: P1
+    status: has
+    requirements: [E2, K3]
+    paths: [kit.json, agent/guide.md, bindings/wasm/src/collab.rs, bindings/headless/src/main.rs, crates/kdm/kdm-model/model/schema.json]
+    cases: [film.platform.engine-contract-2/replica-room, regressions/issue-c8-film-read-schema-version]
+    since: "2026-11-17"
+  - id: film.platform.document-text
+    title: "document.text: titles and captions as plain text for a host's search, cut at a limit"
+    dimension: [platform]
+    priority: P1
+    status: has
+    paths: [kit.json, bindings/wasm/src/text.rs, bindings/wasm/src/lib.rs]
+    cases: [film.platform.document-text/titles-and-captions]
+    since: "2026-11-17"
+  - id: film.sequence.add-edit
+    title: "Cut linked clips at a time (Add Edit); the cut survives undo, redo, saving and reopening"
+    dimension: [function, data-safety]
+    priority: P0
+    status: has
+    commands: [sequence.addEdit]
+    paths: [crates/engine/engine/src/project_tools.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    cases: [film.sequence.add-edit/linked-cut]
+    since: "2026-11-17"
+  - id: film.timeline.basics
+    title: "Razor cuts, trims, track settings, clip names and speed survive saving and reopening"
+    dimension: [function, conversion, data-safety]
+    priority: P0
+    status: has
+    commands: [timeline.razor, timeline.trim, timeline.setTrack, clip.rename, clip.speedDuration]
+    paths: [bindings/wasm/tests/round_trip.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The playhead is not saved: a reopened project starts at 0, where Premiere Pro reopens a sequence where it was left."
+    cases: [film.timeline.basics/save-reopen, regressions/issue-6]
+    since: "2026-11-17"
+  - id: film.markers.basics
+    title: "Sequence markers with names, comments, colours and durations, and In/Out points survive saving and reopening"
+    dimension: [function, conversion, data-safety]
+    priority: P0
+    status: has
+    commands: [markers.add, markers.markIn, markers.markOut]
+    paths: [bindings/wasm/tests/round_trip.rs, web/src/i18n/upstream/zh-hans.tsv, web/parity/check.test.mjs]
+    target: "Premiere Pro 2026 (26.5)"
+    cases: [regressions/issue-c8-film-pin-marker-labels, film.markers.basics/save-reopen, regressions/issue-7, regressions/issue-17, regressions/issue-18]
+    since: "2026-11-17"
+  - id: film.transitions.basics
+    title: "Video and audio transitions survive saving and reopening"
+    dimension: [function, conversion, data-safety]
+    priority: P0
+    status: has
+    commands: [sequence.applyVideoTransition, sequence.applyAudioTransition]
+    paths: [bindings/wasm/tests/round_trip.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    cases: [film.transitions.basics/save-reopen, regressions/issue-4, regressions/issue-16]
+    since: "2026-11-17"
+  - id: film.graphics.text-basics
+    title: "A title with CJK text, its fill, scale and rotation survives saving and reopening"
+    dimension: [function, conversion, data-safety]
+    priority: P0
+    status: has
+    commands: [graphics.newText, graphics.set, graphics.setText, graphics.list]
+    paths: [bindings/wasm/tests/round_trip.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    cases: [film.graphics.text-basics/save-reopen]
+    since: "2026-11-17"
+  - id: film.effects.basics
+    title: "Applied effects, parameter values, keyframes and masks survive saving and reopening"
+    dimension: [function, conversion, data-safety]
+    priority: P0
+    status: has
+    commands: [effects.apply, effects.setParam, effects.addKeyframe, masks.add]
+    paths: [bindings/wasm/tests/round_trip.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    cases: [film.effects.basics/save-reopen, regressions/issue-5, regressions/issue-1]
+    since: "2026-11-17"
+  - id: film.audio.basics
+    title: "Clip gain, clip volume keyframes, track volume and pan, and the mix level survive saving and reopening"
+    dimension: [function, conversion, data-safety]
+    priority: P0
+    status: has
+    commands: [clip.audioGain, clipMixer.set, mixer.setStrip, mixer.inspect]
+    paths: [bindings/wasm/tests/round_trip.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    cases: [film.audio.basics/save-reopen]
+    since: "2026-11-17"
+  - id: film.file.recovery
+    title: "Auto-save and recovery of projects"
+    dimension: [data-safety, function]
+    priority: P1
+    status: partial
+    commands: [file.recover, file.discardRecovery, file.recoveryList, file.autoSaveNow, file.autoSaveStatus, file.listAutoSaves]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: film.file.projects
+    title: "Create, open, close, save, save as, save a copy and revert projects; project settings"
+    dimension: [data-safety, function]
+    priority: P1
+    status: partial
+    commands: [file.newProject, file.openDemoProject, file.open, file.close, file.closeProject, file.closeAllProjects, file.closeAllOtherProjects, file.save, file.saveAs, file.saveCopy, file.saveAsTemplate, file.saveAll, file.revert, file.projectSettings.general, file.projectSettings.scratchDisks]
+    paths: [crates/engine/engine/src/project_tools.rs, bindings/wasm/src/files.rs, crates/engine/engine/src/clip_ops.rs, bindings/wasm/src/lib.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    cases: [regressions/issue-c8-film-demo-ids]
+    since: "2026-11-17"
+  - id: film.file.interchange
+    title: "EDL, AAF, OMF, ALE, OTIO and Final Cut XML interchange"
+    dimension: [conversion, function]
+    priority: P1
+    status: partial
+    commands: [file.exportInterchange, file.exportEdl, file.exportSelectionProject, file.exportAle, file.exportOtio, file.exportFcp7Xml, file.exportFcpxml, file.exportAaf, file.exportOmf, file.importAaf]
+    paths: [bindings/wasm/src/files.rs, crates/engine/engine/src/project_tools.rs, crates/engine/engine/src/aaf_omf.rs, crates/engine/engine/src/interchange.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: film.file.new-items
+    title: "New sequences, bins and synthetic media (bars and tone, mattes, leaders)"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [file.newSequence, file.newSequenceFromClip, file.newBin, file.newBinFromSelection, file.newSearchBin, file.newOfflineFile, file.newAdjustmentLayer, file.newBarsAndTone, file.newBlackVideo, file.newColorMatte, file.newCountingLeader, file.newTransparentVideo, file.newProjectFromTemplate]
+    paths: [crates/engine/engine/src/clip_ops.rs, bindings/wasm/src/dialogs.rs, bindings/wasm/src/lib.rs, bindings/wasm/src/panels.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: film.export.presets
+    title: "Export presets"
+    dimension: [function]
+    priority: P2
+    status: partial
+    commands: [export.presets.list, export.presets.get, export.presets.save, export.presets.delete, export.presets.favorite, export.presets.import, export.presets.export]
+    paths: [crates/engine/engine/src/export_tools.rs, bindings/wasm/src/files.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: film.export.media
+    title: "Export media and graphics templates; the export queue and background jobs"
+    dimension: [conversion, function]
+    priority: P1
+    status: partial
+    commands: [file.exportMedia, jobs.list, jobs.cancel, file.exportGraphicsTemplate, export.formats, export.resolve, export.queue.add, export.queue.list, export.queue.start, export.queue.stop, export.queue.cancel, export.queue.retry, export.queue.remove, export.queue.move, export.queue.clear, export.quick]
+    paths: [crates/engine/engine/src/export_tools.rs, bindings/wasm/src/files.rs, bindings/wasm/src/lib.rs, crates/engine/engine/src/graphic_templates.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: film.file.import
+    title: "Import, replace and other File menu commands"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [file.importDemoFootage, file.replaceFonts, file.importFromMediaBrowser, file.import, file.importImageSequence, file.mediaPropertiesFile, file.mediaProperties, file.projectManager, file.exportFrame, file.templates]
+    paths: [crates/engine/engine/src/project_tools.rs, bindings/wasm/src/files.rs, crates/engine/engine/src/keyboard.rs, bindings/headless/src/main.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: film.edit.history
+    title: "Undo, redo, history, cut, copy, paste, paste attributes, clear and ripple delete"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [edit.undo, edit.redo, edit.cut, edit.copy, edit.paste, edit.pasteInsert, edit.pasteAttributes, edit.removeAttributes, edit.clear, edit.rippleDelete, edit.duplicate, history.list]
+    paths: [bindings/wasm/src/dialogs.rs, crates/engine/engine/src/clip_ops.rs, crates/engine/engine/src/source_monitor.rs, bindings/wasm/src/panels.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: film.edit.labels
+    title: "Label colours"
+    dimension: [function]
+    priority: P2
+    status: partial
+    commands: [edit.selectLabelGroup, edit.label.violet, edit.label.iris, edit.label.caribbean, edit.label.lavender, edit.label.cerulean, edit.label.forest, edit.label.rose, edit.label.mango, edit.label.purple, edit.label.blue, edit.label.teal, edit.label.magenta, edit.label.tan, edit.label.green, edit.label.brown, edit.label.yellow, edit.label]
+    paths: [crates/engine/engine/src/clip_ops.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: film.edit.select-find
+    title: "Select, find, remove unused, consolidate duplicates and edit original"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [edit.selectAll, edit.selectAllMatching, edit.deselectAll, edit.find, edit.findNext, edit.removeUnused, edit.consolidateDuplicates, edit.editOriginal]
+    paths: [crates/engine/engine/src/project_tools.rs, crates/engine/engine/src/clip_ops.rs, bindings/wasm/src/dialogs.rs, bindings/wasm/src/panels.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: film.timeline.edit
+    title: "Place, move, trim, roll, slip, slide, rate stretch and razor clips; track targeting"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [timeline.place, timeline.select, timeline.move, timeline.roll, timeline.slip, timeline.slide, timeline.rateStretch, timeline.setTargeting, timeline.selectClipAtPlayhead, timeline.selectNextClip, timeline.selectPrevClip, timeline.nudgeLeft, timeline.nudgeRight, timeline.nudgeLeft5, timeline.nudgeRight5, timeline.nudgeUp, timeline.nudgeDown, timeline.slipLeft, timeline.slipRight, timeline.slipLeft5, timeline.slipRight5, timeline.slideLeft, timeline.slideRight, timeline.slideLeft5, timeline.slideRight5, timeline.toggleAllVideoTargets, timeline.toggleAllAudioTargets, timeline.toggleAllSourceVideo, timeline.toggleAllSourceAudio, timeline.moveVideoTargetsUp, timeline.moveVideoTargetsDown, timeline.moveAudioTargetsUp, timeline.moveAudioTargetsDown, timeline.toggleMuteTargetedAudio, timeline.toggleSoloTargetedAudio, timeline.toggleOutputTargetedVideo, timeline.toggleTargetV1, timeline.toggleTargetV2, timeline.toggleTargetV3, timeline.toggleTargetV4, timeline.toggleTargetV5, timeline.toggleTargetV6, timeline.toggleTargetV7, timeline.toggleTargetV8, timeline.toggleTargetA1, timeline.toggleTargetA2, timeline.toggleTargetA3, timeline.toggleTargetA4, timeline.toggleTargetA5, timeline.toggleTargetA6, timeline.toggleTargetA7, timeline.toggleTargetA8]
+    paths: [crates/engine/engine/src/keyboard.rs, bindings/wasm/src/dialogs.rs, bindings/wasm/src/panels.rs, crates/engine/engine/src/trim.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: film.trim.mode
+    title: "Trim mode and edit points"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [trim.edit, trim.applyDefaultTransition, trim.selectEditPoint, trim.selectNearest, trim.clear, trim.toggleType, trim.backward, trim.forward, trim.backwardMany, trim.forwardMany, trim.shuttle, trim.shuttleStop, trim.cancelDynamic, trim.playAround, trim.tick, trim.monitor, trim.nudge, trim.extendToPlayhead, trim.ripplePrevious, trim.rippleNext, trim.previous, trim.next, trim.extendPreviousEdit, trim.extendNextEdit]
+    paths: [crates/engine/engine/src/lib.rs, crates/engine/engine/src/keyboard.rs, crates/engine/engine/src/project_tools.rs, crates/engine/engine/src/shortcuts.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: film.sequence.manage
+    title: "Sequences: tabs, settings, render, match frame, transitions, gaps, tracks, nesting and through edits"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [sequence.revealInProject, sequence.open, sequence.close, sequence.closeOthers, sequence.moveTab, sequence.settings, sequence.renderEffectsInToOut, sequence.renderInToOut, sequence.renderSelection, sequence.renderAudio, sequence.deleteRenderFiles, sequence.deleteRenderFilesInToOut, sequence.matchFrame, sequence.reverseMatchFrame, sequence.addEditAllTracks, sequence.lift, sequence.extract, sequence.closeGap, sequence.goToNextGap, sequence.goToPrevGap, sequence.goToNextGapInTrack, sequence.goToPrevGapInTrack, sequence.snap, sequence.linkedSelection, sequence.selectionFollowsPlayhead, sequence.showThroughEdits, sequence.normalizeMixTrack, sequence.makeSubsequence, sequence.transcribe, sequence.simplify, sequence.addTracks, sequence.deleteTracks, sequence.colorSettings, sequence.setTransition, sequence.joinThroughEdits, sequence.throughEdits, sequence.nestSequences, sequence.deleteTrack, sequence.renderBar, sequence.inspect, sequence.revealNested]
+    paths: [crates/engine/engine/src/project_tools.rs, crates/engine/engine/src/sequence_tools.rs, crates/engine/engine/src/sequence_extras.rs, bindings/wasm/src/dialogs.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    cases: [regressions/issue-14]
+    since: "2026-11-17"
+  - id: film.source.playhead
+    title: "Source monitor and playhead navigation"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [playhead.set, playhead.step, playhead.stepForward, playhead.stepBack, playhead.stepForward5, playhead.stepBack5, playhead.nextEdit, playhead.prevEdit, playhead.start, playhead.end, source.open, source.setPlayhead, source.inspect, source.insert, source.overwrite, playhead.nextEditAnyTrack, playhead.prevEditAnyTrack, playhead.selectedClipStart, playhead.selectedClipEnd]
+    paths: [crates/engine/engine/src/keyboard.rs, crates/engine/engine/src/source_monitor.rs, bindings/wasm/src/dialogs.rs, bindings/wasm/src/lib.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: film.markers.in-out
+    title: "In and out points, markers, chapters and flash cues"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [markers.markClip, markers.markSelection, markers.markSplitVideoIn, markers.markSplitVideoOut, markers.markSplitAudioIn, markers.markSplitAudioOut, markers.goToIn, markers.goToOut, markers.goToSplitVideoIn, markers.goToSplitVideoOut, markers.goToSplitAudioIn, markers.goToSplitAudioOut, markers.clearIn, markers.clearOut, markers.clearInOut, markers.addRange, markers.addRangeInOut, markers.goNext, markers.goPrev, markers.clearCurrent, markers.clearAll, markers.showAllMarkerColors, markers.filterColors, markers.edit, markers.addChapter, markers.addFlashCue, markers.rippleSequenceMarkers, markers.copyPasteIncludesSequenceMarkers]
+    paths: [crates/engine/engine/src/sequence_tools.rs, crates/engine/engine/src/source_monitor.rs, bindings/wasm/src/panels.rs, crates/engine/engine/src/project_tools.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: film.clip.properties
+    title: "Clip properties, subclips, speed, frame hold, audio gain, linking, nesting and multicam clips"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [clip.makeSubclip, clip.editSubclip, clip.editOffline, clip.sourceSettings, clip.audioChannels, clip.interpretFootage, clip.modifyTimecode, clip.frameHoldOptions, clip.frameHold, clip.insertFrameHoldSegment, clip.fieldOptions, clip.timeInterpolation.frameSampling, clip.timeInterpolation.frameBlending, clip.timeInterpolation.opticalFlow, clip.scaleToFrameSize, clip.fitToFrame, clip.fillFrame, clip.breakoutToMono, clip.extractAudio, clip.sceneEditDetection, clip.enable, clip.link, clip.group, clip.ungroup, clip.audioPeak, clip.nest, clip.revealInProject, clip.replaceFromSource, clip.replaceFromSourceMatchFrame, clip.replaceFromBin, clip.restoreCaptionsFromSource, clip.updateMetadata, clip.generateAudioWaveform, clip.automateToSequence, clip.synchronize, clip.mergeClips, clip.createMulticam, clip.multicamEnable, clip.multicamFlatten, clip.remix.enable, clip.remix.properties, clip.remix.revert, clip.remix, clip.volumeUp, clip.volumeDown, clip.volumeUpMany, clip.volumeDownMany, clip.nudgeVolumeUp1, clip.nudgeVolumeUp3, clip.nudgeVolumeDown1, clip.nudgeVolumeDown3, clip.setPosterFrame, clip.clearPosterFrame, clip.setTimeInterpolation]
+    paths: [crates/engine/engine/src/clip_ops.rs, bindings/wasm/src/dialogs.rs, crates/engine/engine/src/keyboard.rs, crates/engine/engine/src/project_tools.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: film.multicam.edit
+    title: "Multi-camera editing"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [multicam.switchAngle, multicam.recordStart, multicam.cut, multicam.recordStop, multicam.audioFollowsVideo, multicam.editCameras, multicam.cutToCamera, multicam.gridLayout, multicam.page, multicam.nextPage, multicam.prevPage, multicam.selectionTopDown, multicam.showPreviewMonitor, multicam.autoAdjustQuality, multicam.transmitView, multicam.grid, multicam.inspect, multicam.selectCamera1, multicam.cutToCamera1, multicam.selectCamera2, multicam.cutToCamera2, multicam.selectCamera3, multicam.cutToCamera3, multicam.selectCamera4, multicam.cutToCamera4, multicam.selectCamera5, multicam.cutToCamera5, multicam.selectCamera6, multicam.cutToCamera6, multicam.selectCamera7, multicam.cutToCamera7, multicam.selectCamera8, multicam.cutToCamera8, multicam.selectCamera9, multicam.cutToCamera9]
+    paths: [crates/engine/engine/src/multicam.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    cases: [regressions/issue-9]
+    since: "2026-11-17"
+  - id: film.captions.edit
+    title: "Caption tracks, captions, styles, import and export"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [captions.newTrack, captions.deleteTrack, captions.setTrack, captions.setStyle, captions.add, captions.split, captions.merge, captions.setText, captions.setTimes, captions.trim, captions.move, captions.delete, captions.select, captions.goTo, captions.next, captions.previous, captions.showAll, captions.showActiveOnly, captions.hideAll, captions.import, captions.export, captions.list]
+    paths: [crates/engine/engine/src/captions.rs, bindings/wasm/src/files.rs, crates/engine/engine/src/project_tools.rs, crates/engine/engine/src/sequence_extras.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    cases: [regressions/issue-8]
+    since: "2026-11-17"
+  - id: film.transcript.edit
+    title: "Transcripts, text-based editing and captions from transcripts"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [transcript.generate, transcript.set, transcript.delete, transcript.inspect, transcript.search, transcript.models, transcript.downloadModel, transcript.select, transcript.extract, transcript.lift, transcript.renameSpeaker, transcript.removePauses, transcript.removeFillers, transcript.createCaptions]
+    paths: [crates/engine/engine/src/transcript.rs, web/src/commandIcons.ts, crates/engine/engine/src/media_pool.rs, crates/engine/engine/src/sequence_extras.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: film.graphics.template
+    title: "Motion graphics templates"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [graphics.template.list, graphics.template.apply, graphics.template.export, graphics.template.install, graphics.template.remove, graphics.template.set, graphics.template.controls, graphics.template.thumbnail]
+    paths: [crates/engine/engine/src/graphic_templates.rs, bindings/wasm/src/files.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: film.graphics.titles
+    title: "Graphics and titles: text, shapes, layers, alignment and fonts"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [graphics.newShape, graphics.setTextType, graphics.selectLayer, graphics.deleteLayer, graphics.arrangeLayer, graphics.align, graphics.distribute, fonts.list, graphics.newVerticalText, graphics.newRectangle, graphics.newEllipse, graphics.newPolygon, graphics.newFromFile, graphics.alignFrame.left, graphics.alignFrame.hcenter, graphics.alignFrame.right, graphics.alignFrame.top, graphics.alignFrame.vcenter, graphics.alignFrame.bottom, graphics.alignGroup.left, graphics.alignGroup.hcenter, graphics.alignGroup.right, graphics.alignGroup.top, graphics.alignGroup.vcenter, graphics.alignGroup.bottom, graphics.alignSelection.left, graphics.alignSelection.hcenter, graphics.alignSelection.right, graphics.alignSelection.top, graphics.alignSelection.vcenter, graphics.alignSelection.bottom, graphics.distributeVertically, graphics.distributeSpaceVertically, graphics.distributeHorizontally, graphics.distributeSpaceHorizontally, graphics.bringToFront, graphics.bringForward, graphics.sendBackward, graphics.sendToBack, graphics.selectNextGraphic, graphics.selectPreviousGraphic, graphics.selectNextLayer, graphics.selectPreviousLayer, graphics.resetAllParameters, graphics.resetDuration, graphics.setRoll, graphics.setResponsiveTime, graphics.pin, graphics.setCharStyle, graphics.upgradeCaption, graphics.upgradeToSourceGraphic, graphics.fonts.used, graphics.fontSizeUp, graphics.fontSizeDown, graphics.fontSizeUp5, graphics.fontSizeDown5, graphics.leadingUp, graphics.leadingDown, graphics.leadingUp5, graphics.leadingDown5, graphics.alignTextLeft, graphics.alignTextCenter, graphics.alignTextRight, graphics.nudgeLeft, graphics.nudgeRight, graphics.nudgeUp, graphics.nudgeDown, graphics.nudgeLeft5, graphics.nudgeRight5, graphics.nudgeUp5, graphics.nudgeDown5]
+    paths: [crates/engine/engine/src/graphics.rs, crates/engine/engine/src/keyboard.rs, crates/engine/engine/src/graphic_templates.rs, bindings/wasm/src/panels.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    cases: [regressions/issue-2, regressions/issue-3]
+    since: "2026-11-17"
+  - id: film.effects.keyframes
+    title: "Effects, keyframes, transitions and masks"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [effects.remove, effects.toggleAnimation, effects.toggleEnabled, effects.reset, effects.deleteKeyframe, effects.moveKeyframe, effects.setInterpolation, effects.setKeyframe, effects.list, effects.setDefaultTransition, masks.remove, masks.set, masks.moveVertex, masks.translate, masks.addVertex, masks.removeVertex, masks.track, masks.toggleVertexSmooth, masks.select, masks.list]
+    paths: [crates/engine/engine/src/masks.rs, bindings/wasm/src/panels.rs, bindings/wasm/src/files.rs, bindings/wasm/src/sound.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    cases: [regressions/issue-13, regressions/issue-19]
+    since: "2026-11-17"
+  - id: film.color.grade
+    title: "Colour grading, LUTs, colour spaces and scopes"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [color.spaces, color.presets, color.applyPreset, color.presetThumbnails, lut.import, lut.list, lut.remove, lut.export, color.setInputLut, color.setLook, color.applyMatch, color.setSection, scopes.read]
+    paths: [crates/engine/engine/src/color.rs, bindings/wasm/src/files.rs, web/src/commandIcons.ts, bindings/wasm/src/picture.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    cases: [regressions/issue-12]
+    since: "2026-11-17"
+  - id: film.audio.mixing
+    title: "Audio track and clip mixers, the Audio Mixing panel, scrubbing and voice-over"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [mixer.addSubmix, mixer.setValue, mixer.touch, mixer.release, mixer.recordStart, mixer.recordStop, clipMixer.setMode, clipMixer.touch, clipMixer.release, mixer.deleteSubmix, mixer.addInsert, mixer.removeInsert, mixer.setInsert, mixer.addSend, mixer.setSend, mixer.removeSend, mixer.setKeyframe, mixer.deleteKeyframe, mixer.moveKeyframe, mixer.clearLane, mixer.writeAutomation, audioMixing.inspect, audioMixing.setType, audioMixing.clearType, audioMixing.set, audioMixing.applyPreset, audioMixing.savePreset, audioMixing.deletePreset, audioMixing.autoMatch, audioMixing.generateDucking, audio.voiceover.settings, audio.voiceover.start, audio.voiceover.sync, audio.voiceover.stop, audio.toggleScrubbing]
+    paths: [crates/engine/engine/src/mixer.rs, crates/engine/engine/src/audio_mixing.rs, crates/engine/engine/src/voiceover.rs, crates/engine/engine/src/promo.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: film.project.panel
+    title: "Project panel: bins, views, columns, freeform layout, metadata and the media browser"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [project.matteColor, project.select, project.delete, project.moveToBin, project.setMarks, project.inspect, project.ingestSettings, metadata.get, metadata.set, project.view.get, project.view.set, project.columns.list, project.columns.set, project.columns.resize, project.sort, project.items, project.viewPreset.list, project.viewPreset.save, project.viewPreset.saveAs, project.viewPreset.restore, project.viewPreset.rename, project.viewPreset.delete, project.freeform.layout, project.freeform.move, project.freeform.resize, project.freeform.alignToGrid, project.freeform.reset, project.freeform.stack, project.freeform.unstack, project.freeform.saveArrangement, project.freeform.restoreArrangement, project.freeform.deleteArrangement, project.freeform.arrangements, project.freeform.options, project.renameBin, project.selectAll, project.deselectAll, mediaBrowser.roots, mediaBrowser.list, mediaBrowser.navigate, mediaBrowser.select, mediaBrowser.favorite, mediaBrowser.clearRecent, mediaBrowser.settings, mediaBrowser.import, mediaBrowser.openInSource, mediaBrowser.probe, project.searchBinItems, project.searchBins, project.editSearchBin, project.deleteSearchBin]
+    paths: [crates/engine/engine/src/project_panel.rs, crates/engine/engine/src/media_browser.rs, bindings/wasm/src/files.rs, crates/engine/engine/src/project_tools.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: film.media.management
+    title: "Media status, relink, offline, proxies and the media cache"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [mediaCache.info, mediaCache.clean, media.colorInfo, media.findMissing, media.status, media.linkMedia, media.relink, media.replaceFootage, media.autoRelink, media.search, media.makeOffline, media.offlineAll, media.createProxies, media.attachProxies, media.detachProxies, media.reconnectFullRes, media.toggleProxies, media.proxyPresets]
+    paths: [crates/engine/engine/src/relink.rs, crates/engine/engine/src/proxies.rs, bindings/wasm/src/files.rs, crates/engine/engine/src/settings.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    cases: [regressions/issue-media-outside-workspace, regressions/issue-writes-outside-workspace]
+    since: "2026-11-17"
+  - id: film.app.presets
+    title: "Effect presets"
+    dimension: [function]
+    priority: P2
+    status: partial
+    commands: [presets.list, presets.save, presets.apply, presets.delete, presets.rename, presets.export, presets.import]
+    paths: [crates/engine/engine/src/presets.rs, bindings/wasm/src/files.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: film.app.shortcuts
+    title: "Keyboard shortcuts, preferences, help and diagnostics"
+    dimension: [function]
+    priority: P2
+    status: partial
+    commands: [prefs.get, prefs.set, prefs.reset, perf.stats, command.list, state.inspect, prefs.schema, shortcuts.registerExternal, shortcuts.list, shortcuts.get, shortcuts.set, shortcuts.clear, shortcuts.undo, shortcuts.redo, shortcuts.conflicts, shortcuts.forKey, shortcuts.resolve, shortcuts.presets, shortcuts.loadPreset, shortcuts.savePreset, shortcuts.deletePreset, shortcuts.export, shortcuts.import, shortcuts.audit, events.list, events.clear, help.systemReport]
+    paths: [crates/engine/engine/src/shortcuts.rs, bindings/wasm/src/files.rs, bindings/wasm/src/prefs.rs, crates/engine/engine/src/panels.rs]
+    target: "Premiere Pro 2026 (26.5)"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: film.editor.display-modes
+    title: The editor in each display mode (Menus, Single line, Classic, Focus); Focus shows the Program monitor alone
+    dimension: [function]
+    priority: P1
+    status: has
+    paths: [web/src/App.tsx, web/src/HomeTab.tsx, web/src/monitors/Monitor.tsx, web/src/monitors/ProgramMonitor.tsx, web/tests/modes.mjs]
+    cases: [regressions/issue-focus-shows-workspace, regressions/issue-resize-observer-loop]
+    since: "2026-11-17"

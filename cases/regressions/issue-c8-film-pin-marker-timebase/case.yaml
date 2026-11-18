@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-pin-marker-timebase
+feature: film.agent.premises
+intent: Marks and marker durations expressed in frames refuse a changed sequence timebase even when the computed time stays inside the same clip, while tick marks stay independent.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_marker_timebase_pin }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

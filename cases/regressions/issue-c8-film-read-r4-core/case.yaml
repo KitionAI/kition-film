@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-read-r4-core
+feature: film.agent.premises
+intent: Assigned sequence fields, proportional Motion scaling, inherited effect defaults and implicit selection writes hold consumed facts and preserve unrelated names and metadata.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-read, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_core_r4 }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

@@ -1,0 +1,15 @@
+format: 1
+id: regressions/issue-c8-film-read-r4-through
+feature: film.agent.premises
+intent: Through-edit eligibility tolerates hostile arithmetic and a named join retains a departed adjacent recipient while permitting unrelated neighbours.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-read, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film-edit, filter: hostile_through_source_arithmetic_returns_ineligible_without_panicking }
+  - cargo-test: { package: kition-film, test: read_join }
+  - cargo-test: { package: kition-film, test: read_join_narrow }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

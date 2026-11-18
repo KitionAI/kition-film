@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-pin-column-empty
+feature: film.agent.premises
+intent: Project view and column changes that perform no metadata lookup do not hold unrelated Program clips.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film-kit, test: declarations_independent, filter: column_paths_compare_canonical_lookups_and_branches_without_metadata_reads }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-pin-cut-inputs
+feature: film.agent.premises
+intent: Timeline cuts retain lane lock checks, reassigned transitions and frame-based time conversion inputs.
+layer: gate
+dimension: collab
+source: {kind: synthetic, from: C8-film-pin independent cut-handler comparison, license: owned}
+input: []
+steps:
+  - cargo-test: {package: kition-film-kit, test: declarations_independent, filter: cuts_compare}
+expected:
+  - {actual: out:exit, compare: exit, value: 0}
+since: "2026-11-17"

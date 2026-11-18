@@ -1,0 +1,33 @@
+format: 1
+id: regressions/issue-writes-outside-workspace
+feature: film.media.management
+intent: >-
+  The headless kit reads and writes only inside its workspace, through its host (KHP A29, section
+  10.6): whatever an agent runs, directly or inside model.batch, and whatever its project file
+  names, nothing appears in the process's current, home or temporary folder, nothing outside the
+  workspace is listed, read into an answer or a picture, changed or deleted. An audit deleted files
+  outside the workspace (prefs.set mediaCache.location, then mediaCache.clean; media.makeOffline
+  deleteFiles), wrote render previews into the current folder, and read and wrote LUT and shortcut
+  files by path through model.batch.
+layer: gate
+tags: [headless, security]
+source:
+  kind: probe
+  from: workspace-escape audit (film section)
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film
+      test: workspace_only
+  - cargo-test:
+      package: kition-film-engine
+      filter: "a_kit_takes_no_folder_from_its_preferences"
+  - cargo-test:
+      package: kition-film-kit
+      filter: "the_manifest_excludes_what_the_kit_refuses_agents"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-pin-targeted-flags
+feature: film.agent.premises
+intent: Targeted Mute, Solo and Video Output toggles protect every assigned track flag, including empty lanes, while permitting independent track-name changes.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_keyboard_pin, filter: targeted_track_toggles_retain_assigned_flags_but_not_names }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

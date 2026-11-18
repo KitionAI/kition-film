@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-pin-nudge-recipient
+feature: film.agent.premises
+intent: A Motion nudge retains video recipients after an outside move to audio, rather than silently editing only the remaining videos.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_graphic_keyboard_pin, filter: motion_nudge_retains_video_recipients_that_moved_to_audio }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

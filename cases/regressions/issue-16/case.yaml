@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-16
+feature: film.transitions.basics
+intent: >-
+  inspect answers a transition's parameters as it answers a clip effect's: the value as the
+  commands take it (a number, "#rrggbb", [x, y] with null for an automatic coordinate) under
+  value, and a choice also names its option; not the project's tagged values ({"Float": 6.0}).
+layer: gate
+source:
+  kind: issue
+  from: Kition Film regression suite
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-film-kit, test: transition_params }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"

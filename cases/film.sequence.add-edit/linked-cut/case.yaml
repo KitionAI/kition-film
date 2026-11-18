@@ -1,0 +1,19 @@
+format: 1
+id: film.sequence.add-edit/linked-cut
+feature: film.sequence.add-edit
+intent: >-
+  sequence.addEdit at two seconds cuts the linked video and audio clips into two halves with the
+  right source ranges; undo and redo restore each state exactly, and saving and reopening keeps the
+  editable sequence content.
+layer: unit
+source:
+  kind: synthetic
+  from: bindings/wasm/tests/editing_scenarios.rs (n01_linked_cut_preserves_source_ranges_history_and_saved_project)
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: kition-film-kit, test: editing_scenarios, filter: n01_linked_cut_preserves_source_ranges_history_and_saved_project }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-17"

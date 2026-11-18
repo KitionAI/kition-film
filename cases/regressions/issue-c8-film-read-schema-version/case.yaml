@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-read-schema-version
+feature: film.platform.engine-contract-2
+intent: The advertised object-model schema version matches the engine schema without changing the engine contract or SDK pin.
+layer: gate
+dimension: platform
+source: { kind: synthetic, from: C8-film-read, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: replica }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

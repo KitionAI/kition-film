@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-film-pin-gap-selection
+feature: film.agent.premises
+intent: Gap navigation retains the linked selection at its destination when selection follows the playhead and allows an unrelated picture change.
+layer: gate
+dimension: collab
+source: { kind: synthetic, from: C8-film-pin, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-film, test: read_gap_timebase_pin, filter: gap_navigation_holds_the_linked_selection_at_its_destination }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-17"

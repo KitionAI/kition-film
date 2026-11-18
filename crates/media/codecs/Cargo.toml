@@ -1,0 +1,44 @@
+[package]
+name = "kition-film-codecs"
+description = "Container + codec hub: MP4/MOV, Matroska, MXF, Ogg and MPEG TS/PS sources, image sequences, GOP-aware seeking, decoder registry, audio decoding"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+kition-film-time = { workspace = true }
+kition-film-color = { workspace = true }
+kition-film-frame = { workspace = true }
+kition-film-media = { workspace = true }
+kition-film-isobmff = { workspace = true }
+kition-film-matroska = { workspace = true }
+kition-film-mxf = { workspace = true }
+kition-film-mpegts = { workspace = true }
+kition-film-mpeg2v = { workspace = true }
+kition-film-ac3 = { workspace = true }
+kition-film-ogg = { workspace = true }
+kition-film-bitstream = { workspace = true }
+kition-film-h264 = { workspace = true }
+kition-film-hevc = { workspace = true }
+kition-film-vp9 = { workspace = true }
+kition-film-prores = { workspace = true }
+kition-film-dnx = { workspace = true }
+kition-film-av1 = { workspace = true }
+kition-film-apv = { workspace = true }
+kition-film-aac = { workspace = true }
+kition-film-opus = { workspace = true }
+thiserror = { workspace = true }
+log = { workspace = true }
+# Decode timing counters (`gop_stats`); std's Instant panics on wasm32.
+web-time = "1"
+image = { version = "0.25", default-features = false, features = ["jpeg"] }
+# Bootstrap audio decoding (MPL-2.0, used unmodified); replaced by own decoders over time.
+symphonia = { version = "0.5.5", default-features = false, features = ["aac", "mp1", "mp2", "mp3", "flac", "alac", "pcm", "wav", "aiff", "ogg", "vorbis", "isomp4"] }
+
+[dev-dependencies]
+kition-film-testkit = { workspace = true }
+serde_json = { workspace = true }

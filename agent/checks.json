@@ -1,0 +1,56 @@
+[
+  {
+    "code": "film.missing-item",
+    "severity": "error",
+    "summary": "A clip refers to a project item the project no longer has.",
+    "fixture": "check-missing-item.kfilm"
+  },
+  {
+    "code": "film.offline-media",
+    "severity": "error",
+    "summary": "A clip uses media made offline, so it renders the offline slate.",
+    "fixture": "check-offline-media.kfilm"
+  },
+  {
+    "code": "film.missing-media",
+    "severity": "error",
+    "summary": "A clip uses media whose file the host cannot lend (missing, or outside the workspace), so it renders the offline slate.",
+    "fixture": "check-missing-media.kfilm"
+  },
+  {
+    "code": "film.past-media-end",
+    "severity": "warning",
+    "summary": "A clip reads past the end of its media, so those frames hold the last one.",
+    "fixture": "check-past-media-end.kfilm"
+  },
+  {
+    "code": "film.empty-sequence",
+    "severity": "warning",
+    "summary": "A sequence has no clips: it renders black, silent frames.",
+    "fixture": "check-empty-sequence.kfilm"
+  },
+  {
+    "code": "film.gap",
+    "severity": "info",
+    "summary": "The first video track has black between two clips; the fix closes the gap.",
+    "fixture": "check-gap.kfilm"
+  },
+  {
+    "code": "film.disabled-clip",
+    "severity": "info",
+    "summary": "A clip is disabled, so it neither shows nor plays; the fix enables it.",
+    "fixture": "check-disabled-clip.kfilm"
+  },
+  {
+    "code": "film.font-missing",
+    "severity": "warning",
+    "summary": "A title or caption track uses a font family that is not available, so it draws in the default family.",
+    "fixture": "check-font-missing.kfilm"
+  },
+  {
+    "code": "film.truncated",
+    "severity": "info",
+    "summary": "A code was found more than 100 times; the rest are counted, not listed.",
+    "fixture": "check-truncated.kfilm"
+  }
+]

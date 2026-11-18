@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-17
+feature: film.markers.basics
+intent: >-
+  markers.markIn, markers.markOut, timeline.razor, sequence.addEdit and sequence.addEditAllTracks
+  take their time as the other time-taking commands do: time in ticks, seconds, frame or timecode
+  (a Source mark: time or seconds), and a seconds value is not refused as an unknown parameter.
+layer: gate
+source:
+  kind: issue
+  from: Kition Film regression suite
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-film-kit, test: time_in_seconds }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"
