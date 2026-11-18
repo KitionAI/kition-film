@@ -88,8 +88,14 @@ Every picture has its `.attribution` sidecar and a row in [attribution.md](attri
 
 ### Publish
 
-Kition ships the kit's package. Publish it from a Kition checkout with
-`scripts/publish-kit.sh film` (see `docs/kits.md` there).
+Kition ships the kit's package, `kition-film-<version>.tgz` (the `film-ui/` folder), a release
+asset of this repository tagged `package-v<version>`. It is built on GitHub, never on a developer
+machine: the Package workflow (`.github/workflows/package.yml`, which calls Kition's reusable
+`kit-package.yml`) builds the commit it is started on, with `gh workflow run package.yml -R
+KitionAI/kition-film`, and publishes the Release with the package's lock entry,
+`kition-film-<version>.json`. Kition pins it with `node scripts/pin-kits.mjs film` (see
+`docs/kits.md` there). A version is published once: bump `version` in `kit.json` to publish a
+change.
 
 ### Building with kition-fonts
 
