@@ -119,15 +119,31 @@ co-editing and an agent working inside the open editor.
 
 ### Give it to your agent
 
-The engine also runs headless as the `kition-film` executable, and the SDK's `kition-kits-mcp`
-turns it into MCP tools (`film_inspect`, `film_run`, `film_check`, ...) on a folder of projects, for
-any MCP client:
+The engine also runs headless, and `kition`, the Kition SDK's command line, serves it as MCP tools
+(`film_inspect`, `film_run`, `film_check`, ...) on a folder of projects, for any MCP client. Nothing
+is compiled: you need neither Rust nor the Kition app. Install `kition`, then connect your agent in
+the folder:
 
 ```sh
-cargo build --release -p kition-film
-cargo install --git https://github.com/KitionAI/kition-sdk kition-kits --bin kition-kits-mcp
-kition-kits-mcp --workspace <folder of projects> --kit target/release/kition-film
+curl -fsSL https://github.com/KitionAI/kition-sdk/releases/latest/download/install.sh | sh
+# Claude Code, in the folder:
+claude mcp add kition -- ~/.kition/bin/kition mcp --workspace "$PWD"
 ```
+
+On Windows, install it with
+`irm https://github.com/KitionAI/kition-sdk/releases/latest/download/install.ps1 | iex`. With
+Node.js 20 or later you can skip the install:
+`claude mcp add kition -- npx -y @kition/kits-mcp --workspace "$PWD"`.
+
+`kition` holds no kit. The first time the agent opens a `.kfilm` file, through the `kit_inspect`
+tool the server offers until Film is installed, `kition` downloads Film's headless executable into
+`~/.kition/kits` and the film tools appear. `kition kit install film` downloads it ahead of time,
+and `kition kit upgrade` moves it to the newest version. Claude Desktop, Cursor, Codex and the other
+commands are in the SDK's
+[agent guide](https://github.com/KitionAI/kition-sdk/blob/main/docs/sdk/agent.md#connect-your-agent)
+and [`kition` guide](https://github.com/KitionAI/kition-sdk/blob/main/docs/sdk/cli.md). To run a
+build of your own (working on the kit itself), see
+[docs/development.md](docs/development.md#build-and-test).
 
 A real session on a copy of the showcase montage, abridged:
 
