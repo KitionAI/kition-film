@@ -21,7 +21,14 @@ jobs:
     timeout-minutes: 90
     env:
       KITION_FILM_REQUIRE_ORACLES: '1'
+      # The full regression builds every crate and test with clippy and cargo test; full debug
+      # info filled the runner's disk. Line tables keep panic backtraces readable.
+      CARGO_PROFILE_DEV_DEBUG: line-tables-only
     steps:
+      - name: Free runner disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
       - uses: actions/checkout@v4
         with:
           path: kition-film
@@ -57,6 +64,9 @@ jobs:
       - name: Full regression
         if: github.event_name != 'pull_request'
         run: pnpm --dir kition-film/web test:ci:full
+      - name: Disk usage
+        if: always()
+        run: df -h / && du -sh kition-film/target || true
       - name: Upload results and failure evidence
         if: always()
         uses: actions/upload-artifact@v4
