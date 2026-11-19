@@ -44,7 +44,7 @@ come first; the upstream rules below still apply to the engine.
 - `bindings/wasm` compiles the engine to WebAssembly on the public `KitionAI/kition-sdk`
   crate; the editor runs it in a Web Worker. The contract and the Kition platform rules live in kition-sdk
   (`docs/platform/kits/engine.md`, `docs/platform/reference/ui-protocol.md`), the agent protocol
-  in KHP (`kitharness/khp`, https://github.com/kitharness/khp);
+  in KHP (`kitharness/kitharness`, https://github.com/kitharness/kitharness);
   change them there, never here.
   `kition-film-kit` must keep passing `kition_kit::testing::check_contract`.
 - Media are read only through `kition_kit::host` (lent files): synchronous ranged reads the host
