@@ -331,7 +331,7 @@ mod tests {
             (item(10, i64::MAX, 40, 0), item(11, 40, 60, 40)),
         ] {
             let answer = std::panic::catch_unwind(|| is_through_edit(&left, &right));
-            assert_eq!(answer.unwrap(), false);
+            assert!(!answer.unwrap());
         }
     }
 
@@ -339,7 +339,7 @@ mod tests {
     fn hostile_through_difference_never_panics() {
         let left = item(10, 0, 40, i64::MAX - 40);
         let right = item(11, 40, 60, i64::MIN);
-        assert_eq!(std::panic::catch_unwind(|| is_through_edit(&left, &right)).unwrap(), false);
+        assert!(!std::panic::catch_unwind(|| is_through_edit(&left, &right)).unwrap());
     }
 
     #[test]

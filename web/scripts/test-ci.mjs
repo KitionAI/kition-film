@@ -37,7 +37,7 @@ const stages = [
   ['build', 'pnpm', ['build'], web],
   ['unit', 'pnpm', ['test:unit'], web],
   ['parity', 'pnpm', ['test:parity'], web],
-  ...(full ? [['clippy', 'cargo', ['clippy', '--locked', '--workspace', '--all-targets', '--', '-D', 'warnings'], nativeRepo]] : []),
+  ...(full ? [['clippy', 'cargo', ['clippy', '--locked', '--workspace', '--all-targets', '--keep-going', '--', '-D', 'warnings'], nativeRepo]] : []),
   ['engine', 'cargo', full
     ? ['test', '--locked', '--workspace', '--no-fail-fast', '--', '--show-output']
     : ['test', '--locked', '-p', 'kition-film-time', '-p', 'kition-film-edit', '-p', 'kition-film-engine', '-p', 'kition-film-kit', '--', '--show-output'], nativeRepo],
