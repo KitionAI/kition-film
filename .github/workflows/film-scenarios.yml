@@ -18,7 +18,9 @@ concurrency:
 jobs:
   scenarios:
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    # Setup (WASM build, browsers) takes about 30 minutes and the Rust workspace tests about 40;
+    # the browser scenarios (both engines), modes and flows run after them.
+    timeout-minutes: 240
     env:
       KITION_FILM_REQUIRE_ORACLES: '1'
       # The full regression builds every crate and test with clippy and cargo test; full debug
