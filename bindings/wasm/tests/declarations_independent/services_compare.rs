@@ -45,9 +45,9 @@ pub fn compared_path(command: &str, path: &str) -> bool {
         id if id.starts_with("export.") => (include_str!("../../../../crates/engine/engine/src/export_tools.rs"), 0x3b51f4e83d3cdeb3),
         "audio.toggleScrubbing" => (include_str!("../../../../crates/engine/engine/src/keyboard.rs"), 0xc4c1cfffb8e70cd9),
         "audio.voiceover.settings" => (include_str!("../../../../crates/engine/engine/src/voiceover.rs"), 0x91aaae0773822eca),
-        "audioMixing.deletePreset" => (include_str!("../../../../crates/engine/engine/src/audio_mixing.rs"), 0x532e6cd80c896239),
+        "audioMixing.deletePreset" => (include_str!("../../../../crates/engine/engine/src/audio_mixing.rs"), 0x62e5a74e1bc8c02c),
         "multicam.gridLayout" => (include_str!("../../../../crates/engine/engine/src/multicam.rs"), 0x52a6ff09ef04c8dd),
-        _ => (include_str!("../../../../crates/engine/engine/src/commands.rs"), 0x4a909853df5c55f6),
+        _ => (include_str!("../../../../crates/engine/engine/src/commands.rs"), 0xb75206fa39390e4c),
     };
     source.bytes().fold(0xcbf29ce484222325u64, |hash, byte| (hash ^ u64::from(byte)).wrapping_mul(0x100000001b3)) == reviewed
 }

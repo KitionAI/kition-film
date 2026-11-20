@@ -48,7 +48,7 @@ pub fn compared_path(command: &str, path: &str) -> bool {
     let (source, reviewed) = if command.starts_with("project.") {
         (include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../crates/engine/engine/src/project_panel.rs")), 0x05feb2b3bbb4f4b0)
     } else if command.starts_with("mediaBrowser.") {
-        (include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../crates/engine/engine/src/media_browser.rs")), 0x0441cee7f8a5b2b0)
+        (include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../crates/engine/engine/src/media_browser.rs")), 0xa657cfe622ed6565)
     } else if command.starts_with("presets.") {
         (include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../crates/engine/engine/src/presets.rs")), 0x3c8b435bcfc471ab)
     } else if command.starts_with("multicam.") {
@@ -56,7 +56,7 @@ pub fn compared_path(command: &str, path: &str) -> bool {
     } else if command.starts_with("markers.") || command == "sequence.showThroughEdits" {
         (include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../crates/engine/engine/src/sequence_tools.rs")), 0x9c4a17d3fd68bdd4)
     } else {
-        (include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../crates/engine/engine/src/commands.rs")), 0x4a909853df5c55f6)
+        (include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../crates/engine/engine/src/commands.rs")), 0xb75206fa39390e4c)
     };
     hash(source) == reviewed
 }

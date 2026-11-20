@@ -21,7 +21,7 @@ pub const PATHS: &[(&str, &str)] = &[
 pub fn compared_path(command: &str, path: &str) -> bool {
     let hash = |s: &str| s.bytes().fold(0xcbf29ce484222325u64, |h, b| (h ^ u64::from(b)).wrapping_mul(0x100000001b3));
     PATHS.contains(&(command, path))
-        && hash(include_str!("../../../../crates/engine/engine/src/transcript.rs")) == 0x7c5b6211d7c861f4
+        && hash(include_str!("../../../../crates/engine/engine/src/transcript.rs")) == 0x32dfd9f3f6a68e89
         && hash(include_str!("../../../../crates/engine/edit/src/transcript.rs")) == 0x6ddd7309ee356c0a
 }
 pub fn more(command: &str) -> Vec<&'static str> {

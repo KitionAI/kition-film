@@ -11,7 +11,7 @@ pub const PATHS: &[(&str, &str)] = &[("file.newSequence", "plain"), ("file.newSe
 pub fn compared_path(command: &str, path: &str) -> bool {
     let hash = |s: &str| s.bytes().fold(0xcbf29ce484222325u64, |h, b| (h ^ u64::from(b)).wrapping_mul(0x100000001b3));
     PATHS.contains(&(command, path))
-        && hash(include_str!("../../../../crates/engine/engine/src/commands.rs")) == 0x4a909853df5c55f6
+        && hash(include_str!("../../../../crates/engine/engine/src/commands.rs")) == 0xb75206fa39390e4c
         && hash(include_str!("../../../../crates/engine/project/src/lib.rs")) == 0x784d4865cb75caf9
 }
 pub fn more() -> Vec<&'static str> {

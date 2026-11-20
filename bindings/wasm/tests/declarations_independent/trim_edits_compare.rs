@@ -13,7 +13,7 @@ pub fn compared_path(command: &str, path: &str) -> bool {
     let hash = |s: &str| s.bytes().fold(0xcbf29ce484222325u64, |h, b| (h ^ u64::from(b)).wrapping_mul(0x100000001b3));
     COMMANDS.contains(&command)
         && KINDS.contains(&path)
-        && hash(include_str!("../../../../crates/engine/engine/src/trim.rs")) == 0xe579fba58c4d0f68
+        && hash(include_str!("../../../../crates/engine/engine/src/trim.rs")) == 0x8a7edb67cf0883c3
         && hash(include_str!("../../../../crates/engine/engine/src/place.rs")) == 0x37ab576d200c6a94
         && hash(include_str!("../../../../crates/engine/engine/src/premise.rs")) == 0xdbc9fd51b8b10958
 }

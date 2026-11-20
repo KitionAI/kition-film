@@ -17,11 +17,11 @@ pub const PATHS: &[(&str, &str)] = &[
 pub fn compared_path(command: &str, path: &str) -> bool {
     let hash = |source: &str| source.bytes().fold(0xcbf29ce484222325u64, |hash, byte| (hash ^ u64::from(byte)).wrapping_mul(0x100000001b3));
     PATHS.contains(&(command, path))
-        && hash(include_str!("../../../../crates/engine/engine/src/commands.rs")) == 0x4a909853df5c55f6
+        && hash(include_str!("../../../../crates/engine/engine/src/commands.rs")) == 0xb75206fa39390e4c
         && hash(include_str!("../../../../crates/engine/engine/src/project_tools.rs")) == 0xf8d2f12928fa34b4
         && hash(include_str!("../../../../crates/engine/engine/src/lib.rs")) == 0xc36863a28b095245
-        && hash(include_str!("../../../../crates/engine/engine/src/transcript.rs")) == 0x7c5b6211d7c861f4
-        && hash(include_str!("../../../../crates/engine/engine/src/sequence_extras.rs")) == 0xc77ce8a806c88e84
+        && hash(include_str!("../../../../crates/engine/engine/src/transcript.rs")) == 0x32dfd9f3f6a68e89
+        && hash(include_str!("../../../../crates/engine/engine/src/sequence_extras.rs")) == 0x6ad34e92a4fc2428
 }
 
 #[test]

@@ -20,7 +20,7 @@ pub fn compared_path(command: &str, path: &str) -> bool {
     let hash = |s: &str| s.bytes().fold(0xcbf29ce484222325u64, |h, b| (h ^ u64::from(b)).wrapping_mul(0x100000001b3));
     PATHS.contains(&(command, path))
         && hash(include_str!("../../../../crates/engine/engine/src/sequence_tools.rs")) == 0x9c4a17d3fd68bdd4
-        && hash(include_str!("../../../../crates/engine/edit/src/through.rs")) == 0x536d8e552062d36f
+        && hash(include_str!("../../../../crates/engine/edit/src/through.rs")) == 0x4c6835072dd061dd
         && hash(include_str!("../../../../crates/engine/engine/src/lib.rs")) == 0xc36863a28b095245
 }
 

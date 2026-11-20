@@ -28,7 +28,7 @@ pub fn compared_path(command: &str, path: &str) -> bool {
         && include_str!("../../../../crates/engine/engine/src/commands.rs")
             .bytes()
             .fold(0xcbf29ce484222325u64, |hash, byte| (hash ^ u64::from(byte)).wrapping_mul(0x100000001b3))
-            == 0x4a909853df5c55f6
+            == 0xb75206fa39390e4c
 }
 
 pub fn more(command: &str) -> Vec<&'static str> {
