@@ -50,8 +50,24 @@ jobs:
       - uses: jetli/wasm-pack-action@v0.4.0
         with:
           version: v0.13.1
-      - name: Install external media test oracles
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      # The oracle tests are kept green against FFmpeg 9.0; Ubuntu 24.04's ffmpeg (6.1) has no APV
+      # support and differs in other fixtures. A pinned static build, checked against its digest.
+      - name: Install external media test oracles (FFmpeg 9.0.2)
+        env:
+          FFMPEG_BUILD: ffmpeg-n9.0.2-39-g7adfbe40dc-linux64-gpl-9.0
+          FFMPEG_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-10-31-12-59/ffmpeg-n9.0.2-39-g7adfbe40dc-linux64-gpl-9.0.tar.xz
+          FFMPEG_SHA256: 73e29a56974ae5a651133a04584c7483b21afe941e17dc91d79814a758b608d3
+        run: |
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/ffmpeg.tar.xz" "$FFMPEG_URL"
+          echo "$FFMPEG_SHA256  $RUNNER_TEMP/ffmpeg.tar.xz" | sha256sum -c -
+          tar -xJf "$RUNNER_TEMP/ffmpeg.tar.xz" -C "$RUNNER_TEMP"
+          rm "$RUNNER_TEMP/ffmpeg.tar.xz"
+          bin="$RUNNER_TEMP/$FFMPEG_BUILD/bin"
+          echo "$bin" >> "$GITHUB_PATH"
+          echo "KITION_FILM_FFMPEG=$bin/ffmpeg" >> "$GITHUB_ENV"
+          echo "KITION_FILM_FFPROBE=$bin/ffprobe" >> "$GITHUB_ENV"
+          "$bin/ffmpeg" -hide_banner -version | head -1
+          "$bin/ffprobe" -hide_banner -version | head -1
       - name: Install locked dependencies
         run: pnpm --dir kition-film/web install --frozen-lockfile
       - name: Build current WASM

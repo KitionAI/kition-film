@@ -49,6 +49,13 @@ are never linked or shipped ([AGENTS.md](../../AGENTS.md) §2).
 - If a tool is missing the test prints `SKIPPED (<test>): ffmpeg not found …` and passes. Set
   **`KITION_FILM_REQUIRE_ORACLES=1`** (CI) to make every such skip a failure. In new tests use
   `let ff = kition_film_testkit::require_ffmpeg!();` (also `require_ffprobe!`, `require_oracles!`).
+- The oracles are version-dependent: fixtures are written by the ffmpeg at hand and checked
+  against its ffprobe, and older releases differ (FFmpeg 6.1 has no APV support, fails libvpx-vp9
+  two-pass encodes, and its ffprobe gives the trimmed final AC-3 block of a Matroska fixture a full
+  frame's duration where the demuxer reads 8 ms).
+  The tests are kept green against FFmpeg 9.0; CI installs a pinned, checksum-verified static
+  FFmpeg 9.0.2 build (`.github/workflows/film-scenarios.yml`) instead of the distribution's
+  package. The APV oracle treats an ffmpeg without an APV decoder (before 8.0) like a missing one.
 - Fixtures are generated on first use into `<workspace>/target/fixtures/<crate>/`
   (`kition_film_testkit::fixtures_dir`; independent of `CARGO_TARGET_DIR`, so agents with private
   target dirs share them; `KITION_FILM_FIXTURES_DIR` overrides the root) and reused afterwards.

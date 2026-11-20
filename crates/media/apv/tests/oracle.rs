@@ -7,8 +7,18 @@ use kition_film_apv::{
     ChromaFormat, ContentLightLevel, DecodeOptions, Encoder, EncoderConfig, Frame, MasteringDisplay, Profile, decode_frame, decode_frame_with, probe,
 };
 
+/// ffmpeg with an APV decoder (FFmpeg 8.0 and later). An older ffmpeg is reported like a missing
+/// one: a printed skip, or a failure with `KITION_FILM_REQUIRE_ORACLES=1`.
 fn ffmpeg() -> Option<PathBuf> {
-    kition_film_testkit::ffmpeg_or_skip("apv oracle")
+    let ff = kition_film_testkit::ffmpeg_or_skip("apv oracle")?;
+    let decoders = Command::new(&ff).args(["-hide_banner", "-decoders"]).output().expect("run ffmpeg -decoders");
+    let has_apv = String::from_utf8_lossy(&decoders.stdout).lines().any(|line| line.split_whitespace().nth(1) == Some("apv"));
+    if !has_apv {
+        let version = Command::new(&ff).arg("-version").output().map(|o| String::from_utf8_lossy(&o.stdout).lines().next().unwrap_or("").to_string());
+        kition_film_testkit::skip("apv oracle", &format!("{} has no APV decoder (FFmpeg 8.0 or later has one)", version.unwrap_or_default()));
+        return None;
+    }
+    Some(ff)
 }
 
 fn fixture_dir() -> PathBuf {
