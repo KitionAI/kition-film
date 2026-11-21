@@ -1149,7 +1149,7 @@ pub fn commands() -> Vec<CommandSpec> {
             "graphics.template.set",
             "Set Template Property",
             &[],
-            r#"{"clip":id?,"control":id|name,"value":any} or {"clip":id?,"values":{control: value}}"#,
+            r#"{"clip":id?,"control":id|name,"value":any}|{"clip":id?,"values":{control: value}}"#,
             has_graphic,
             |s, p| {
                 let clip = target_clip(s, p).ok_or_else(|| bad("graphics.template.set", "no graphic clip"))?;
