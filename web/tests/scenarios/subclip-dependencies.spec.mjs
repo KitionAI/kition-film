@@ -15,10 +15,7 @@ for (const removeBin of [false, true]) {
     await film.command('project.select', { items: [removeBin ? bin : parent] })
     const history = await film.history()
     const project = await film.command('project.items')
-    const error = await page.evaluate(async () => {
-      try { await window.devHost.connection().ai.run([{ command: 'project.delete', params: {} }], false); return null }
-      catch (error) { return String(error) }
-    })
+    const error = await film.attempt('project.delete')
     expect(error).toContain('subclip')
     expect(await film.history()).toEqual(history)
     expect(await film.command('project.items')).toEqual(project)

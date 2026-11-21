@@ -1,7 +1,7 @@
 import { test, expect, clips, editState } from './fixtures.mjs'
 
 for (const target of ['source', 'timeline']) {
-  test(`F66 invalid ${target} audio channel numbers are rejected without changing routing or history`, async ({ film, page }) => {
+  test(`F66 invalid ${target} audio channel numbers are rejected without changing routing or history`, async ({ film }) => {
     await film.open()
     await film.command('file.newProject', { name: 'Channel input validation' })
     await film.command('file.newSequence', { name: 'Stereo', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
@@ -13,10 +13,7 @@ for (const target of ['source', 'timeline']) {
     const before = editState(await film.sequence()), history = await film.history()
     for (const channel of [65536, 4294967296, 2, -1, 0.5, '1', null]) {
       const params = target === 'source' ? { format: 'mono', clips: [[channel]] } : { channels: [channel] }
-      const error = await page.evaluate(async params => {
-        try { await window.devHost.connection().ai.run([{ command: 'clip.audioChannels', params }], false); return null }
-        catch (error) { return String(error) }
-      }, params)
+      const error = await film.attempt('clip.audioChannels', params)
       expect(error, `reject channel ${JSON.stringify(channel)}`).toContain('channel')
       expect(await film.history()).toEqual(history)
       expect(editState(await film.sequence())).toEqual(before)

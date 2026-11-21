@@ -45,10 +45,7 @@ for (const replacement of ['project', 'relink']) {
       await film.command('media.relink', { item, path: '../media/silence.wav', force: true, relinkOthers: false })
     }
     const before = editState(await film.sequence()), history = await film.history()
-    const error = await page.evaluate(async () => {
-      try { await window.devHost.connection().ai.run([{ command: 'clip.remix', params: { seconds: 10 } }], false); return null }
-      catch (error) { return String(error) }
-    })
+    const error = await film.attempt('clip.remix', { seconds: 10 })
     expect(error).toContain('beat')
     expect(editState(await film.sequence())).toEqual(before)
     expect(await film.history()).toEqual(history)

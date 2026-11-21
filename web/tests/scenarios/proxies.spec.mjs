@@ -31,10 +31,7 @@ test('F52 attached proxy changes the monitor, full-resolution export stays origi
   await expect.poll(dominant).toBe(2)
   expect(editState(await film.sequence())).toEqual(before)
   const history = await film.history()
-  const failure = await page.evaluate(async item => {
-    try { await window.devHost.connection().ai.run([{ command: 'media.attachProxies', params: { item, path: '../clips/short.mp4' } }], false); return null }
-    catch (error) { return String(error) }
-  }, item)
+  const failure = await film.attempt('media.attachProxies', { item, path: '../clips/short.mp4' })
   expect(failure).toContain('long')
   expect((await film.command('media.status', { item }))[0].proxy.path).toBe('../clips/proxy.mp4')
   expect(await film.history()).toEqual(history)

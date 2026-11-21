@@ -2,15 +2,14 @@ import { test, expect } from './fixtures.mjs'
 
 for (const edits of [0, 205]) {
   for (const redo of [false, true]) {
-    test(`F82 exporting a graphics template preserves history after ${edits} edits, redo=${redo}`, async ({ film, page }) => {
+    test(`F82 exporting a graphics template preserves history after ${edits} edits, redo=${redo}`, async ({ film }) => {
       await film.open()
       await film.command('file.newProject', { name: 'Export history' })
       await film.command('file.newSequence', { width: 64, height: 36, fps: 24 })
       const { clip } = await film.command('graphics.newText', { text: 'Original 标题' })
       await film.command('graphics.newText', { clip, text: 'Subtitle' })
-      const result = await page.evaluate(async ([clip, edits]) => window.devHost.connection().ai.run(Array.from({ length: edits }, (_, n) => ({ command: 'graphics.setText', params: { clip, layer: 0, text: `Take ${n}` } })), false), [clip, edits])
-      expect(result.failed).toBeFalsy()
-      expect(result.completed).toHaveLength(edits)
+      const result = await film.commands(Array.from({ length: edits }, (_, n) => ({ command: 'graphics.setText', params: { clip, layer: 0, text: `Take ${n}` } })))
+      expect(result).toHaveLength(edits)
       if (redo) {
         await film.command('graphics.setText', { clip, layer: 0, text: 'Redo survives' })
         await film.command('edit.undo')

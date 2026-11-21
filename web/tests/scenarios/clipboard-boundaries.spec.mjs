@@ -18,11 +18,8 @@ async function copiedLayers(film) {
 async function refuse(film, command, reason) {
   const before = await film.sequence()
   const history = await film.history()
-  const result = await film.page.evaluate(async command => {
-    try { return { success: await window.devHost.connection().ai.run([{ command, params: {} }], false) } }
-    catch (error) { return { error: String(error) } }
-  }, command)
-  expect(result.error, JSON.stringify(result)).toContain(reason)
+  const error = await film.attempt(command)
+  expect(error, `${command} refused`).toContain(reason)
   expect(await film.sequence()).toEqual(before)
   expect(await film.history()).toEqual(history)
 }

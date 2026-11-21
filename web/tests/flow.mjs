@@ -218,7 +218,7 @@ const agentHistory = async () => (await page.evaluate(async () => window.devHost
 const personHistory = async () => (await kitFrame().evaluate(() => window.filmPreview.history()))?.undo ?? []
 /**
  * Whose step is the latest undoable one: the flow edits as the person (keys, clicks, dialogs)
- * and as the agent (`aiRun`), and each has its own history (M12a). The order of their steps,
+ * and as the agent (`agentRun`), and each has its own history (M12a). The order of their steps,
  * oldest first, is kept from the two histories' lengths read around every agent run, so
  * `undoLatest` takes back the newest step whoever made it, as one shared history did.
  */
@@ -236,13 +236,30 @@ const noteSteps = async () => {
   }
 }
 /** Runs `steps` as the agent (`ai/run`), noting the person's steps made before it and the agent's it makes. */
-const aiRun = async (steps) => {
+const agentRun = async (steps) => {
   await noteSteps()
   try {
     return await page.evaluate(async (list) => window.devHost.connection().ai.run(list, false), steps)
   } finally {
     await noteSteps()
   }
+}
+/**
+ * Runs `steps` (`{ command, params }`) one after another as the person, through the editor's own
+ * `run` as a menu or a key runs a command (development builds' `filmPreview.run`), on the editor of
+ * `on`; answers `{ completed: [{ command, result }] }` as `ai/run` does. The flow sets the
+ * selection, the playheads, the open sequence and the Source monitor this way: an agent's `ai/run`
+ * acts in an editor state of its own (KHP C3b) and leaves the person's as it was.
+ */
+const personRun = async (steps, on = page) => {
+  const frame = on.frames().find((candidate) => candidate.url().includes('index.html'))
+  if (!frame) throw new Error('personRun: the editor frame (index.html) is not loaded')
+  const completed = await frame.evaluate(async (list) => {
+    const done = []
+    for (const { command, params } of list) done.push({ command, result: await window.filmPreview.run(command, params ?? {}) })
+    return done
+  }, steps)
+  return { completed }
 }
 /** Takes back the newest step: the agent's with its `edit.undo`, the person's with Ctrl+Z. */
 const undoLatest = async () => {
@@ -524,7 +541,7 @@ try {
   await kit.getByTestId('film-message').click().catch(() => undefined)
   step('a failed command shows in the status bar until clicked', said && (await kit.getByTestId('film-message').count()) === 0)
   // Playback, the shuttle, and source playback (upstream's `menus.rs` playback arms).
-  const seekTo = (seconds) => page.evaluate(async (at) => window.devHost.connection().ai.run([{ command: 'playhead.set', params: { seconds: at } }], false), seconds)
+  const seekTo = (seconds) => personRun([{ command: 'playhead.set', params: { seconds } }])
   const seconds = async () => (await details()).playhead / 254016000000
   const kitWindow = kitFrame()
   const requests = () => kitWindow.evaluate(() => ({ ...window.workerRequests }))
@@ -589,7 +606,7 @@ try {
     const find = (node) => (node?.name?.includes('bars') && node.item != null ? node.item : (node?.children ?? []).map(find).find((id) => id != null))
     return find((await window.devHost.connection().ai.inspect()).details.project?.root)
   })
-  await page.evaluate(async (item) => window.devHost.connection().ai.run([{ command: 'source.open', params: { item } }], false), bars)
+  await personRun([{ command: 'source.open', params: { item: bars } }])
   await kit.getByTestId('film-source').waitFor({ timeout: 10000 })
   // The Source monitor's timecode (`film.ts` `timecode`) at the bars clip's 24 fps.
   const sourceTimecode = (at) => {
@@ -598,7 +615,7 @@ try {
     const total = Math.floor(frames / 24)
     return `${pad(Math.floor(total / 3600))}:${pad(Math.floor(total / 60) % 60)}:${pad(total % 60)}:${pad(frames % 24)}`
   }
-  const sourceAt = async () => (await page.evaluate(async () => window.devHost.connection().ai.run([{ command: 'source.inspect', params: {} }], false))).completed[0].result.playhead / 254016000000
+  const sourceAt = async () => (await personRun([{ command: 'source.inspect', params: {} }])).completed[0].result.playhead / 254016000000
   await seekTo(0.5)
   const programBefore = await seconds()
   const sourceBefore = await sourceAt()
@@ -613,7 +630,7 @@ try {
   const stepped5 = await sourceAt()
   const shownStepped = await kit.getByTestId('film-source-time').textContent()
   step('Right x5 with Source focused moves the source playhead, and the Source monitor shows it', shownStepped !== shownBefore && shownStepped === sourceTimecode(stepped5) && Math.round(stepped5 * 24) === 5, JSON.stringify({ shownBefore, shownStepped, engine: stepped5 }))
-  await page.evaluate(async () => window.devHost.connection().ai.run([{ command: 'source.setPlayhead', params: { frame: 0 } }], false))
+  await personRun([{ command: 'source.setPlayhead', params: { frame: 0 } }])
   // The program's last play (L, then K) has fallen below the meters' scale before the Source plays.
   const metersQuiet = await until(async () => (await meterDb()) <= -60, 80)
   await page.keyboard.press(' ')
@@ -639,7 +656,7 @@ try {
   step('Space with Source focused plays the Source clip, not the sequence', sourceAfter > sourceBefore + 0.3 && programAfter === programBefore, JSON.stringify({ sourceBefore, sourceAfter, programBefore, programAfter, said: await kit.getByTestId('film-message').textContent({ timeout: 500 }).catch(() => null) }))
   // The Source and Program monitors (upstream `monitor.rs`, `monitor_view.rs`, `source_range.rs`, `source_drag.rs`).
   {
-    const sourceInspect = async () => (await page.evaluate(async () => window.devHost.connection().ai.run([{ command: 'source.inspect', params: {} }], false))).completed[0].result
+    const sourceInspect = async () => (await personRun([{ command: 'source.inspect', params: {} }])).completed[0].result
     const litPixels = (selector) =>
       kitFrame().evaluate((css) => {
         const canvas = document.querySelector(css)
@@ -657,13 +674,13 @@ try {
       return JSON.stringify([sequence.in ?? null, sequence.out ?? null])
     }
     const marksBefore = await sequenceMarks()
-    await page.evaluate(async () => window.devHost.connection().ai.run([{ command: 'project.setMarks', params: { in: null, out: null } }, { command: 'source.setPlayhead', params: { frame: 6 } }], false))
+    await personRun([{ command: 'project.setMarks', params: { in: null, out: null } }, { command: 'source.setPlayhead', params: { frame: 6 } }])
     await until(async () => (await sourceInspect()).markIn == null)
     await kit.getByTestId('film-source').click()
     await kit.locator('.kui-app').focus()
     await page.keyboard.press('i')
     await until(async () => (await sourceInspect()).markIn != null)
-    await page.evaluate(async () => window.devHost.connection().ai.run([{ command: 'source.setPlayhead', params: { frame: 30 } }], false))
+    await personRun([{ command: 'source.setPlayhead', params: { frame: 30 } }])
     await until(async () => Math.round(((await sourceInspect()).playhead / 254016000000) * 24) === 30)
     await kit.locator('.kui-app').focus()
     await page.keyboard.press('o')
@@ -684,7 +701,7 @@ try {
     await page.mouse.up()
     const handleMoved = await until(async () => (await revision()) > handleFrom && frameOf((await sourceInspect()).markIn) > 6)
     step('dragging the Source In handle moves the In mark, the Out stays', handleMoved && frameOf((await sourceInspect()).markOut) === 30, JSON.stringify({ in: frameOf((await sourceInspect()).markIn), out: frameOf((await sourceInspect()).markOut) }))
-    await page.evaluate(async () => window.devHost.connection().ai.run([{ command: 'project.setMarks', params: { in: 6 * 10584000000, out: 30 * 10584000000 } }], false))
+    await personRun([{ command: 'project.setMarks', params: { in: 6 * 10584000000, out: 30 * 10584000000 } }])
     await until(async () => frameOf((await sourceInspect()).markIn) === 6)
     // , with Source focused inserts the marked range at the program playhead; undo takes it out.
     const v1Count = async () => (await clips('video')).length
@@ -722,7 +739,7 @@ try {
       await page.keyboard.press('ControlOrMeta+z')
       await until(async () => (await v1Count()) === dropFrom.count)
     }
-    await page.evaluate(async () => window.devHost.connection().ai.run([{ command: 'project.setMarks', params: { in: null, out: null } }], false))
+    await personRun([{ command: 'project.setMarks', params: { in: null, out: null } }])
     // Program: Paused Resolution 1/4 from the wrench: once the engine takes the scale, the canvas is painted again, and drawn.
     const programCanvas = '[data-testid="film-program"] canvas'
     const paints = async () => {
@@ -865,7 +882,7 @@ try {
         return 0
       }
       // Program ▸ Red: the bars' red channel in grey, from a reduced copy drawn over the canvas.
-      await page.evaluate(async () => window.devHost.connection().ai.run([{ command: 'playhead.set', params: { seconds: 0.5 } }], false))
+      await personRun([{ command: 'playhead.set', params: { seconds: 0.5 } }])
       await until(async () => (await tones(programCanvas)).coloured > 20)
       const composite = await tones(programCanvas)
       await chooseWrench('program', 'display-red', true)
@@ -895,7 +912,7 @@ try {
       const back = await until(async () => (await kit.getByTestId('film-program-channel').count()) === 0 && (await kit.getByTestId('film-program-mode').count()) === 0)
       step('Composite Video takes the channel picture away', back)
       // Comparison View: the reference on the left, the current picture on the right; ◀ and ▶ step the reference one frame, Set takes the playhead.
-      await page.evaluate(async () => window.devHost.connection().ai.run([{ command: 'playhead.set', params: { seconds: 1 } }], false))
+      await personRun([{ command: 'playhead.set', params: { seconds: 1 } }])
       await until(async () => Math.abs((await seconds()) - 1) < 0.05)
       const enteredAt = (await details()).playhead
       // Magnified to 200% first: the Comparison View fits both pictures, and leaving it magnifies again.
@@ -920,7 +937,7 @@ try {
       await kit.getByTestId('film-program-compare-next').click()
       await kit.getByTestId('film-program-compare-next').click()
       const stepOn = await until(async () => (await reference()) === entered + frame && (await drawnAt()) === snap(entered + frame))
-      await page.evaluate(async () => window.devHost.connection().ai.run([{ command: 'playhead.set', params: { seconds: 2 } }], false))
+      await personRun([{ command: 'playhead.set', params: { seconds: 2 } }])
       await until(async () => Math.abs((await seconds()) - 2) < 0.05)
       const playheadNow = (await details()).playhead
       await kit.getByTestId('film-program-compare-set').click()
@@ -1002,7 +1019,7 @@ try {
   const fileRows = await kit.locator('[role="menu"] [data-kit-ui-id]').evaluateAll((rows) => rows.map((row) => row.getAttribute('data-kit-ui-id')))
   await page.keyboard.press('Escape')
   step('File draws no row a browser hides', fileRows.includes('control:file.import') && !fileRows.some((id) => /file\.(save|open|close|newProject|revert)$/.test(id)), JSON.stringify(fileRows.slice(0, 12)))
-  await page.evaluate(async () => window.devHost.connection().ai.run([{ command: 'markers.clearInOut', params: {} }, { command: 'playhead.set', params: { seconds: 1 } }], false))
+  await personRun([{ command: 'markers.clearInOut', params: {} }, { command: 'playhead.set', params: { seconds: 1 } }])
   await until(async () => (await details()).sequence.in == null)
   await kit.getByTestId('film-menu-Markers').click()
   await kit.getByTestId('film-cmd-markers.markIn').click()
@@ -1211,7 +1228,7 @@ try {
     await kit.getByTestId('film-project-background-menu').waitFor()
     await checkIds()
     await page.keyboard.press('Escape')
-    const sessionNow = async () => (await page.evaluate(async () => window.devHost.connection().ai.run([{ command: 'state.inspect', params: {} }], false))).completed[0].result
+    const sessionNow = async () => (await personRun([{ command: 'state.inspect', params: {} }])).completed[0].result
     // The Project panel's keys, which only the engine's panel table binds (registered as upstream's
     // register_external): End selects the last card, Shift+Up extends the selection back one.
     const cards = () => kit.locator('[data-testid^="film-project-item-"]').evaluateAll((items) => items.map((item) => Number(item.getAttribute('data-testid').slice('film-project-item-'.length))))
@@ -1231,7 +1248,7 @@ try {
     const extended = await until(async () => spanUp((await sessionNow()).project_selection), 30)
     step('with the Project panel focused, End selects the last item, Shift+Left and Shift+Up extend the selection', shownCards.length >= 2 && ended && extendedLeft && extended, JSON.stringify({ shownCards, ended, extendedLeft, extended, selection: (await sessionNow()).project_selection }))
     // Hover Scrub, then I: the hovered item's In is set at the hovered time (project.setMarks), not the sequence's.
-    const iconRowsNow = (await page.evaluate(async () => window.devHost.connection().ai.run([{ command: 'project.items', params: { order: 'icon' } }], false))).completed[0].result.rows
+    const iconRowsNow = (await personRun([{ command: 'project.items', params: { order: 'icon' } }])).completed[0].result.rows
     const scrubbed = iconRowsNow.find((row) => row.kind === 'media' && row.hasVideo && row.direct && row.item !== imported)?.item ?? shownCards[0]
     const sequenceIn = (await details()).sequence.in ?? null
     const art = await kit.locator(`[data-testid="film-project-thumb-${scrubbed}"]`).boundingBox()
@@ -1243,13 +1260,13 @@ try {
     const marksFrom = await revision()
     await page.keyboard.press('i')
     const itemIn = async () => {
-      const rows = (await page.evaluate(async () => window.devHost.connection().ai.run([{ command: 'project.items', params: { order: 'icon' } }], false))).completed[0].result.rows
+      const rows = (await personRun([{ command: 'project.items', params: { order: 'icon' } }])).completed[0].result.rows
       return rows.find((row) => row.item === scrubbed)?.in ?? null
     }
     const marked = await until(async () => (await revision()) > marksFrom && (await itemIn()) != null && (await itemIn()) > 0, 40)
     step('Hover Scrub across a card, then I sets that item\'s In at the hovered time, not the sequence\'s', scrubShown && marked && ((await details()).sequence.in ?? null) === sequenceIn, JSON.stringify({ scrubShown, marked, in: await itemIn(), sequenceIn, sequenceInNow: (await details()).sequence.in ?? null }))
     await page.mouse.move(5, 5)
-    await page.evaluate(async (item) => window.devHost.connection().ai.run([{ command: 'project.setMarks', params: { item, in: null, out: null } }], false), scrubbed)
+    await personRun([{ command: 'project.setMarks', params: { item: scrubbed, in: null, out: null } }])
     // The fold state (UI state outside the panel) survives a revision and the panel being hidden
     // and shown again; a search opens every bin and keeps only matching names.
     await kit.getByTestId('film-project-view-list').click()
@@ -1258,7 +1275,7 @@ try {
     if ((await binToggle.getAttribute('aria-expanded')) !== 'true') await binToggle.click()
     const openedFold = await until(async () => (await card.count()) === 1, 20)
     const foldFrom = await revision()
-    await page.evaluate(async () => window.devHost.connection().ai.run([{ command: 'file.newBlackVideo', params: {} }], false))
+    await personRun([{ command: 'file.newBlackVideo', params: {} }])
     await until(async () => (await revision()) > foldFrom)
     const keptAfterRevision = (await binToggle.getAttribute('aria-expanded')) === 'true' && (await card.count()) === 1
     await kit.getByTestId('film-workspace-tab-libraries').click()
@@ -1356,7 +1373,7 @@ try {
 
   // The Timeline (upstream `panels/timeline.rs`): track headers, toolbar toggles shared with the
   // menus through the session state, thumbnails and waveforms from the engine, and the zoom keys.
-  const sessionState = async () => (await page.evaluate(async () => window.devHost.connection().ai.run([{ command: 'state.inspect', params: {} }], false))).completed[0].result
+  const sessionState = async () => (await personRun([{ command: 'state.inspect', params: {} }])).completed[0].result
   const trackOf = async (kind, index) => (await details()).sequence[kind][index]
   await kit.getByTestId('film-track-V1-lock').click()
   const locked = await until(async () => (await trackOf('video', 0)).locked === true)
@@ -1533,12 +1550,12 @@ try {
   // waits for the engine's revision; the history is undone at the end.
   if (await kit.getByTestId('film-message').count()) await kit.getByTestId('film-message').click()
   {
-    const ai = aiRun
+    const person = personRun
     const historyLength = async () => (await personHistory()).length
     const videoTracks = async () => (await details()).sequence.video ?? []
     const graphicList = async (clip) => {
       try {
-        return (await ai([{ command: 'graphics.list', params: { clip } }])).completed[0].result
+        return (await person([{ command: 'graphics.list', params: { clip } }])).completed[0].result
       } catch (error) {
         const tracks = await videoTracks()
         throw new Error(`graphics.list of clip ${clip} failed: ${(error.message ?? String(error)).split('\n')[0]}; ${JSON.stringify({ inEngine: tracks.some((track) => (track.items ?? []).some((item) => item.clip === clip)), clips: tracks.map((track) => (track.items ?? []).map((item) => item.clip)), ...(await keyState()) })}`)
@@ -1563,7 +1580,7 @@ try {
     await kit.getByTestId('film-program-zoom').click()
     await kit.getByTestId('film-program-zoom-fit').click()
     await until(async () => (await kit.getByTestId('film-program-zoom').textContent()) === zh('Fit'))
-    await ai([
+    await person([
       { command: 'playhead.set', params: { seconds: 0.5 } },
       { command: 'timeline.select', params: { clips: [] } },
     ])
@@ -1652,7 +1669,7 @@ try {
         if (submenu) await kit.locator(`[data-kit-ui-id="menu:View/${submenu}"]`).hover()
         await kit.getByTestId(`film-control-${command}`).click()
       }
-      const templatesInPrefs = async (on = page) => (await on.evaluate(async () => (await window.devHost.connection().ai.run([{ command: 'prefs.get', params: { key: 'guides.templates' } }], false)).completed[0].result)) ?? []
+      const templatesInPrefs = async (on = page) => (await personRun([{ command: 'prefs.get', params: { key: 'guides.templates' } }], on)).completed[0].result ?? []
       const guideDialog = kit.getByTestId('film-guide-dialog')
       // View ▸ Show Rulers (the Program monitor: no monitor has focus but the Program's view acts).
       const viewBefore = await kit.getByTestId('film-program').getAttribute('data-view')
@@ -1817,12 +1834,12 @@ try {
       // while page B saves another template; A takes it while previewing (a load runs no command, so
       // the preview gate does not refuse it), and A's next change of another preference keeps it.
       {
-        const runOn = (on, steps) => on.evaluate(async (list) => window.devHost.connection().ai.run(list, false), steps)
+        const runOn = (on, steps) => personRun(steps, on)
         const prefOn = async (on, key) => (await runOn(on, [{ command: 'prefs.get', params: { key } }])).completed[0].result
         const names = (list) => (list ?? []).map((template) => template.name).sort().join()
         await page.bringToFront()
         const trimBefore = await prefOn(page, 'trim.largeTrimOffset')
-        await ai([{ command: 'timeline.select', params: { clips: [text.clip] } }])
+        await person([{ command: 'timeline.select', params: { clips: [text.clip] } }])
         await kit.getByTestId('film-menu-Clip').click()
         await kit.getByTestId('film-cmd-clip.speedDuration').click()
         const previewing = await until(async () => (await previewState()).open, 50)
@@ -1832,7 +1849,7 @@ try {
         await kit.locator('[data-testid="film-dialog"] [data-kit-ui-id="control:dialog.cancel"]').click()
         await until(async () => (await dialogShown()) === 0 && !(await previewState()).open, 50)
         // A refreshes and changes another preference: B's template survives on both pages.
-        await ai([{ command: 'prefs.set', params: { key: 'trim.largeTrimOffset', value: trimBefore + 2 } }])
+        await person([{ command: 'prefs.set', params: { key: 'trim.largeTrimOffset', value: trimBefore + 2 } }])
         const survived = await until(async () => names(await prefOn(page, 'guides.templates')) === 'Thirds,Wide' && names(await prefOn(page2, 'guides.templates')) === 'Thirds,Wide' && (await prefOn(page2, 'trim.largeTrimOffset')) === trimBefore + 2, 50)
         step(
           "page A previewing Speed/Duration… takes page B's new template, and A's next preference change keeps it on both pages",
@@ -1840,7 +1857,7 @@ try {
           JSON.stringify({ previewing, tookWhilePreviewing, survived, a: names(await prefOn(page, 'guides.templates')), b: names(await prefOn(page2, 'guides.templates')), trim: [trimBefore, await prefOn(page2, 'trim.largeTrimOffset')] }),
         )
         // A view preset and the templates outlast the session: a new page (as a reload or another document opens) starts with them.
-        await ai([{ command: 'project.viewPreset.saveAs', params: { name: 'Kept' } }])
+        await person([{ command: 'project.viewPreset.saveAs', params: { name: 'Kept' } }])
         const presetSlot = async (on) => ((await runOn(on, [{ command: 'project.viewPreset.list', params: {} }])).completed[0].result?.presets ?? []).find((preset) => preset.name === 'Kept')?.slot ?? null
         await until(async () => (await presetSlot(page2)) != null, 50)
         const page3 = await context.newPage()
@@ -1860,7 +1877,7 @@ try {
         step('a view preset, the guide templates, and a preference outlast the session: a new page starts with them', reopened?.templates === 'Thirds,Wide' && reopened.preset != null && reopened.trim === trimBefore + 2, JSON.stringify(reopened))
         // Leave the preferences as they were for the later steps.
         const slot = await presetSlot(page)
-        await ai([...(slot != null ? [{ command: 'project.viewPreset.delete', params: { slot } }] : []), { command: 'prefs.set', params: { key: 'trim.largeTrimOffset', value: trimBefore } }])
+        await person([...(slot != null ? [{ command: 'project.viewPreset.delete', params: { slot } }] : []), { command: 'prefs.set', params: { key: 'trim.largeTrimOffset', value: trimBefore } }])
         await until(async () => (await prefOn(page2, 'trim.largeTrimOffset')) === trimBefore && (await presetSlot(page2)) == null, 50)
       }
       await page2.close()
@@ -1963,7 +1980,7 @@ try {
     step('a Vertical Type click makes vertical point text, typed into in place', verticalField && verticalMade, JSON.stringify({ verticalField, verticalMade }))
     // Selection: a click selects a layer (its box drawn), a click on empty picture drops the
     // selected layers (the clip stays selected), and a double-click on text edits it.
-    const graphicLayersNow = async () => (await ai([{ command: 'state.inspect', params: {} }])).completed[0].result?.graphic_layers ?? null
+    const graphicLayersNow = async () => (await person([{ command: 'state.inspect', params: {} }])).completed[0].result?.graphic_layers ?? null
     const layersList = (await graphicList(text.clip)).layers
     const rectangleIndex = layersList.findIndex((layer) => layer.kind === 'Rectangle')
     await slot('Selection').click()
@@ -2137,8 +2154,8 @@ try {
       // An unselected paragraph box that hides text moves with one Selection drag, as upstream: the
       // press reads it unselected (its overflow not laid out), the drag selects it, and the release
       // still finds it where it was.
-      const madeHiding = (await ai([{ command: 'graphics.newText', params: { text: 'Words that a small box cannot hold at all', clip: text.clip, position: [Math.round(W * 0.06), Math.round(H * 0.78)], box: [Math.round(W * 0.12), Math.round(H * 0.06)], size: Math.round(H * 0.05) } }])).completed[0].result
-      await ai([{ command: 'graphics.selectLayer', params: { clip: text.clip, layers: [rectangleIndex] } }])
+      const madeHiding = (await person([{ command: 'graphics.newText', params: { text: 'Words that a small box cannot hold at all', clip: text.clip, position: [Math.round(W * 0.06), Math.round(H * 0.78)], box: [Math.round(W * 0.12), Math.round(H * 0.06)], size: Math.round(H * 0.05) } }])).completed[0].result
+      await person([{ command: 'graphics.selectLayer', params: { clip: text.clip, layers: [rectangleIndex] } }])
       await until(async () => JSON.stringify(await graphicLayersNow()) === JSON.stringify([rectangleIndex]))
       const hiding = await layerOf((layer) => layer.layer === madeHiding.layer)
       const hidingAt = await pagePoint(centreOf(hiding.quad).x, centreOf(hiding.quad).y)
@@ -2165,9 +2182,9 @@ try {
         const dragged = await until(async () => (await overlay.getAttribute('data-layer-drag')) != null, 30)
         const agentAt = [before.position[0], before.position[1] + 30]
         // The agent's step is in the agent's own history (KitModel 1.1 M12a), not the person's.
-        const agentSteps = async () => (await ai([{ command: 'history.list', params: {} }])).completed[0].result?.undo?.length ?? -1
+        const agentSteps = async () => (await agentRun([{ command: 'history.list', params: {} }])).completed[0].result?.undo?.length ?? -1
         const agentFrom = await agentSteps()
-        await ai([{ command: 'graphics.set', params: { clip: text.clip, layer: madeHiding.layer, props: { position: agentAt } } }])
+        await agentRun([{ command: 'graphics.set', params: { clip: text.clip, layer: madeHiding.layer, props: { position: agentAt } } }])
         await until(async () => (await agentSteps()) === agentFrom + 1)
         await page.mouse.up()
         await page.keyboard.up('ControlOrMeta')
@@ -2188,7 +2205,7 @@ try {
       }
       // A host that disables control:program.layer: no Move cursor over a layer, and a Selection click or drag on it does nothing.
       {
-        await ai([{ command: 'graphics.selectLayer', params: { clip: text.clip, layers: [rectangleIndex] } }])
+        await person([{ command: 'graphics.selectLayer', params: { clip: text.clip, layers: [rectangleIndex] } }])
         await until(async () => JSON.stringify(await graphicLayersNow()) === JSON.stringify([rectangleIndex]))
         await page.evaluate(() => window.devHost.configure({ hide: [], disable: ['control:program.layer'] }))
         await paintFrames(page, 2)
@@ -2260,7 +2277,7 @@ try {
   if (await kit.getByTestId('film-message').count()) await kit.getByTestId('film-message').click()
   {
     const T = 254016000000
-    const ai = aiRun
+    const person = personRun
     const seq = async () => (await details()).sequence
     const v1 = async () => (await seq()).video[0].items ?? []
     const clipOf = async (id) => [...(await seq()).video, ...(await seq()).audio].flatMap((track) => track.items ?? []).find((item) => item.clip === id)
@@ -2303,7 +2320,7 @@ try {
     const settle = async () => {
       await kitFrame().evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
       await hold(250)
-      await ai([{ command: 'state.inspect', params: {} }])
+      await person([{ command: 'state.inspect', params: {} }])
     }
     const all = [...(await seq()).video, ...(await seq()).audio].flatMap((track) => (track.items ?? []).map((item) => item.clip))
     const media = await page.evaluate(async () => {
@@ -2313,7 +2330,7 @@ try {
     const rate = (await seq()).settings.frame_rate
     const frameTicks = (T * rate.den) / rate.num
     const piece = Math.floor(media.duration / 4 / frameTicks) * frameTicks
-    await ai([
+    await person([
       { command: 'timeline.select', params: { clips: all } },
       { command: 'edit.clear', params: {} },
       { command: 'markers.clearInOut', params: {} },
@@ -2354,11 +2371,11 @@ try {
     step('a drag draws its preview without the engine, and one brought back to where it began sends nothing', previewed && midDrag === backFrom && backTo === backFrom && (await clipOf(A.clip)).start === A.start && (await box(A.clip)).x === backBox.x, JSON.stringify({ previewed, backFrom, midDrag, backTo }))
 
     // Alt-click selects one side of a link (timeline.select with linked: false); a plain click selects both.
-    await edited(() => ai([{ command: 'timeline.select', params: { clips: [] } }]))
+    await edited(() => person([{ command: 'timeline.select', params: { clips: [] } }]))
     const partner = (await clipOf(A.clip)).link != null ? (await seq()).audio.flatMap((track) => track.items ?? []).find((item) => item.link === A.link)?.clip : null
     await edited(() => kit.getByTestId(`film-clip-${A.clip}`).click(), async () => (await seq()).selection?.length === 2)
     const both = JSON.stringify([...((await seq()).selection ?? [])].sort((a, b) => a - b))
-    await edited(() => ai([{ command: 'timeline.select', params: { clips: [] } }]))
+    await edited(() => person([{ command: 'timeline.select', params: { clips: [] } }]))
     await kit.getByTestId(`film-clip-${A.clip}`).click({ modifiers: ['Alt'] })
     const oneSide = await until(async () => JSON.stringify((await seq()).selection) === JSON.stringify([A.clip]), 30)
     await settle()
@@ -2367,7 +2384,7 @@ try {
 
     // Ctrl-click on macOS is a plain primary press, as upstream gets it from winit: it selects, and opens no clip menu.
     if (mac) {
-      await edited(() => ai([{ command: 'timeline.select', params: { clips: [] } }]))
+      await edited(() => person([{ command: 'timeline.select', params: { clips: [] } }]))
       // A browser on macOS adds a contextmenu (button 0, Ctrl) to the press; a test browser does not, so it is sent
       // here. The press itself goes without a held Control key (no tool reads Ctrl on macOS, and a held key can
       // outlast the step in WebKit).
@@ -2397,7 +2414,7 @@ try {
     step('Razor cuts a clip in two on a frame, and undo joins it', cut && pieces.length === 2 && pieces[0].duration + pieces[1].duration === A.duration && onFrame && (await v1()).length === 2, JSON.stringify({ pieces: pieces.map((item) => [item.start, item.duration]), said: await said() }))
 
     // Razor on an empty stretch of a track is not a cut: a click there clears the selection, as with Selection.
-    await edited(() => ai([{ command: 'timeline.select', params: { clips: [A.clip] } }]), async () => (await seq()).selection?.includes(A.clip))
+    await edited(() => person([{ command: 'timeline.select', params: { clips: [A.clip] } }]), async () => (await seq()).selection?.includes(A.clip))
     const gapBox = await box(B.clip)
     const gap = { x: gapBox.x + gapBox.width + 40, y: gapBox.y + gapBox.height / 2 }
     await page.mouse.click(gap.x, gap.y)
@@ -2409,7 +2426,7 @@ try {
     await pressKey('V')
     const trimBox = await box(A.clip)
     const out = { x: trimBox.x + trimBox.width - 3, y: trimBox.y + trimBox.height / 2 }
-    const editPoints = async () => (await ai([{ command: 'state.inspect', params: {} }])).completed[0].result.edit_points ?? []
+    const editPoints = async () => (await person([{ command: 'state.inspect', params: {} }])).completed[0].result.edit_points ?? []
     // Held still 0.9 s, past egui's 0.8 s click time, the press is a drag that goes nowhere: nothing is sent, no edit point.
     const heldPointsBefore = JSON.stringify(await editPoints())
     const heldFrom = await revision()
@@ -2449,10 +2466,10 @@ try {
     // I and O around A, then ; lifts (B keeps its place: the sequence keeps its length) and ' extracts (it shrinks).
     await pressKey('V')
     const duration = (await seq()).duration
-    await ai([{ command: 'playhead.set', params: { seconds: 0 } }])
+    await person([{ command: 'playhead.set', params: { seconds: 0 } }])
     await until(async () => (await details()).playhead === 0)
     await edited(() => pressKey('I'), async () => (await seq()).in === 0)
-    await ai([{ command: 'playhead.set', params: { frame: Math.round((A.start + A.duration) / frameTicks) - 1 } }])
+    await person([{ command: 'playhead.set', params: { frame: Math.round((A.start + A.duration) / frameTicks) - 1 } }])
     await until(async () => (await details()).playhead > 0)
     await edited(() => pressKey('O'), async () => (await seq()).out != null)
     const lifted = await edited(() => pressKey(';'), async () => !(await v1()).some((item) => item.clip === A.clip))
@@ -2463,10 +2480,10 @@ try {
     const extractedDuration = (await seq()).duration
     await edited(undoKey, async () => (await seq()).duration === duration)
     step('I and O, then ; lifts and \' extracts: only extract shortens the sequence', lifted && liftedDuration === duration && liftedB.start === B.start && extractedDuration < duration && (await seq()).duration === duration, JSON.stringify({ duration, liftedDuration, extractedDuration, said: await said() }))
-    await ai([{ command: 'markers.clearInOut', params: {} }])
+    await person([{ command: 'markers.clearInOut', params: {} }])
 
     // Right-click ▸ Speed/Duration… opens the command's dialog; the clip right-clicked is selected first.
-    await edited(() => ai([{ command: 'timeline.select', params: { clips: [] } }]))
+    await edited(() => person([{ command: 'timeline.select', params: { clips: [] } }]))
     const menuBox = await box(A.clip)
     await page.mouse.click(mid(menuBox).x, mid(menuBox).y, { button: 'right' })
     await kit.getByTestId('film-clip-menu').waitFor({ timeout: 5000 })
@@ -2486,7 +2503,7 @@ try {
     // The clip selected and the playhead past its end, before a step records the document.
     const speedSetup = async () => {
       const at = A.start + Math.round(A.duration * 1.25)
-      await ai([{ command: 'timeline.select', params: { clips: [A.clip] } }, { command: 'playhead.set', params: { time: at } }])
+      await person([{ command: 'timeline.select', params: { clips: [A.clip] } }, { command: 'playhead.set', params: { time: at } }])
       await waitForEngine(page, (state) => Math.abs((state.details?.playhead ?? -Infinity) - at) <= frameTicks * 2 && state.details?.sequence?.selection?.includes(A.clip))
     }
     const speedDialog = async () => {
@@ -2623,7 +2640,7 @@ try {
       const middle = A.start + Math.floor(A.duration / 2 / frameTicks) * frameTicks
       /** A selected with its linked audio and the playhead in its middle, before a step records the document. */
       const onA = async (extra = []) => {
-        await ai([...extra, { command: 'timeline.select', params: { clips: [A.clip] } }, { command: 'playhead.set', params: { time: middle } }])
+        await person([...extra, { command: 'timeline.select', params: { clips: [A.clip] } }, { command: 'playhead.set', params: { time: middle } }])
         await waitForEngine(page, (state) => state.details?.playhead === middle && state.details?.sequence?.selection?.includes(A.clip))
       }
       /** The Program monitor's preview picture once drawn for the open serial: its centre pixel and its summed brightness. */
@@ -2647,7 +2664,7 @@ try {
         return (diff?.clips?.changed ?? []).filter((entry) => entry.id === clip).flatMap((entry) => entry.fields ?? [])
       }
       const topStep = async () => (await waitForEngine(page, () => true, { history: true })).history?.undo?.at(-1) ?? null
-      const peakNow = async () => (await ai([{ command: 'clip.audioPeak', params: {} }])).completed[0].result?.peakDb ?? null
+      const peakNow = async () => (await person([{ command: 'clip.audioPeak', params: {} }])).completed[0].result?.peakDb ?? null
       const opacityOf = async (clip) => {
         const effects = (await clipOf(clip))?.effects ?? []
         // inspect() answers a parameter's value as JSON (a number for Opacity).
@@ -2843,9 +2860,9 @@ try {
       })
       step("Interpret Footage… (from the Project item menu) previews bars.mp4 in S-Log3 on the Program monitor (the centre pixel changes) and its row as changed, and Cancel leaves the document as it was", interpretCancel.ok, JSON.stringify({ ...interpretCancel, interpreted }))
       const interpretOk = await previewThenOk({ open: interpretOpen, change: toLog })
-      const override = (await ai([{ command: 'media.colorInfo', params: { item: media.item } }])).completed[0].result?.override ?? null
+      const override = (await person([{ command: 'media.colorInfo', params: { item: media.item } }])).completed[0].result?.override ?? null
       await edited(undoKey)
-      const overrideBack = (await ai([{ command: 'media.colorInfo', params: { item: media.item } }])).completed[0].result?.override ?? null
+      const overrideBack = (await person([{ command: 'media.colorInfo', params: { item: media.item } }])).completed[0].result?.override ?? null
       step('Interpret Footage… OK overrides the colour space in one history step, and one undo restores it', interpretOk.ok && override === 'slog3-sgamut3cine' && overrideBack == null, JSON.stringify({ ...interpretOk, override, overrideBack }))
       // Interpret Footage opened with no place kept keeps off the Project panel it previews in and
       // off the Program monitor's Preview badge (Task 11 review).
@@ -2909,7 +2926,7 @@ try {
         await edited(undoKey)
         step("Frame Hold Options shows Timecode (120 px) only for Source Timecode, and OK holds the frame typed there", before === 0 && shown && Math.abs(width - 120) <= 1 && heldAt === '00:00:00:12', JSON.stringify({ before, shown, width, heldAt }))
       }
-      await ai([{ command: 'timeline.select', params: { clips: [] } }, { command: 'project.select', params: { items: [] } }])
+      await person([{ command: 'timeline.select', params: { clips: [] } }, { command: 'project.select', params: { items: [] } }])
     }
 
     // ---- upstream's clip structure dialogs (Task 12), each previewed (upstream's have no
@@ -2949,7 +2966,7 @@ try {
       // Nest… "Nest A" over A and its linked audio: the Timeline shows the nest clip in their place,
       // the Project panel a "Nest A" row; the name is focused as it opens, and Escape cancels.
       const onA = async () => {
-        await ai([{ command: 'project.select', params: { items: [] } }, { command: 'timeline.select', params: { clips: [A.clip] } }])
+        await person([{ command: 'project.select', params: { items: [] } }, { command: 'timeline.select', params: { clips: [A.clip] } }])
         await waitForEngine(page, (state) => state.details?.sequence?.selection?.includes(A.clip))
       }
       await onA()
@@ -3002,7 +3019,7 @@ try {
       // Make Subclip… from the Project item menu, with In and Out set on bars.mp4: a subclip row
       // whose icon is bars.mp4's picture (not black).
       const marks = { in: piece, out: piece * 2 }
-      await ai([{ command: 'timeline.select', params: { clips: [] } }, { command: 'source.open', params: { item: media.item } }, { command: 'project.setMarks', params: { item: media.item, ...marks } }, { command: 'project.select', params: { items: [media.item] } }])
+      await person([{ command: 'timeline.select', params: { clips: [] } }, { command: 'source.open', params: { item: media.item } }, { command: 'project.setMarks', params: { item: media.item, ...marks } }, { command: 'project.select', params: { items: [media.item] } }])
       const subclipOpen = async () => {
         const card = row(media.item)
         await card.scrollIntoViewIfNeeded()
@@ -3044,7 +3061,7 @@ try {
 
       // Edit Subclip… from the subclip's item menu: Convert to Master Clip.
       if (subclip) {
-        await ai([{ command: 'project.select', params: { items: [subclip.item] } }])
+        await person([{ command: 'project.select', params: { items: [subclip.item] } }])
         const editOpen = async () => {
           const card = row(subclip.item)
           await card.scrollIntoViewIfNeeded()
@@ -3077,10 +3094,10 @@ try {
         await undoneTo()
         await undoneTo(async () => named(await documentRoot(), 'Bars middle') == null)
       }
-      await ai([{ command: 'project.setMarks', params: { item: media.item, in: null, out: null } }])
+      await person([{ command: 'project.setMarks', params: { item: media.item, in: null, out: null } }])
 
       // Modify ▸ Audio Channels… on bars.mp4 (a project item): Mono maps a clip per channel.
-      await ai([{ command: 'timeline.select', params: { clips: [] } }, { command: 'project.select', params: { items: [media.item] } }])
+      await person([{ command: 'timeline.select', params: { clips: [] } }, { command: 'project.select', params: { items: [media.item] } }])
       const channelsOpen = open('clip.audioChannels', 'audioChannels')
       const toMono = async () => kit.getByTestId('film-dialog-audioChannels-format-mono').check()
       let channelled = null
@@ -3142,7 +3159,7 @@ try {
       }
 
       // File ▸ New ▸ Offline File… "Lost Take": the offline row.
-      await ai([{ command: 'project.select', params: { items: [] } }])
+      await person([{ command: 'project.select', params: { items: [] } }])
       const offlineOpen = open('file.newOfflineFile', 'offlineFile')
       const lostTake = fill('film-dialog-offlineFile-name', 'Lost Take')
       let offlined = null
@@ -3162,7 +3179,7 @@ try {
 
       // Clip ▸ Edit Offline… on it: the Scene field.
       if (lost) {
-        await ai([{ command: 'project.select', params: { items: [lost.item] } }])
+        await person([{ command: 'project.select', params: { items: [lost.item] } }])
         const editOfflineOpen = async () => {
           await open('clip.editOffline', 'editOffline')()
           // It opens on the item's own fields (dialogDefaults).
@@ -3189,8 +3206,8 @@ try {
       // Merge Clips… bars.mp4 with an audio-only (offline) file: upstream's Audio method cannot
       // synchronize a file with no sound, so its preview turns off and says why; In Points and
       // Preview again show the merged item row, named as typed.
-      const tone = (await ai([{ command: 'file.newOfflineFile', params: { name: 'Tone', video: false, audio: true, seconds: 3 } }])).completed[0].result?.item ?? null
-      await ai([{ command: 'timeline.select', params: { clips: [] } }, { command: 'project.select', params: { items: [media.item, tone] } }])
+      const tone = (await person([{ command: 'file.newOfflineFile', params: { name: 'Tone', video: false, audio: true, seconds: 3 } }])).completed[0].result?.item ?? null
+      await person([{ command: 'timeline.select', params: { clips: [] } }, { command: 'project.select', params: { items: [media.item, tone] } }])
       const mergedName = 'Merged A'
       const byIn = (prefix) => async () => kit.getByTestId(`film-dialog-${prefix}-method-in`).check()
       let merged = null
@@ -3216,16 +3233,16 @@ try {
       const mergeOk = await previewThenOk({ open: mergeOpen, change: mergeName })
       const mergedItem = named(await documentRoot(), mergedName)
       await undoneTo(async () => named(await documentRoot(), mergedName) == null)
-      // Tone is the agent's (its own history, KitModel 1.1 M12a): the agent's undo takes it away.
-      await edited(() => ai([{ command: 'edit.undo', params: {} }]), async () => named(await documentRoot(), 'Tone') == null)
+      // Tone is the person's newest step: the person's undo takes it away.
+      await edited(undoKey, async () => named(await documentRoot(), 'Tone') == null)
       step('Merge Clips… OK makes the merged item in one history step, as previewed, and one undo takes it away', mergeOk.ok && mergedItem != null, JSON.stringify({ ...mergeOk, merged: mergedItem?.item }))
 
       // Synchronize… by In Points: a clip on V2 moves to A's In point.
-      await ai([{ command: 'project.select', params: { items: [] } }, { command: 'timeline.place', params: { item: media.item, track: 'V2', time: piece / 2, sourceIn: piece, duration: piece } }])
+      await person([{ command: 'project.select', params: { items: [] } }, { command: 'timeline.place', params: { item: media.item, track: 'V2', time: piece / 2, sourceIn: piece, duration: piece } }])
       const upper = await until(async () => (await seq()).video[1]?.items?.length === 1)
       const other = upper ? (await seq()).video[1].items[0] : null
       if (other) {
-        await ai([{ command: 'timeline.select', params: { clips: [A.clip, other.clip], linked: false } }])
+        await person([{ command: 'timeline.select', params: { clips: [A.clip, other.clip], linked: false } }])
         await waitForEngine(page, (state) => state.details?.sequence?.selection?.length === 2)
         const syncOpen = async () => {
           await open('clip.synchronize', 'sync')()
@@ -3249,7 +3266,7 @@ try {
         await undoneTo(async () => ((await seq()).video[1]?.items?.length ?? 0) === 0)
       } else step('Synchronize… has a clip on V2 to synchronize', false, JSON.stringify({ upper }))
       await closeDialog()
-      await ai([{ command: 'timeline.select', params: { clips: [] } }, { command: 'project.select', params: { items: [] } }])
+      await person([{ command: 'timeline.select', params: { clips: [] } }, { command: 'project.select', params: { items: [] } }])
     }
 
     // ---- upstream's sequence dialogs (Task 13), each previewed (upstream's have no preview):
@@ -3292,7 +3309,7 @@ try {
         })
       }
       const middle = A.start + Math.floor(A.duration / 2 / frameTicks) * frameTicks
-      await ai([{ command: 'timeline.select', params: { clips: [] } }, { command: 'project.select', params: { items: [] } }, { command: 'playhead.set', params: { time: middle } }])
+      await person([{ command: 'timeline.select', params: { clips: [] } }, { command: 'project.select', params: { items: [] } }, { command: 'playhead.set', params: { time: middle } }])
       await waitForEngine(page, (state) => state.details?.playhead === middle)
       const was = (await seq()).settings
       const sequenceId = (await details()).sequence?.id ?? null
@@ -3376,7 +3393,7 @@ try {
 
       // Another sequence made active (its Timeline tab clicked) closes Sequence Settings, and nothing is applied.
       {
-        const other = (await ai([{ command: 'file.newSequence', params: { name: 'Other cut' } }, { command: 'sequence.open', params: { item: sequenceId } }])).completed[0].result?.sequence ?? null
+        const other = (await person([{ command: 'file.newSequence', params: { name: 'Other cut' } }, { command: 'sequence.open', params: { item: sequenceId } }])).completed[0].result?.sequence ?? null
         await waitForEngine(page, (state) => state.details?.sequence?.id === sequenceId)
         const before = await documentNow()
         const serial = (await previewState()).serial
@@ -3399,7 +3416,7 @@ try {
         const switched = await waitForEngine(page, (state) => state.details?.sequence?.id === other, { orNull: true })
         await kitFrame().evaluate(() => Object.keys(localStorage).filter((key) => key.includes('dialogPlace')).forEach((key) => localStorage.removeItem(key)))
         const settings = (await details()).sequence?.settings
-        await ai([{ command: 'sequence.open', params: { item: sequenceId } }])
+        await person([{ command: 'sequence.open', params: { item: sequenceId } }])
         const after = await documentNow()
         const back = (await waitForEngine(page, (state) => state.details?.sequence?.id === sequenceId))?.details?.sequence?.settings
         // The switch is a view change: the history is as before (the tab open is session state).
@@ -3479,12 +3496,12 @@ try {
         step('New Sequence… at 29.97 drop-frame makes "Cut DF" in two history steps (New Sequence, then its drop-frame setting), as previewed', twoOk.ok && dfMade != null && df.sequence?.settings?.drop_frame === true, JSON.stringify({ ...twoOk, made: dfMade?.item, dropFrame: df.sequence?.settings?.drop_frame }))
       }
       // Back on the sample's sequence (undo restores it; opening it again is not an edit).
-      if (!(await until(async () => (await details()).sequence?.id === sequenceId, 20))) await ai([{ command: 'sequence.open', params: { item: sequenceId } }])
+      if (!(await until(async () => (await details()).sequence?.id === sequenceId, 20))) await person([{ command: 'sequence.open', params: { item: sequenceId } }])
       await waitForEngine(page, (state) => state.details?.sequence?.id === sequenceId)
 
       // Sequence ▸ Color Management…: with A interpreted as S-Log3, Auto Tone Map off changes its picture's centre pixel.
       {
-        await ai([{ command: 'clip.interpretFootage', params: { items: [A.item], colorSpace: 'slog3-sgamut3cine' } }, { command: 'playhead.set', params: { time: middle } }])
+        await person([{ command: 'clip.interpretFootage', params: { items: [A.item], colorSpace: 'slog3-sgamut3cine' } }, { command: 'playhead.set', params: { time: middle } }])
         await waitForEngine(page, (state) => state.details?.playhead === middle)
         const colorOpen = open('sequence.colorSettings', 'colorDialog')
         const toneOff = async () => kit.getByTestId('film-dialog-colorDialog-autoToneMap').uncheck()
@@ -3594,7 +3611,7 @@ try {
       const red = (pixel) => pixel != null && pixel.rgb[0] > 200 && pixel.rgb[1] < 60 && pixel.rgb[2] < 60
       const blue = (pixel) => pixel != null && pixel.rgb[2] > 200 && pixel.rgb[0] < 60 && pixel.rgb[1] < 60
       const iconOf = (item) => `[data-testid="film-project"] [data-testid="film-project-item-${item}"] canvas[data-drawn]`
-      await ai([{ command: 'timeline.select', params: { clips: [] } }, { command: 'project.select', params: { items: [] } }])
+      await person([{ command: 'timeline.select', params: { clips: [] } }, { command: 'project.select', params: { items: [] } }])
       const sequenceId = (await details()).sequence?.id ?? null
 
       // Add Tracks…: it opens on one video and one audio track after the last ones; two audio
@@ -3641,7 +3658,7 @@ try {
       // Another sequence made active (its Timeline tab clicked) with Add Tracks open: it stays
       // open, as upstream's, and lists that sequence's tracks after its last ones.
       {
-        const made = (await ai([{ command: 'file.newSequence', params: { name: 'Two tracks', video: 1, audio: 2 } }, { command: 'sequence.open', params: { item: sequenceId } }])).completed[0].result?.sequence ?? null
+        const made = (await person([{ command: 'file.newSequence', params: { name: 'Two tracks', video: 1, audio: 2 } }, { command: 'sequence.open', params: { item: sequenceId } }])).completed[0].result?.sequence ?? null
         await waitForEngine(page, (state) => state.details?.sequence?.id === sequenceId)
         await addOpen()
         const title = await kit.locator('[data-testid="film-dialog"] h2').boundingBox()
@@ -3660,7 +3677,7 @@ try {
         const shown = { open: await dialogShown(), audio: await options.allTextContents(), video: await kit.getByTestId('film-dialog-addTracks-video-placement').inputValue(), previewed: (await previewState()).open }
         await closeDialog()
         await kitFrame().evaluate(() => Object.keys(localStorage).filter((key) => key.includes('dialogPlace')).forEach((key) => localStorage.removeItem(key)))
-        await ai([{ command: 'sequence.open', params: { item: sequenceId } }])
+        await person([{ command: 'sequence.open', params: { item: sequenceId } }])
         await waitForEngine(page, (state) => state.details?.sequence?.id === sequenceId)
         await edited(undoKey, async () => !itemsOf((await details()).project?.root).some((each) => each.item === made))
         step("Add Tracks… stays open when another sequence's Timeline tab is clicked, and lists that sequence's tracks after its last ones (upstream's dialog follows the active sequence)", made != null && switched != null && listed && shown.open === 1 && shown.previewed, JSON.stringify({ made, switched: switched != null, listed, ...shown }))
@@ -3683,7 +3700,7 @@ try {
       }
 
       // An empty video track (made here, taken away after): Delete Tracks (All Empty video) and Simplify both drop it.
-      const emptyTrack = (await ai([{ command: 'sequence.addTracks', params: { video: 1 } }])).completed[0].result?.video?.[0] ?? null
+      const emptyTrack = (await person([{ command: 'sequence.addTracks', params: { video: 1 } }])).completed[0].result?.video?.[0] ?? null
       await waitForEngine(page, (state) => (state.details?.sequence?.video ?? []).some((track) => track.id === emptyTrack))
       {
         let gone = null
@@ -3835,7 +3852,7 @@ try {
         await kit.locator(`[data-testid="film-cmd-${command}"], [data-testid="film-control-${command}"]`).first().click()
       }
       const itemsOf = (node) => [...(node?.item != null ? [node] : []), ...(node?.children ?? []).flatMap(itemsOf)]
-      const sessionState = async () => (await ai([{ command: 'state.inspect', params: {} }])).completed[0].result
+      const sessionState = async () => (await person([{ command: 'state.inspect', params: {} }])).completed[0].result
       const projectSelection = async () => JSON.stringify((await sessionState())?.project_selection ?? [])
       const previewInspect = () => kitFrame().evaluate(() => window.filmPreview.inspect())
       const previewDiff = () => kitFrame().evaluate(() => window.filmPreview.diff())
@@ -3844,7 +3861,7 @@ try {
         await until(async () => (await dialogShown()) === 0 && !(await previewState()).open, 50)
       }
       /** The search bins (`project.searchBins`): the document's, and the open preview's copy's. */
-      const documentSearchBins = async () => (await ai([{ command: 'project.searchBins', params: {} }])).completed[0].result ?? []
+      const documentSearchBins = async () => (await person([{ command: 'project.searchBins', params: {} }])).completed[0].result ?? []
       const previewSearchBins = () => kitFrame().evaluate(async () => {
         const raw = await window.filmPreview.query('project.searchBins', {})
         return typeof raw === 'string' ? JSON.parse(raw) : raw
@@ -3855,12 +3872,12 @@ try {
       const toneNamed = async () => itemsOf((await details()).project?.root).filter((each) => /tone/i.test(each.name ?? ''))
       let toneItems = await toneNamed()
       if (toneItems.length === 0) {
-        await ai([{ command: 'file.newOfflineFile', params: { name: 'Tone', video: false, audio: true, seconds: 3 } }])
+        await person([{ command: 'file.newOfflineFile', params: { name: 'Tone', video: false, audio: true, seconds: 3 } }])
         toneItems = await toneNamed()
       }
       const tone = toneItems[0]?.item ?? null
       const bars = itemsOf((await details()).project?.root).find((each) => each.name?.includes('bars'))?.item ?? null
-      await ai([{ command: 'timeline.select', params: { clips: [] } }, { command: 'project.select', params: { items: bars != null ? [bars] : [] } }])
+      await person([{ command: 'timeline.select', params: { clips: [] } }, { command: 'project.select', params: { items: bars != null ? [bars] : [] } }])
       // The view the Project panel was left in, put back at the end for the steps after.
       const viewBefore = await kit.getByTestId('film-project').getAttribute('data-view')
       await kit.getByTestId('film-project-view-list').click()
@@ -3966,7 +3983,7 @@ try {
       // Automate to Sequence… from the Project panel's footer with two items selected: both are
       // placed on the Timeline as added clips (dashed), at the playhead.
       if (bars != null && tone != null) {
-        await ai([{ command: 'project.select', params: { items: [bars, tone] } }, { command: 'playhead.set', params: { seconds: 0 } }])
+        await person([{ command: 'project.select', params: { items: [bars, tone] } }, { command: 'playhead.set', params: { seconds: 0 } }])
         // The whole sequence in view (\\, Zoom to Sequence), so the placed clips are drawn.
         await kit.locator('.kui-app').focus()
         await page.keyboard.press('\\')
@@ -4087,7 +4104,7 @@ try {
       }
       const T = (await details()).ticksPerSecond ?? 254_016_000_000
       const history = async () => (await kitFrame().evaluate(() => window.filmPreview.history()))?.undo?.length ?? -1
-      const documentJobs = async () => JSON.stringify((await ai([{ command: 'jobs.list', params: {} }])).completed[0].result ?? null)
+      const documentJobs = async () => JSON.stringify((await person([{ command: 'jobs.list', params: {} }])).completed[0].result ?? null)
       const closeDialog = async () => {
         if (await dialogShown()) await kit.getByTestId('film-dialog-cancel').click()
         await until(async () => (await dialogShown()) === 0 && !(await previewState()).open, 50)
@@ -4099,15 +4116,14 @@ try {
       // ends, with its progress in the strip on the way; the document's jobs.list stays empty,
       // and Cancel leaves the document as it was.
       const historyAtScene = await history()
-      // The leader and the matte are the agent's (its own history, KitModel 1.1 M12a); the markers Analyze writes are the person's.
-      const agentAtScene = (await agentHistory()).length
-      const leader = (await ai([{ command: 'file.newCountingLeader', params: {} }])).completed[0].result?.item ?? null
+      // The leader, the matte and the markers Analyze writes are the person's steps.
+      const leader = (await person([{ command: 'file.newCountingLeader', params: {} }])).completed[0].result?.item ?? null
       const end = (await details()).sequence?.duration ?? 0
-      await ai([{ command: 'timeline.place', params: { item: leader, track: 'V1', time: end } }])
-      const longMatte = (await ai([{ command: 'file.newColorMatte', params: { color: '#203040', seconds: 300 } }])).completed[0].result?.item ?? null
-      await ai([{ command: 'timeline.place', params: { item: longMatte, track: 'V1', time: (await details()).sequence?.duration ?? 0 } }])
+      await person([{ command: 'timeline.place', params: { item: leader, track: 'V1', time: end } }])
+      const longMatte = (await person([{ command: 'file.newColorMatte', params: { color: '#203040', seconds: 300 } }])).completed[0].result?.item ?? null
+      await person([{ command: 'timeline.place', params: { item: longMatte, track: 'V1', time: (await details()).sequence?.duration ?? 0 } }])
       const analysed = (await details()).sequence.video.flatMap((track) => track.items ?? []).filter((clip) => clip.item === leader || clip.item === longMatte).map((clip) => clip.clip)
-      await ai([{ command: 'timeline.select', params: { clips: analysed } }, { command: 'source.open', params: { item: leader } }, { command: 'playhead.set', params: { time: end } }])
+      await person([{ command: 'timeline.select', params: { clips: analysed } }, { command: 'source.open', params: { item: leader } }, { command: 'playhead.set', params: { time: end } }])
       await kit.getByTestId('film-source').waitFor({ timeout: 10000 })
       const jobsBefore = await documentJobs()
       /** Records, each animation frame in the page, the preview's progress and whether the strip draws its bar. */
@@ -4200,9 +4216,9 @@ try {
       // as upstream's thread does (the web has none), so OK closes at once with upstream's status,
       // the status bar shows the job, a playhead key answers while it runs, and the markers land
       // in one history step when it ends; Cancel through jobs.cancel changes nothing.
-      const runningJob = async () => ((await ai([{ command: 'jobs.list', params: {} }])).completed[0].result ?? []).find((each) => each.finished !== true) ?? null
+      const runningJob = async () => ((await person([{ command: 'jobs.list', params: {} }])).completed[0].result ?? []).find((each) => each.finished !== true) ?? null
       const startAnalyze = async () => {
-        await ai([{ command: 'timeline.select', params: { clips: analysed } }])
+        await person([{ command: 'timeline.select', params: { clips: analysed } }])
         await fromMenu('clip.sceneEditDetection')
         await kit.getByTestId('film-dialog-sceneDetect').waitFor({ timeout: 10000 })
         await chooseMarkers()
@@ -4227,7 +4243,7 @@ try {
         const answeredMs = Date.now() - pressed
         const stillRunning = (await runningJob()) != null
         const landed = await until(async () => (await history()) === steps + 1 && (await kit.getByTestId('film-exporting').count()) === 0, 600)
-        const onLeader = ((await ai([{ command: 'source.inspect', params: {} }])).completed[0].result?.markers ?? []).length
+        const onLeader = ((await person([{ command: 'source.inspect', params: {} }])).completed[0].result?.markers ?? []).length
         const last = (await personHistory()).at(-1)
         step('Scene Edit Detection\'s Analyze closes at once with upstream\'s "analysing in the background" status; the status bar shows the job, a playhead key answers while it runs, and its markers land on the leader in one "Scene Edit Detection" history step', closed && said === zh('Scene Edit Detection: analysing in the background (see Progress)') && shown && job != null && moved != null && stillRunning && landed && onLeader >= 3 && JSON.stringify(last ?? '').includes('Scene Edit Detection'), JSON.stringify({ closed, said, shown, job: job?.label, moved: moved != null, answeredMs, stillRunning, landed, onLeader, last, steps: [steps, await history()] }))
       }
@@ -4237,24 +4253,19 @@ try {
         await startAnalyze()
         const shown = await until(async () => (await kit.getByTestId('film-exporting').count()) === 1, 50)
         const job = await runningJob()
-        if (job) await ai([{ command: 'jobs.cancel', params: { job: job.id } }])
+        if (job) await person([{ command: 'jobs.cancel', params: { job: job.id } }])
         const ended = await until(async () => (await kit.getByTestId('film-exporting').count()) === 0 && (await runningJob()) == null, 200)
         await paintFrames()
         const after = await waitForEngine(page, () => true, { history: true })
         step('jobs.cancel stops the document\'s running Scene Edit Detection: the status bar\'s job goes, and no history step or edit lands', shown && job != null && ended && (await history()) === steps && after.revision === revision, JSON.stringify({ shown, job: job?.id, ended, steps: [steps, await history()], revision: [revision, after.revision] }))
       }
       // The leader, the long matte, and the markers go again, for the steps after.
-      await ai([{ command: 'timeline.select', params: { clips: [] } }])
+      await person([{ command: 'timeline.select', params: { clips: [] } }])
       await personUndo((await history()) - historyAtScene)
-      for (let left = (await agentHistory()).length - agentAtScene; left > 0; left -= 1) {
-        const before = (await agentHistory()).length
-        await ai([{ command: 'edit.undo', params: {} }])
-        await until(async () => (await agentHistory()).length === before - 1)
-      }
 
       // The marker dialog: a double-click on a Markers row opens it on that marker; a new colour
       // previews on the row; Cancel leaves the document; OK changes it in one step, undone by one.
-      await ai([{ command: 'playhead.set', params: { time: Math.round(1.5 * T) } }, { command: 'markers.add', params: { name: 'Edit me' } }])
+      await person([{ command: 'playhead.set', params: { time: Math.round(1.5 * T) } }, { command: 'markers.add', params: { name: 'Edit me' } }])
       await fromMenu('window.panel.Markers')
       const markerNow = async () => ((await details()).sequence?.markers ?? []).find((each) => each.name === 'Edit me') ?? null
       const marker = await markerNow()
@@ -4290,7 +4301,7 @@ try {
 
       // Flash Cue Marker: the named cue previews at the playhead in the Markers panel and on the
       // ruler, outlined; Cancel leaves the document.
-      await ai([{ command: 'playhead.set', params: { time: Math.round(3.25 * T) } }])
+      await person([{ command: 'playhead.set', params: { time: Math.round(3.25 * T) } }])
       const cueCancel = await previewThenCancel({
         open: async () => {
           await fromMenu('markers.addFlashCue')
@@ -4339,7 +4350,7 @@ try {
         const bars = (function find(node) {
           return node?.name?.includes('bars') && node.item != null ? node.item : (node?.children ?? []).map(find).find((id) => id != null)
         })((await details()).project?.root)
-        await ai([{ command: 'timeline.select', params: { clips: [] } }, { command: 'project.select', params: { items: bars != null ? [bars] : [] } }])
+        await person([{ command: 'timeline.select', params: { clips: [] } }, { command: 'project.select', params: { items: bars != null ? [bars] : [] } }])
         const before = await documentNow()
         const serial = (await previewState()).serial
         await fromMenu('clip.updateMetadata')
@@ -4395,7 +4406,7 @@ try {
         return node?.name === 'bars.mp4' && node.item != null ? node.item : (node?.children ?? []).map(find).find((id) => id != null)
       })((await details()).project?.root)
       /** The document's own view of bars: its media status, and its row's offline badge in the Project panel. */
-      const statusNow = async () => (await ai([{ command: 'media.status', params: { item: bars } }])).completed[0].result?.[0]?.status ?? null
+      const statusNow = async () => (await person([{ command: 'media.status', params: { item: bars } }])).completed[0].result?.[0]?.status ?? null
       const row = kit.getByTestId(`film-project-item-${bars}`)
       const badge = row.locator('[data-kit-ui-id="control:project.item.offline"]')
       /** The document's thumbnail of bars as the Project panel draws it (its canvas's pixels), or null when none is drawn. */
@@ -4413,7 +4424,7 @@ try {
       if (await kit.getByTestId('film-project-search').inputValue()) await kit.getByTestId('film-project-search').fill('')
       // bars on V1 at the playhead, selected in the Project panel, its row in view.
       const barsClip = (await details()).sequence.video.flatMap((track) => track.items ?? []).find((clip) => clip.item === bars)
-      await ai([
+      await person([
         { command: 'timeline.select', params: { clips: [] } },
         { command: 'project.select', params: { items: [bars] } },
         { command: 'playhead.set', params: { time: (barsClip?.start ?? 0) + Math.round(T / 2) } },
@@ -4540,7 +4551,7 @@ try {
       // it; Cancel leaves the document as Link left it.
       if (skipped?.others) {
         const historyNow = async () => ((await waitForEngine(page, () => true, { history: true })).history?.undo ?? []).length
-        await ai([{ command: 'media.makeOffline', params: { items: [bars] } }])
+        await person([{ command: 'media.makeOffline', params: { items: [bars] } }])
         await until(async () => (await statusNow()) === 'offline', 50)
         await fromMenu('media.linkMedia')
         await kit.getByTestId('film-dialog-linkMedia').waitFor({ timeout: 10000 })
@@ -4589,9 +4600,9 @@ try {
         const sequenceItem = (function find(node) {
           return node?.type === 'Sequence' && node.item != null ? node.item : (node?.children ?? []).map(find).find((id) => id != null)
         })((await details()).project?.root)
-        const proxyNow = async () => (await ai([{ command: 'media.status', params: { item: bars } }])).completed[0].result?.[0]?.proxy?.path ?? null
+        const proxyNow = async () => (await person([{ command: 'media.status', params: { item: bars } }])).completed[0].result?.[0]?.proxy?.path ?? null
         const fromItemMenu = async (testId) => {
-          await ai([{ command: 'project.select', params: { items: sequenceItem != null ? [sequenceItem] : [] } }])
+          await person([{ command: 'project.select', params: { items: sequenceItem != null ? [sequenceItem] : [] } }])
           await row.click({ button: 'right' })
           await kit.getByTestId('film-project-item-menu').waitFor({ timeout: 10000 })
           await kit.getByTestId('film-project-item-proxy').hover()
@@ -4599,7 +4610,7 @@ try {
         }
         await fromItemMenu('film-project-item-attach-proxies')
         const attached = await until(async () => (await proxyNow()) === '../clips/bars.mp4', 60)
-        await ai([{ command: 'media.detachProxies', params: { items: [bars] } }])
+        await person([{ command: 'media.detachProxies', params: { items: [bars] } }])
         await until(async () => (await proxyNow()) == null, 50)
         await fromItemMenu('film-project-item-reconnect')
         const refused = await until(async () => ((await kit.getByTestId('film-message').textContent({ timeout: 300 }).catch(() => '')) ?? '').includes(zh('the clip has no proxy attached')), 50)
@@ -4619,8 +4630,8 @@ try {
         await kit.getByTestId('film-workspace-menu-project').click()
         await kit.getByTestId(testId).click()
       }
-      const viewNow = async () => (await ai([{ command: 'project.view.get', params: {} }])).completed[0].result
-      const presetsNow = async () => (await ai([{ command: 'project.viewPreset.list', params: {} }])).completed[0].result?.presets ?? []
+      const viewNow = async () => (await person([{ command: 'project.view.get', params: {} }])).completed[0].result
+      const presetsNow = async () => (await person([{ command: 'project.viewPreset.list', params: {} }])).completed[0].result?.presets ?? []
       const header = (name) => kit.getByTestId(`film-project-column-${name}`)
       const panelView = () => kit.getByTestId('film-project').getAttribute('data-view')
       await panelMenu('film-project-menu-view-list')
@@ -4662,7 +4673,7 @@ try {
       const metadataShown = await until(async () => (await header('Media Duration').count()) === 0 && (await header('Media End').count()) === 1, 60)
       step('Metadata Display\'s OK hides Media Duration as previewed (no history step: a preference), and the List view drops it at once', metadataOk.ok && metadataShown, JSON.stringify({ ...metadataOk, metadataShown }))
       // An agent's project.columns.set brings it back, and the panel draws it without a new revision.
-      await ai([{ command: 'project.columns.set', params: { columns: columnsBefore } }])
+      await agentRun([{ command: 'project.columns.set', params: { columns: columnsBefore } }])
       const agentShown = await until(async () => (await header('Media Duration').count()) === 1, 60)
       step("an agent's project.columns.set redraws the List view at once (no revision)", agentShown, JSON.stringify({ agentShown, columnsBefore }))
 
@@ -4761,7 +4772,7 @@ try {
         await openManage()
         await kit.getByTestId('film-dialog-presets-overwrite').click()
         const queued = await until(async () => pattern(ztRaw('viewPreset.overwrites'), { slot: '\\d+', name: '.*', view: '.*' }).test((await kit.getByTestId('film-preview-view').textContent({ timeout: 300 }).catch(() => '')) ?? ''), 60)
-        await ai([{ command: 'project.viewPreset.rename', params: { slot: mineSlot, name: 'Theirs' } }])
+        await person([{ command: 'project.viewPreset.rename', params: { slot: mineSlot, name: 'Theirs' } }])
         const slot = kit.getByTestId(`film-dialog-presets-slot-${mineSlot}`)
         const followed = await until(async () => /Theirs/.test((await slot.textContent()) ?? '') && (await kit.getByTestId('film-dialog-presets-pending').count()) === 0, 60)
         const notice = await kit.getByTestId('film-dialog-notice').textContent({ timeout: 1000 }).catch(() => null)
@@ -4813,19 +4824,19 @@ try {
     // No step here removes or moves a Project row (Unstack, Delete Arrangement, and the options
     // change only cards), so Task 10's removed-row flow step carries forward.
     {
-      const ai = aiRun
-      const sessionNow = async () => (await ai([{ command: 'state.inspect', params: {} }])).completed[0].result
+      const person = personRun
+      const sessionNow = async () => (await person([{ command: 'state.inspect', params: {} }])).completed[0].result
       const history = async () => (await kitFrame().evaluate(() => window.filmPreview.history()))?.undo?.length ?? -1
       const panelMenu = async (testId) => {
         await kit.getByTestId('film-workspace-menu-project').click()
         await kit.getByTestId(testId).click()
       }
-      const viewNow = async () => (await ai([{ command: 'project.view.get', params: {} }])).completed[0].result
+      const viewNow = async () => (await person([{ command: 'project.view.get', params: {} }])).completed[0].result
       const panelView = () => kit.getByTestId('film-project').getAttribute('data-view')
       const canvas = kit.getByTestId('film-project-freeform-canvas')
       /** The width the panel lays its cards out for (the Freeform view's own). */
       const widthNow = () => kit.getByTestId('film-project-freeform').evaluate((element) => Math.round(element.offsetWidth))
-      const layoutNow = async () => (await ai([{ command: 'project.freeform.layout', params: { width: await widthNow() } }])).completed[0].result?.cards ?? []
+      const layoutNow = async () => (await person([{ command: 'project.freeform.layout', params: { width: await widthNow() } }])).completed[0].result?.cards ?? []
       const cardOf = async (item) => (await layoutNow()).find((card) => card.item === item) ?? null
       /** Where the canvas draws a card: its box's place on the canvas, which is the engine's place less 2 points (upstream's `r.expand(2)`). */
       const drawnAt = (item) => kit.getByTestId(`film-project-item-${item}`).evaluate((element) => ({ x: element.offsetLeft + 2, y: element.offsetTop + 2, width: element.offsetWidth - 4 })).catch(() => null)
@@ -4937,11 +4948,11 @@ try {
         }, bytes)
         await page5.waitForFunction(() => document.getElementById('status')?.textContent?.includes(' open in '), null, { timeout: 60000 })
         await waitForEngine(page5, (state) => state.details?.project != null, { timeout: 30000 })
-        await page5.evaluate(() => window.devHost.connection().ai.run([{ command: 'project.view.set', params: { view: 'freeform' } }], false))
+        await personRun([{ command: 'project.view.set', params: { view: 'freeform' } }], page5)
         const kit5 = page5.frameLocator('#kit')
         const card5 = kit5.getByTestId(`film-project-item-${C.item}`)
         await card5.waitFor({ timeout: 15000 })
-        const layout5 = (await page5.evaluate(() => window.devHost.connection().ai.run([{ command: 'project.freeform.layout', params: {} }], false))).completed[0].result?.cards ?? []
+        const layout5 = (await personRun([{ command: 'project.freeform.layout', params: {} }], page5)).completed[0].result?.cards ?? []
         const at5 = await card5.evaluate((element) => ({ x: element.offsetLeft + 2, y: element.offsetTop + 2 }))
         reopened = { layout: layout5.find((card) => card.item === C.item) ?? null, drawn: at5 }
       } catch (error) {
@@ -5008,7 +5019,7 @@ try {
       await kit.getByTestId('film-dialog-projectDialog-name').fill('A')
       const summary = await until(async () => pattern(ztRaw('freeform.saves'), { name: 'A', count: '\\d+' }).test((await kit.getByTestId('film-preview-summary').textContent({ timeout: 300 }).catch(() => '')) ?? ''), 50)
       await kit.getByTestId('film-dialog-ok').click()
-      const savedA = await until(async () => (await dialogShown()) === 0 && ((await ai([{ command: 'project.freeform.arrangements', params: {} }])).completed[0].result?.arrangements ?? []).includes('A'), 60)
+      const savedA = await until(async () => (await dialogShown()) === 0 && ((await person([{ command: 'project.freeform.arrangements', params: {} }])).completed[0].result?.arrangements ?? []).includes('A'), 60)
       const placeA = await cardOf(C.item)
       await dragCard(C.item, { x: 60, y: 60 })
       const movedAgain = await until(async () => {
@@ -5033,7 +5044,7 @@ try {
           element.scrollTop = 0
         })
         // The card near the canvas's top, so the pointer stays over the short view as it scrolls.
-        await ai([{ command: 'project.freeform.move', params: { items: [C.item], x: 200, y: 20, width: await widthNow() } }])
+        await person([{ command: 'project.freeform.move', params: { items: [C.item], x: 200, y: 20, width: await widthNow() } }])
         await until(async () => near((await drawnAt(C.item))?.y, 20, 0.5), 40)
         const before = await cardOf(C.item)
         const box = await kit.getByTestId(`film-project-item-${C.item}`).boundingBox()
@@ -5113,9 +5124,9 @@ try {
     // follows it; closing a window focuses the Project panel; a deleted bin's window closes. No
     // step previews a change (Task 10's removed-row step carries forward).
     {
-      const ai = aiRun
-      const sessionNow = async () => (await ai([{ command: 'state.inspect', params: {} }])).completed[0].result
-      const iconItems = async (params) => ((await ai([{ command: 'project.items', params: { ...params, order: 'icon' } }])).completed[0].result?.rows ?? []).flatMap((row) => (row.item != null && row.direct !== false ? [row.item] : []))
+      const person = personRun
+      const sessionNow = async () => (await person([{ command: 'state.inspect', params: {} }])).completed[0].result
+      const iconItems = async (params) => ((await person([{ command: 'project.items', params: { ...params, order: 'icon' } }])).completed[0].result?.rows ?? []).flatMap((row) => (row.item != null && row.direct !== false ? [row.item] : []))
       const windows = kit.locator('.kui-floating-panel')
       const windowOf = (id) => kit.getByTestId(`film-bin-windows-${id}`)
       const itemsIn = (id) => windowOf(id).locator('[data-testid^="film-project-item-"]').evaluateAll((items) => items.map((item) => Number(item.getAttribute('data-testid').slice('film-project-item-'.length))))
@@ -5124,10 +5135,10 @@ try {
       const focusedFrame = () => kitFrame().evaluate(() => document.querySelector('.kui-ws-frame[data-focused="true"]')?.getAttribute('data-panel') ?? null)
       const rootId = (await details()).project.root.id
       // A bin at the root holding two of its media items.
-      const media = ((await ai([{ command: 'project.items', params: { order: 'icon' } }])).completed[0].result?.rows ?? []).filter((row) => row.item != null && row.direct !== false && row.kind === 'media').map((row) => row.item)
-      const bin = (await ai([{ command: 'file.newBin', params: { name: 'Floating' } }])).completed[0].result?.bin
+      const media = ((await person([{ command: 'project.items', params: { order: 'icon' } }])).completed[0].result?.rows ?? []).filter((row) => row.item != null && row.direct !== false && row.kind === 'media').map((row) => row.item)
+      const bin = (await person([{ command: 'file.newBin', params: { name: 'Floating' } }])).completed[0].result?.bin
       const moved = media.slice(0, 2)
-      await ai([{ command: 'project.moveToBin', params: { items: moved, bin } }])
+      await person([{ command: 'project.moveToBin', params: { items: moved, bin } }])
       const binCard = kit.getByTestId(`film-project-bin-${bin}`)
       await binCard.waitFor({ timeout: 10000 })
       const id = `bin${bin}`
@@ -5232,7 +5243,7 @@ try {
       }
 
       // A renamed bin's window takes its name; closing the focused root window focuses the Project panel, whose keys act again.
-      await ai([{ command: 'project.renameBin', params: { bin, name: 'Floated' } }])
+      await person([{ command: 'project.renameBin', params: { bin, name: 'Floated' } }])
       const renamed = await until(async () => (await kit.getByTestId(`film-bin-windows-${id}-title`).textContent()) === filled(zh('Bin: {name}'), { name: 'Floated' }) && (await windowOf(id).getByTestId('film-project-breadcrumb').textContent()) === 'Sample.kfilm / Floated', 40)
       step("a renamed bin's window takes its name in its title and breadcrumb", renamed, JSON.stringify({ title: await kit.getByTestId(`film-bin-windows-${id}-title`).textContent().catch(() => null) }))
       {
@@ -5281,12 +5292,12 @@ try {
         await page.keyboard.press('ControlOrMeta+Shift+z')
         const redone = await until(async () => (await binsNow()).includes(made), 40)
         step('a focused window whose bin an undo removes closes, and the editor keeps its keys: Cmd+Shift+Z brings the bin back', made != null && focusedMade && closedWithBin && appFocused && redone && (await focusedFrame()) === 'project', JSON.stringify({ made, focusedMade, closedWithBin, appFocused, redone, frame: await focusedFrame() }))
-        if (redone) await ai([{ command: 'project.delete', params: { items: [made] } }])
+        if (redone) await person([{ command: 'project.delete', params: { items: [made] } }])
       }
 
       // The bin deleted (its items back at the root first): its window closes.
-      await ai([{ command: 'project.moveToBin', params: { items: moved, bin: null } }])
-      await ai([{ command: 'project.delete', params: { items: [bin] } }])
+      await person([{ command: 'project.moveToBin', params: { items: moved, bin: null } }])
+      await person([{ command: 'project.delete', params: { items: [bin] } }])
       const gone = await until(async () => (await windowOf(id).count()) === 0 && (await windows.count()) === 0, 40)
       step("a floating bin window closes when its bin is deleted", gone, JSON.stringify({ windows: await windows.count() }))
     }
@@ -5298,7 +5309,7 @@ try {
       kitFrame().evaluate((each) => window.filmPreview.open({ id: each.id, family: each.family, title: each.title, prefix: each.prefix, preview: each.preview, layout: [{ kind: 'heading', label: each.title }], defaults: () => ({ ...each.draft }) }), fake)
     const addTracks = { id: 'sequence.addTracks', family: 'tracks', title: 'Add Tracks', prefix: 'addTracks', preview: ['timeline'], draft: { video: 0, audio: 1 } }
     {
-      await ai([{ command: 'timeline.select', params: { clips: [] } }])
+      await person([{ command: 'timeline.select', params: { clips: [] } }])
       await kit.locator('.kui-app').focus()
       await page.keyboard.press('\\')
       const audioBefore = (await seq()).audio.map((track) => track.id)
@@ -5367,11 +5378,11 @@ try {
       const unchanged = to.revision === from.revision && (to.history?.undo ?? []).length === (from.history?.undo ?? []).length && (await clipOf(A.clip)) != null
       step('Delete with a preview open changes nothing and says to finish or cancel the dialog; the playhead still moves', unchanged && message && moved != null, JSON.stringify({ revision: [from.revision, to.revision], message, said: await said(), moved: moved != null }))
       if (await kit.getByTestId('film-message').count()) await kit.getByTestId('film-message').click()
-      await ai([{ command: 'timeline.select', params: { clips: [] } }])
+      await person([{ command: 'timeline.select', params: { clips: [] } }])
     }
     // A selection preview (Find on the Timeline) highlights its matches, dashed, beside the real selection.
     {
-      await ai([{ command: 'timeline.select', params: { clips: [B.clip] } }])
+      await person([{ command: 'timeline.select', params: { clips: [B.clip] } }])
       const realBefore = (await waitForEngine(page, (state) => state.details?.sequence?.selection?.includes(B.clip))).details.sequence.selection
       let shown = null
       const result = await previewThenCancel({
@@ -5389,7 +5400,7 @@ try {
         },
       })
       step('a selection preview (Find) highlights the matches dashed on the Timeline and leaves the real selection as it was', result.ok, JSON.stringify({ ...result, shown }))
-      await ai([{ command: 'timeline.select', params: { clips: [] } }])
+      await person([{ command: 'timeline.select', params: { clips: [] } }])
     }
     // A markers preview (Flash Cue Marker) shows the new marker outlined on the Timeline's ruler,
     // in the Markers panel, and on the Program monitor's bar.
@@ -5397,7 +5408,7 @@ try {
       await kit.getByTestId('film-menu-Window').click()
       await kit.getByTestId('film-control-window.panel.Markers').click()
       await kit.getByTestId('film-markers').waitFor({ timeout: 10000 })
-      await ai([{ command: 'playhead.set', params: { time: A.start + Math.round(A.duration / 2) } }])
+      await person([{ command: 'playhead.set', params: { time: A.start + Math.round(A.duration / 2) } }])
       await playheadSettled()
       let shown = null
       const result = await previewThenCancel({
@@ -5451,12 +5462,12 @@ try {
     }
     // A selection preview in the Project panel (Find, project scope) highlights the matching item, dashed; the real Project selection is unchanged.
     {
-      await ai([{ command: 'project.select', params: { items: [] } }])
+      await person([{ command: 'project.select', params: { items: [] } }])
       // An item the panel draws, found by its name.
       const first = kit.locator('[data-testid="film-project"] [data-testid^="film-project-item-"]').first()
       await first.waitFor({ timeout: 10000 })
       const findText = ((await first.locator('.film-project-text').first().textContent()) ?? '').trim()
-      const stateBefore = JSON.stringify((await ai([{ command: 'state.inspect', params: {} }])).completed[0].result?.project_selection ?? [])
+      const stateBefore = JSON.stringify((await person([{ command: 'state.inspect', params: {} }])).completed[0].result?.project_selection ?? [])
       let shown = null
       const result = await previewThenCancel({
         open: openFake({ id: 'edit.find', family: 'find', title: 'Find', prefix: 'find', preview: ['selection'], draft: { scope: 'project', text: findText } }),
@@ -5469,7 +5480,7 @@ try {
             result: (await previewState()).result,
             highlighted: await kit.locator('[data-testid="film-project"] [data-preview-selected]').evaluateAll((elements) => elements.map((element) => element.getAttribute('data-testid'))),
             selected: await kit.locator('[data-testid="film-project"] [aria-selected="true"][data-testid^="film-project-item-"]').count(),
-            real: JSON.stringify((await ai([{ command: 'state.inspect', params: {} }])).completed[0].result?.project_selection ?? []),
+            real: JSON.stringify((await person([{ command: 'state.inspect', params: {} }])).completed[0].result?.project_selection ?? []),
           }
           return drawn && shown.selected === 0 && shown.real === stateBefore
         },
@@ -5508,12 +5519,12 @@ try {
     // The agent's ai/run runs a dialog's command at once, with no dialog and no preview.
     // Its step is in the agent's own history, and only the agent's undo takes it back (KitModel 1.1 M12a).
     const agentFrom = (await agentHistory()).length
-    await ai([{ command: 'timeline.select', params: { clips: [A.clip] } }, { command: 'clip.speedDuration', params: {} }])
+    await agentRun([{ command: 'timeline.select', params: { clips: [A.clip] } }, { command: 'clip.speedDuration', params: {} }])
     const agentRan = (await until(async () => (await agentHistory()).length > agentFrom, 100)) ? true : null
     await paintFrames()
     const agentDialog = await dialogShown()
     const agentPreview = (await previewState()).open
-    if (agentRan) await edited(() => ai([{ command: 'edit.undo', params: {} }]))
+    if (agentRan) await edited(() => agentRun([{ command: 'edit.undo', params: {} }]))
     step("an agent's ai/run of a dialog's command runs it at once, with no dialog and no preview", agentRan != null && agentDialog === 0 && !agentPreview, JSON.stringify({ ran: agentRan != null, agentDialog, agentPreview }))
 
     // Delete clears the selected clip (a gap stays); Shift+Delete ripple-deletes it. Each key waits
@@ -5591,7 +5602,7 @@ try {
         await kit.getByTestId(`${testId}-input`).fill(text)
         await kit.getByTestId(`${testId}-input`).press('Enter')
       }
-      await ai([
+      await person([
         { command: 'timeline.select', params: { clips: [A.clip] } },
         { command: 'playhead.set', params: { time: A.start + Math.round(A.duration * 0.25) } },
       ])
@@ -5620,7 +5631,7 @@ try {
       step('dragging Opacity in Effect Controls is one history step, and one undo restores it', dragged && stepsTo === stepsFrom + 1 && restored, JSON.stringify({ opacityFrom, draggedTo, stepsFrom, stepsTo, restored, said: await said() }))
 
       const animated = await edited(() => kit.getByTestId('film-ec-motion-position-stopwatch').click(), async () => (await fx('motion', 'position'))?.keyframes === 1)
-      await ai([{ command: 'playhead.set', params: { time: A.start + Math.round(A.duration * 0.75) } }])
+      await person([{ command: 'playhead.set', params: { time: A.start + Math.round(A.duration * 0.75) } }])
       const off = await until(async () => (await kit.getByTestId('film-ec-motion-position-nav-add').getAttribute('aria-pressed')) === 'false')
       const second = await edited(() => typeInto('film-ec-motion-position-value-x', '100'), async () => (await fx('motion', 'position'))?.keyframes === 2)
       const lane = kit.getByTestId('film-ec-motion-position-lane')
@@ -5658,9 +5669,9 @@ try {
 
       // A text parameter (a text layer's Source Text): Escape leaves it and the history as they
       // were; ending a hot number's edit by clicking the text field leaves the focus there.
-      const made = await ai([{ command: 'graphics.newText', params: { text: 'Hello', position: [200, 200] } }])
+      const made = await person([{ command: 'graphics.newText', params: { text: 'Hello', position: [200, 200] } }])
       const textClip = made.completed[0].result?.clip
-      await ai([{ command: 'timeline.select', params: { clips: [textClip] } }])
+      await person([{ command: 'timeline.select', params: { clips: [textClip] } }])
       const sourceText = kit.getByTestId('film-ec-graphic_text-text-value')
       const textShown = await sourceText.waitFor({ timeout: 10000 }).then(() => true, () => false)
       const textOf = async () => (await clipOf(textClip))?.effects?.find((each) => each.effect === 'graphic_text')?.params?.text?.value ?? null
@@ -5718,7 +5729,7 @@ try {
     const markersBefore = (await markersOf()).length
     // Added at the playhead, as M does, so each sits on a frame.
     await edited(
-      () => ai([{ command: 'playhead.set', params: { frame: 3 } }, { command: 'markers.add', params: { name: 'First' } }, { command: 'playhead.set', params: { frame: 12 } }, { command: 'markers.add', params: { name: 'Second' } }, { command: 'playhead.set', params: { frame: 0 } }]),
+      () => person([{ command: 'playhead.set', params: { frame: 3 } }, { command: 'markers.add', params: { name: 'First' } }, { command: 'playhead.set', params: { frame: 12 } }, { command: 'markers.add', params: { name: 'Second' } }, { command: 'playhead.set', params: { frame: 0 } }]),
       async () => (await markersOf()).length === markersBefore + 2,
     )
     await kit.getByTestId('film-menu-Window').click()
@@ -5769,10 +5780,10 @@ try {
     const shownItem = kit.locator('[data-testid^="film-project-item-"]').first()
     const infoItem = Number((await shownItem.getAttribute('data-testid', { timeout: 10000 })).slice('film-project-item-'.length))
     await shownItem.click()
-    await until(async () => JSON.stringify((await ai([{ command: 'state.inspect', params: {} }])).completed[0].result.project_selection) === JSON.stringify([infoItem]))
+    await until(async () => JSON.stringify((await person([{ command: 'state.inspect', params: {} }])).completed[0].result.project_selection) === JSON.stringify([infoItem]))
     await kit.getByTestId('film-menu-Window').click()
     await kit.getByTestId('film-control-window.panel.Info').click()
-    const listedDuration = (await ai([{ command: 'project.items', params: { recursive: true } }])).completed[0].result.rows.find((row) => row.item === infoItem)?.info?.mediaDuration
+    const listedDuration = (await person([{ command: 'project.items', params: { recursive: true } }])).completed[0].result.rows.find((row) => row.item === infoItem)?.info?.mediaDuration
     const infoShows = await until(async () => {
       const text = (await kit.getByTestId('film-info-item').textContent({ timeout: 500 })) ?? ''
       return listedDuration != null && text.includes(listedDuration)
@@ -5986,7 +5997,7 @@ try {
   }
   // ---- The engine's events, the status bar, the remaining keys, and every panel's ids (Task 21).
   {
-    const ai = aiRun
+    const person = personRun
     const tabActive = (panel) => kit.getByTestId(`film-workspace-tab-${panel}`).getAttribute('aria-selected').then((value) => value === 'true').catch(() => false)
     // A tab the strip has no room for is reached through its frame's » list, as upstream's.
     const showTab = async (panel) => {
@@ -6014,7 +6025,7 @@ try {
     // (8 s; the development build's window.filmStatusMs shortens it here).
     const fail = async () => {
       // Reveal Nested Sequence (Cmd+Alt+F) with no nested sequence selected: the engine refuses it.
-      await ai([{ command: 'timeline.select', params: { clips: [] } }])
+      await person([{ command: 'timeline.select', params: { clips: [] } }])
       await kit.locator('.kui-app').focus()
       await page.keyboard.press('ControlOrMeta+Alt+f')
       return until(async () => (await kit.getByTestId('film-message').count()) === 1, 40)
@@ -6032,7 +6043,7 @@ try {
     // Match Frame (F) opens the clip under the playhead in the Source monitor and brings its tab forward (Event::OpenSource).
     const v1 = (await details()).sequence.video[0].items ?? []
     const under = v1[0]
-    await ai([{ command: 'playhead.set', params: { time: Math.round(under.start + under.duration / 2) } }])
+    await person([{ command: 'playhead.set', params: { time: Math.round(under.start + under.duration / 2) } }])
     const sourceBefore = await tabActive('source')
     await kit.locator('.kui-app').focus()
     await page.keyboard.press('f')
@@ -6045,7 +6056,7 @@ try {
     const sequenceItem = (await details()).project?.activeSequence
     const revealed = await until(async () => (await tabActive('project')) && (await kit.locator(`[data-testid="film-project-item-${sequenceItem}"][aria-selected="true"], [data-testid="film-project-item-${sequenceItem}"][data-selected="true"]`).count()) === 1, 40)
     step('Reveal Sequence in Project shows the Project panel with the sequence selected (Event::RevealInProject)', revealed, JSON.stringify({ sequenceItem, project: await tabActive('project') }))
-    // The agent's project.select changes no revision: Info follows it anyway (the session state is read after every refresh).
+    // A project.select (the person's, as a panel runs it) changes no revision: Info follows it anyway (the session state is read after every refresh).
     await showTab('info')
     const items = []
     const collect = (node) => {
@@ -6056,11 +6067,11 @@ try {
     const named = items.filter((item, index) => items.findIndex((other) => other.name === item.name) === index).slice(0, 2)
     const infoName = () => kit.getByTestId('film-info-item').locator('.film-info-title').textContent({ timeout: 300 }).catch(() => null)
     const revisionBefore = (await inspect()).revision
-    await ai([{ command: 'project.select', params: { items: [named[0].item] } }])
+    await person([{ command: 'project.select', params: { items: [named[0].item] } }])
     const firstShown = await until(async () => (await infoName()) === named[0].name, 40)
-    await ai([{ command: 'project.select', params: { items: [named[1].item] } }])
+    await person([{ command: 'project.select', params: { items: [named[1].item] } }])
     const secondShown = await until(async () => (await infoName()) === named[1].name, 40)
-    step("Info follows the agent's project.select, which moves no revision", named.length === 2 && firstShown && secondShown && (await inspect()).revision === revisionBefore, JSON.stringify({ named: named.map((item) => item.name), firstShown, secondShown, shown: await infoName() }))
+    step('Info follows a project.select, which moves no revision', named.length === 2 && firstShown && secondShown && (await inspect()).revision === revisionBefore, JSON.stringify({ named: named.map((item) => item.name), firstShown, secondShown, shown: await infoName() }))
     // The engine's wave-1 keys run in the editor: Home and End, Down to the next edit, D selects the clip at the playhead, ] raises its volume.
     await kit.getByTestId('film-workspace-tab-project').click()
     const focusTimeline = async () => {
@@ -6069,7 +6080,7 @@ try {
       await kit.locator('.kui-app').focus()
     }
     await focusTimeline()
-    await ai([{ command: 'playhead.set', params: { seconds: 0.5 } }, { command: 'timeline.select', params: { clips: [] } }])
+    await person([{ command: 'playhead.set', params: { seconds: 0.5 } }, { command: 'timeline.select', params: { clips: [] } }])
     const keyed = {}
     await page.keyboard.press('End')
     keyed.end = await until(async () => (await details()).playhead > 0 && (await details()).playhead >= ((await details()).sequence.duration ?? 0) - 254016000000, 40)
@@ -6077,7 +6088,7 @@ try {
     keyed.home = await until(async () => (await details()).playhead === 0, 40)
     await page.keyboard.press('ArrowDown')
     keyed.down = await until(async () => (await details()).playhead > 0, 40)
-    await ai([{ command: 'playhead.set', params: { time: Math.round(under.start + under.duration / 2) } }])
+    await person([{ command: 'playhead.set', params: { time: Math.round(under.start + under.duration / 2) } }])
     await page.keyboard.press('d')
     keyed.d = await until(async () => ((await details()).sequence.selection ?? []).includes(under.clip), 40)
     const volume = async () => ((await details()).sequence.video[0].items ?? []).concat(...((await details()).sequence.audio ?? []).map((track) => track.items ?? [])).find((item) => item.clip === under.clip)
@@ -6133,9 +6144,9 @@ try {
     const thumbsBack = await until(async () => (await thumbs()) > 0, 40)
     step("the Timeline panel menu's Video Thumbnails hides and shows the thumbnails", thumbsOn && thumbsOff && thumbsBack, JSON.stringify({ thumbsOn, thumbsOff, thumbsBack }))
     // Begin Text Editing (Cmd+Alt+'): the graphic's text layer opens in the Program monitor with its whole text selected.
-    const made = await ai([{ command: 'graphics.newText', params: { text: 'Title', seconds: 2, time: 0 } }, { command: 'playhead.set', params: { seconds: 0.5 } }])
+    const made = await person([{ command: 'graphics.newText', params: { text: 'Title', seconds: 2, time: 0 } }, { command: 'playhead.set', params: { seconds: 0.5 } }])
     const textClip = made.completed[0].result?.clip
-    await ai([{ command: 'timeline.select', params: { clips: [textClip] } }])
+    await person([{ command: 'timeline.select', params: { clips: [textClip] } }])
     await kit.locator('.kui-app').focus()
     await page.keyboard.press("ControlOrMeta+Alt+'")
     const field = kit.locator('[data-kit-ui-id="control:program.textEdit"]')
@@ -6144,7 +6155,7 @@ try {
     await page.keyboard.press('Escape')
     await kit.locator('.kui-app').focus()
     // Past the graphic's end the layer is selected, and the status bar says the picture does not show it.
-    await ai([{ command: 'playhead.set', params: { seconds: 5 } }, { command: 'timeline.select', params: { clips: [textClip] } }])
+    await person([{ command: 'playhead.set', params: { seconds: 5 } }, { command: 'timeline.select', params: { clips: [textClip] } }])
     await kit.locator('.kui-app').focus()
     await page.keyboard.press("ControlOrMeta+Alt+'")
     const notShown = await until(async () => ((text) => text.includes(zt('textNotShown')))((await kit.getByTestId('film-message').textContent({ timeout: 200 }).catch(() => '')) ?? ''), 40)
@@ -6198,7 +6209,7 @@ try {
   // this document): the preview ends and the dialog closes, since what it was drafted for is gone.
   {
     const first = (await details()).sequence.video.flatMap((track) => track.items ?? [])[0]
-    await page.evaluate(async (clip) => window.devHost.connection().ai.run([{ command: 'timeline.select', params: { clips: [clip] } }], false), first.clip)
+    await personRun([{ command: 'timeline.select', params: { clips: [first.clip] } }])
     await waitForEngine(page, (state) => state.details?.sequence?.selection?.includes(first.clip))
     const serialFrom = (await previewState()).serial
     await kit.getByTestId('film-menu-Clip').click()

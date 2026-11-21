@@ -1,14 +1,13 @@
 import { test, expect, clips } from './fixtures.mjs'
 
 for (const edits of [0, 205]) {
-  test(`F73 New Sequence From Clip remains one complete undo step after ${edits} prior edits`, async ({ film, page }) => {
+  test(`F73 New Sequence From Clip remains one complete undo step after ${edits} prior edits`, async ({ film }) => {
     await film.open()
     await film.command('file.newProject', { name: 'Compound history limit' })
     const { sequence: original } = await film.command('file.newSequence', { name: 'Original', width: 64, height: 36, fps: 24, video: 1, audio: 0 })
     const { item } = await film.command('file.newColorMatte', { color: '#ff0000', seconds: 0.5 })
-    const renamed = await page.evaluate(async ([item, edits]) => window.devHost.connection().ai.run(Array.from({ length: edits }, (_, i) => ({ command: 'clip.rename', params: { item, name: `Take ${i}` } })), false), [item, edits])
-    expect(renamed.failed).toBeFalsy()
-    expect(renamed.completed).toHaveLength(edits)
+    const renamed = await film.commands(Array.from({ length: edits }, (_, i) => ({ command: 'clip.rename', params: { item, name: `Take ${i}` } })))
+    expect(renamed).toHaveLength(edits)
     const before = await film.command('project.items')
     const { sequence, clips: placed } = await film.command('file.newSequenceFromClip', { items: [item] })
     expect(placed).toHaveLength(1)

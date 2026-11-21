@@ -12,10 +12,7 @@ for (const locked of ['V1', 'A1']) {
     const sequence = await film.sequence()
     const ids = [...clips(sequence), ...clips(sequence, 'audio')].map(clip => clip.clip)
     const before = editState(sequence), history = await film.history()
-    const error = await page.evaluate(async params => {
-      try { await window.devHost.connection().ai.run([{ command: 'clip.replaceFromBin', params }], false); return null }
-      catch (error) { return String(error) }
-    }, { item: replacement, clips: ids })
+    const error = await film.attempt('clip.replaceFromBin', { item: replacement, clips: ids })
     expect(editState(await film.sequence())).toEqual(before)
     expect(error).toContain('locked')
     expect(await film.history()).toEqual(history)

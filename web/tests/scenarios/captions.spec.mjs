@@ -6,13 +6,10 @@ async function setup(film) {
   await film.command('file.newSequence', { name: 'Captions', width: 320, height: 180, fps: 24, video: 1, audio: 0 })
 }
 
-test('F55 invalid first caption leaves no empty track; the first valid cue and track are one saved undo step', async ({ film, page }) => {
+test('F55 invalid first caption leaves no empty track; the first valid cue and track are one saved undo step', async ({ film }) => {
   await setup(film)
   const history = await film.history()
-  const result = await page.evaluate(async () => {
-    try { await window.devHost.connection().ai.run([{ command: 'captions.add', params: { track: 'C9', text: 'Invalid' } }], false); return null }
-    catch (error) { return String(error) }
-  })
+  const result = await film.attempt('captions.add', { track: 'C9', text: 'Invalid' })
   expect(result).toContain('no such caption track')
   expect((await film.command('captions.list')).tracks).toEqual([])
   expect(await film.history()).toEqual(history)

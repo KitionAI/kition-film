@@ -29,17 +29,35 @@ export const test = base.extend({
         await expect(page.locator('#status')).toContainText(' open in ', { timeout: 45_000 })
         await expect.poll(async () => (await this.inspect())?.details?.sequence != null).toBe(true)
         await this.kit.getByTestId('film-program-zoom').waitFor()
+        await expect.poll(() => this.frame()?.evaluate(() => typeof window.filmPreview?.run === 'function')).toBe(true)
       },
       inspect: () => page.evaluate(() => window.devHost.connection().ai.inspect()),
       async details() { return (await this.inspect()).details },
+      // The scenarios set up and edit as the person, through the editor's own `run` (development
+      // builds' `filmPreview.run`, as a menu or a key runs a command): an agent's `ai/run` acts in
+      // an editor state of its own (selection, playheads, open sequence and source; KHP C3b) and
+      // its steps are the agent's undo steps, which the person's Undo keeps (KitModel 1.1 M12a).
       async command(command, params = {}) {
-        const result = await page.evaluate(async ([command, params]) => window.devHost.connection().ai.run([{ command, params }], false), [command, params])
-        expect(result.failed, JSON.stringify(result)).toBeFalsy()
-        expect(result.completed, JSON.stringify(result)).toHaveLength(1)
-        return result.completed[0].result
+        return this.frame().evaluate(([command, params]) => window.filmPreview.run(command, params), [command, params])
+      },
+      /** Runs `steps` (`{ command, params }`) one after another as the person; answers their results. */
+      async commands(steps) {
+        return this.frame().evaluate(async steps => {
+          const results = []
+          for (const { command, params } of steps) results.push(await window.filmPreview.run(command, params ?? {}))
+          return results
+        }, steps)
+      },
+      /** Runs `command` as the person and answers why it was refused, or null when it ran. */
+      async attempt(command, params = {}) {
+        return this.frame().evaluate(async ([command, params]) => {
+          try { await window.filmPreview.run(command, params); return null }
+          catch (error) { return String(error?.message ?? error) }
+        }, [command, params])
       },
       async sequence() { return (await this.details()).sequence },
-      async history() { return this.command('history.list') },
+      // The person's history, as the History panel reads it.
+      async history() { return this.frame().evaluate(() => window.filmPreview.history()) },
       async configure(config) {
         await page.evaluate(config => window.devHost.configure(config), config)
         // A protocol round trip ensures the notification has reached the editor.

@@ -867,6 +867,9 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
   const playheadMoves = useCallback(() => moves.current, [])
   const queryNow = useRef<(id: string, params?: Record<string, unknown>) => Promise<unknown>>(async () => null)
   queryNow.current = query
+  // The person's `run` for development builds' `filmPreview.run` (the browser tests).
+  const personRun = useRef(session.run)
+  personRun.current = session.run
   const proxiesRead = useMemo(() => createProxiesRead(() => queryNow.current), [])
   const projectQuery = useMemo(() => shareTurnReads((id, params) => queryNow.current(id, params), new Set(['project.view.get'])), [])
   const seekTicks = useCallback((ticks: number) => (moves.current += 1, runQuietly('playhead.set', { time: Math.max(0, Math.round(ticks)) }).catch(() => undefined)), [runQuietly])
@@ -1248,6 +1251,21 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
       state: () => previewContext.preview.get(),
       // The person's undo history, as the History panel reads it (the agent's is its own).
       history: () => queryNow.current('history.list'),
+      // A command run as the person, through the session's `run` as a menu or a key runs it, but
+      // aimed at no monitor unless its params name one (`target`, `monitor`): the browser tests
+      // set up and edit as the person, since an agent's `ai/run` acts in an editor state and an
+      // undo history of its own (KHP C3b, KitModel 1.1 M12a). Answers the command's result,
+      // parsed; throws the engine's refusal.
+      run: async (command: string, params: Record<string, unknown> = {}) => {
+        const aimed = 'target' in params || 'monitor' in params ? params : { ...params, monitor: 'program' }
+        const answer = await personRun.current(command, aimed)
+        if (typeof answer !== 'string') return answer
+        try {
+          return JSON.parse(answer) as unknown
+        } catch {
+          return answer
+        }
+      },
       inspect: () => previewContext.preview.inspect(),
       // What the open preview changed, read from the engine whatever its kinds (a picture-only
       // preview reads no diff of its own): the flow checks a frame hold or a field option by it.
