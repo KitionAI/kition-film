@@ -219,36 +219,23 @@ const personHistory = async () => (await kitFrame().evaluate(() => window.filmPr
 /**
  * Whose step is the latest undoable one: the flow edits as the person (keys, clicks, dialogs,
  * `personRun`) and, where a step tests the agent, as the agent (`agentRun`), and each has its own
- * history (M12a). The order of their steps, oldest first, is kept from the person's history
- * length and from what each agent run added to or took from the agent's, so `undoLatest` takes
- * back the newest step whoever made it, as one shared history did. Only `agentRun` notes agent
- * steps: what the agent's history.list answers between its runs is not read.
+ * history (M12a). The agent's steps are the newest while the person's history reads as it did
+ * when the agent's last run ended (any person step or undo since makes the person's newer), so
+ * `undoLatest` takes back the newest step whoever made it, as one shared history did.
  */
-const stepOrder = []
-let seenPerson = 0
-const forget = (who, count) => {
-  for (let gone = count; gone > 0; gone -= 1) {
-    const at = stepOrder.lastIndexOf(who)
-    if (at >= 0) stepOrder.splice(at, 1)
-  }
-}
-const notePerson = async () => {
-  const length = (await personHistory().catch(() => [])).length
-  forget('person', seenPerson - length)
-  for (let made = length - seenPerson; made > 0; made -= 1) stepOrder.push('person')
-  seenPerson = length
-}
-/** Runs `steps` as the agent (`ai/run`), noting the person's steps made before it and the agent's it makes or takes back. */
+let agentNewest = null
+const personNow = async () => JSON.stringify(await personHistory().catch(() => []))
+/** Runs `steps` as the agent (`ai/run`), noting the agent steps it makes or takes back. */
 const agentRun = async (steps) => {
-  await notePerson()
+  const person = await personNow()
   const before = (await agentHistory().catch(() => [])).length
   try {
     return await page.evaluate(async (list) => window.devHost.connection().ai.run(list, false), steps)
   } finally {
-    const after = (await agentHistory().catch(() => [])).length
-    forget('agent', before - after)
-    for (let made = after - before; made > 0; made -= 1) stepOrder.push('agent')
-    await notePerson()
+    const made = (await agentHistory().catch(() => [])).length - before
+    const kept = agentNewest && agentNewest.person === person ? agentNewest.steps : 0
+    const steps = kept + made
+    agentNewest = steps > 0 ? { steps, person: await personNow() } : null
   }
 }
 /**
@@ -270,8 +257,7 @@ const personRun = async (steps, on = page) => {
 }
 /** Takes back the newest step: the agent's with its `edit.undo`, the person's with Ctrl+Z. */
 const undoLatest = async () => {
-  await notePerson()
-  if (stepOrder.at(-1) === 'agent') {
+  if (agentNewest && agentNewest.person === (await personNow())) {
     await agentRun([{ command: 'edit.undo', params: {} }])
   } else {
     await page.frameLocator('#kit').locator('.kui-app').focus()
@@ -1200,15 +1186,14 @@ try {
     await card.click({ button: 'right' })
     await kit.getByTestId('film-project-item-new-sequence').click()
     const madeSequence = await until(async () => (await sequences()).length === sequencesBefore.length + 1 && (await undoSteps()).at(-1) === 'New Sequence From Clip')
-    // As upstream's engine, it is two history steps (New Sequence, then New Sequence From Clip placing
-    // the clip): the first Cmd+Z empties the new sequence, the second removes it.
-    const twoSteps = JSON.stringify((await undoSteps()).slice(-2)) === JSON.stringify(['New Sequence', 'New Sequence From Clip'])
+    // The engine collapses it into one history step (New Sequence and the clip placed in it,
+    // `collapse_history`, as file.newSequenceFromClip is; scenario F73): one Cmd+Z removes it.
+    const stepsMade = await undoSteps()
+    const oneStep = stepsMade.at(-1) === 'New Sequence From Clip' && stepsMade.at(-2) !== 'New Sequence'
     await kit.locator('.kui-app').focus()
     await page.keyboard.press('ControlOrMeta+z')
-    const firstUndo = await until(async () => (await undoSteps()).at(-1) === 'New Sequence' && (await sequences()).length === sequencesBefore.length + 1)
-    await page.keyboard.press('ControlOrMeta+z')
-    const secondUndo = await until(async () => (await sequences()).length === sequencesBefore.length && (await details()).project?.activeSequence === sequencesBefore[0], 100)
-    step('New Sequence From Clip makes a sequence from the item; Cmd+Z twice takes it back, as upstream\'s two steps', madeSequence && twoSteps && firstUndo && secondUndo, JSON.stringify({ madeSequence, twoSteps, firstUndo, secondUndo }))
+    const undone = await until(async () => (await sequences()).length === sequencesBefore.length && (await details()).project?.activeSequence === sequencesBefore[0], 100)
+    step('New Sequence From Clip makes a sequence from the item in one history step; Cmd+Z takes it back', madeSequence && oneStep && undone, JSON.stringify({ madeSequence, oneStep, undone, last: stepsMade.slice(-2) }))
     // Up One Level goes back to the project's root; the panel menu and New Item menu carry declared ids.
     await kit.getByTestId('film-project-up').click()
     await until(async () => (await kit.getByTestId('film-project-breadcrumb').textContent()) === 'Sample.kfilm')
