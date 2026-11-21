@@ -166,6 +166,21 @@ export function useProgramGraphics(options: Options) {
   const hover = useRef<Point | null>(null)
   const preview = useRef<Preview | null>(null)
   const layerDrag = useRef<LayerDrag | null>(null)
+  /** While a Type box drag is held: it has no cancel, so Escape pressed during it changes nothing. */
+  const typeBoxHeld = useRef<(() => boolean) | null>(null)
+  // A Type box drag ends on its release whatever happens (as upstream's): Escape pressed during it
+  // reaches nothing. Listened to on the window from the monitor's first layout, before the canvas's
+  // own Escape (kit-editor drops any held gesture on Escape, registered in its effect).
+  useLayoutEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.isComposing || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return
+      if (!typeBoxHeld.current?.()) return
+      event.preventDefault()
+      event.stopImmediatePropagation()
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [])
   const svg = useRef<SVGSVGElement>(null)
   // What a host lets the layers' boxes, handles, and anchor point do (hidden: not drawn; disabled or denied: no drag).
   const ui = useUi()
@@ -728,7 +743,11 @@ export function useProgramGraphics(options: Options) {
         const target = pressTarget(views, shown.selected, current, press, { anchor: grant.anchor.usable, handle: grant.handle.usable })
         if (current === 'Rectangle' || current === 'Ellipse') kind = 'shape'
         else if (target) startLayer(target.kind, target.view, target.n)
-        else if (current === 'Type' && !layerAt(shown.layers, origin, zoom(), (each) => each.kind === 'text')) kind = 'textBox'
+        else if (current === 'Type' && !layerAt(shown.layers, origin, zoom(), (each) => each.kind === 'text')) {
+          kind = 'textBox'
+          const held = () => !released && !cancelled && kind === 'textBox'
+          typeBoxHeld.current = held
+        }
         else if (current === 'Selection') {
           // Upstream ends the edit, selects the layer if it is not, and moves it.
           const hit = layerAt(shown.layers, origin, zoom())
@@ -811,6 +830,7 @@ export function useProgramGraphics(options: Options) {
         },
         end: (pointer) => {
           released = true
+          typeBoxHeld.current = null
           detach()
           if (preview.current) {
             preview.current = null
@@ -857,6 +877,7 @@ export function useProgramGraphics(options: Options) {
         cancel: () => {
           released = true
           cancelled = true
+          typeBoxHeld.current = null
           detach()
           clearOutline()
           preview.current = null
