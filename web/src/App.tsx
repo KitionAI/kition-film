@@ -834,7 +834,15 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
     // While playing, the program playhead repaints the monitor only and the source playhead refreshes nothing; a stop refreshes everything once.
     // While a picture preview covers the Program monitor, playback leaves the program unpainted: the preview draws there.
     // So does a channel display mode, whose picture the Program monitor draws from a reduced copy.
-    run: (id, params, refresh) => runQuietly(id, params, null, { refresh: playbackRefresh(refresh, previewCovers.current() || programCovered.current) }),
+    run: async (id, params, refresh) => {
+      const context = sourceContextNow.current
+      const opened = docNow.current
+      const answer = await runQuietly(id, params, null, { refresh: playbackRefresh(refresh, previewCovers.current() || programCovered.current) })
+      // A source seek acknowledged after the Source was replaced brings the engine's info as it was
+      // then (its Source clip): read the info again, so the editor never shows the old Source.
+      if (id === 'source.setPlayhead' && opened && docNow.current === opened && sourceContextNow.current !== context) await opened.refreshInfo().catch(() => undefined)
+      return answer
+    },
     audio: () => {
       const player = new FilmAudioPlayer(() => docNow.current, { onError: status })
       // The Audio Meters read the Mix as it is scheduled, on the player's own clock; source playback is not metered, as upstream.
