@@ -312,8 +312,11 @@ fn fixtures(only: &[String]) -> Result<(), String> {
 fn ci() -> Result<(), String> {
     let cargo = env!("CARGO");
     run(Command::new(cargo).args(["fmt", "--check"]))?;
-    run(Command::new(cargo).args(["clippy", "--workspace", "--all-targets", "--release", "--", "-D", "warnings"]))?;
-    run(Command::new(cargo).args(["test", "--workspace", "--release"]))?;
+    // The dev profile, as Kition's kit CI builds it before this runs (its codec crates at
+    // opt-level 3): the release profile's build of the ~300 test binaries alone took longer than
+    // the CI job may run.
+    run(Command::new(cargo).args(["clippy", "--workspace", "--all-targets", "--", "-D", "warnings"]))?;
+    run(Command::new(cargo).args(["test", "--workspace"]))?;
     layers()?;
     assets()?;
     wasm()
