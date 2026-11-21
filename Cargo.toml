@@ -80,11 +80,16 @@ too_many_arguments = "allow"
 needless_range_loop = "allow"
 type_complexity = "allow"
 
+# Debug info: line tables for the kit's crates (backtraces keep file and line) and none for
+# dependencies. Full debug info in each of the ~300 test binaries filled a GitHub runner's disk
+# during `cargo test --workspace`.
 [profile.dev.package."*"]
 opt-level = 2
+debug = false
 
 [profile.dev]
 opt-level = 1
+debug = "line-tables-only"
 
 # Codec hot loops: debug-build tests (RFC/oracle vectors) are minutes slower below opt-level 3.
 [profile.dev.package.kition-film-h264]

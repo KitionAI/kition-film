@@ -1564,7 +1564,6 @@ dependencies = [
 name = "kition-film-av1"
 version = "0.5.0"
 dependencies = [
- "kition-film-bitstream",
  "kition-film-testkit",
  "rayon",
  "rustix",
@@ -1641,7 +1640,6 @@ dependencies = [
 name = "kition-film-dnx"
 version = "0.5.0"
 dependencies = [
- "kition-film-bitstream",
  "kition-film-testkit",
  "rayon",
  "thiserror 2.0.21",
@@ -1972,7 +1970,6 @@ name = "kition-film-text"
 version = "0.5.0"
 dependencies = [
  "harfrust",
- "kition-film-color",
  "skrifa",
  "unicode-bidi",
  "unicode-linebreak",
