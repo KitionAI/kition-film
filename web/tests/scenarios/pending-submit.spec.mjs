@@ -9,7 +9,8 @@ for (const interruption of ['replacement project', 'permissions', 'newer dialog'
     const gate = await holdWorkerReply(film, 'previewEnd')
     await film.kit.getByTestId('film-dialog-ok').click()
     await gate.wait()
-    if (interruption === 'replacement project') await film.command('file.newProject', { name: 'Replacement stays empty' })
+    // The person's dialog holds the document (a preview ending): the agent replaces the project.
+    if (interruption === 'replacement project') await film.agent('file.newProject', { name: 'Replacement stays empty' })
     else if (interruption === 'permissions') {
       await film.configure({ disable: ['command:file.newSequence'] })
       await film.configure({ disable: [] })

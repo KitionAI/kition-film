@@ -48,6 +48,16 @@ export const test = base.extend({
           return results
         }, steps)
       },
+      /**
+       * Runs `command` as the agent (`ai/run`), where a scenario needs a change the person cannot
+       * make at that moment (a project replaced while the person's dialog waits); answers its result.
+       */
+      async agent(command, params = {}) {
+        const result = await page.evaluate(async ([command, params]) => window.devHost.connection().ai.run([{ command, params }], false), [command, params])
+        expect(result.failed, JSON.stringify(result)).toBeFalsy()
+        expect(result.completed, JSON.stringify(result)).toHaveLength(1)
+        return result.completed[0].result
+      },
       /** Runs `command` as the person and answers why it was refused, or null when it ran. */
       async attempt(command, params = {}) {
         return this.frame().evaluate(async ([command, params]) => {

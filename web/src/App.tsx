@@ -867,9 +867,16 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
   const playheadMoves = useCallback(() => moves.current, [])
   const queryNow = useRef<(id: string, params?: Record<string, unknown>) => Promise<unknown>>(async () => null)
   queryNow.current = query
-  // The person's `run` for development builds' `filmPreview.run` (the browser tests).
-  const personRun = useRef(session.run)
-  personRun.current = session.run
+  // The person's `run` for development builds' `filmPreview.run` (the browser tests): the session's
+  // `run`, after which the Source monitor reads its clip again for a source command, as `invoke`'s does.
+  const personRun = useRef<(id: string, params: Record<string, unknown>) => Promise<string | null>>(async () => null)
+  personRun.current = async (id, params) => {
+    try {
+      return await session.run(id, params)
+    } finally {
+      if (id.startsWith('source.') || targetsSource(focusedNow.current, params)) void playback.readSource()
+    }
+  }
   const proxiesRead = useMemo(() => createProxiesRead(() => queryNow.current), [])
   const projectQuery = useMemo(() => shareTurnReads((id, params) => queryNow.current(id, params), new Set(['project.view.get'])), [])
   const seekTicks = useCallback((ticks: number) => (moves.current += 1, runQuietly('playhead.set', { time: Math.max(0, Math.round(ticks)) }).catch(() => undefined)), [runQuietly])

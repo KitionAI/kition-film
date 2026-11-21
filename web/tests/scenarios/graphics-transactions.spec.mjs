@@ -46,11 +46,14 @@ for (const edits of [0, 205]) {
       await film.command('clip.rename', { item, name: 'Redo survives' })
       await film.command('edit.undo')
       const before = await snapshot(film)
-      expect(await refusal(film, `graphics.template.${operation}`, { template, clip, values: { title: 'Must roll back', zz_unknown: 'invalid' } })).toContain('zz_unknown')
+      // Apply names the template and set the clip: a command refuses a parameter it does not take
+      // (engine rule E7a), so each gets only its own, and the unknown property is what it refuses.
+      const target = operation === 'set' ? { clip } : { template }
+      expect(await refusal(film, `graphics.template.${operation}`, { ...target, values: { title: 'Must roll back', zz_unknown: 'invalid' } })).toContain('zz_unknown')
       expect(await snapshot(film)).toEqual(before)
       await film.command('edit.redo')
       expect((await film.command('project.items')).rows.find(row => row.item === item).name).toBe('Redo survives')
-      const result = await film.command(`graphics.template.${operation}`, { template, clip, values: { title: 'Recovered' } })
+      const result = await film.command(`graphics.template.${operation}`, { ...target, values: { title: 'Recovered' } })
       await film.saveReopen()
       expect(await values(film, result.clip)).toMatchObject({ title: 'Recovered' })
     })

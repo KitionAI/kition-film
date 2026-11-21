@@ -217,31 +217,38 @@ const kitFrame = () => page.frames().find((candidate) => candidate.url().include
 const agentHistory = async () => (await page.evaluate(async () => window.devHost.connection().ai.run([{ command: 'history.list', params: {} }], false))).completed[0].result?.undo ?? []
 const personHistory = async () => (await kitFrame().evaluate(() => window.filmPreview.history()))?.undo ?? []
 /**
- * Whose step is the latest undoable one: the flow edits as the person (keys, clicks, dialogs)
- * and as the agent (`agentRun`), and each has its own history (M12a). The order of their steps,
- * oldest first, is kept from the two histories' lengths read around every agent run, so
- * `undoLatest` takes back the newest step whoever made it, as one shared history did.
+ * Whose step is the latest undoable one: the flow edits as the person (keys, clicks, dialogs,
+ * `personRun`) and, where a step tests the agent, as the agent (`agentRun`), and each has its own
+ * history (M12a). The order of their steps, oldest first, is kept from the person's history
+ * length and from what each agent run added to or took from the agent's, so `undoLatest` takes
+ * back the newest step whoever made it, as one shared history did. Only `agentRun` notes agent
+ * steps: what the agent's history.list answers between its runs is not read.
  */
 const stepOrder = []
-const seenSteps = { person: 0, agent: 0 }
-const noteSteps = async () => {
-  const lengths = { person: (await personHistory().catch(() => [])).length, agent: (await agentHistory().catch(() => [])).length }
-  for (const who of ['person', 'agent']) {
-    for (let gone = seenSteps[who] - lengths[who]; gone > 0; gone -= 1) {
-      const at = stepOrder.lastIndexOf(who)
-      if (at >= 0) stepOrder.splice(at, 1)
-    }
-    for (let made = lengths[who] - seenSteps[who]; made > 0; made -= 1) stepOrder.push(who)
-    seenSteps[who] = lengths[who]
+let seenPerson = 0
+const forget = (who, count) => {
+  for (let gone = count; gone > 0; gone -= 1) {
+    const at = stepOrder.lastIndexOf(who)
+    if (at >= 0) stepOrder.splice(at, 1)
   }
 }
-/** Runs `steps` as the agent (`ai/run`), noting the person's steps made before it and the agent's it makes. */
+const notePerson = async () => {
+  const length = (await personHistory().catch(() => [])).length
+  forget('person', seenPerson - length)
+  for (let made = length - seenPerson; made > 0; made -= 1) stepOrder.push('person')
+  seenPerson = length
+}
+/** Runs `steps` as the agent (`ai/run`), noting the person's steps made before it and the agent's it makes or takes back. */
 const agentRun = async (steps) => {
-  await noteSteps()
+  await notePerson()
+  const before = (await agentHistory().catch(() => [])).length
   try {
     return await page.evaluate(async (list) => window.devHost.connection().ai.run(list, false), steps)
   } finally {
-    await noteSteps()
+    const after = (await agentHistory().catch(() => [])).length
+    forget('agent', before - after)
+    for (let made = after - before; made > 0; made -= 1) stepOrder.push('agent')
+    await notePerson()
   }
 }
 /**
@@ -263,9 +270,9 @@ const personRun = async (steps, on = page) => {
 }
 /** Takes back the newest step: the agent's with its `edit.undo`, the person's with Ctrl+Z. */
 const undoLatest = async () => {
-  await noteSteps()
+  await notePerson()
   if (stepOrder.at(-1) === 'agent') {
-    await page.evaluate(async () => window.devHost.connection().ai.run([{ command: 'edit.undo', params: {} }], false))
+    await agentRun([{ command: 'edit.undo', params: {} }])
   } else {
     await page.frameLocator('#kit').locator('.kui-app').focus()
     await page.keyboard.press('ControlOrMeta+z')

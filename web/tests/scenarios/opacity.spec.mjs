@@ -18,7 +18,7 @@ test('F40 opacity keyframes blend two video tracks in linear light; disabling th
   const before = await film.sequence()
   await film.command('effects.setParam', { ...param, value: 100, time: 11 * TICKS / 24 })
   const after = await film.sequence()
-  expect(after.video[1].items[0].effects.find(effect => effect.effect === 'opacity').params.opacity.keyframes).toBe(2)
+  expect(after.video[1].items[0].effects.find(effect => effect.effect === 'opacity').params.opacity.keyframes).toHaveLength(2)
   await film.undo()
   await expect.poll(async () => editState(await film.sequence())).toEqual(editState(before))
   await film.redo()
