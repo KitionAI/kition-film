@@ -15,7 +15,7 @@ fn blocked_commands_cannot_reach_handlers_directly_or_through_raw_model_batches(
     let workspace = tempfile::tempdir().unwrap();
     std::fs::write(workspace.path().join(FILE), project(1)).unwrap();
     let folder = HostFolder::new(workspace.path()).unwrap();
-    let info = KitInfo::from_manifest(include_str!("../../../kit.json"), kition_film_kit::files::AGENT_FILE_COMMANDS, &[]).unwrap();
+    let info = KitInfo::from_manifest(include_str!("../../../kit.json"), kition_film_kit::files::AGENT_FILE_COMMANDS, kition_film_kit::EDITOR_STATE).unwrap();
     let mut kit = Headless::<FilmDocument>::with_replica_port(info);
     kit.set_host(folder.host());
     let opened = kit.open(OpenRequest { file: &folder.file(FILE).unwrap(), read_only: false, create: None }).unwrap();

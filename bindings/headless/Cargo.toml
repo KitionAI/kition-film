@@ -23,5 +23,7 @@ serde_json = { workspace = true }
 kition-kits = { workspace = true }
 kition-film-format = { workspace = true }
 kition-film-project = { workspace = true }
+# document.identity and document.fork through the real process (tests/identity.rs).
+kition-kit-host = { workspace = true }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 tempfile = "3"

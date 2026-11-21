@@ -174,7 +174,7 @@ fn act(root: &Path) -> Vec<String> {
     std::fs::write(workspace.join("clip.mov"), maker.take_file("clip.mov").unwrap()).unwrap();
     std::fs::write(workspace.join(NAME), maker.save(None).unwrap()).unwrap();
 
-    let info = KitInfo::from_manifest(include_str!("../../../kit.json"), &["file.import"], &[]).unwrap();
+    let info = KitInfo::from_manifest(include_str!("../../../kit.json"), &["file.import"], kition_film_kit::EDITOR_STATE).unwrap();
     let mut agent = Agent { kit: Headless::<FilmDocument>::with_replica_port(info), folder: HostFolder::new(&workspace).unwrap(), answers: Vec::new() };
     agent.kit.set_host(agent.folder.host());
     let id = agent.open(NAME);

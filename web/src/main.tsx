@@ -22,7 +22,7 @@ const UPSTREAM = import.meta.glob('./i18n/upstream/*.tsv', { query: '?raw', impo
 
 // `replica`: in a host that keeps replicas, an `.kfilm` keeps its KDM replica (identity,
 // collaboration) across saves; elsewhere the editor opens and saves files as before.
-void connectHost({ id: 'kit.film', version: '0.1.0', capabilities: ['ai', 'replica'], brand: manifest.ui.brand, display: manifest.ui.display, ui: FILM_UI }).then(async (host) => {
+void connectHost({ id: 'kit.film', version: '0.1.1', capabilities: ['ai', 'replica'], brand: manifest.ui.brand, display: manifest.ui.display, ui: FILM_UI }).then(async (host) => {
   window.clearTimeout(alone)
   const locale = host.init.locale
   // `quiet` translates engine and error text when the catalog has it, and is never recorded (`errorStatus`).

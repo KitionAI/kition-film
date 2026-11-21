@@ -21,7 +21,8 @@ fn a_parameter_of_the_wrong_type_is_refused() {
     let root = std::fs::canonicalize(root).unwrap();
     let file = root.join("a.kfilm");
     std::fs::write(&file, FilmDocument::create("a.kfilm", 320, 180).unwrap().save(None).unwrap()).unwrap();
-    let mut kit = Headless::<FilmDocument>::new(KitInfo::from_manifest(include_str!("../../../kit.json"), &["file.import"], &[]).unwrap());
+    let mut kit =
+        Headless::<FilmDocument>::new(KitInfo::from_manifest(include_str!("../../../kit.json"), &["file.import"], kition_film_kit::EDITOR_STATE).unwrap());
     let folder = HostFolder::new(&root).unwrap();
     kit.set_host(folder.host());
     let id = kit.open(OpenRequest { file: &folder.file("a.kfilm").unwrap(), read_only: false, create: None }).unwrap().id;

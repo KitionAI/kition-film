@@ -1,5 +1,5 @@
 //! The blind readings describe engine handlers. These paths have no agent
-//! dispatch: files.rs:94-123, collab.rs:137-140 and headless/src/main.rs:13-20
+//! dispatch: files.rs:94-123, collab.rs:137-140 and headless/src/main.rs:15-32
 //! reject by command before reading parameters, including raw model.batch.
 //! Keep the original readings; do not infer that their engine premises are exact.
 use kition_film_kit::files;
@@ -68,7 +68,7 @@ pub fn compared_path(command: &str, path: &str) -> bool {
     let hash = |source: &str| source.bytes().fold(0xcbf29ce484222325u64, |hash, byte| (hash ^ u64::from(byte)).wrapping_mul(0x100000001b3));
     PATHS.contains(&(command, path))
         && hash(include_str!("../../src/files.rs")) == 0xbcb45df58401d79f
-        && hash(include_str!("../../../headless/src/main.rs")) == 0xcaa7591b480deb2c
+        && hash(include_str!("../../../headless/src/main.rs")) == 0xc870109526ea3c97
         && hash(include_str!("../../src/collab.rs")) == 0x853a599e3d37140d
 }
 

@@ -1,6 +1,6 @@
 format: 1
 kit: film
-updated: "2026-11-17"
+updated: "2026-11-20"
 gate_budget_s: 600
 protected: []
 features:
@@ -107,6 +107,14 @@ features:
     paths: [kit.json, bindings/wasm/src/text.rs, bindings/wasm/src/lib.rs]
     cases: [film.platform.document-text/titles-and-captions]
     since: "2026-11-17"
+  - id: film.platform.document-identity
+    title: "A host asks the document id a .kfilm carries and forks a copied project (document.identity, document.fork; Kit Process Protocol 5.6): a .kfilm embeds no replica, so it carries none and forks into the same bytes"
+    dimension: [platform, data-safety]
+    priority: P1
+    status: has
+    paths: [bindings/headless/src/main.rs, kit.json]
+    cases: [film.platform.document-identity/no-replica]
+    since: "2026-11-20"
   - id: film.sequence.add-edit
     title: "Cut linked clips at a time (Add Edit); the cut survives undo, redo, saving and reopening"
     dimension: [function, data-safety]

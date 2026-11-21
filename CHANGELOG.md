@@ -3,6 +3,11 @@
 Changes to Kition Film, newest first. A version is the kit package version in `kit.json`;
 each package is published with a `package-v<version>` tag.
 
+## 0.1.1
+
+- A host asks the document id a project file carries (`document.identity`) and forks a copied project (`document.fork`), Kit Process Protocol section 5.6 (kition-sdk 6672663). A `.kfilm` is the project as JSON and embeds no replica, so it carries no identity and its fork is the same bytes.
+- The headless program speaks Kit Process Protocol version 1 (`headless.protocol` is `kition-kit/1`), as hosts on kition-sdk from bb1b07b require.
+
 ## 0.1.0
 
 First public release of the source, under the Apache License 2.0. It contains:

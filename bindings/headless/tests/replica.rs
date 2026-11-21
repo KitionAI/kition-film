@@ -16,7 +16,7 @@ const SCHEMA: &str = include_str!("../../../crates/kdm/kdm-model/model/schema.js
 const NAME: &str = "Edit.kfilm";
 
 fn kit() -> Headless<FilmDocument> {
-    Headless::with_replica_port(KitInfo::from_manifest(MANIFEST, &["file.import"], &[]).unwrap())
+    Headless::with_replica_port(KitInfo::from_manifest(MANIFEST, &["file.import"], kition_film_kit::EDITOR_STATE).unwrap())
 }
 
 const BASE64: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
