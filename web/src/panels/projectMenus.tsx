@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ContextMenu, MenuItem, MenuSeparator, SubMenu, type ContextMenuPoint, type Phrases } from '@kition/kit-editor'
+import { ContextMenu, MenuItem, MenuSeparator, SubMenu, type ContextMenuPoint, type Phrases } from '@kition/sdk/editor'
 import { FILM_MENUS } from '../menus/catalog'
 import type { FilmLabels } from '../session/useFilmSession'
 import { FONT_SIZES, type ProjectRow, type ProjectUi, type ProjectView } from './projectModel'

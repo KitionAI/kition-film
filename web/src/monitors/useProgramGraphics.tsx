@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
-import { HAND_TOOL, oneInFlight, useUi, type KitCanvasView, type KitEngine, type KitPointer, type KitTool, type Phrases } from '@kition/kit-editor'
+import { HAND_TOOL, oneInFlight, useUi, type KitCanvasView, type KitEngine, type KitPointer, type KitTool, type Phrases } from '@kition/sdk/editor'
 import { documentReplaced } from '../dialogs/preview'
 import { CLICK_MS, DRAG_THRESHOLD } from '../timeline/gestures'
 import {

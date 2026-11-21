@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { formatTimecode, useUi, type KitEngine, type Phrases } from '@kition/kit-editor'
+import { formatTimecode, useUi, type KitEngine, type Phrases } from '@kition/sdk/editor'
 import { TICKS_PER_SECOND } from '../film'
 import { decodeFrame } from '../dialogs/preview'
 import { frameWidth } from './frameSize'

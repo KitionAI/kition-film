@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react'
-import type { Phrases } from '@kition/kit-editor'
+import type { Phrases } from '@kition/sdk/editor'
 import { AboutTabs } from '../menus/AboutDialog'
 import { AudioGainBody, InterpretBody } from './clipBodies'
 import { AudioChannelsBody, SourceSettingsBody, SyncBody } from './clipStructureBodies'

@@ -1,5 +1,5 @@
 import { useMemo, useSyncExternalStore } from 'react'
-import { catalogTabs, type FrameTab, type Phrases } from '@kition/kit-editor'
+import { catalogTabs, type FrameTab, type Phrases } from '@kition/sdk/editor'
 import { FILM_MENUS, menuChecked, withLabelNames, withLiveShortcuts, withWorkspaces, type MenuState } from './catalog'
 import { isHiddenOnWeb } from './hidden'
 import type { FilmLabels } from '../session/useFilmSession'

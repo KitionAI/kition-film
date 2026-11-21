@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { contains, isVisible, panelsOf } from '@kition/kit-editor/workspaceTree'
+import { contains, isVisible, panelsOf } from '@kition/sdk/editor/workspaceTree'
 import { FILM_WORKSPACES, FILM_PANEL_IDS, COMPACT_PANELS, panelFromName, showPanel, cyclePanel, toggleMaximized } from './presets.ts'
 
 const manifest = JSON.parse(readFileSync(new URL('../../parity/film-upstream.json', import.meta.url), 'utf8'))
@@ -76,7 +76,7 @@ test('showPanel restores the Timeline beside a lone Audio Meters frame (restore_
 })
 
 test('closing History in Editing and showing it again brings it back into the Project frame', async () => {
-  const { closePanel } = await import('@kition/kit-editor/workspaceTree')
+  const { closePanel } = await import('@kition/sdk/editor/workspaceTree')
   const closed = closePanel(FILM_WORKSPACES.Editing, 'history')
   assert.ok(!contains(closed, 'history'))
   const shown = showPanel(closed, 'history')

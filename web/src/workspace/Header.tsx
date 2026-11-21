@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { TesseraIcons } from '@kition/kit-editor'
-import { ContextMenu, MenuItem, MenuSeparator, type ContextMenuPoint, type Phrases } from '@kition/kit-editor'
+import { TesseraIcons } from '@kition/sdk/editor'
+import { ContextMenu, MenuItem, MenuSeparator, type ContextMenuPoint, type Phrases } from '@kition/sdk/editor'
 import { workspaceSlug } from '../menus/catalog'
 
 const Bell = TesseraIcons.BellIcon

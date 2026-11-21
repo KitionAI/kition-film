@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent as ReactDragEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type RefObject } from 'react'
-import { isMac, useUi, type ContextMenuPoint } from '@kition/kit-editor'
+import { isMac, useUi, type ContextMenuPoint } from '@kition/sdk/editor'
 import type { FilmInfo, FilmProjectItem } from '../film'
 import type { FilmSessionState } from '../session/useFilmSession'
 import { scrollHalf, zoomAt } from './layout'

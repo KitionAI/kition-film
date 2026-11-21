@@ -6,7 +6,7 @@
 |---|---|
 | `crates/` | The engine, in groups: `media/` (time base, bitstream reader, frames, media sources, the container and codec crates, and `codecs`, which joins them), `engine/` (`project`, `edit`, `engine`, `audio-dsp`, `captions`, `speech`, `scopes`), `render/` (the compositor, effects, transitions and audio mix), `formats/` (`format`, the `.kfilm` file; `export`, `interchange`, `cfb`), `support/` (`geom`, `color`, `text`, `testkit`) and `kdm/` (`kdm-model`) |
 | `bindings/` | `wasm`: `kition-film-kit`, the engine behind the Kition SDK's `KitDocument`, compiled to WebAssembly for the editor; `headless`: `kition-film`, the headless executable that Kition's agent drives |
-| `web/` | The editor (React, on `@kition/kit-editor`); a host shows it in an iframe, and `web/dev.html` is a host for development |
+| `web/` | The editor (React, on `@kition/sdk/editor`); a host shows it in an iframe, and `web/dev.html` is a host for development |
 | `kit.json` | The kit manifest |
 | `agent/` | The agent guide (`guide.md`) and checks |
 | `conformance/` | The agent conformance fixtures (`.kfilm` projects) that cases and tests refer to |
@@ -41,14 +41,14 @@ The Rust engine pins the public SDK revision in `Cargo.toml`.
 Dev builds compile dependencies at `opt-level = 2` and workspace crates at `opt-level = 1` (the
 codec crates listed in `Cargo.toml` at 3). For codec speed, use `--release`.
 
-By default `pnpm install` in `web/` installs the published `@kition/*` packages from npm, at the
-versions the committed `web/pnpm-lock.yaml` pins, so the editor needs no other checkout. To work
-against local checkouts instead, run `KITION_LINK=1 pnpm install` in `web/`: `web/.pnpmfile.cjs`
-then links `@kition/kdm`, `@kition/kit-editor`, `@kition/kit-engine`, `@kition/kit-host`,
-`@kition/kit-ui-protocol` and `@kition/kit-dev-host` from the kition-sdk checkout and
-`@kition/tessera-icons` from the kition-tessera checkout next to this repository (or the ones
-`KITION_SDK` and `KITION_TESSERA` name), each one whose package is there. The linked install
-rewrites `web/pnpm-lock.yaml`; do not commit that lockfile.
+By default `pnpm install` in `web/` installs the published `@kition/sdk` and `@kition/tessera`
+packages from npm, at the versions the committed `web/pnpm-lock.yaml` pins, so the editor needs no
+other checkout. To work against local checkouts instead, run `KITION_LINK=1 pnpm install` in
+`web/`: `web/.pnpmfile.cjs` then links `@kition/sdk` to the kition-sdk checkout's `packages/sdk`
+and `@kition/tessera` to the kition-tessera checkout's `packages/tessera` next to this repository
+(or the ones `KITION_SDK` and `KITION_TESSERA` name), each one whose package is there. Both
+packages' `exports` point at their built `dist/`, so build them in the checkouts first. The linked
+install rewrites `web/pnpm-lock.yaml`; do not commit that lockfile.
 
 ffmpeg and ffprobe are optional: they are the test oracle and fixture generator only, and oracle
 tests skip without them ([testing/README.md](testing/README.md) §2). H.264 and HEVC fixtures need an ffmpeg
@@ -196,7 +196,7 @@ stream is cut into blocks (there are tests for this).
 
 ### An editor panel or widget
 
-- The editor's panels live in `web/src/` (React, on `@kition/kit-editor`). Project changes go through
+- The editor's panels live in `web/src/` (React, on `@kition/sdk/editor`). Project changes go through
   the engine's commands, never by mutating the document directly.
 - Every label the editor draws needs its Chinese entry in the same change ([AGENTS.md](../AGENTS.md));
   `pnpm --dir web test:parity` checks it.

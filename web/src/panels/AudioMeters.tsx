@@ -1,5 +1,5 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { LevelMeter, meterLayout, useKitEditor, type LevelMeterHandle, type MeterBox } from '@kition/kit-editor'
+import { LevelMeter, meterLayout, useKitEditor, type LevelMeterHandle, type MeterBox } from '@kition/sdk/editor'
 import { dbToLinear, metersAtRest, silentMeters, stepMeters, type MeterFeed, type MeterLevels } from './meters'
 
 /** Upstream's stereo Mix: one bar per channel, named as the channel layout names them, captioned "S" under each. */

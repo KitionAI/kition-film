@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type PointerEvent as ReactPointerEvent } from 'react'
-import { useUi, type Phrases } from '@kition/kit-editor'
+import { useUi, type Phrases } from '@kition/sdk/editor'
 import { adjustRange, frameTicks, rangeClickTicks, rangeDragLive, selectedRange, ticksAtX, xOfTicks, type MonitorSpan, type RangeEdge, type Span, type Which } from './model'
 import type { MonitorClock, MonitorMarks } from './Monitor'
 

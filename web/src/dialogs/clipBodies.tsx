@@ -1,5 +1,5 @@
 import { Fragment, useContext, useEffect, useRef, useState } from 'react'
-import { NumberField } from '@kition/kit-editor'
+import { NumberField } from '@kition/sdk/editor'
 import type { DialogBodyProps } from './bodies'
 import { AUDIO_GAIN_MODES, audioPeakKey, peakText, type InterpretInfo } from './clip'
 import { fieldId } from './registry'

@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import type { RasterViewportStats } from '@kition/kit-editor'
+import type { RasterViewportStats } from '@kition/sdk/editor'
 
 export type FilmStats = { render: RasterViewportStats | null; fps: number | null }
 

@@ -1,5 +1,5 @@
 // Imports are types only, so `node --test` loads this module as it is.
-import type { KitEngine } from '@kition/kit-editor'
+import type { KitEngine } from '@kition/sdk/editor'
 import type { AudioFeed, AudioOutput } from './session/playback.ts'
 
 const CHUNK_SECONDS = 0.5

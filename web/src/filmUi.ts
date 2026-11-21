@@ -1,5 +1,5 @@
 // Imports carry `.ts` and the JSON its import attribute so `node --test` loads this module as it is.
-import type { KitUiDeclaration, KitUiItem } from '@kition/kit-editor'
+import type { KitUiDeclaration, KitUiItem } from '@kition/sdk/editor'
 import upstream from '../parity/film-upstream.json' with { type: 'json' }
 import { FILM_TOOLS } from './tools/catalog.ts'
 import { FILM_MENUS } from './menus/catalog.ts'

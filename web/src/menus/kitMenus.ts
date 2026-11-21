@@ -1,4 +1,4 @@
-import type { MenuRow } from '@kition/kit-editor'
+import type { MenuRow } from '@kition/sdk/editor'
 import { isHiddenCommand } from './hidden.ts'
 
 /**

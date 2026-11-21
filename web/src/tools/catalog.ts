@@ -18,7 +18,7 @@ import {
   UnfoldHorizontalIcon as UnfoldHorizontal,
   ZoomInIcon as ZoomIn,
   type IconComponent,
-} from '@kition/tessera-icons/react'
+} from '@kition/tessera/icons/react'
 import upstream from '../../parity/film-upstream.json' with { type: 'json' }
 
 /** What the Hand and Zoom tools drive: the timeline's view (scroll and zoom), not an engine command. */

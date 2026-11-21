@@ -19,7 +19,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { needsPhrase } from '../src/i18n/phrases.ts'
-import { parsePhrases } from '@kition/kit-editor'
+import { parsePhrases } from '@kition/sdk/editor'
 
 /** Whether a label has words to translate (not a symbol, a number, or an id): the editor's own rule. */
 export const hasWords = (text) => typeof text === 'string' && needsPhrase(text)

@@ -1,5 +1,5 @@
 import { Fragment, useMemo } from 'react'
-import { CommandItem, ContextMenu, MenuItem, MenuSeparator, SubMenu, useUi, type ContextMenuPoint, type Phrases } from '@kition/kit-editor'
+import { CommandItem, ContextMenu, MenuItem, MenuSeparator, SubMenu, useUi, type ContextMenuPoint, type Phrases } from '@kition/sdk/editor'
 import type { FilmInfo } from '../film'
 import { FILM_MENUS } from '../menus/catalog'
 import { isHiddenCommand } from '../menus/hidden'

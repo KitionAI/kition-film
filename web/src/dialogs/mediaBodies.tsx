@@ -1,5 +1,5 @@
 import { memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { Button, oneInFlight, type Phrases } from '@kition/kit-editor'
+import { Button, oneInFlight, type Phrases } from '@kition/sdk/editor'
 import { MEDIA_TYPES } from '../film'
 import type { DialogBodyProps } from './bodies'
 import { MATCH_OPTIONS, chosenRow, createPickTicket, linkRowViews, locate, locatedOf, mediaStatuses, offlineAll, offlineTargets, setOffline, settleDraft, shownRows, type LinkRowView } from './media'

@@ -1,6 +1,6 @@
 import { memo, useCallback, useRef } from 'react'
-import { TesseraIcons } from '@kition/kit-editor'
-import { Button, type Phrases } from '@kition/kit-editor'
+import { TesseraIcons } from '@kition/sdk/editor'
+import { Button, type Phrases } from '@kition/sdk/editor'
 import type { DialogBodyProps } from './bodies'
 import { addProperty, columnsOf, fieldViews, keepSlots, manageAction, managedSlots, moveColumn, selectedOf, stepsOf, toggleColumn, type FieldView, type ManageAction, type PresetSlot } from './project'
 import { fieldId } from './registry'

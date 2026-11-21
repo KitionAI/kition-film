@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Dialog, type Phrases } from '@kition/kit-editor'
+import { Button, Dialog, type Phrases } from '@kition/sdk/editor'
 
 export type WorkspaceDialog = 'saveAs' | 'edit'
 

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type RefObject } from 'react'
-import type { KitEngine, KitEngineInfo } from '@kition/kit-editor'
+import type { KitEngine, KitEngineInfo } from '@kition/sdk/editor'
 import { describe, type FilmInfo } from '../film'
 import { createDrawers, createPreview, documentReplaced, type Preview, type PreviewCovers, type PreviewDiff, type PreviewDrawer, type PreviewDrawers, type PreviewState, type Schedule } from './preview'
 

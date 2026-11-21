@@ -1,6 +1,6 @@
 // Imports carry `.ts` and the JSON its import attribute so `node --test` loads this module as it is.
 import upstream from '../../parity/film-upstream.json' with { type: 'json' }
-import type { WorkspaceNode } from '@kition/kit-editor/workspaceTree'
+import type { WorkspaceNode } from '@kition/sdk/editor/workspaceTree'
 import { cyclePanel, panelFromName, showPanel, toggleMaximized } from './presets.ts'
 import { focusedPanel } from '../panels/projectModel.ts'
 

@@ -1,6 +1,6 @@
 import { useState, useSyncExternalStore, type ReactNode, type Ref } from 'react'
-import { TesseraIcons } from '@kition/kit-editor'
-import { FrameChrome, MenuButton, MenuItem, MenuSeparator, SubMenu, TimecodeField, TransportBar, formatTimecode, useUi, type Phrases, type TransportButton } from '@kition/kit-editor'
+import { TesseraIcons } from '@kition/sdk/editor'
+import { FrameChrome, MenuButton, MenuItem, MenuSeparator, SubMenu, TimecodeField, TransportBar, formatTimecode, useUi, type Phrases, type TransportButton } from '@kition/sdk/editor'
 import { TICKS_PER_SECOND } from '../film'
 import { RESOLUTIONS, ZOOMS, type MonitorView, type Resolution } from './monitorView'
 import type { DisplayMode } from './displayModes'

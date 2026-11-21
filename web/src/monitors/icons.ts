@@ -1,4 +1,4 @@
-import { TesseraIcons, type IconComponent } from '@kition/kit-editor'
+import { TesseraIcons, type IconComponent } from '@kition/sdk/editor'
 import type { TransportEntry } from './model'
 
 const Bookmark = TesseraIcons.BookmarkIcon

@@ -1,6 +1,6 @@
 import type { PreviewGate } from './previewGate.ts'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { RESERVED_SHORTCUTS, isMac, oneInFlight, type KitEngine, type KitEngineInfo, type KitRunOptions, type RasterRect } from '@kition/kit-editor'
+import { RESERVED_SHORTCUTS, isMac, oneInFlight, type KitEngine, type KitEngineInfo, type KitRunOptions, type RasterRect } from '@kition/sdk/editor'
 import upstream from '../../parity/film-upstream.json' with { type: 'json' }
 import { externalCommands, keyTable, reservedKeys, type KeyTable, type ShortcutRow } from './keys.ts'
 import { parseEvents, type EngineEvent } from './events.ts'

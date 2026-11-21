@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ColorPicker, NumberField, TimecodeField, parseHex, rgbToHex, type Phrases } from '@kition/kit-editor'
+import { ColorPicker, NumberField, TimecodeField, parseHex, rgbToHex, type Phrases } from '@kition/sdk/editor'
 import { isHiddenField } from '../menus/hidden'
 import { framesTimecode } from './clipStructure'
 import { closesPicker, pickerPlace } from './placement'

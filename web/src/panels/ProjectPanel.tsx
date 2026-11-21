@@ -1,6 +1,6 @@
 import { memo, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type DragEvent as ReactDragEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
-import { TesseraIcons } from '@kition/kit-editor'
-import { IconButton, MenuButton, RenameField, isMac, oneInFlight, type ContextMenuPoint, type Phrases } from '@kition/kit-editor'
+import { TesseraIcons } from '@kition/sdk/editor'
+import { IconButton, MenuButton, RenameField, isMac, oneInFlight, type ContextMenuPoint, type Phrases } from '@kition/sdk/editor'
 import type { FilmBin, FilmSearchBin } from '../film'
 import type { FilmLabels } from '../session/useFilmSession'
 import { endFilmDrag, filmDrag, startFilmDrag } from '../timeline/drop'

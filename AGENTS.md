@@ -30,7 +30,7 @@
 This repository is Kition's `kit.film` kit, not the upstream editor it started from. These rules
 come first; the upstream rules below still apply to the engine.
 
-- The kit draws **its own editor**: `web/` is a React app on `@kition/kit-editor` (kition-sdk's
+- The kit draws **its own editor**: `web/` is a React app on `@kition/sdk/editor` (kition-sdk's
   shared kit UI library) with Kition Film's menu bar, the program monitor, the transport, and the track timeline; a host (Kition, or `web/dev.html` for development) shows it
   in an iframe and talks to it over the Kit UI protocol (`kition-kit-ui/1`, kition-sdk `docs/platform/reference/ui-protocol.md`). Style it only with the host's theme tokens and kit-editor components;
   ribbon labels and command titles are the upstream editor's English text, translated by its

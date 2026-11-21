@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { isVisible, contains, closePanel } from '@kition/kit-editor/workspaceTree'
+import { isVisible, contains, closePanel } from '@kition/sdk/editor/workspaceTree'
 import { FILM_WORKSPACES } from './presets.ts'
 import { createWorkspaceRoute } from './route.ts'
 

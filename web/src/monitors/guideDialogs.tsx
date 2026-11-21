@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { Button, NumberField, PreviewDialog, useKitStore, type Phrases } from '@kition/kit-editor'
+import { Button, NumberField, PreviewDialog, useKitStore, type Phrases } from '@kition/sdk/editor'
 import { chooseCorner, createLifter } from '../dialogs/placement'
 import type { GuideTemplates } from './guideTemplates'
 import {

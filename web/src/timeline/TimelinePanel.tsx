@@ -1,6 +1,6 @@
 import { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { TesseraIcons } from '@kition/kit-editor'
-import { MenuButton, MenuItem, MenuSeparator, TimecodeField, isMac, useUi, type Phrases } from '@kition/kit-editor'
+import { TesseraIcons } from '@kition/sdk/editor'
+import { MenuButton, MenuItem, MenuSeparator, TimecodeField, isMac, useUi, type Phrases } from '@kition/sdk/editor'
 import { projectItems, type FilmClip, type FilmInfo, type FilmProjectItem, type FilmTrack } from '../film'
 import type { FilmLabels, FilmSessionState } from '../session/useFilmSession'
 import { useProgramTime, type Playback } from '../session/playback'

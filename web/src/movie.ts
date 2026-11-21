@@ -1,4 +1,4 @@
-import type { HostConnection, KitEngine } from '@kition/kit-editor'
+import type { HostConnection, KitEngine } from '@kition/sdk/editor'
 
 const EXPORT_STEP_MS = 150
 

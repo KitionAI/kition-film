@@ -4,7 +4,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { chromium, webkit } from 'playwright'
 import { createServer } from 'vite'
-import { checkUiIds } from '@kition/kit-dev-host/check-ui-ids'
+import { checkUiIds } from '@kition/sdk/dev-host/check-ui-ids'
 import { CATALOGS } from '../src/strings.ts'
 import { readCatalog } from '../parity/i18n.mjs'
 

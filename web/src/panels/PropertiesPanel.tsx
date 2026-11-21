@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { TesseraIcons } from '@kition/kit-editor'
-import type { KitEngine, Phrases } from '@kition/kit-editor'
+import { TesseraIcons } from '@kition/sdk/editor'
+import type { KitEngine, Phrases } from '@kition/sdk/editor'
 import { useProgramTime, type Playback } from '../session/playback'
 import type { InvokeOptions } from '../session/invoke'
 import { TICKS_PER_SECOND, type FilmInfo } from '../film'

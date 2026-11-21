@@ -1,5 +1,5 @@
 // Imports carry `.ts` and the JSON its import attribute so `node --test` loads these modules as they are.
-import type { MenuRow } from '@kition/kit-editor'
+import type { MenuRow } from '@kition/sdk/editor'
 import upstream from '../../parity/film-upstream.json' with { type: 'json' }
 import { monitorViewChecked, type MonitorViews } from '../monitors/monitorView.ts'
 import { HELP_ROWS, KIT_TAKEOVERS } from './kitMenus.ts'

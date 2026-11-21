@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
-import { TesseraIcons } from '@kition/kit-editor'
-import { Checkbox, Choice, ColorPicker, ContextMenu, KeyframeLane, MenuItem, MenuSeparator, NumberField, formatTimecode, parseHex, rgbToHex, type ContextMenuPoint, type KitEngine, type Phrases, type RGB } from '@kition/kit-editor'
+import { TesseraIcons } from '@kition/sdk/editor'
+import { Checkbox, Choice, ColorPicker, ContextMenu, KeyframeLane, MenuItem, MenuSeparator, NumberField, formatTimecode, parseHex, rgbToHex, type ContextMenuPoint, type KitEngine, type Phrases, type RGB } from '@kition/sdk/editor'
 import { TICKS_PER_SECOND, type FilmInfo } from '../film'
 import { animationFrameLatest } from '../monitors/throttle'
 import type { InvokeOptions } from '../session/invoke'

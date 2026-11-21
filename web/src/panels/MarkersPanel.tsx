@@ -1,5 +1,5 @@
 import { memo, useCallback, useMemo, useRef } from 'react'
-import { formatTimecode, useKitEditor, type Phrases } from '@kition/kit-editor'
+import { formatTimecode, useKitEditor, type Phrases } from '@kition/sdk/editor'
 import type { FilmMarker } from '../film'
 import { markerColor } from '../timeline/Ruler'
 import { Placeholder } from './Placeholder'

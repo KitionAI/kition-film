@@ -1,5 +1,5 @@
 import { createElement, type ReactNode } from 'react'
-import type { Phrases, WorkspacePanel } from '@kition/kit-editor'
+import type { Phrases, WorkspacePanel } from '@kition/sdk/editor'
 import upstream from '../../parity/film-upstream.json' with { type: 'json' }
 import { Placeholder } from '../panels/Placeholder'
 

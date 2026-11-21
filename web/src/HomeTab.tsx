@@ -1,6 +1,6 @@
-import { type IconComponent } from '@kition/tessera-icons/react'
-import { ArrowLeftToLineIcon as ArrowLeftToLine, ArrowRightToLineIcon as ArrowRightToLine, AudioLinesIcon as AudioLines, BetweenHorizontalStartIcon as BetweenHorizontalStart, BlendIcon as Blend, CircleIcon as Circle, ClapperboardIcon as Clapperboard, ClipboardPasteIcon as ClipboardPaste, CopyIcon as Copy, DeleteIcon as Delete, DownloadIcon as Download, FileInputIcon as FileInput, MagnetIcon as Magnet, MapPinIcon as MapPin, ReplaceIcon as Replace, ScissorsIcon as Scissors, SquareSplitHorizontalIcon as SquareSplitHorizontal, SquareIcon as Square, TypeIcon as Type } from '@kition/tessera-icons/react'
-import { CommandButton, RibbonButton, RibbonGroup, RibbonStack, useKitEditor, useUi } from '@kition/kit-editor'
+import { type IconComponent } from '@kition/tessera/icons/react'
+import { ArrowLeftToLineIcon as ArrowLeftToLine, ArrowRightToLineIcon as ArrowRightToLine, AudioLinesIcon as AudioLines, BetweenHorizontalStartIcon as BetweenHorizontalStart, BlendIcon as Blend, CircleIcon as Circle, ClapperboardIcon as Clapperboard, ClipboardPasteIcon as ClipboardPaste, CopyIcon as Copy, DeleteIcon as Delete, DownloadIcon as Download, FileInputIcon as FileInput, MagnetIcon as Magnet, MapPinIcon as MapPin, ReplaceIcon as Replace, ScissorsIcon as Scissors, SquareSplitHorizontalIcon as SquareSplitHorizontal, SquareIcon as Square, TypeIcon as Type } from '@kition/tessera/icons/react'
+import { CommandButton, RibbonButton, RibbonGroup, RibbonStack, useKitEditor, useUi } from '@kition/sdk/editor'
 import { FILM_TOOLS } from './tools/catalog'
 import { KIT_TAKEOVERS } from './menus/kitMenus'
 

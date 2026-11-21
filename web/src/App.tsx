@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type MutableRefObject, type ReactNode, type RefObject } from 'react'
-import { TesseraIcons } from '@kition/kit-editor'
+import { TesseraIcons } from '@kition/sdk/editor'
 import {
   Button,
   FloatingPanels,
@@ -26,7 +26,7 @@ import {
   type FloatingPanel,
   type RasterView,
   type WorkspaceNode,
-} from '@kition/kit-editor'
+} from '@kition/sdk/editor'
 import { engineManifest } from './engine'
 import { CATALOGS } from './strings'
 import { withDeclaredLabels } from './i18n/phrases'

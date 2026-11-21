@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent as ReactDragEvent, type PointerEvent as ReactPointerEvent } from 'react'
-import { useUi, type KitEngine, type Phrases } from '@kition/kit-editor'
+import { useUi, type KitEngine, type Phrases } from '@kition/sdk/editor'
 import { endFilmDrag } from '../timeline/drop'
 import type { MediaQueue } from '../timeline/mediaQueue'
 import type { MonitorClock } from './Monitor'

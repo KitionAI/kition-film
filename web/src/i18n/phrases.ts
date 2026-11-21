@@ -1,5 +1,5 @@
 // Imports carry `.ts` so `node --test` loads this module as it is.
-import type { Phrases } from '@kition/kit-editor'
+import type { Phrases } from '@kition/sdk/editor'
 
 /**
  * Whether `english` has words to translate: not a number or a symbol, and not an id (`project.bin`:

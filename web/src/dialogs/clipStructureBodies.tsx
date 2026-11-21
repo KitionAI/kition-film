@@ -1,4 +1,4 @@
-import { NumberField } from '@kition/kit-editor'
+import { NumberField } from '@kition/sdk/editor'
 import type { DialogBodyProps } from './bodies'
 import { CHANNEL_FORMATS, SYNC_METHODS, addAudioClips, channelFormat, channelInfo, setChannel } from './clipStructure'
 import { fieldId, optionId, type Draft } from './registry'

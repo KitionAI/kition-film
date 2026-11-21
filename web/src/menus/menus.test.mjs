@@ -180,7 +180,7 @@ test("rows show the engine's live bindings (its first application-wide one), as 
 })
 
 test("Help ▸ Keyboard Shortcuts and the menus leave out the keys Kition and the host keep (RESERVED_SHORTCUTS, init.shortcuts), as the key router does", async () => {
-  const { RESERVED_SHORTCUTS } = await import('@kition/kit-editor')
+  const { RESERVED_SHORTCUTS } = await import('@kition/sdk/editor')
   const reserved = reservedKeys([...RESERVED_SHORTCUTS, 'Cmd+K'], true)
   const rows = [
     { id: 'sequence.close', label: 'Close Sequence', category: 'Sequence', shortcuts: [{ keys: 'Cmd+W', panel: 'Timeline' }] },

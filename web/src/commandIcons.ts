@@ -3,7 +3,7 @@
  * the neutral command mark otherwise): its own vocabulary, by command id. Registered once, when the
  * editor loads (`main.tsx`); ribbons and menus built from engine commands draw them.
  */
-import { TesseraIcons, registerCommandIcons } from '@kition/kit-editor'
+import { TesseraIcons, registerCommandIcons } from '@kition/sdk/editor'
 
 registerCommandIcons({
   "effects.setDefaultTransition": TesseraIcons.StarIcon,

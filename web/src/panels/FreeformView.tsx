@@ -1,5 +1,5 @@
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent as ReactDragEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
-import { RenameField, type Phrases } from '@kition/kit-editor'
+import { RenameField, type Phrases } from '@kition/sdk/editor'
 import { endFilmDrag, startFilmDrag } from '../timeline/drop'
 import { CardArt, OFFLINE, shortDuration, type ProjectThumbnails } from './projectCards'
 import { LAYOUT_WIDTH, canvasExtent, cardAt, createCardDrag, createDragEvents, createLatestRead, draggedItem, drawOrder, layoutCards, layoutFor, layoutKey, movesWith, shareCards, stackSizes, type CardDrag, type FreeformCard, type FreeformOptions, type MoveParams } from './freeform'

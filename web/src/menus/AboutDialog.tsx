@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button, Dialog, useKitEditor } from '@kition/kit-editor'
+import { Button, Dialog, useKitEditor } from '@kition/sdk/editor'
 import kit from '../../../kit.json' with { type: 'json' }
 import upstream from '../../parity/film-upstream.json' with { type: 'json' }
 import { shortcutList, type ShortcutItem, type ShortcutListRow } from './kitMenus'

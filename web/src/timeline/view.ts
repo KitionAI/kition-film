@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { readKitStore, writeKitStore } from '@kition/kit-editor'
+import { readKitStore, writeKitStore } from '@kition/sdk/editor'
 import { DEFAULT_VIEW, applyViewCommand, stepView, storedView, validStoredView, type StoredView, type TimelineView } from './layout'
 
 const STORE = 'timeline'

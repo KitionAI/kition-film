@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type MutableRefObject, type RefObject } from 'react'
-import { KitDocumentCanvas, type KitCanvasHandle, type KitCanvasView, type KitEngine, type Phrases, type RasterView, type RasterViewportStats } from '@kition/kit-editor'
+import { KitDocumentCanvas, type KitCanvasHandle, type KitCanvasView, type KitEngine, type Phrases, type RasterView, type RasterViewportStats } from '@kition/sdk/editor'
 import { TICKS_PER_SECOND, type FilmInfo } from '../film'
 import type { Playback } from '../session/playback'
 import { markerColor } from '../timeline/Ruler'

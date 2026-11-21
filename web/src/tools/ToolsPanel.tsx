@@ -1,5 +1,5 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { ToolRail, useKitEditor } from '@kition/kit-editor'
+import { ToolRail, useKitEditor } from '@kition/sdk/editor'
 import { FILM_TOOLS, groupsThatFit } from './catalog'
 
 /** Upstream's long press that opens a group's flyout (`panels/tools.rs`: 0.35 s). */

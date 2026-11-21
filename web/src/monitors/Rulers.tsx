@@ -1,5 +1,5 @@
 import { memo, type PointerEvent as ReactPointerEvent } from 'react'
-import { useUi } from '@kition/kit-editor'
+import { useUi } from '@kition/sdk/editor'
 import { RULER, rulerTicks, type Rect } from './guideModel'
 import type { MonitorId } from './monitorView'
 

@@ -1,16 +1,19 @@
-// Installs the published @kition/* packages. KITION_LINK=1 links kition-sdk and kition-tessera
-// checkouts instead (KITION_SDK / KITION_TESSERA, default ../kition-sdk and ../kition-tessera)
-// for development; do not commit the lockfile it writes.
+// Installs the published @kition/sdk and @kition/tessera. KITION_LINK=1 links the kition-sdk and
+// kition-tessera checkouts instead (KITION_SDK / KITION_TESSERA, default ../kition-sdk and
+// ../kition-tessera) for development: @kition/sdk to kition-sdk's packages/sdk and @kition/tessera
+// to kition-tessera's packages/tessera. Both packages' `exports` point at their built `dist/`, so
+// build them in the checkouts first (`pnpm --filter @kition/sdk build` in kition-sdk, `pnpm build`
+// in kition-tessera's packages/tessera). Do not commit the lockfile a linked install writes.
 const fs = require('node:fs')
 const path = require('node:path')
 
 const repo = path.resolve(__dirname, '..')
 const sdk = path.resolve(process.env.KITION_SDK ?? path.join(repo, '..', 'kition-sdk'))
 const tessera = path.resolve(process.env.KITION_TESSERA ?? path.join(repo, '..', 'kition-tessera'))
-const local = Object.fromEntries([
-  'kdm', 'kit-editor', 'kit-engine', 'kit-host', 'kit-ui-protocol', 'kit-dev-host',
-].map(name => [`@kition/${name}`, path.join(sdk, 'packages', name)]))
-local['@kition/tessera-icons'] = path.join(tessera, 'packages/icons')
+const local = {
+  '@kition/sdk': path.join(sdk, 'packages', 'sdk'),
+  '@kition/tessera': path.join(tessera, 'packages', 'tessera'),
+}
 
 function readPackage(pkg) {
   if (pkg.name !== 'kition-film-ui' || process.env.KITION_LINK !== '1') return pkg

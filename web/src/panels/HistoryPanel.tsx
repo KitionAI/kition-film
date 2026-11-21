@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { oneInFlight, type Phrases } from '@kition/kit-editor'
+import { oneInFlight, type Phrases } from '@kition/sdk/editor'
 import type { InvokeOptions } from '../session/invoke'
 import { createHistoryStepper, historyRows, type HistoryList, type HistoryRow } from './history'
 

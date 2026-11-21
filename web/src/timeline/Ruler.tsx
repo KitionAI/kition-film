@@ -1,5 +1,5 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { formatTimecode, type Phrases } from '@kition/kit-editor'
+import { formatTimecode, type Phrases } from '@kition/sdk/editor'
 import type { FilmInfo, FilmMarker } from '../film'
 import { RULER_H, rulerSteps, xOf } from './layout'
 

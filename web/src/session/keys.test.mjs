@@ -180,7 +180,7 @@ test('a binding whose command nothing serves yet gives way to the next match, so
 })
 
 test("no Film binding takes a key kit-editor reserves for Kition (RESERVED_SHORTCUTS, Cmd+. the command palette among them)", async () => {
-  const { RESERVED_SHORTCUTS } = await import('@kition/kit-editor')
+  const { RESERVED_SHORTCUTS } = await import('@kition/sdk/editor')
   assert.ok(RESERVED_SHORTCUTS.has('Cmd+.'), "kit-editor reserves Cmd+. for Kition's command palette")
   // Engine rows that would claim every reserved key, in the Timeline and application-wide.
   const claims = [...RESERVED_SHORTCUTS].map((keys, index) => ({ id: `claim.${index}`, shortcuts: [{ keys, panel: null }, { keys, panel: 'Timeline' }] }))
@@ -200,7 +200,7 @@ const engineDir = new URL('../../public/engine/', import.meta.url)
 const engineBuilt = existsSync(new URL('kition_film_kit_bg.wasm', engineDir))
 
 test("every wave-1 key the status file does not hide runs its command in its panel, with the engine's own shortcut set", { skip: !engineBuilt && 'the web engine is not built (pnpm --dir web engine)' }, async () => {
-  const { RESERVED_SHORTCUTS } = await import('@kition/kit-editor')
+  const { RESERVED_SHORTCUTS } = await import('@kition/sdk/editor')
   const { routeOf } = await import('./invoke.ts')
   const status = JSON.parse(readFileSync(new URL('../../parity/film-status.json', import.meta.url), 'utf8'))
   const sdk = await import(new URL('kition_film_kit.js', engineDir).href)

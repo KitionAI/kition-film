@@ -1,5 +1,5 @@
 import { Component, useSyncExternalStore, type ErrorInfo, type ReactNode } from 'react'
-import { Button, Dialog, useKitEditor, useUi, type Phrases } from '@kition/kit-editor'
+import { Button, Dialog, useKitEditor, useUi, type Phrases } from '@kition/sdk/editor'
 
 /** Where an injected fault fails: the workspace (the panels) or the whole shell (menus, header, status bar). */
 export type FaultPlace = 'workspace' | 'shell'

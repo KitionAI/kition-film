@@ -1,4 +1,4 @@
-import type { KitEngine } from '@kition/kit-editor'
+import type { KitEngine } from '@kition/sdk/editor'
 import { createMediaQueue } from './mediaQueue'
 import { createPeaks } from './peaks'
 import { createThumbnails, frameCanvas, releaseCanvas, type Thumbnails } from './thumbnails'

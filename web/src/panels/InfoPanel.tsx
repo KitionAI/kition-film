@@ -1,5 +1,5 @@
 import { memo, useEffect, useMemo, useState } from 'react'
-import { formatTimecode, type KitEngine, type Phrases } from '@kition/kit-editor'
+import { formatTimecode, type KitEngine, type Phrases } from '@kition/sdk/editor'
 import { projectItems, type FilmInfo } from '../film'
 import { useProgramTime, type Playback } from '../session/playback'
 import { fpsLabel, itemsAtPlayhead } from './info'

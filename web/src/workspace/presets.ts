@@ -1,6 +1,6 @@
 // Imports carry `.ts` and the JSON its import attribute so `node --test` loads this module as it is.
 import upstream from '../../parity/film-upstream.json' with { type: 'json' }
-import { activate, openNear, restoreBeside, validateTree, visiblePanels, type WorkspaceNode } from '@kition/kit-editor/workspaceTree'
+import { activate, openNear, restoreBeside, validateTree, visiblePanels, type WorkspaceNode } from '@kition/sdk/editor/workspaceTree'
 
 /** Upstream's `PanelKind::ALL` as lowerCamel ids, in its order. */
 export const FILM_PANEL_IDS: ReadonlySet<string> = new Set(upstream.panels.map((panel) => panel.id))

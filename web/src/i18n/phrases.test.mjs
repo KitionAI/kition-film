@@ -3,7 +3,7 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { loadPhrases, createStrings } from '@kition/kit-editor'
+import { loadPhrases, createStrings } from '@kition/sdk/editor'
 import { CATALOGS } from '../strings.ts'
 import { optionText } from '../dialogs/registry.ts'
 import { readCatalog, withoutComments } from '../../parity/i18n.mjs'

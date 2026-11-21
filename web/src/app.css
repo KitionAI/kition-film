@@ -1,4 +1,4 @@
-/* The Film editor's own layout; colors and shapes come from @kition/kit-editor's tokens. */
+/* The Film editor's own layout; colors and shapes come from @kition/sdk/editor's tokens. */
 
 /* The header (upstream `header.rs`), in the shell's top row: modes, menus, title, workspace. */
 /* The header's row: 34 px, below the menu bar (kit-editor's options bar is 40 px). */

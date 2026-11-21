@@ -1,4 +1,4 @@
-import { kitStoreKey, readKitStore, writeKitStore } from '@kition/kit-editor'
+import { kitStoreKey, readKitStore, writeKitStore } from '@kition/sdk/editor'
 import type { PrefsStore } from './prefsSync.ts'
 
 /** The kit store's name of Film's user preferences: `kit:film:prefs`, shared by every Film page. */

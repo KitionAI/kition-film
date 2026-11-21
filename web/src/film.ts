@@ -1,4 +1,4 @@
-import type { KitEngineInfo } from '@kition/kit-editor'
+import type { KitEngineInfo } from '@kition/sdk/editor'
 
 /** An effect on a clip, as `inspect()` summarizes it (Effect Controls reads the full list with `clipEffects`). */
 export type FilmEffectSummary = { effect: string; enabled: boolean; masks: number; keyframed: string[] }

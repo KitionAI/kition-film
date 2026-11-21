@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type DragEvent as ReactDragEvent, type PointerEvent as ReactPointerEvent } from 'react'
-import { TesseraIcons } from '@kition/kit-editor'
-import { oneInFlight, useUi, type KitEngine, type Phrases } from '@kition/kit-editor'
+import { TesseraIcons } from '@kition/sdk/editor'
+import { oneInFlight, useUi, type KitEngine, type Phrases } from '@kition/sdk/editor'
 import { TICKS_PER_SECOND } from '../film'
 import type { Playback } from '../session/playback'
 import { endFilmDrag, startFilmDrag } from '../timeline/drop'

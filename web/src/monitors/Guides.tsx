@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type MutableRefObject, type PointerEvent as ReactPointerEvent, type RefObject } from 'react'
-import { useUi } from '@kition/kit-editor'
+import { useUi } from '@kition/sdk/editor'
 import { GUIDE_GRAB, dragGuides, endGuideDrag, guideAt, shownGuides, type Guide, type GuideDrag, type GuideGeometry, type GuidePreview, type Point, type SnapLine, type ValueStore } from './guideModel'
 import type { MonitorId, MonitorView } from './monitorView'
 import { Rulers } from './Rulers'

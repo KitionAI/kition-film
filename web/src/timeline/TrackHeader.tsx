@@ -1,6 +1,6 @@
 import { memo, useRef, type CSSProperties, type ReactNode, type PointerEvent as ReactPointerEvent } from 'react'
-import { TesseraIcons } from '@kition/kit-editor'
-import { useUi, type Phrases } from '@kition/kit-editor'
+import { TesseraIcons } from '@kition/sdk/editor'
+import { useUi, type Phrases } from '@kition/sdk/editor'
 import type { FilmTrack } from '../film'
 
 const Eye = TesseraIcons.EyeIcon
