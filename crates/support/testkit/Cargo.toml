@@ -1,6 +1,6 @@
 [package]
 name = "kition-film-testkit"
-description = "Test-only helpers: ffmpeg/ffprobe oracle discovery, fixture directories, golden-image comparison"
+description = "Test-only helpers: ffmpeg/ffprobe oracle discovery, fixture directories, expected-image comparison"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
