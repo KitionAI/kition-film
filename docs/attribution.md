@@ -9,8 +9,8 @@ iconography, images or other Adobe assets; open licenses only; every asset attri
 
 | Asset | Author | Source | License |
 |---|---|---|---|
-| `conformance/golden/basic.png` | Kition contributors | rendered by `bindings/wasm/examples/checks.rs` with this kit's engine | Apache-2.0 |
-| `conformance/golden/basic-scale-2.png` | Kition contributors | rendered by `bindings/wasm/examples/checks.rs` with this kit's engine | Apache-2.0 |
+| `conformance/expected/basic.png` | Kition contributors | rendered by `bindings/wasm/examples/checks.rs` with this kit's engine | Apache-2.0 |
+| `conformance/expected/basic-scale-2.png` | Kition contributors | rendered by `bindings/wasm/examples/checks.rs` with this kit's engine | Apache-2.0 |
 | `assets/fonts/Inter-Regular.ttf` | The Inter Project Authors | https://github.com/rsms/inter | OFL-1.1 (`assets/fonts/OFL-Inter.txt`) |
 | `assets/fonts/Inter-Medium.ttf` | The Inter Project Authors | https://github.com/rsms/inter | OFL-1.1 (`assets/fonts/OFL-Inter.txt`) |
 | `assets/fonts/Inter-SemiBold.ttf` | The Inter Project Authors | https://github.com/rsms/inter | OFL-1.1 (`assets/fonts/OFL-Inter.txt`) |

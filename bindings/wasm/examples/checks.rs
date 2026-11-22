@@ -1,6 +1,6 @@
 //! Writes the conformance fixtures (KHP `spec/conformance.md`): `basic.kfilm`, which `film_check`
 //! finds clean, one `check-<code>.kfilm` per code of `agent/checks.json`, on which the check reports
-//! that code, and `golden/` (the previews of `basic.kfilm`).
+//! that code, and `expected/` (the expected previews of `basic.kfilm`).
 //! `cargo run -p kition-film-kit --example checks -- conformance`. The projects are made with the
 //! kit's own commands; states no command makes (an offline item, footage no host lends, a clip
 //! whose item is gone, a clip that reads past its media) are written on the project model and
@@ -118,18 +118,18 @@ fn fixtures() -> Result<Vec<(&'static str, Vec<u8>)>, String> {
     Ok(out)
 }
 
-/// `golden/basic.png` and `golden/basic-scale-2.png`: the engine's own render of `basic.kfilm` (the
+/// `expected/basic.png` and `expected/basic-scale-2.png`: the engine's own render of `basic.kfilm` (the
 /// program monitor at the playhead), at 1 and 2 pixels per pixel.
-fn golden(dir: &Path, bytes: &[u8]) -> Result<(), String> {
+fn expected_previews(dir: &Path, bytes: &[u8]) -> Result<(), String> {
     let doc = FilmDocument::open("basic.kfilm", bytes)?;
-    let golden = dir.join("golden");
-    std::fs::create_dir_all(&golden).map_err(|error| error.to_string())?;
+    let expected = dir.join("expected");
+    std::fs::create_dir_all(&expected).map_err(|error| error.to_string())?;
     for (file, scale) in [("basic.png", 1.0), ("basic-scale-2.png", 2.0)] {
         let (width, height) = ((f64::from(doc.width()) * scale) as u32, (f64::from(doc.height()) * scale) as u32);
         let rgba = doc.render(0.0, 0.0, scale, width, height)?;
         let picture = image::RgbaImage::from_raw(width, height, rgba).ok_or("a render of the wrong size")?;
-        picture.save(golden.join(file)).map_err(|error| error.to_string())?;
-        println!("wrote golden/{file}");
+        picture.save(expected.join(file)).map_err(|error| error.to_string())?;
+        println!("wrote expected/{file}");
     }
     Ok(())
 }
@@ -142,7 +142,7 @@ fn main() -> Result<(), String> {
         std::fs::write(dir.join(name), &bytes).map_err(|error| format!("{name}: {error}"))?;
         println!("wrote {name}");
         if name == "basic.kfilm" {
-            golden(dir, &bytes)?;
+            expected_previews(dir, &bytes)?;
         }
     }
     Ok(())
