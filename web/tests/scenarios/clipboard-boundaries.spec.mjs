@@ -15,8 +15,24 @@ async function copiedLayers(film) {
   return { sequence, sources }
 }
 
+/**
+ * The sequence once the editor has settled it: the same over reads 300 ms apart. A sequence just
+ * made or opened gets its playhead from the editor a moment later (null until then), so a read
+ * taken at once can differ from one taken after a refused command for that reason alone.
+ */
+async function settledSequence(film) {
+  let last = null
+  await expect.poll(async () => {
+    const now = JSON.stringify(await film.sequence())
+    const same = now === last
+    last = now
+    return same
+  }, { intervals: [300] }).toBe(true)
+  return JSON.parse(last)
+}
+
 async function refuse(film, command, reason) {
-  const before = await film.sequence()
+  const before = await settledSequence(film)
   const history = await film.history()
   const error = await film.attempt(command)
   expect(error, `${command} refused`).toContain(reason)
