@@ -1,4 +1,4 @@
-//! CMX 3600 EDL: golden documents (hand-written from the public CMX 3600 conventions) and round trips.
+//! CMX 3600 EDL: expected documents (hand-written from the public CMX 3600 conventions) and round trips.
 
 mod support;
 
@@ -41,7 +41,7 @@ M2   GULLS        060.0                00:30:00:00
 ";
 
 #[test]
-fn golden_drop_frame_dissolves() {
+fn expected_drop_frame_dissolves() {
     assert_eq!(detect(DF_DISSOLVES.as_bytes(), None), Some(Format::Edl));
     let (imp, rep) = import(DF_DISSOLVES.as_bytes(), Format::Edl, Some("/proj")).unwrap();
     assert!(rep.mentions("assumed 29.97"), "{rep}");
@@ -146,7 +146,7 @@ fn demo_project(rate: FrameRate, df: bool) -> (kition_film_project::Project, kit
 }
 
 #[test]
-fn export_golden_text() {
+fn export_expected_text() {
     let (p, s) = demo_project(FrameRate::FPS_25, false);
     let (bytes, rep) = export(&p, s, Format::Edl, &ExportOptions::default()).unwrap();
     let text = String::from_utf8(bytes).unwrap();

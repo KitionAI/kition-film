@@ -99,7 +99,7 @@ fn doc() -> String {
 }
 
 #[test]
-fn golden_gaps_and_transitions() {
+fn expected_gaps_and_transitions() {
     let d = doc();
     assert_eq!(detect(d.as_bytes(), Some("otio")), Some(Format::Otio));
     let (imp, rep) = import(d.as_bytes(), Format::Otio, Some("/proj")).unwrap();

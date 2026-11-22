@@ -99,7 +99,7 @@ fn doc() -> String {
 }
 
 #[test]
-fn golden_connected_clips() {
+fn expected_connected_clips() {
     let d = doc();
     assert_eq!(detect(d.as_bytes(), Some("fcpxml")), Some(Format::Fcpxml));
     let (imp, rep) = import(d.as_bytes(), Format::Fcpxml, Some("/proj")).unwrap();

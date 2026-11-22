@@ -183,7 +183,7 @@ fn premiere_style_doc() -> String {
 }
 
 #[test]
-fn golden_premiere_style_nested_and_transitions() {
+fn expected_premiere_style_nested_and_transitions() {
     let doc = premiere_style_doc();
     assert_eq!(detect(doc.as_bytes(), Some("xml")), Some(Format::Fcp7Xml));
     let (imp, rep) = import(doc.as_bytes(), Format::Fcp7Xml, Some("/proj")).unwrap();
