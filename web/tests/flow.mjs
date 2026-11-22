@@ -4776,7 +4776,8 @@ try {
         await openManage()
         await kit.getByTestId('film-dialog-presets-overwrite').click()
         const queued = await until(async () => pattern(ztRaw('viewPreset.overwrites'), { slot: '\\d+', name: '.*', view: '.*' }).test((await kit.getByTestId('film-preview-view').textContent({ timeout: 300 }).catch(() => '')) ?? ''), 60)
-        await person([{ command: 'project.viewPreset.rename', params: { slot: mineSlot, name: 'Theirs' } }])
+        // Another: the agent (the person's own commands wait while their dialog is open).
+        await agentRun([{ command: 'project.viewPreset.rename', params: { slot: mineSlot, name: 'Theirs' } }])
         const slot = kit.getByTestId(`film-dialog-presets-slot-${mineSlot}`)
         const followed = await until(async () => /Theirs/.test((await slot.textContent()) ?? '') && (await kit.getByTestId('film-dialog-presets-pending').count()) === 0, 60)
         const notice = await kit.getByTestId('film-dialog-notice').textContent({ timeout: 1000 }).catch(() => null)
