@@ -1,6 +1,9 @@
 //! graphic_templates.rs:259-303,563-635: template controls use stable layer
 //! UIDs; partial metadata assignments preserve old leaves. Frame durations
 //! consume the sequence timebase, while seconds and ticks do not.
+//! Re-reviewed (task kit-github-ci): graphic_templates.rs:1152 now writes
+//! graphics.template.set's two forms with `|`, so its schema admits `values`;
+//! the handler is unchanged, and the `values` form is the one compared below.
 use super::{graphics_compare, sync_compare::normalized};
 use kition_film_kit::FilmDocument;
 use kition_kit::{EditorState, KitDocument, Premise};
@@ -17,7 +20,7 @@ pub const PATHS: &[(&str, &str)] = &[
 pub fn compared_path(command: &str, path: &str) -> bool {
     let hash = |s: &str| s.bytes().fold(0xcbf29ce484222325u64, |h, b| (h ^ u64::from(b)).wrapping_mul(0x100000001b3));
     PATHS.contains(&(command, path))
-        && hash(include_str!("../../../../crates/engine/engine/src/graphic_templates.rs")) == 0xecaafa1b22c3dc65
+        && hash(include_str!("../../../../crates/engine/engine/src/graphic_templates.rs")) == 0xc21099df4545af4a
         && hash(include_str!("../../../../crates/engine/engine/src/graphics.rs")) == 0xaf7908925300a7a2
 }
 pub fn more(path: &str) -> Vec<&'static str> {
