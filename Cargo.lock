@@ -1622,6 +1622,7 @@ dependencies = [
  "kition-film-time",
  "kition-film-vp9",
  "log",
+ "rayon",
  "serde_json",
  "symphonia",
  "thiserror 2.0.21",

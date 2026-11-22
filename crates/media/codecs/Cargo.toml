@@ -33,6 +33,8 @@ kition-film-aac = { workspace = true }
 kition-film-opus = { workspace = true }
 thiserror = { workspace = true }
 log = { workspace = true }
+# Who may wait for another request's decode (`gop::may_wait`): not a rayon worker.
+rayon = { workspace = true }
 # Decode timing counters (`gop_stats`); std's Instant panics on wasm32.
 web-time = "1"
 image = { version = "0.25", default-features = false, features = ["jpeg"] }

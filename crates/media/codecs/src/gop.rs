@@ -128,6 +128,9 @@ struct State {
     intra: bool,
     /// Idle decoders for parallel intra decoding.
     spare: Vec<Box<dyn VideoDecoder>>,
+    /// Intra samples a request is decoding right now (outside the lock), by sample index: a
+    /// request for one of them takes that decode's frame instead of decoding it again.
+    flights: BTreeMap<usize, Arc<Flight>>,
     /// Next sample (decode order) to feed, and the sync sample the current run started from.
     next: usize,
     start: usize,
@@ -208,6 +211,99 @@ impl Drop for DecodingGuard {
                 d.remove(k);
             }
         });
+    }
+}
+
+/// One intra sample being decoded by one request (see [`GopCache::intra_frame`]): the other
+/// requests for it wait here and take its frame, so the sample is decoded once.
+///
+/// Deadlock freedom: the decoding request holds no lock while it decodes (the cache's lock is
+/// taken only to register the flight and again to store the frame), and a waiter holds no lock
+/// while it waits (it releases the cache's lock first; the condition variable releases
+/// `landing`). The decoding request never waits on a flight while it decodes: a nested request on
+/// its own thread is a private decode ([`DecodingGuard`]), and a rayon worker never waits at all
+/// ([`may_wait`]), so a decoder's slice jobs, which may run on any rayon worker and steal other
+/// work there, never block on the frame they are helping to decode. [`Flying`] lands the flight
+/// on every way out of the decode (a frame, an error, a panic), so no waiter waits forever.
+#[derive(Default)]
+struct Flight {
+    landing: Mutex<Landing>,
+    changed: std::sync::Condvar,
+}
+
+#[derive(Default)]
+struct Landing {
+    done: bool,
+    /// The decoded frame; none when the decode failed (each waiter then decodes for itself).
+    frame: Option<Arc<VideoFrame>>,
+    /// Requests that waited for this flight: landing wakes them only if there are any.
+    waiters: usize,
+}
+
+impl Flight {
+    /// Wait until the decode lands; its frame, or none when it failed. Call with no lock held.
+    fn wait(&self) -> Option<Arc<VideoFrame>> {
+        let mut l = self.landing.lock().unwrap_or_else(PoisonError::into_inner);
+        l.waiters += 1;
+        self.changed.notify_all();
+        while !l.done {
+            l = self.changed.wait(l).unwrap_or_else(PoisonError::into_inner);
+        }
+        l.frame.clone()
+    }
+
+    /// Land the flight (the first landing counts) and wake its waiters.
+    fn land(&self, frame: Option<Arc<VideoFrame>>) {
+        let mut l = self.landing.lock().unwrap_or_else(PoisonError::into_inner);
+        if !l.done {
+            l.done = true;
+            l.frame = frame;
+        }
+        let waited = l.waiters > 0;
+        drop(l);
+        if waited {
+            self.changed.notify_all();
+        }
+    }
+}
+
+/// Whether this thread may wait for another request's decode. A rayon worker may not: it may be
+/// running a slice job of that very decode further down its stack (rayon steals work while a job
+/// waits for its halves), and waiting there would never end. It decodes the frame itself instead.
+fn may_wait() -> bool {
+    rayon::current_thread_index().is_none()
+}
+
+/// The decoding request's hold on its [`Flight`]: dropped (the decode answered, failed or
+/// panicked), it takes the flight out of the cache and lands it, with no frame unless
+/// [`Flying::land`] gave one. Never dropped while this thread holds the cache's lock.
+struct Flying<'a> {
+    shared: &'a Shared,
+    key: usize,
+    flight: Arc<Flight>,
+}
+
+impl Flying<'_> {
+    /// Land the flight with the decode's frame (none when it failed).
+    fn land(self, frame: Option<Arc<VideoFrame>>) {
+        self.finish(frame);
+    }
+
+    /// Take the flight out of the cache, then land it: a waiter woken without a frame finds it
+    /// gone and decodes. Idempotent.
+    fn finish(&self, frame: Option<Arc<VideoFrame>>) {
+        let mut st = self.shared.state.lock().unwrap_or_else(PoisonError::into_inner);
+        if st.flights.get(&self.key).is_some_and(|f| Arc::ptr_eq(f, &self.flight)) {
+            st.flights.remove(&self.key);
+        }
+        drop(st);
+        self.flight.land(frame);
+    }
+}
+
+impl Drop for Flying<'_> {
+    fn drop(&mut self) {
+        self.finish(None);
     }
 }
 
@@ -436,6 +532,7 @@ impl GopCache {
                 decoder: None,
                 intra: false,
                 spare: Vec::new(),
+                flights: BTreeMap::new(),
                 next: usize::MAX,
                 start: 0,
                 out_max: i64::MIN,
@@ -723,11 +820,37 @@ impl GopCache {
     }
 
     /// Intra-only streams: decode the one sample outside the lock, so several frame workers
-    /// decode different frames of the same source at once.
+    /// decode different frames of the same source at once. A sample another request is decoding
+    /// right now is not decoded again: this request waits for that decode and answers its frame
+    /// ([`Flight`]; a rayon worker decodes it itself, see [`may_wait`]). When that decode fails,
+    /// each waiting request goes on as if it had not waited.
     fn intra_frame(&self, st: std::sync::MutexGuard<'_, State>, s: &dyn VideoSamples, i: usize, want_pts: i64) -> crate::Result<Arc<VideoFrame>> {
         let mut st = st;
+        while let Some(flight) = st.flights.get(&i).cloned() {
+            if !may_wait() {
+                break;
+            }
+            drop(st);
+            if let Some(f) = flight.wait() {
+                return Ok(f);
+            }
+            st = self.shared.state.lock().unwrap_or_else(PoisonError::into_inner);
+            if let Some(f) = st.cached(want_pts, true).cloned() {
+                return Ok(f);
+            }
+        }
+        // This request decodes the sample; the requests for it meanwhile wait for its frame. A
+        // rayon worker decoding a sample that is already in flight registers nothing.
+        let flight = (!st.flights.contains_key(&i)).then(|| {
+            let flight = Arc::new(Flight::default());
+            st.flights.insert(i, flight.clone());
+            flight
+        });
         let spare = st.spare.pop();
         drop(st);
+        // Declared with no lock held and before the lock below, so it is dropped after that lock's
+        // guard on every way out (an error, a panic): its drop takes the cache's lock.
+        let flying = flight.map(|flight| Flying { shared: &self.shared, key: i, flight });
         let mut dec = match spare {
             Some(d) => d,
             None => s.make_decoder()?,
@@ -736,16 +859,22 @@ impl GopCache {
             DECODED.fetch_add(1, Ordering::Relaxed);
             timed(|| dec.decode(&data, want_pts))
         });
-        let mut st = self.shared.state.lock().unwrap_or_else(|e| e.into_inner());
+        let mut st = self.shared.state.lock().unwrap_or_else(PoisonError::into_inner);
         if st.spare.len() < 16 {
             st.spare.push(dec);
         }
-        let res = res?;
-        count_frames(&res);
-        for d in res {
-            self.store(&mut st, d.pts, d.frame, d.draft);
+        let frame = res.and_then(|res| {
+            count_frames(&res);
+            for d in res {
+                self.store(&mut st, d.pts, d.frame, d.draft);
+            }
+            st.at_or_before(want_pts, true).ok_or_else(|| CodecError::Decode("frame not produced".into()))
+        });
+        drop(st);
+        if let Some(flying) = flying {
+            flying.land(frame.as_ref().ok().cloned());
         }
-        st.at_or_before(want_pts, true).ok_or_else(|| CodecError::Decode("frame not produced".into()))
+        frame
     }
 }
 
@@ -763,7 +892,11 @@ mod tests {
         intra: bool,
         resets: Arc<AtomicUsize>,
         decodes: Arc<AtomicUsize>,
+        /// Run (once) inside the next decode, on the decoding thread, with the sample's index.
+        hook: Hook,
     }
+
+    type Hook = Arc<Mutex<Option<Box<dyn FnOnce(usize) -> crate::Result<()> + Send>>>>;
 
     /// Outputs each picture `delay` samples late, like a frame-threaded decoder.
     struct Dec {
@@ -776,6 +909,7 @@ mod tests {
         limited: bool,
         resets: Arc<AtomicUsize>,
         decodes: Arc<AtomicUsize>,
+        hook: Hook,
     }
 
     /// A picture whose pixel encodes its index (and, in blue, whether it is a draft picture).
@@ -787,6 +921,10 @@ mod tests {
     impl VideoDecoder for Dec {
         fn decode(&mut self, sample: &[u8], pts: i64) -> crate::Result<Vec<DecodedFrame>> {
             self.decodes.fetch_add(1, Ordering::Relaxed);
+            let hook = self.hook.lock().expect("hook").take();
+            if let Some(hook) = hook {
+                hook(sample[0] as usize)?;
+            }
             // like H.264 draft mode: only non-reference (odd) pictures are approximate
             self.held.push_back((pts, self.draft && sample[0] % 2 == 1));
             let mut out = Vec::new();
@@ -846,12 +984,13 @@ mod tests {
                 limited: kition_film_media::cancel::background(),
                 resets: self.resets.clone(),
                 decodes: self.decodes.clone(),
+                hook: self.hook.clone(),
             }))
         }
     }
 
     fn samples(n: usize, gop: usize, delay: usize, intra: bool) -> Samples {
-        Samples { n, gop, delay, intra, resets: Default::default(), decodes: Default::default() }
+        Samples { n, gop, delay, intra, resets: Default::default(), decodes: Default::default(), hook: Default::default() }
     }
 
     fn index_of(f: &VideoFrame) -> usize {
@@ -908,6 +1047,102 @@ mod tests {
         // a frame two threads miss at the same moment may decode twice; nothing more
         assert!(s.decodes.load(Ordering::Relaxed) <= 64 + 4 * 4);
         assert_eq!(s.resets.load(Ordering::Relaxed), 0);
+    }
+
+    /// The requests waiting for the decode of sample `i` now (0 when none is in flight).
+    fn waiting(c: &GopCache, i: usize) -> usize {
+        let flight = c.shared.state.lock().expect("state").flights.get(&i).cloned();
+        flight.map_or(0, |f| f.landing.lock().expect("landing").waiters)
+    }
+
+    fn no_flights(c: &GopCache) -> bool {
+        c.shared.state.lock().expect("state").flights.is_empty()
+    }
+
+    type Second = Arc<Mutex<Option<std::thread::JoinHandle<crate::Result<Arc<VideoFrame>>>>>>;
+
+    /// While the first request's decode of a sample is inside the decoder, a second request for
+    /// it starts on another thread; the decode stays there until the second request waits for it
+    /// (or has answered without waiting), then `end` ends it. Answers the second request's thread.
+    fn second_request_during_decode(s: &Arc<Samples>, c: &Arc<GopCache>, end: impl FnOnce() -> crate::Result<()> + Send + 'static) -> Second {
+        let second: Second = Default::default();
+        let (s2, c2, slot) = (s.clone(), c.clone(), second.clone());
+        *s.hook.lock().expect("hook") = Some(Box::new(move |i: usize| {
+            let (s3, c3) = (s2.clone(), c2.clone());
+            let handle = std::thread::spawn(move || c3.frame(&*s3, i as i64 * 1000));
+            while waiting(&c2, i) == 0 && !handle.is_finished() {
+                std::thread::yield_now();
+            }
+            *slot.lock().expect("slot") = Some(handle);
+            end()
+        }));
+        second
+    }
+
+    fn join(second: &Second) -> crate::Result<Arc<VideoFrame>> {
+        second.lock().expect("slot").take().expect("the second request ran").join().expect("the second request answered")
+    }
+
+    #[test]
+    fn intra_frame_in_flight_is_decoded_once_for_both_requests() {
+        let s = Arc::new(samples(8, 1, 0, true));
+        let c = Arc::new(GopCache::new(None));
+        let second = second_request_during_decode(&s, &c, || Ok(()));
+        let first = c.frame(&*s, 5_000).expect("frame");
+        let second = join(&second).expect("frame");
+        assert_eq!(index_of(&first), 5);
+        assert!(Arc::ptr_eq(&first, &second), "the second request answers the first one's frame");
+        assert_eq!(s.decodes.load(Ordering::Relaxed), 1, "the sample is decoded once");
+        assert!(no_flights(&c));
+    }
+
+    #[test]
+    fn intra_frame_in_flight_that_fails_or_panics_lets_the_waiting_request_decode() {
+        for panics in [false, true] {
+            let s = Arc::new(samples(8, 1, 0, true));
+            let c = Arc::new(GopCache::new(None));
+            let c2 = c.clone();
+            let second = second_request_during_decode(&s, &c, move || {
+                assert_eq!(waiting(&c2, 5), 1, "the second request waits for the first decode");
+                if panics {
+                    panic!("the decoder panicked");
+                }
+                Err(CodecError::Decode("damaged sample".into()))
+            });
+            match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| c.frame(&*s, 5_000))) {
+                Ok(first) => assert!(!panics && matches!(first, Err(CodecError::Decode(_))), "{panics}"),
+                Err(_) => assert!(panics),
+            }
+            let second = join(&second).expect("the second request decodes the frame itself");
+            assert_eq!(index_of(&second), 5);
+            assert_eq!(s.decodes.load(Ordering::Relaxed), 2);
+            assert!(no_flights(&c));
+            // the cache goes on serving the frame
+            assert!(Arc::ptr_eq(&c.frame(&*s, 5_000).expect("cached"), &second));
+        }
+    }
+
+    #[test]
+    fn intra_frame_in_flight_asked_on_a_rayon_worker_is_decoded_there() {
+        // A decoder's slice jobs run on rayon workers, which take other work while they wait: a
+        // worker that waited for the frame its own slice job is decoding would wait forever.
+        let s = Arc::new(samples(8, 1, 0, true));
+        let c = Arc::new(GopCache::new(None));
+        let (s2, c2) = (s.clone(), c.clone());
+        *s.hook.lock().expect("hook") = Some(Box::new(move |i: usize| {
+            let pool = rayon::ThreadPoolBuilder::new().num_threads(1).build().expect("pool");
+            let (s3, c3) = (s2.clone(), c2.clone());
+            let handle = std::thread::spawn(move || pool.install(|| c3.frame(&*s3, i as i64 * 1000)));
+            while waiting(&c2, i) == 0 && !handle.is_finished() {
+                std::thread::yield_now();
+            }
+            assert_eq!(waiting(&c2, i), 0, "a rayon worker does not wait for another request's decode");
+            assert_eq!(index_of(&handle.join().expect("joined").expect("frame")), i);
+            Ok(())
+        }));
+        assert_eq!(index_of(&c.frame(&*s, 5_000).expect("frame")), 5);
+        assert_eq!(s.decodes.load(Ordering::Relaxed), 2);
+        assert!(no_flights(&c));
     }
 
     #[test]

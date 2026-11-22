@@ -451,7 +451,7 @@ features:
     paths: [crates/engine/engine/src/relink.rs, crates/engine/engine/src/proxies.rs, bindings/wasm/src/files.rs, crates/engine/engine/src/settings.rs]
     target: "Premiere Pro 2026 (26.5)"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
-    cases: [regressions/issue-media-outside-workspace, regressions/issue-writes-outside-workspace]
+    cases: [regressions/issue-media-outside-workspace, regressions/issue-writes-outside-workspace, regressions/issue-intra-decode-once]
     since: "2026-11-17"
   - id: film.app.presets
     title: "Effect presets"

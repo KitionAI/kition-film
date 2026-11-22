@@ -1,0 +1,24 @@
+format: 1
+id: regressions/issue-intra-decode-once
+feature: film.media.management
+intent: >-
+  An intra-only source (each frame decodes on its own) decodes a frame once however many requests
+  ask for it at the same moment: a request for a frame another request is decoding waits for that
+  decode and answers its frame. When that decode fails or panics, the waiting request decodes the
+  frame itself instead of waiting forever; a request on a rayon worker (where a decoder's own slice
+  jobs run) never waits, so it cannot wait for the decode it is helping with.
+layer: gate
+source:
+  kind: issue
+  from: Kition Film regression suite
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-codecs
+      filter: "gop::tests::intra_frame"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-22"
