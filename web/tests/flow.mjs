@@ -126,21 +126,37 @@ const until = async (check, tries = 60) => {
   return false
 }
 /**
- * A control's box once it is drawn and holds still over two reads: the Program overlay draws a
- * graphic layer's box (its handles and anchor cross) again after each change lands, so a control
- * seen once can be gone a moment later. Null when it never settles.
+ * What `read` answers once it is there (not null) and holds still: the same (`same`) over three
+ * reads or more, at least 200 ms apart. The editor draws a control again after each change lands
+ * (the Program overlay replaces a layer's box, handles and anchor cross on every paint; a list
+ * re-renders a row; a dialog or a window places itself a frame after it shows), so a control read
+ * once can be gone, or elsewhere, a moment later. Every read that places a pointer action or feeds
+ * an assertion waits here first. Throws with the last read when it never settles (`what` names
+ * it), or answers null with `{ orNull: true }` where a step reports a missing control itself.
  */
-const settledBox = async (locator) => {
+const heldStill = async (read, { same = (a, b) => JSON.stringify(a) === JSON.stringify(b), what = 'the value', orNull = false, tries = 100 } = {}) => {
   let last = null
-  let box = null
-  const settled = await until(async () => {
-    box = await locator.boundingBox()
-    const same = box != null && last != null && ['x', 'y', 'width', 'height'].every((key) => box[key] === last[key])
-    last = box
-    return same
-  })
-  return settled ? box : null
+  let since = 0
+  let polls = 0
+  let now = null
+  const held = await until(async () => {
+    now = await read()
+    if (now == null || last == null || !same(now, last)) {
+      last = now
+      since = Date.now()
+      polls = 1
+      return false
+    }
+    polls += 1
+    return polls >= 3 && Date.now() - since >= 200
+  }, tries)
+  if (held) return now
+  if (orNull) return null
+  throw new Error(`${what} never held still within ${tries * 100} ms; last read ${JSON.stringify(now)}`)
 }
+const boxesMatch = (a, b) => ['x', 'y', 'width', 'height'].every((key) => Math.abs(a[key] - b[key]) < 0.5)
+/** A control's box (`locator.boundingBox()`) once it is drawn and holds still (`heldStill`). */
+const settledBox = (locator, options = {}) => heldStill(() => locator.boundingBox({ timeout: 1000 }).catch(() => null), { same: boxesMatch, what: `the box of ${locator}`, ...options })
 /**
  * Polls the engine through the dev host until `predicate(state)` holds, and answers that state.
  * `state` is `inspect()` (`{ revision, details, … }`), with `history` (history.list's result) when
@@ -512,7 +528,7 @@ try {
   await until(async () => (await revision()) > splitFrom && (await clips('video')).length === 2)
   step('splits at the playhead', (await clips('video')).length === 2, JSON.stringify({ clips: (await clips('video')).map((item) => [item.start, item.duration]), playhead: (await details()).playhead, said: await kit.getByTestId('film-message').textContent({ timeout: 300 }).catch(() => null) }))
   const first = (await clips('video'))[0]
-  const box = await kit.getByTestId(`film-clip-${first.clip}`).boundingBox()
+  const box = await settledBox(kit.getByTestId(`film-clip-${first.clip}`))
   await page.mouse.move(box.x + 10, box.y + box.height / 2)
   await page.mouse.down()
   await page.mouse.move(box.x + 140, box.y + box.height / 2, { steps: 6 })
@@ -701,8 +717,8 @@ try {
     const durationShown = await until(async () => (await kit.getByTestId('film-source-duration').textContent()) === '00:00:01:01')
     step('the Source duration reads the marked In to Out', durationShown, await kit.getByTestId('film-source-duration').textContent())
     // Dragging the In handle on the scrub bar moves the mark in one project.setMarks.
-    const bar = await kit.getByTestId('film-source-scrub').boundingBox()
-    const inHandle = await kit.locator('[data-testid="film-source-scrub"] [data-edge="in"]').boundingBox()
+    const bar = await settledBox(kit.getByTestId('film-source-scrub'))
+    const inHandle = await settledBox(kit.locator('[data-testid="film-source-scrub"] [data-edge="in"]'))
     const handleFrom = await revision()
     await page.mouse.move(inHandle.x + inHandle.width / 2, bar.y + bar.height / 2)
     await page.mouse.down()
@@ -725,8 +741,8 @@ try {
     await page.keyboard.press('ControlOrMeta+z')
     await until(async () => (await v1Count()) === insertFrom.count)
     // Dragging the Source picture onto V1 shows the drop preview over the track, and places the marked range there.
-    const lane = await kit.locator('.film-tl-lane').first().boundingBox()
-    const picture = await kit.getByTestId('film-source').boundingBox()
+    const lane = await settledBox(kit.locator('.film-tl-lane').first())
+    const picture = await settledBox(kit.getByTestId('film-source'))
     const dropFrom = { count: await v1Count(), revision: await revision() }
     const from = { x: picture.x + picture.width / 2, y: picture.y + picture.height / 2 }
     const to = { x: lane.x + lane.width * 0.85, y: lane.y + lane.height / 2 }
@@ -931,8 +947,8 @@ try {
       await chooseWrench('program', 'display-comparison')
       const referenceCanvas = '[data-testid="film-program-reference"] canvas'
       const referenceDrawn = await until(async () => (await kit.locator(`${referenceCanvas}[data-shown="true"]`).count()) === 1)
-      const referenceBox = await kit.locator(referenceCanvas).boundingBox()
-      const currentBox = await kit.locator(programCanvas).first().boundingBox()
+      const referenceBox = await settledBox(kit.locator(referenceCanvas), { orNull: true })
+      const currentBox = await settledBox(kit.locator(programCanvas).first(), { orNull: true })
       const pictures = { reference: (await tones(referenceCanvas)).lit, current: (await tones(programCanvas)).lit }
       const reference = async () => Number(await kit.getByTestId('film-program-compare-bar').getAttribute('data-reference'))
       const drawnAt = async () => Number(await kit.locator(referenceCanvas).getAttribute('data-ticks'))
@@ -979,7 +995,7 @@ try {
         return count
       })
       const clip = await sourceInspect()
-      const wave = await kit.getByTestId('film-source-waveform').boundingBox()
+      const wave = await settledBox(kit.getByTestId('film-source-waveform'))
       await kit.getByTestId('film-source-waveform').click({ position: { x: wave.width * 0.25, y: wave.height / 2 } })
       const wanted = clip.end * 0.25
       const sourceFrame = TPS / clip.fps
@@ -987,7 +1003,7 @@ try {
       step('Source ▸ Audio Waveform shows the tone\'s waveform, and a click there moves the source playhead', waveDrawn && green > 50 && moved, JSON.stringify({ waveDrawn, green, wanted, playhead: (await sourceInspect()).playhead, end: clip.end }))
       await checkIds()
       // A vertical drag out of the waveform takes the marked audio to the Timeline (upstream's source_drag with audio only).
-      const audioLane = await kit.getByTestId('film-track-Audio 1').boundingBox()
+      const audioLane = await settledBox(kit.getByTestId('film-track-Audio 1'))
       const waveFrom = { audio: (await clips('audio')).length, video: (await clips('video')).length, revision: await revision() }
       const start = { x: wave.x + wave.width / 2, y: wave.y + wave.height / 2 }
       const target = { x: audioLane.x + audioLane.width * 0.85, y: audioLane.y + audioLane.height / 2 }
@@ -1125,8 +1141,8 @@ try {
     // Its card drags onto V2 through the Timeline's drop target: the preview shows, then the clip is placed.
     const v2 = async () => (await clips('video')).filter((item) => item.item === imported)
     const dragFrom = { revision: await revision(), count: (await v2()).length }
-    const cardBox = await card.boundingBox()
-    const lane2 = await kit.getByTestId('film-track-Video 2').boundingBox()
+    const cardBox = await settledBox(card)
+    const lane2 = await settledBox(kit.getByTestId('film-track-Video 2'))
     const from = { x: cardBox.x + cardBox.width / 2, y: cardBox.y + cardBox.height / 3 }
     const to = { x: lane2.x + lane2.width * 0.6, y: lane2.y + lane2.height * 0.6 }
     await page.mouse.move(from.x, from.y)
@@ -1155,8 +1171,8 @@ try {
     const binCard = kit.getByTestId(`film-project-bin-${bin?.id}`)
     await binCard.waitFor({ timeout: 5000 }).catch(() => undefined)
     const moveFrom = await revision()
-    const cardAt = await card.boundingBox()
-    const binAt = await binCard.boundingBox()
+    const cardAt = await settledBox(card, { orNull: true })
+    const binAt = await settledBox(binCard, { orNull: true })
     if (cardAt && binAt) {
       const start = { x: cardAt.x + cardAt.width / 2, y: cardAt.y + cardAt.height / 3 }
       const end = { x: binAt.x + binAt.width / 2, y: binAt.y + binAt.height / 3 }
@@ -1259,7 +1275,7 @@ try {
     const iconRowsNow = (await personRun([{ command: 'project.items', params: { order: 'icon' } }])).completed[0].result.rows
     const scrubbed = iconRowsNow.find((row) => row.kind === 'media' && row.hasVideo && row.direct && row.item !== imported)?.item ?? shownCards[0]
     const sequenceIn = (await details()).sequence.in ?? null
-    const art = await kit.locator(`[data-testid="film-project-thumb-${scrubbed}"]`).boundingBox()
+    const art = await settledBox(kit.locator(`[data-testid="film-project-thumb-${scrubbed}"]`))
     for (let i = 0; i <= 6; i += 1) {
       await page.mouse.move(art.x + art.width * (0.2 + i * 0.05), art.y + art.height / 2)
       await hold(40)
@@ -1318,7 +1334,7 @@ try {
     // The other UI commands the engine's tables bind once registered: Shift+L shuttles slowly
     // forward (playback.slowForward), Alt+= in the Timeline makes the audio tracks taller
     // (timeline.increaseAudioHeight), and Alt+Shift+9 shows the All Panels workspace.
-    const timelineFrame = await kit.getByTestId('film-workspace-frame-timeline').boundingBox()
+    const timelineFrame = await settledBox(kit.getByTestId('film-workspace-frame-timeline'))
     await page.mouse.click(timelineFrame.x + timelineFrame.width / 2, timelineFrame.y + 12)
     await kit.locator('.kui-app').focus()
     const playFrom = (await details()).playhead
@@ -1327,7 +1343,7 @@ try {
     await page.keyboard.press('k')
     await playheadSettled()
     const audioHeight = async () => (await kit.getByTestId('film-track-Audio 1').boundingBox())?.height ?? 0
-    const heightFrom = await audioHeight()
+    const heightFrom = (await settledBox(kit.getByTestId('film-track-Audio 1'))).height
     await page.keyboard.press('Alt+Equal')
     const taller = await until(async () => (await audioHeight()) > heightFrom, 20)
     await page.keyboard.press('Alt+Minus')
@@ -1452,7 +1468,7 @@ try {
   step('an audio clip shows its waveform', waveShown, `${await waveLit().catch(() => 0)} waveform pixels`)
   const clipWidth = async () => (await kit.getByTestId(`film-clip-${videoClip}`).boundingBox())?.width ?? 0
   await kit.locator('.kui-app').focus()
-  const widthBefore = await clipWidth()
+  const widthBefore = (await settledBox(kit.getByTestId(`film-clip-${videoClip}`))).width
   await page.keyboard.press('=')
   const zoomedIn = await until(async () => Math.abs((await clipWidth()) / widthBefore - 1.6) < 0.02)
   const widthIn = await clipWidth()
@@ -1525,9 +1541,12 @@ try {
   step('every tool is chosen by a click or its flyout, and by its key, and the status bar shows its hint', toolProblems.length === 0, toolProblems.slice(0, 4).join('; '))
   // A group's button shows the group's first tool once another group's tool is active (upstream draws `group[0]`).
   await slot('Selection').click()
+  // The tool bar drawn for Selection before its buttons are read.
+  await until(async () => (await activeTool()) === 'Selection', 20)
+  await paintFrames()
   const firstShown = (await slot('Type').count()) === 1 && (await slot('VerticalType').count()) === 0
   // Upstream's long-press test: holding Type 350 ms opens its flyout, and that release chooses nothing.
-  const typeBox = await slot('Type').boundingBox()
+  const typeBox = await settledBox(slot('Type'))
   await page.mouse.move(typeBox.x + typeBox.width / 2, typeBox.y + typeBox.height / 2)
   await page.mouse.down()
   await hold(500)
@@ -1572,8 +1591,16 @@ try {
     const programCanvas = kit.locator('[data-testid="film-program"] canvas').first()
     /** The page point of sequence point (`x`, `y`) at the Program canvas's view. */
     const pagePoint = async (x, y) => {
-      const [zoom, vx, vy] = ((await kit.getByTestId('film-program').getAttribute('data-view')) ?? '').split(' ').map(Number)
-      const region = await programCanvas.boundingBox()
+      // The canvas's box and its view, once both hold still (a refit or a zoom eases over frames).
+      const { view, region } = await heldStill(
+        async () => {
+          const shown = await kit.getByTestId('film-program').getAttribute('data-view', { timeout: 1000 }).catch(() => null)
+          const box = await programCanvas.boundingBox({ timeout: 1000 }).catch(() => null)
+          return shown && box ? { view: shown, region: box } : null
+        },
+        { what: 'the Program canvas and its view' },
+      )
+      const [zoom, vx, vy] = view.split(' ').map(Number)
       return { x: region.x + (x - vx) * zoom, y: region.y + (y - vy) * zoom }
     }
     const clickAt = async (x, y) => {
@@ -1688,7 +1715,7 @@ try {
       await paintFrames(page, 3)
       await checkIds()
       // Drag a vertical guide out of the left ruler to x = W * 0.3: shown while dragged, placed on release in frame pixels.
-      const left = await kit.getByTestId('film-program-ruler-left').boundingBox()
+      const left = await settledBox(kit.getByTestId('film-program-ruler-left'))
       const target = await pagePoint(Math.round(W * 0.3), H * 0.5)
       await page.mouse.move(left.x + 8, target.y)
       await page.mouse.down()
@@ -1733,7 +1760,7 @@ try {
       await pressKey('H')
       await until(async () => (await activeTool()) === 'Hand', 20)
       const dragGuide = async (dx, { escape = false } = {}) => {
-        const box = await guide(0).boundingBox()
+        const box = await settledBox(guide(0))
         const from = { x: box.x + box.width / 2, y: box.y + box.height * 0.6 }
         await page.mouse.move(from.x, from.y)
         await page.mouse.down()
@@ -1801,6 +1828,8 @@ try {
       await guideDialog.waitFor({ timeout: 5000 })
       await checkIds()
       await kit.getByTestId('film-guide-save-name').fill('Thirds')
+      // The strip is drawn again for the typed name before it is read.
+      await until(async () => ((await kit.getByTestId('film-guide-dialog-lines').textContent()) ?? '').includes('Thirds'), 30)
       const saveLines = await kit.getByTestId('film-guide-dialog-lines').textContent()
       await kit.locator('[data-testid="film-guide-dialog"] [data-kit-ui-id="control:dialog.ok"]').click()
       const thirds = [{ vertical: true, position: movedX }, { vertical: false, position: 480 }]
@@ -1914,7 +1943,8 @@ try {
     await kit.locator('.kui-app').focus()
     await page.keyboard.press('Enter')
     const pathMade = await until(async () => (await revision()) > at && (await graphicList(text.clip))?.layers?.some((layer) => layer.kind === 'Path'))
-    const cleared = (await penPoints()) === 0
+    // The overlay drops the pen points on its next paint after the path lands.
+    const cleared = await until(async () => (await penPoints()) === 0, 20)
     step('three Pen clicks on the Program picture show the path, and Enter makes it a shape', shownPoints && pathMade && cleared, JSON.stringify({ shownPoints, pathMade, cleared, points: await penPoints(), afterClicks }))
     // Escape drops a Pen path; nothing is made.
     await clickAt(W * 0.15, H * 0.15)
@@ -2242,7 +2272,7 @@ try {
     // does not pan, a Hand drag does; at Fit the Hand does not pan either.
     const viewOf = async () => (await kit.getByTestId('film-program').getAttribute('data-view')) ?? ''
     const dragPicture = async () => {
-      const region = await programCanvas.boundingBox()
+      const region = await settledBox(programCanvas)
       const start = { x: region.x + region.width * 0.3, y: region.y + region.height * 0.5 }
       await page.mouse.move(start.x, start.y)
       await page.mouse.down()
@@ -2537,8 +2567,8 @@ try {
         const drawn = await until(async () => (await kit.getByTestId('film-program-preview').getAttribute('data-serial')) === String((await previewState()).serial), 60)
         readout = await kit.getByTestId('film-dialog-speedDuration-duration').textContent().catch(() => null)
         const ghosted = await until(async () => (await kit.locator(`[data-testid="film-clip-${A.clip}"][data-preview="changed"]`).count()) === 1 && (await kit.getByTestId(`film-clip-was-${A.clip}`).count()) === 1 && (await kit.getByTestId(`film-clip-was-${B.clip}`).count()) === 1, 60)
-        const grown = await kit.getByTestId(`film-clip-${A.clip}`).boundingBox()
-        const was = await kit.getByTestId(`film-clip-was-${A.clip}`).boundingBox()
+        const grown = await settledBox(kit.getByTestId(`film-clip-${A.clip}`), { orNull: true })
+        const was = await settledBox(kit.getByTestId(`film-clip-was-${A.clip}`), { orNull: true })
         onTimeline = {
           ghosted,
           badge: await kit.getByTestId('film-timeline-preview-badge').count(),
@@ -2616,18 +2646,18 @@ try {
       await speedDialog()
       const shown = kit.getByTestId('film-dialog')
       await shown.waitFor({ timeout: 10000 })
-      const from = await shown.boundingBox()
-      const title = await shown.locator('h2').boundingBox()
+      const from = await settledBox(shown)
+      const title = await settledBox(shown.locator('h2'))
       await page.mouse.move(title.x + 20, title.y + title.height / 2)
       await page.mouse.down()
       await page.mouse.move(title.x + 80, title.y + title.height / 2 - 40, { steps: 6 })
       await page.mouse.up()
-      const moved = await shown.boundingBox()
+      const moved = await settledBox(shown)
       await kit.getByTestId('film-dialog-cancel').click()
       await until(async () => (await dialogShown()) === 0 && !(await previewState()).open, 50)
       await speedDialog()
       await shown.waitFor({ timeout: 10000 })
-      const again = await shown.boundingBox()
+      const again = await settledBox(shown)
       await kit.getByTestId('film-dialog-cancel').click()
       await until(async () => (await dialogShown()) === 0 && !(await previewState()).open, 50)
       const near = (a, b) => Math.abs(a - b) <= 2
@@ -2878,7 +2908,7 @@ try {
       {
         await kitFrame().evaluate(() => Object.keys(localStorage).filter((key) => key.includes('dialogPlace')).forEach((key) => localStorage.removeItem(key)))
         await interpretOpen()
-        const boxOf = (locator) => locator.boundingBox()
+        const boxOf = (locator) => settledBox(locator, { orNull: true })
         const dialogBox = await boxOf(kit.getByTestId('film-dialog'))
         const projectBox = await boxOf(kit.locator('.kui-ws-frame', { has: kit.getByTestId('film-project') }).first())
         const badgeBox = await boxOf(kit.getByTestId('film-program-preview-badge'))
@@ -2919,7 +2949,7 @@ try {
         await kit.getByTestId('film-dialog-frameHold-holdOn-sourceTimecode').check()
         const field = kit.getByTestId('film-dialog-frameHold-timecode')
         const shown = await until(async () => (await field.count()) === 1, 30)
-        const width = (await field.boundingBox())?.width ?? null
+        const width = (await settledBox(field, { orNull: true }))?.width ?? null
         await field.fill('00:00:00:12')
         await previewSettled()
         const revisionFrom = (await waitForEngine(page, () => true)).revision
@@ -3411,9 +3441,9 @@ try {
         const previewing = await previewOpened(serial)
         // The dialog sits over the Timeline's tabs at this size: moved aside by its title first
         // (the place it keeps is cleared after), as a person would.
-        const title = await kit.locator('[data-testid="film-dialog"] h2').boundingBox()
+        const title = await settledBox(kit.locator('[data-testid="film-dialog"] h2'))
         const tab = kit.getByTestId(`film-sequence-tab-${other}`)
-        const tabBox = await tab.boundingBox()
+        const tabBox = await settledBox(tab)
         if (title && tabBox) {
           await page.mouse.move(title.x + 20, title.y + title.height / 2)
           await page.mouse.down()
@@ -3464,7 +3494,7 @@ try {
           }
           await until(async () => (await half.locator('[data-testid^="film-preview-track-"][data-preview="added"]').count()) > 0, 60)
           await look()
-          const box = await half.boundingBox()
+          const box = await settledBox(half, { orNull: true })
           for (let turn = 0; turn < 8 && drawn.size < 3 && box; turn += 1) {
             await page.mouse.move(box.x + box.width * 0.7, box.y + box.height / 2)
             await page.mouse.wheel(0, turn < 6 ? -120 : 120)
@@ -3576,8 +3606,8 @@ try {
       const colour = (prefix, hex) => async () => {
         if (!(await kit.getByTestId(`film-dialog-${prefix}-color-picker-hex`).count())) await kit.getByTestId(`film-dialog-${prefix}-color`).click()
         await paintFrames()
-        const popup = await kit.getByTestId(`film-dialog-${prefix}-color-popup`).boundingBox()
-        const title = await kit.locator('[data-testid="film-dialog"] h2').boundingBox()
+        const popup = await settledBox(kit.getByTestId(`film-dialog-${prefix}-color-popup`), { orNull: true })
+        const title = await settledBox(kit.locator('[data-testid="film-dialog"] h2'), { orNull: true })
         pickerClear.push(popup != null && title != null && (popup.x >= title.x + title.width || popup.x + popup.width <= title.x || popup.y >= title.y + title.height || popup.y + popup.height <= title.y))
         const field = kit.getByTestId(`film-dialog-${prefix}-color-picker-hex`)
         await field.fill(hex)
@@ -3594,7 +3624,7 @@ try {
         }
         await until(async () => (await lane.locator(`[data-testid^="film-preview-track-"][data-preview="${mark}"]`).count()) > 0, 60)
         await look()
-        const box = await lane.boundingBox()
+        const box = await settledBox(lane, { orNull: true })
         for (let turn = 0; turn < 12 && !ids.every((id) => drawn.has(id)) && box; turn += 1) {
           await page.mouse.move(box.x + box.width * 0.7, box.y + box.height / 2)
           await page.mouse.wheel(0, turn < 4 ? -120 : 120)
@@ -3670,9 +3700,9 @@ try {
         const made = (await person([{ command: 'file.newSequence', params: { name: 'Two tracks', video: 1, audio: 2 } }, { command: 'sequence.open', params: { item: sequenceId } }])).completed[0].result?.sequence ?? null
         await waitForEngine(page, (state) => state.details?.sequence?.id === sequenceId)
         await addOpen()
-        const title = await kit.locator('[data-testid="film-dialog"] h2').boundingBox()
+        const title = await settledBox(kit.locator('[data-testid="film-dialog"] h2'))
         const tab = kit.getByTestId(`film-sequence-tab-${made}`)
-        const tabBox = await tab.boundingBox()
+        const tabBox = await settledBox(tab)
         if (title && tabBox) {
           await page.mouse.move(title.x + 20, title.y + title.height / 2)
           await page.mouse.down()
@@ -4027,7 +4057,7 @@ try {
             // to its top (A1), where the sound is placed.
             await kit.locator('.kui-app').focus()
             await page.keyboard.press('\\')
-            const lane = await kit.getByTestId('film-timeline-audio').boundingBox()
+            const lane = await settledBox(kit.getByTestId('film-timeline-audio'), { orNull: true })
             if (lane) {
               await page.mouse.move(lane.x + lane.width * 0.7, lane.y + lane.height / 2)
               for (let turn = 0; turn < 8; turn += 1) await page.mouse.wheel(0, -120)
@@ -4865,8 +4895,8 @@ try {
       const near = (a, b, within = 1) => a != null && b != null && Math.abs(a - b) <= within
       /** A point of the canvas no card covers, in the page (the canvas menu's place). */
       const emptySpot = async () => {
-        const box = await kit.getByTestId('film-project-freeform').boundingBox()
-        const frameBox = await page.locator('#kit').boundingBox()
+        const box = await settledBox(kit.getByTestId('film-project-freeform'))
+        const frameBox = await settledBox(page.locator('#kit'))
         const spot = await kitFrame().evaluate(({ x, y, width, height }) => {
           for (let fy = 0.92; fy > 0.05; fy -= 0.07)
             for (let fx = 0.95; fx > 0.05; fx -= 0.07) {
@@ -4887,7 +4917,7 @@ try {
       const dragCard = async (item, by) => {
         // In the panel's view first (a click on another card may have scrolled the canvas).
         await kit.getByTestId(`film-project-item-${item}`).scrollIntoViewIfNeeded()
-        const box = await kit.getByTestId(`film-project-item-${item}`).boundingBox()
+        const box = await settledBox(kit.getByTestId(`film-project-item-${item}`))
         const from = { x: box.x + box.width / 2, y: box.y + box.height / 3 }
         await page.mouse.move(from.x, from.y)
         await page.mouse.down()
@@ -4910,7 +4940,7 @@ try {
       }
       // A click at the engine's place of a card (the middle of its picture) selects that card.
       const [A, B, C] = cards.filter((card) => card.stack == null)
-      const canvasBox = await canvas.boundingBox()
+      const canvasBox = await settledBox(canvas)
       await page.mouse.click(canvasBox.x + B.x + B.size / 2, canvasBox.y + B.y + (B.size * 9) / 32)
       const hit = await until(async () => JSON.stringify((await sessionNow()).project_selection) === JSON.stringify([B.item]), 50)
       step("the Freeform View button shows the bin's cards where the engine's layout puts them, and a click at a card's place selects it", shown && (await viewNow())?.view?.mode === 'freeform' && cards.length >= 3 && placesWrong.length === 0 && hit, JSON.stringify({ shown, cards: cards.length, placesWrong: placesWrong.slice(0, 2), hit, selection: (await sessionNow()).project_selection }))
@@ -4935,7 +4965,7 @@ try {
       {
         const revisionFrom = await revision()
         await kit.getByTestId(`film-project-item-${C.item}`).scrollIntoViewIfNeeded()
-        const box = await kit.getByTestId(`film-project-item-${C.item}`).boundingBox()
+        const box = await settledBox(kit.getByTestId(`film-project-item-${C.item}`))
         const from = { x: box.x + box.width / 2, y: box.y + box.height / 3 }
         await page.mouse.move(from.x, from.y)
         await page.mouse.down()
@@ -5069,7 +5099,7 @@ try {
         await person([{ command: 'project.freeform.move', params: { items: [C.item], x: 200, y: 20, width: await widthNow() } }])
         await until(async () => near((await drawnAt(C.item))?.y, 20, 0.5), 40)
         const before = await cardOf(C.item)
-        const box = await kit.getByTestId(`film-project-item-${C.item}`).boundingBox()
+        const box = await settledBox(kit.getByTestId(`film-project-item-${C.item}`))
         const from = { x: box.x + box.width / 2, y: box.y + box.height / 3 }
         await page.mouse.move(from.x, from.y)
         await page.mouse.down()
@@ -5104,9 +5134,9 @@ try {
         const cardBefore = await cardOf(C.item)
         const v2 = async () => (await clips('video')).filter((item) => item.item === C.item)
         const countBefore = (await v2()).length
-        const lane2 = await kit.getByTestId('film-track-Video 2').boundingBox()
+        const lane2 = await settledBox(kit.getByTestId('film-track-Video 2'))
         await kit.getByTestId(`film-project-item-${C.item}`).scrollIntoViewIfNeeded()
-        const box = await kit.getByTestId(`film-project-item-${C.item}`).boundingBox()
+        const box = await settledBox(kit.getByTestId(`film-project-item-${C.item}`))
         const from = { x: box.x + box.width / 2, y: box.y + box.height / 3 }
         const to = { x: lane2.x + lane2.width * 0.6, y: lane2.y + lane2.height * 0.6 }
         await page.mouse.move(from.x, from.y)
@@ -5179,8 +5209,8 @@ try {
         const item = moved[0]
         const v2 = async () => (await clips('video')).filter((each) => each.item === item)
         const before = { revision: await revision(), count: (await v2()).length }
-        const box = await windowOf(id).getByTestId(`film-project-item-${item}`).boundingBox()
-        const lane2 = await kit.getByTestId('film-track-Video 2').boundingBox()
+        const box = await settledBox(windowOf(id).getByTestId(`film-project-item-${item}`))
+        const lane2 = await settledBox(kit.getByTestId('film-track-Video 2'))
         const from = { x: box.x + box.width / 2, y: box.y + box.height / 3 }
         const to = { x: lane2.x + lane2.width * 0.6, y: lane2.y + lane2.height * 0.6 }
         await page.mouse.move(from.x, from.y)
@@ -5222,8 +5252,8 @@ try {
       step('Window ▸ New Project Panel opens the project\'s root in another window, titled "Project: Sample", listing the root\'s bins', rootShown && rootTitle === filled(zh('Project: {name}'), { name: 'Sample' }) && (await windows.count()) === 2, JSON.stringify({ rootShown, rootTitle, windows: await windows.count() }))
 
       // Moved by its title bar: the rectangle is in the kit store, under the root window's id.
-      const rootRect = await rectOf(windowOf(rootWindow))
-      const titleBox = await kit.getByTestId(`film-bin-windows-${rootWindow}-title`).boundingBox()
+      const rootRect = await heldStill(() => rectOf(windowOf(rootWindow)), { what: "the root window's place" })
+      const titleBox = await settledBox(kit.getByTestId(`film-bin-windows-${rootWindow}-title`))
       await page.mouse.move(titleBox.x + 60, titleBox.y + titleBox.height / 2)
       await page.mouse.down()
       for (let i = 1; i <= 6; i += 1) {
@@ -5232,7 +5262,7 @@ try {
       }
       await page.mouse.up()
       // Where it was dropped (kept inside the workspace: the layer moves it in when it would leave it).
-      const movedTo = await rectOf(windowOf(rootWindow))
+      const movedTo = await heldStill(() => rectOf(windowOf(rootWindow)), { what: "the root window's place after the drag" })
       const kept = movedTo.x === rootRect.x + 120 && movedTo.y !== rootRect.y && (await until(async () => JSON.stringify((await stored())[rootWindow]) === JSON.stringify(movedTo), 30))
 
       // Two pages: a second editor page has none of the first page's windows; its own New Project
@@ -5582,6 +5612,8 @@ try {
 
     // A drop from the Project panel or the Source monitor (Task 15's drop target) places the item.
     const before = (await v1()).length
+    // A's lane drawn and still (the undo before drew the clips again) before the drop reads its place.
+    await settledBox(kit.getByTestId(`film-clip-${A.clip}`))
     const dropped = await edited(
       () =>
         kitFrame().evaluate(({ id, item }) => {
@@ -5644,7 +5676,7 @@ try {
 
       const opacityFrom = number(await fx('opacity', 'opacity'))
       const stepsFrom = await history()
-      const hot = await kit.getByTestId('film-ec-opacity-opacity-value-value').boundingBox()
+      const hot = await settledBox(kit.getByTestId('film-ec-opacity-opacity-value-value'))
       const dragged = await edited(() => drag(center(hot), { x: center(hot).x - 120, y: center(hot).y }), async () => number(await fx('opacity', 'opacity')) < opacityFrom)
       await settle()
       const stepsTo = await history()
@@ -5662,8 +5694,8 @@ try {
       step('the Position stopwatch, then a change after moving the playhead: two keyframes, both in the lane', animated && off && second && drawn, JSON.stringify({ animated, off, second, keyframes: (await fx('motion', 'position'))?.keyframes, lane: await laneKeys() }))
 
       const keysBefore = await laneKeys()
-      const laneBox = await lane.boundingBox()
-      const later = center(await lane.locator('.kui-keyframe').nth(1).boundingBox())
+      const laneBox = await settledBox(lane)
+      const later = center(await settledBox(lane.locator('.kui-keyframe').nth(1)))
       const movedKey = await edited(() => drag(later, { x: later.x - laneBox.width * 0.2, y: later.y }), async () => {
         const now = await laneKeys()
         return now.length === 2 && JSON.stringify(now) !== JSON.stringify(keysBefore)
@@ -5871,7 +5903,7 @@ try {
   const nearProject = (await kit.getByTestId('film-workspace-frame-history').getByTestId('film-workspace-tab-project').count()) === 1
   step('closing History and then Window ▸ History brings it back near Project', closed && nearProject, JSON.stringify({ closed, nearProject }))
   // ` maximizes the frame under the pointer, and again restores the layout.
-  const program = await kit.getByTestId('film-workspace-frame-program').boundingBox()
+  const program = await settledBox(kit.getByTestId('film-workspace-frame-program'))
   await page.mouse.move(program.x + program.width / 2, program.y + program.height / 2)
   await kit.locator('.kui-app').focus()
   const framesBefore = await frames()
@@ -5938,7 +5970,7 @@ try {
     const tools3 = kit3.getByTestId('film-tools')
     await tools3.waitFor({ timeout: 10000 })
     await paintFrames(page3, 4)
-    const frameBox = await kit3.getByTestId('film-workspace-frame-tools').boundingBox()
+    const frameBox = await settledBox(kit3.getByTestId('film-workspace-frame-tools'))
     const drawn = await tools3.locator('[data-kit-ui-id^="tool:"]').evaluateAll((items) => items.map((item) => item.getAttribute('data-kit-ui-id')))
     const firsts = []
     for (const tool of manifest.tools) if (tool.slot === 0) firsts.push(`tool:${tool.id}`)
@@ -5956,7 +5988,7 @@ try {
     await kit3.locator('.kui-app').focus()
     await page3.keyboard.press('c')
     const razor = await until(async () => (await hint3()) === hintFor('Razor'), 20)
-    const timeline3 = await kit3.getByTestId('film-workspace-frame-timeline').boundingBox()
+    const timeline3 = await settledBox(kit3.getByTestId('film-workspace-frame-timeline'))
     await page3.mouse.move(timeline3.x + timeline3.width / 2, timeline3.y + timeline3.height / 2)
     await kit3.locator('.kui-app').focus()
     await page3.keyboard.press('`')
@@ -6097,7 +6129,7 @@ try {
     // The engine's wave-1 keys run in the editor: Home and End, Down to the next edit, D selects the clip at the playhead, ] raises its volume.
     await kit.getByTestId('film-workspace-tab-project').click()
     const focusTimeline = async () => {
-      const lane = await kit.getByTestId('film-track-Video 1').boundingBox()
+      const lane = await settledBox(kit.getByTestId('film-track-Video 1'))
       await page.mouse.click(lane.x + 2, lane.y - 30)
       await kit.locator('.kui-app').focus()
     }
@@ -6140,14 +6172,14 @@ try {
     await dynamicRow().click()
     step('View ▸ Dynamic Audio Waveforms switches the waveforms between logarithmic and linear, and is checked while on', checkedOn === 'true' && checkedOff === 'false' && litOn != null && litOff != null && litOff < litOn, JSON.stringify({ checkedOn, checkedOff, litOn, litOff }))
     // The divider shares the height between the halves; a track header's bottom edge resizes its tracks.
-    const header = (name) => kit.getByTestId(`film-track-${name}-header`).boundingBox()
+    const header = (name) => settledBox(kit.getByTestId(`film-track-${name}-header`))
     const audioBefore = await header('A1')
     await page.mouse.move(audioBefore.x + audioBefore.width / 2, audioBefore.y + audioBefore.height - 1)
     await page.mouse.down()
     await page.mouse.move(audioBefore.x + audioBefore.width / 2, audioBefore.y + audioBefore.height + 15, { steps: 4 })
     await page.mouse.up()
     const audioAfter = await header('A1')
-    const divider = await kit.getByTestId('film-timeline-divider').boundingBox()
+    const divider = await settledBox(kit.getByTestId('film-timeline-divider'))
     const videoBefore = await header('V1')
     await page.mouse.move(divider.x + divider.width / 2, divider.y + divider.height / 2)
     await page.mouse.down()
