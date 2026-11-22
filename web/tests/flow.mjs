@@ -2092,7 +2092,10 @@ try {
         JSON.stringify({ handlesShown, scaled, scaledOnce, scale: [bigger.scale, bigger.scaleWidth], before: rectangle.quad[0], after: bigger.quad[0] }),
       )
       // The anchor point dragged moves alone: the position follows it, so the rectangle stays where it is.
-      const cross = await kit.locator('[data-kit-ui-id="control:program.layer.anchor"]').boundingBox()
+      // The box is drawn again after the scale lands (WebKit draws it a moment later): the cross is read once it shows.
+      const crossShown = kit.locator('[data-kit-ui-id="control:program.layer.anchor"]')
+      await crossShown.waitFor({ timeout: 10000 })
+      const cross = await crossShown.boundingBox()
       const anchored = await dragBy({ x: cross.x + cross.width / 2, y: cross.y + cross.height / 2 }, 30, 20)
       const anchoredOnce = await until(async () => (await historyLength()) === anchored.stepsAt + 1)
       const moved2 = await layerOf((layer) => layer.kind === 'Rectangle')
@@ -2132,7 +2135,9 @@ try {
       )
       // An edge handle stretches one axis only (uniform_scale false): the rectangle's right edge dragged out widens it, its height kept.
       await paintFrames(page, 2)
-      const edge = await kit.locator('[data-kit-ui-id="control:program.layer.handle"][data-handle="5"]').boundingBox()
+      const edgeShown = kit.locator('[data-kit-ui-id="control:program.layer.handle"][data-handle="5"]')
+      await edgeShown.waitFor({ timeout: 10000 })
+      const edge = await edgeShown.boundingBox()
       const stretched = await dragBy({ x: edge.x + edge.width / 2, y: edge.y + edge.height / 2 }, 50, 0)
       const stretchedOnce = await until(async () => (await historyLength()) === stretched.stepsAt + 1)
       const wide = await layerOf((layer) => layer.kind === 'Rectangle')
