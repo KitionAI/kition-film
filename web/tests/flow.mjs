@@ -5635,10 +5635,10 @@ try {
       const restored = await edited(undoKey, async () => number(await fx('opacity', 'opacity')) === opacityFrom)
       step('dragging Opacity in Effect Controls is one history step, and one undo restores it', dragged && stepsTo === stepsFrom + 1 && restored, JSON.stringify({ opacityFrom, draggedTo, stepsFrom, stepsTo, restored, said: await said() }))
 
-      const animated = await edited(() => kit.getByTestId('film-ec-motion-position-stopwatch').click(), async () => (await fx('motion', 'position'))?.keyframes === 1)
+      const animated = await edited(() => kit.getByTestId('film-ec-motion-position-stopwatch').click(), async () => (await fx('motion', 'position'))?.keyframes?.length === 1)
       await person([{ command: 'playhead.set', params: { time: A.start + Math.round(A.duration * 0.75) } }])
       const off = await until(async () => (await kit.getByTestId('film-ec-motion-position-nav-add').getAttribute('aria-pressed')) === 'false')
-      const second = await edited(() => typeInto('film-ec-motion-position-value-x', '100'), async () => (await fx('motion', 'position'))?.keyframes === 2)
+      const second = await edited(() => typeInto('film-ec-motion-position-value-x', '100'), async () => (await fx('motion', 'position'))?.keyframes?.length === 2)
       const lane = kit.getByTestId('film-ec-motion-position-lane')
       const laneKeys = () => lane.locator('.kui-keyframe').evaluateAll((items) => items.map((item) => item.dataset.keyframeId))
       const drawn = await until(async () => (await laneKeys()).length === 2)
