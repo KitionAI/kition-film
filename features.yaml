@@ -1,8 +1,8 @@
 format: 1
 kit: film
-updated: "2026-11-20"
+updated: "2026-11-22"
 gate_budget_s: 600
-protected: []
+protected: ["crates/render/render/src/transitions/expected_fingerprints.txt"]
 features:
   - id: film.agent.observe
     title: An agent reads the timeline and marks what it finds
