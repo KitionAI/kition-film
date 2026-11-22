@@ -2401,7 +2401,8 @@ try {
     await page.mouse.move(mid(backBox).x, mid(backBox).y)
     await page.mouse.down()
     await page.mouse.move(mid(backBox).x + 80, mid(backBox).y, { steps: 8 })
-    const previewed = (await box(A.clip)).x > backBox.x + 40
+    // The drag's preview is drawn a frame or more after the pointer moves.
+    const previewed = await until(async () => (await box(A.clip)).x > backBox.x + 40, 30)
     const midDrag = await revision()
     await page.mouse.move(mid(backBox).x, mid(backBox).y, { steps: 8 })
     await page.mouse.up()
@@ -2527,7 +2528,8 @@ try {
     await page.mouse.click(mid(menuBox).x, mid(menuBox).y, { button: 'right' })
     await kit.getByTestId('film-clip-menu').waitFor({ timeout: 5000 })
     const selectedByMenu = await until(async () => (await seq()).selection?.includes(A.clip), 30)
-    const unlinkShown = (await kit.getByTestId('film-cmd-clip.link').textContent()) === zh('Unlink')
+    // The menu follows the editor's selection, which lands after the engine's.
+    const unlinkShown = await until(async () => (await kit.getByTestId('film-cmd-clip.link').textContent()) === zh('Unlink'), 30)
     await checkIds()
     await kit.getByTestId('film-cmd-clip.speedDuration').click()
     const dialog = await until(async () => (await kit.locator('.kui-dialog').count()) > 0, 30)
@@ -3967,6 +3969,8 @@ try {
         await kit.getByTestId('film-dialog-ok').click()
         const selected = await until(async () => (await projectSelection()) === JSON.stringify([tone]), 60)
         await paintFrames()
+        // The preview opens again on the real selection, and its line is drawn after it.
+        await until(async () => (await previewState()).open && (await resultLine()) === zt('preview.findMatch', { n: 1, total: toneItems.length }), 60)
         const stays = (await dialogShown()) === 1
         const line = await resultLine()
         const previewing = (await previewState()).open
@@ -4277,7 +4281,10 @@ try {
       {
         const steps = await history()
         const closed = await startAnalyze()
-        const said = await kit.getByTestId('film-message').textContent({ timeout: 2000 }).catch(() => null)
+        // The status bar's message for the job, once it has replaced whatever was there.
+        const message = () => kit.getByTestId('film-message').textContent({ timeout: 300 }).catch(() => null)
+        await until(async () => (await message()) === zh('Scene Edit Detection: analysing in the background (see Progress)'), 50)
+        const said = await message()
         const shown = await until(async () => (await kit.getByTestId('film-exporting').count()) === 1, 50)
         const job = await runningJob()
         // A playhead key while it runs (the Timeline focused: the Source monitor, which opened the
@@ -4518,7 +4525,8 @@ try {
           return (offline.question ?? '').startsWith(filled(zh('Make {n} selected clip(s) offline. Their clips show the offline slate until you link them again.'), { n: 1 })) && offline.keep && offline.badge && offline.program && offline.document === 'online' && offline.picture
         },
       })
-      const afterCancel = { status: await statusNow(), badge: await badge.count(), thumb: (await thumbNow()) === thumbBefore }
+      // The row draws the document's own thumbnail again after Cancel (null until drawn).
+      const afterCancel = { status: await statusNow(), badge: await badge.count(), thumb: await until(async () => (await thumbNow()) === thumbBefore, 60) }
       step('Make Offline asks upstream\'s question with Media files remain on disk, and previews the offline badge on the Project row and the slate at the playhead; the document\'s media status and thumbnail stay, and Cancel leaves the document as it was', rowShown && offlineCancel.ok && afterCancel.status === 'online' && afterCancel.badge === 0 && afterCancel.thumb, JSON.stringify({ rowShown, ...offlineCancel, offline, afterCancel }))
       const offlineOk = await previewThenOk({
         open: () => fromMenu('media.makeOffline'),
@@ -4527,7 +4535,7 @@ try {
       }).catch((error) => ({ ok: false, error: error.message.split('\n')[0] }))
       const madeOffline = { status: await statusNow(), badge: await until(async () => (await badge.count()) === 1 && (await row.getAttribute('data-preview')) == null, 60) }
       // The document's thumbnail follows its media (its stamp), as upstream's item_revision: drawn again.
-      madeOffline.thumb = await until(async () => (await thumbNow()) !== thumbBefore, 60)
+      madeOffline.thumb = await until(async () => ![null, thumbBefore].includes(await thumbNow()), 60)
       madeOffline.area = areaBefore != null && (await until(async () => ![null, areaBefore].includes(await areaNow()), 60))
       const areaOffline = await areaNow()
       step('Make Offline\'s OK makes bars offline in one step, as previewed: the badge on its row, its thumbnail and the Preview Area\'s drawn again', offlineOk.ok && madeOffline.status === 'offline' && madeOffline.badge && madeOffline.thumb && madeOffline.area, JSON.stringify({ ...offlineOk, madeOffline }))
@@ -4571,7 +4579,7 @@ try {
           return link.left === 1 && /bars\.mp4/.test(link.located ?? '') && link.online && link.icon && link.row && link.document === 'offline' && link.picture && link.link
         },
       })
-      const linkAfterCancel = { status: await statusNow(), badge: await badge.count(), thumb: (await thumbNow()) === thumbOffline }
+      const linkAfterCancel = { status: await statusNow(), badge: await badge.count(), thumb: await until(async () => (await thumbNow()) === thumbOffline, 60) }
       step('Link Media lists bars offline (its other rows set Offline leave the list); Locate… (the host\'s picker answering bars.mp4) previews it relinked: online with its picture in the dialog, its Project row online; the document\'s status and thumbnail stay offline, and Cancel leaves the document as it was', linkCancel.ok && linkAfterCancel.status === 'offline' && linkAfterCancel.badge === 1 && linkAfterCancel.thumb, JSON.stringify({ ...linkCancel, link, linkAfterCancel }))
       const linkOk = await previewThenOk({
         open: linkOpen,
@@ -5344,6 +5352,8 @@ try {
         const appFocused = await until(async () => kitFrame().evaluate(() => document.activeElement?.classList.contains('kui-app') === true), 20)
         await page.keyboard.press('ControlOrMeta+Shift+z')
         const redone = await until(async () => (await binsNow()).includes(made), 40)
+        // The editor hands the focus back to the Project frame on its next animation frame.
+        await until(async () => (await focusedFrame()) === 'project', 30)
         step('a focused window whose bin an undo removes closes, and the editor keeps its keys: Cmd+Shift+Z brings the bin back', made != null && focusedMade && closedWithBin && appFocused && redone && (await focusedFrame()) === 'project', JSON.stringify({ made, focusedMade, closedWithBin, appFocused, redone, frame: await focusedFrame() }))
         if (redone) await person([{ command: 'project.delete', params: { items: [made] } }])
       }
@@ -5502,6 +5512,8 @@ try {
         expectPreview: async () => {
           const tab = kit.locator('[data-testid^="film-sequence-tab-preview-"][data-preview="added"]')
           const drawn = await until(async () => (await tab.count()) === 1, 60)
+          // The track area lays the copy out a render after the tab shows.
+          await until(async () => (await kit.locator('[data-testid^="film-preview-track-"][data-preview="added"]').count()) >= 3 && (await kit.locator('.film-clip').count()) === 0, 60)
           shown = {
             drawn,
             name: drawn ? await tab.first().textContent() : null,
