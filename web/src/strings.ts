@@ -94,6 +94,8 @@ const enUS: Catalog = {
   "markers.filterShown": "{color} markers shown",
   "markers.filterHidden": "{color} markers hidden",
   "homeTab": "Home",
+  "verticalScroll": "Vertical scroll",
+  "horizontalScroll": "Horizontal scroll",
   "home.newSequence": "New Sequence",
   "home.exportMedia": "Export Media",
 }
@@ -191,6 +193,8 @@ const zhCN: Catalog = {
   "markers.filterShown": "{color}标记已显示",
   "markers.filterHidden": "{color}标记已隐藏",
   "homeTab": "开始",
+  "verticalScroll": "纵向滚动",
+  "horizontalScroll": "横向滚动",
   "home.newSequence": "新建序列",
   "home.exportMedia": "导出媒体",
 }

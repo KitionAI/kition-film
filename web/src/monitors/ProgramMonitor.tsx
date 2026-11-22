@@ -1,6 +1,7 @@
 import { useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type MutableRefObject, type RefObject } from 'react'
 import { KitDocumentCanvas, type KitCanvasHandle, type KitCanvasView, type KitEngine, type Phrases, type RasterView, type RasterViewportStats } from '@kition/sdk/editor'
 import { TICKS_PER_SECOND, picturePanBounds, type FilmInfo } from '../film'
+import { CanvasScrollbars, createViewStore } from '../CanvasScrollbars'
 import type { Playback } from '../session/playback'
 import { markerColor } from '../timeline/Ruler'
 import { Monitor, type MonitorClock } from './Monitor'
@@ -168,6 +169,7 @@ export function ProgramMonitor(props: Props) {
   // Scrolling stops a margin past the picture: the wheel and the Hand never leave it for empty canvas.
   const [viewZoom, setViewZoom] = useState<number | null>(null)
   const panBounds = useMemo(() => picturePanBounds(film.width, film.height, viewZoom), [film.width, film.height, viewZoom])
+  const views = useMemo(createViewStore, [])
   /** When the canvas last had a wheel (a Ctrl+wheel or pinch zooms it); a zoom soon after is the wheel's. Never at first: the first fit, early in a frame's life, is not a wheel's. */
   const wheeled = useRef(Number.NEGATIVE_INFINITY)
   const applyZoom = useCallback(() => {
@@ -534,6 +536,7 @@ export function ProgramMonitor(props: Props) {
               onView={(view, stats) => {
                 const zoomed = canvasView.current?.zoom !== view.zoom
                 canvasView.current = view
+                views.set(view)
                 // The view, for the flow test's checks (zoom and the document point at the top left).
                 picture.current?.setAttribute('data-view', `${view.zoom} ${view.x} ${view.y}`)
                 if (shownPick.current === undefined) applyZoom()
@@ -549,7 +552,10 @@ export function ProgramMonitor(props: Props) {
                 placeGuidesSoon()
                 props.onView(view, stats)
               }}
-            />
+            >
+              {/* The scrollbars: there only while the frame and its margin are longer than the view. */}
+              <CanvasScrollbars views={views} content={(shownView) => picturePanBounds(film.width, film.height, shownView.zoom)} canvas={canvas} />
+            </KitDocumentCanvas>
             {channel ? <canvas ref={channelPicture} className="film-program-channel" data-shown={channelShown ? 'true' : 'false'} data-mode={channel} data-testid="film-program-channel" /> : null}
             {previewing ? <canvas ref={previewPicture} className="film-program-preview" data-shown={previewShown != null ? 'true' : 'false'} data-testid="film-program-preview" /> : null}
             {previewing ? (
