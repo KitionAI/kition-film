@@ -6,7 +6,9 @@
     <style>
       html, body { height: 100%; margin: 0; font-family: system-ui, sans-serif; }
       body { display: flex; flex-direction: column; }
-      header { display: flex; gap: 8px; align-items: center; padding: 8px 12px; border-bottom: 1px solid #e5e3df; font-size: 13px; }
+      /* A fixed height, so the editor's frame is the same size in every browser on every system (a file input's own height differs between them). */
+      header { display: flex; flex: none; gap: 8px; align-items: center; box-sizing: border-box; height: 32px; padding: 0 12px; overflow: hidden; white-space: nowrap; border-bottom: 1px solid #e5e3df; font-size: 13px; }
+      header input { font-size: 12px; }
       iframe { flex: 1; border: 0; }
     </style>
   </head>
