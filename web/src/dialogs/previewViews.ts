@@ -151,8 +151,10 @@ export function previewTimeline(doc: FilmInfo, preview: FilmInfo, diff: PreviewD
   const timeline = kinds.includes('timeline')
   const sequence = timeline ? (preview.activeSequence ?? doc.activeSequence) : doc.activeSequence
   const sameSequence = preview.activeSequence === doc.activeSequence
-  // A new sequence made as a copy of the shown one (Simplify Sequence) is compared with it.
+  // A new sequence made as a copy of the shown one (Simplify Sequence) is compared with it, its
+  // tracks and clips under the ids of the source's they were copied from.
   const copy = timeline && options.copies === true && copiesShown(doc, preview, diff)
+  if (copy) preview = copyOnSource(doc, preview)
   // The document as it is in the shown sequence (or the copy's source); null when the preview shows another one.
   const before = doc.activeSequence === sequence || copy ? doc : null
   const marks = copy ? copyMarks(doc, preview) : sequenceMarks(diff, sequence)
@@ -235,15 +237,54 @@ export function previewTimeline(doc: FilmInfo, preview: FilmInfo, diff: PreviewD
 }
 
 /**
- * Whether the preview's sequence is one it adds as a copy of the document's shown sequence: a copy
- * keeps its source's track ids (Simplify Sequence, Task 3's note), which a new sequence never has
- * (track ids come from the project's one counter).
+ * Whether the preview shows a sequence it adds, as a dialog that copies the shown sequence
+ * (`copiesSequence`, Simplify Sequence) makes: the copy, compared with the document's shown one.
  */
 export function copiesShown(doc: FilmInfo, preview: FilmInfo, diff: PreviewDiff | null): boolean {
   if (preview.activeSequence == null || preview.activeSequence === doc.activeSequence) return false
-  if (!(diff?.sequences?.added ?? []).some((entry) => entry.id === preview.activeSequence)) return false
-  const source = new Set(doc.tracks.map((track) => track.id))
-  return preview.tracks.some((track) => source.has(track.id))
+  return (diff?.sequences?.added ?? []).some((entry) => entry.id === preview.activeSequence)
+}
+
+/** What a copy leaves of a clip as it was (Simplify Sequence moves, drops, and strips clips; it never retimes their source). */
+const copiedClip = (clip: FilmClip) => `${clip.item}|${clip.sourceIn}|${clip.duration}|${clip.speed}|${clip.reverse}`
+
+/**
+ * The preview's copy of the document's shown sequence with each track and clip under the id of
+ * the source's it was copied from. The engine gives a copy ids of its own (ids are project-wide;
+ * `fresh_sequence`), so the Timeline pairs them here: tracks by kind and name, in order (a copy
+ * only drops tracks); clips by what copying leaves alone (`copiedClip`), first come first paired;
+ * a link follows its clips. Whatever pairs with nothing keeps its own id, so it shows as added.
+ */
+export function copyOnSource(doc: FilmInfo, preview: FilmInfo): FilmInfo {
+  const trackIds = new Map<number, number>()
+  for (const kind of ['video', 'audio'] as const) {
+    const source = doc.tracks.filter((track) => track.kind === kind)
+    let next = 0
+    for (const track of preview.tracks.filter((each) => each.kind === kind)) {
+      const at = source.findIndex((each, index) => index >= next && each.name === track.name)
+      if (at < 0) continue
+      trackIds.set(track.id, source[at].id)
+      next = at + 1
+    }
+  }
+  const waiting = new Map<string, FilmClip[]>()
+  for (const track of doc.tracks) for (const clip of track.clips) waiting.set(copiedClip(clip), [...(waiting.get(copiedClip(clip)) ?? []), clip])
+  const clipIds = new Map<number, number>()
+  const links = new Map<number, number | null>()
+  for (const track of preview.tracks)
+    for (const clip of track.clips) {
+      const was = waiting.get(copiedClip(clip))?.shift()
+      if (!was) continue
+      clipIds.set(clip.id, was.id)
+      if (clip.link != null && !links.has(clip.link)) links.set(clip.link, was.link)
+    }
+  const tracks = preview.tracks.map((track) => ({
+    ...track,
+    id: trackIds.get(track.id) ?? track.id,
+    clips: track.clips.map((clip) => ({ ...clip, id: clipIds.get(clip.id) ?? clip.id, link: clip.link == null ? null : (links.get(clip.link) ?? clip.link) })),
+  }))
+  const selection = preview.selection.map((id) => clipIds.get(id) ?? id)
+  return { ...preview, tracks, selection }
 }
 
 /** A clip's fields a copy may change, by the diff's field names (`start`, `effects`, …). */

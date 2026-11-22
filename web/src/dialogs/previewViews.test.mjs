@@ -290,6 +290,31 @@ test('a clip draws no waveform only when its item is not in the document (a nest
   assert.equal(previewOnlyItems(doc, doc).size, 0)
 })
 
+test('Simplify Sequence: its copy (ids of its own) is compared with the shown sequence, track by name and clip by source, so only what simplifying changed is marked', () => {
+  const doc = film({ video: [[1, [[10, 0, 4], [11, 6, 2]]], [2, []]], audio: [[3, [[20, 0, 4, 9]]]] })
+  // The engine re-ids a copy (fresh_sequence): track 2 (empty) is gone, and the gap before 11 is closed.
+  const named = { 101: 'T1', 103: 'T3', 110: 'clip 10', 111: 'clip 11', 120: 'clip 20' }
+  const raw = film({ sequence: 77, video: [[101, [[110, 0, 4], [111, 4, 2]]]], audio: [[103, [[120, 0, 4, 9]]]] })
+  const copy = { ...raw, tracks: raw.tracks.map((track) => ({ ...track, name: named[track.id], clips: track.clips.map((clip) => ({ ...clip, name: named[clip.id] })) })) }
+  const diff = {
+    sequences: part([{ id: 77 }]),
+    tracks: part([{ id: 101, sequence: 77 }, { id: 103, sequence: 77 }]),
+    clips: part([110, 111, 120].map((id) => ({ id, sequence: 77, track: id === 120 ? 103 : 101 }))),
+  }
+  const view = previewTimeline(doc, copy, diff, ['timeline'], { copies: true })
+  assert.equal(view.sequence, 77)
+  assert.deepEqual(view.film.tracks.map((track) => track.id), [2, 1, 3], "the copy's tracks under their sources' ids, the dropped V2 where it was (above V1)")
+  assert.equal(view.tracks.get(2), 'removed', 'the empty track is struck through')
+  assert.equal(view.tracks.size, 1)
+  assert.equal([...view.clips.values()].includes('added'), false, 'no kept clip is drawn as added')
+  assert.equal(view.clips.has(10), false)
+  assert.equal(view.clips.has(20), false)
+  assert.equal(view.clips.get(11), 'changed', 'the clip the closed gap moved')
+  assert.deepEqual(view.ghosts.get(1).map((ghost) => [ghost.kind, ghost.clip.id, ghost.clip.start]), [['was', 11, 6]])
+  // Without the copies option (New Sequence) the same preview is all added.
+  assert.deepEqual([...previewTimeline(doc, copy, diff, ['timeline']).tracks.values()], ['added', 'added'])
+})
+
 test("a press under a preview selects only clips of the document's own sequence: a Duplicate Sequence preview shares their ids", () => {
   const doc = film({ video: [[1, [[10, 0, 4]]]] })
   const same = previewTimeline(doc, film({ video: [[1, [[10, 0, 4]]]] }), null, ['timeline'])
