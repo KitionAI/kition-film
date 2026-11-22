@@ -119,9 +119,9 @@ editor's monitors and for export.
   (84 modern, 21 Legacy, 7 hidden Obsolete): p = 0 is exactly the outgoing frame and p = 1 exactly
   the incoming one, near both ends the output is close to that frame (continuity), the midpoint differs
   from both, the output is finite and deterministic (also on 1×1 / odd sizes and NaN progress), every
-  parameter visibly changes the picture, and every direction differs. Golden *fingerprints* (4×4 mean
-  RGB grid at p = 0.25/0.5/0.75, ±4 levels) live in `src/transitions/goldens.txt`; re-bless with
-  `KITION_FILM_BLESS=1 cargo test -p kition-film-render golden_fingerprints` and review the diff.
+  parameter visibly changes the picture, and every direction differs. Expected *fingerprints* (4×4 mean
+  RGB grid at p = 0.25/0.5/0.75, ±4 levels) live in `src/transitions/expected_fingerprints.txt`; re-bless with
+  `KITION_FILM_BLESS=1 cargo test -p kition-film-render expected_fingerprints` and review the diff.
   `KITION_FILM_TRANSITION_SHEETS=<dir> cargo test -p kition-film-render contact_sheets -- --ignored`
   writes one contact-sheet PNG per folder for eyeballing (never commit them).
 

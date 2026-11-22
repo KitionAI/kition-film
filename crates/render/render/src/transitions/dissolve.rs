@@ -1,5 +1,5 @@
 //! Dissolves (the classic Cross Dissolve / Dip / Film / Additive family stays in `legacy.rs`,
-//! whose output the golden images pin).
+//! whose output the expected images pin).
 
 use super::{Tx, add_light, bell, blurred, fbm, hash, luma, mid_mix, mix, paint, scale4, smoothstep};
 use crate::image::Image;

@@ -1,8 +1,8 @@
-//! Property and golden tests for every video transition.
+//! Property and expected-fingerprint tests for every video transition.
 //!
-//! Golden fingerprints (`goldens.txt`): a 4×4 grid of mean 8-bit RGB values at p = 0.25 / 0.5 /
-//! 0.75 on two procedural test frames. Re-bless after an intended change with
-//! `KITION_FILM_BLESS=1 cargo test -p kition-film-render transitions::tests::golden_fingerprints`
+//! Expected fingerprints (`expected_fingerprints.txt`): a 4×4 grid of mean 8-bit RGB values at
+//! p = 0.25 / 0.5 / 0.75 on two procedural test frames. Re-bless after an intended change with
+//! `KITION_FILM_BLESS=1 cargo test -p kition-film-render transitions::tests::expected_fingerprints`
 //! and review the diff.
 
 use kition_film_geom::Vec2;
@@ -249,7 +249,7 @@ fn modern_and_legacy_ids_are_distinct_renders() {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Golden fingerprints
+// Expected fingerprints
 
 fn fingerprint(img: &Image) -> String {
     let mut s = String::new();
@@ -274,12 +274,12 @@ fn fingerprint(img: &Image) -> String {
     s
 }
 
-fn golden_path() -> std::path::PathBuf {
-    std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/transitions/goldens.txt")
+fn fingerprints_path() -> std::path::PathBuf {
+    std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/transitions/expected_fingerprints.txt")
 }
 
 #[test]
-fn golden_fingerprints() {
+fn expected_fingerprints() {
     let (a, b) = (frame_a(), frame_b());
     let mut lines = Vec::new();
     for d in transitions() {
@@ -288,12 +288,12 @@ fn golden_fingerprints() {
             lines.push(format!("{} {p:.2} {}", d.id, fingerprint(&apply(&e, &a, &b, p))));
         }
     }
-    let path = golden_path();
+    let path = fingerprints_path();
     if std::env::var_os("KITION_FILM_BLESS").is_some() {
         std::fs::write(&path, lines.join("\n") + "\n").unwrap();
         return;
     }
-    let want = std::fs::read_to_string(&path).expect("goldens.txt (bless with KITION_FILM_BLESS=1)");
+    let want = std::fs::read_to_string(&path).expect("expected_fingerprints.txt (bless with KITION_FILM_BLESS=1)");
     let want: std::collections::HashMap<(String, String), String> = want
         .lines()
         .filter_map(|l| {
@@ -306,7 +306,7 @@ fn golden_fingerprints() {
         let mut it = l.split_whitespace();
         let (id, p, got) = (it.next().unwrap(), it.next().unwrap(), it.next().unwrap());
         let Some(exp) = want.get(&(id.to_string(), p.to_string())) else {
-            bad.push(format!("{id} {p}: no golden"));
+            bad.push(format!("{id} {p}: no expected fingerprint"));
             continue;
         };
         let bytes = |s: &str| (0..s.len() / 2).map(|i| u8::from_str_radix(&s[i * 2..i * 2 + 2], 16).unwrap_or(0) as i32).collect::<Vec<_>>();
@@ -316,7 +316,7 @@ fn golden_fingerprints() {
             bad.push(format!("{id} {p}: max Δ {worst}"));
         }
     }
-    assert!(bad.is_empty(), "transition goldens differ: {bad:?}");
+    assert!(bad.is_empty(), "transition fingerprints differ from the expected ones: {bad:?}");
 }
 
 /// Contact sheets for eyeballing: `KITION_FILM_TRANSITION_SHEETS=<dir> cargo test -p kition-film-render

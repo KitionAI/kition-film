@@ -169,7 +169,7 @@ stream is cut into blocks (there are tests for this).
    `dissolve`, `lights`, `grunge`, `special`, `legacy`): read params through `Tx`, build pixels with
    `paint`, shape wipes with `wipe::field_wipe` (feather/border/anti-aliasing for free) and 3D moves
    with `cards`. Audio crossfade curves go in `transitions::audio_gains`. The property tests run over
-   every transition automatically; re-bless `goldens.txt` (see [testing/README.md](testing/README.md) §3).
+   every transition automatically; re-bless `expected_fingerprints.txt` (see [testing/README.md](testing/README.md) §3).
 3. It can then be applied with `sequence.applyVideoTransition {"effect": "<id or name>", "params":
    {...}, "reverse": bool}` and edited with `sequence.setTransition`; `effects.list {"folder":
    "Video Transitions/Wipe", "detail": true}` lists it with its parameters.

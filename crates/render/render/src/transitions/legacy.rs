@@ -1,5 +1,5 @@
 //! The original (pre-26) transition implementations, kept bit-for-bit for the Legacy and Obsolete
-//! folders and for the dissolves whose output the golden images pin (Cross Dissolve, Dip to
+//! folders and for the dissolves whose output the expected images pin (Cross Dissolve, Dip to
 //! Black/White, Film/Additive Dissolve, Wipe).
 
 use kition_film_geom::Affine;
