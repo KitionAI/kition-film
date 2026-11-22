@@ -126,6 +126,22 @@ const until = async (check, tries = 60) => {
   return false
 }
 /**
+ * A control's box once it is drawn and holds still over two reads: the Program overlay draws a
+ * graphic layer's box (its handles and anchor cross) again after each change lands, so a control
+ * seen once can be gone a moment later. Null when it never settles.
+ */
+const settledBox = async (locator) => {
+  let last = null
+  let box = null
+  const settled = await until(async () => {
+    box = await locator.boundingBox()
+    const same = box != null && last != null && ['x', 'y', 'width', 'height'].every((key) => box[key] === last[key])
+    last = box
+    return same
+  })
+  return settled ? box : null
+}
+/**
  * Polls the engine through the dev host until `predicate(state)` holds, and answers that state.
  * `state` is `inspect()` (`{ revision, details, … }`), with `history` (history.list's result) when
  * `{ history: true }`, and `results` by command (`results['source.inspect']`) for
@@ -2080,7 +2096,7 @@ try {
       await page.mouse.click(rectangleAt.x, rectangleAt.y)
       const handlesShown = await until(async () => JSON.stringify(await graphicLayersNow()) === JSON.stringify([rectangleIndex]) && Number(await overlay.getAttribute('data-handles')) === 8)
       await checkIds()
-      const corner = await kit.locator('[data-kit-ui-id="control:program.layer.handle"][data-handle="2"]').boundingBox()
+      const corner = await settledBox(kit.locator('[data-kit-ui-id="control:program.layer.handle"][data-handle="2"]'))
       const scaled = await dragBy({ x: corner.x + corner.width / 2, y: corner.y + corner.height / 2 }, 40, 20, { modifier: 'Shift' })
       const scaledOnce = await until(async () => (await historyLength()) === scaled.stepsAt + 1)
       const bigger = await layerOf((layer) => layer.kind === 'Rectangle')
@@ -2092,10 +2108,8 @@ try {
         JSON.stringify({ handlesShown, scaled, scaledOnce, scale: [bigger.scale, bigger.scaleWidth], before: rectangle.quad[0], after: bigger.quad[0] }),
       )
       // The anchor point dragged moves alone: the position follows it, so the rectangle stays where it is.
-      // The box is drawn again after the scale lands (WebKit draws it a moment later): the cross is read once it shows.
-      const crossShown = kit.locator('[data-kit-ui-id="control:program.layer.anchor"]')
-      await crossShown.waitFor({ timeout: 10000 })
-      const cross = await crossShown.boundingBox()
+      // The box is drawn again after the scale lands: the cross is read once it has settled.
+      const cross = await settledBox(kit.locator('[data-kit-ui-id="control:program.layer.anchor"]'))
       const anchored = await dragBy({ x: cross.x + cross.width / 2, y: cross.y + cross.height / 2 }, 30, 20)
       const anchoredOnce = await until(async () => (await historyLength()) === anchored.stepsAt + 1)
       const moved2 = await layerOf((layer) => layer.kind === 'Rectangle')
@@ -2135,9 +2149,7 @@ try {
       )
       // An edge handle stretches one axis only (uniform_scale false): the rectangle's right edge dragged out widens it, its height kept.
       await paintFrames(page, 2)
-      const edgeShown = kit.locator('[data-kit-ui-id="control:program.layer.handle"][data-handle="5"]')
-      await edgeShown.waitFor({ timeout: 10000 })
-      const edge = await edgeShown.boundingBox()
+      const edge = await settledBox(kit.locator('[data-kit-ui-id="control:program.layer.handle"][data-handle="5"]'))
       const stretched = await dragBy({ x: edge.x + edge.width / 2, y: edge.y + edge.height / 2 }, 50, 0)
       const stretchedOnce = await until(async () => (await historyLength()) === stretched.stepsAt + 1)
       const wide = await layerOf((layer) => layer.kind === 'Rectangle')
