@@ -5005,7 +5005,8 @@ try {
         const card5 = kit5.getByTestId(`film-project-item-${C.item}`)
         await card5.waitFor({ timeout: 15000 })
         const layout5 = (await personRun([{ command: 'project.freeform.layout', params: {} }], page5)).completed[0].result?.cards ?? []
-        const at5 = await card5.evaluate((element) => ({ x: element.offsetLeft + 2, y: element.offsetTop + 2 }))
+        // Where the card is drawn once the canvas has laid it out (a first frame may draw it before the layout lands).
+        const at5 = await heldStill(() => card5.evaluate((element) => ({ x: element.offsetLeft + 2, y: element.offsetTop + 2 })).catch(() => null), { what: "the reopened page's card place" })
         reopened = { layout: layout5.find((card) => card.item === C.item) ?? null, drawn: at5 }
       } catch (error) {
         reopened = { error: error.message.split('\n')[0] }
