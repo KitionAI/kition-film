@@ -1,6 +1,6 @@
 import { useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type MutableRefObject, type RefObject } from 'react'
 import { KitDocumentCanvas, type KitCanvasHandle, type KitCanvasView, type KitEngine, type Phrases, type RasterView, type RasterViewportStats } from '@kition/sdk/editor'
-import { TICKS_PER_SECOND, type FilmInfo } from '../film'
+import { TICKS_PER_SECOND, picturePanBounds, type FilmInfo } from '../film'
 import type { Playback } from '../session/playback'
 import { markerColor } from '../timeline/Ruler'
 import { Monitor, type MonitorClock } from './Monitor'
@@ -165,6 +165,9 @@ export function ProgramMonitor(props: Props) {
   /** The magnification pick last applied to the canvas (`MonitorView.zoomPick`); undefined until the canvas has a view. */
   const shownPick = useRef<number | undefined>(undefined)
   const [wheelZoom, setWheelZoom] = useState<number | null | undefined>(undefined)
+  // Scrolling stops a margin past the picture: the wheel and the Hand never leave it for empty canvas.
+  const [viewZoom, setViewZoom] = useState<number | null>(null)
+  const panBounds = useMemo(() => picturePanBounds(film.width, film.height, viewZoom), [film.width, film.height, viewZoom])
   /** When the canvas last had a wheel (a Ctrl+wheel or pinch zooms it); a zoom soon after is the wheel's. Never at first: the first fit, early in a frame's life, is not a wheel's. */
   const wheeled = useRef(Number.NEGATIVE_INFINITY)
   const applyZoom = useCallback(() => {
@@ -526,6 +529,7 @@ export function ProgramMonitor(props: Props) {
             <KitDocumentCanvas
               canvas={canvas}
               viewMemory={viewMemory}
+              panBounds={panBounds}
               tool={graphics.canvasTool}
               onView={(view, stats) => {
                 const zoomed = canvasView.current?.zoom !== view.zoom
@@ -534,6 +538,7 @@ export function ProgramMonitor(props: Props) {
                 picture.current?.setAttribute('data-view', `${view.zoom} ${view.x} ${view.y}`)
                 if (shownPick.current === undefined) applyZoom()
                 if (zoomed) {
+                  setViewZoom(view.zoom)
                   applyScale()
                   if (performance.now() - wheeled.current < 500) setWheelZoom(Math.round(view.zoom * (window.devicePixelRatio || 1) * 100) / 100)
                 }

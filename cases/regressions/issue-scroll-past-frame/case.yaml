@@ -1,0 +1,25 @@
+format: 1
+id: regressions/issue-scroll-past-frame
+feature: film.editor.program-scroll
+intent: >-
+  The wheel and the Hand scroll the Program monitor's picture only a margin (32 screen pixels, the margin a
+  fitted picture has) past the frame: on every side the view stops there, at Fit and zoomed in, and a view larger
+  than the frame and its margin keeps it centred. Before, the monitor gave the canvas no scroll limits, so the
+  wheel moved the view any distance past the frame and showed only empty canvas (owner report, 2026-11-22).
+layer: gate
+source:
+  kind: probe
+  from: web/tests/scroll.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/scroll.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 120
+since: "2026-11-22"

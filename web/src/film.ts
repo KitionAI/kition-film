@@ -1,4 +1,4 @@
-import type { KitEngineInfo } from '@kition/sdk/editor'
+import type { KitEngineInfo, RasterRect } from '@kition/sdk/editor'
 
 /** An effect on a clip, as `inspect()` summarizes it (Effect Controls reads the full list with `clipEffects`). */
 export type FilmEffectSummary = { effect: string; enabled: boolean; masks: number; keyframed: string[] }
@@ -308,3 +308,16 @@ export const MEDIA_TYPES = IMPORT_TYPES.slice(0, IMPORT_TYPES.indexOf('srt'))
 
 /** What Attach Proxies… and Reconnect Full Resolution Media… accept: upstream's video extensions. */
 export const VIDEO_TYPES = IMPORT_TYPES.slice(0, IMPORT_TYPES.indexOf('wav'))
+
+/** How far past the picture's edge the Program monitor's view scrolls, in screen pixels: the margin a fitted picture has, so a fitted picture does not scroll. */
+export const SCROLL_MARGIN = 32
+
+/**
+ * Where scrolling stops: the picture and `SCROLL_MARGIN` screen pixels of canvas around it, in
+ * document pixels at `zoom`. A view larger than that keeps the picture centred.
+ */
+export function picturePanBounds(width: number, height: number, zoom: number | null): RasterRect | null {
+  if (!zoom || !(width > 0) || !(height > 0)) return null
+  const margin = SCROLL_MARGIN / zoom
+  return { x0: -margin, y0: -margin, x1: width + margin, y1: height + margin }
+}

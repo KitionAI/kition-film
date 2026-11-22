@@ -481,3 +481,12 @@ features:
     paths: [web/src/App.tsx, web/src/HomeTab.tsx, web/src/monitors/Monitor.tsx, web/src/monitors/ProgramMonitor.tsx, web/tests/modes.mjs]
     cases: [regressions/issue-focus-shows-workspace, regressions/issue-resize-observer-loop]
     since: "2026-11-17"
+  - id: film.editor.program-scroll
+    title: "Scrolling the Program monitor's picture stops a margin past the frame; a view larger than the frame and its margin keeps it centred, so a fitted picture does not scroll"
+    dimension: [function]
+    priority: P1
+    status: has
+    paths: [web/src/monitors/ProgramMonitor.tsx, web/src/film.ts, web/tests/scroll.mjs]
+    gap: "The margin is 32 screen pixels on every side; there are no scrollbars."
+    cases: [regressions/issue-scroll-past-frame]
+    since: "2026-11-22"
