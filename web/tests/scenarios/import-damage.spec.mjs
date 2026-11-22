@@ -4,6 +4,10 @@ test('F29 truncated media import reports its error, preserves the project, and a
   await film.open()
   await film.command('file.newProject', { name: 'Damaged media' })
   await film.command('file.newSequence', { name: 'Recover', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
+  // The Program monitor, at the new 64 × 36 picture's render scale, repaints where the playhead
+  // rests (its own `playhead.set`, after file.newSequence has answered): the state is read once
+  // that has reached the editor state, not while it is still on its way.
+  await expect.poll(async () => (await film.sequence())?.playhead ?? null).not.toBeNull()
   const before = await film.details()
   const history = await film.history()
   await page.evaluate(() => {

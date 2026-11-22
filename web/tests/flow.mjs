@@ -3739,6 +3739,16 @@ try {
               addedClips: await kit.locator('[data-testid^="film-clip-"][data-preview="added"]').count(),
               copy,
             }
+            // What the Timeline compares the copy by (`copiesShown`): the diff's added sequences, and
+            // the track ids of the document's shown sequence and of the copy (reported, not asserted).
+            const trackIds = (sequence) => [...(sequence?.video ?? []), ...(sequence?.audio ?? [])].map((track) => track.id)
+            const shownDoc = await details()
+            simple.compared = {
+              added: ((await previewDiff())?.sequences?.added ?? []).map((entry) => entry.id),
+              docActive: shownDoc.project?.activeSequence ?? null,
+              docTracks: trackIds(shownDoc.sequence),
+              copyTracks: trackIds((await previewInspect())?.sequence),
+            }
             return simple.field === name && simple.tab && simple.row && simple.drawn.includes(emptyTrack) && simple.addedClips === 0 && copy !== sequenceId
           },
         })
@@ -4267,12 +4277,14 @@ try {
         await row.dblclick()
         await kit.getByTestId('film-dialog-marker').waitFor({ timeout: 10000 })
       }
-      const toRose = async () => kit.getByTestId('film-dialog-marker-color').selectOption('Rose')
+      // The dialog lists the marker colours (the Markers filter's seven), so the Rose label is
+      // its Red, as the engine names a marker's colour (`Label::marker_name`).
+      const toRed = async () => kit.getByTestId('film-dialog-marker-color').selectOption('Red')
       let shownMarker = null
       const markerCancel = row
         ? await previewThenCancel({
             open: openMarker,
-            change: toRose,
+            change: toRed,
             idle: false,
             expectPreview: async () => {
               shownMarker = { name: await kit.getByTestId('film-dialog-marker-name').inputValue() }
@@ -4284,11 +4296,11 @@ try {
       step('a double-click on a Markers row opens the marker dialog on it; a new colour previews on the row (changed), and Cancel leaves the document as it was', markerCancel.ok, JSON.stringify({ ...markerCancel, shownMarker, marker }))
       if (row) {
         const steps = await history()
-        const markerOk = await previewThenOk({ open: openMarker, change: toRose })
-        const rose = (await markerNow())?.color
+        const markerOk = await previewThenOk({ open: openMarker, change: toRed })
+        const red = (await markerNow())?.color
         await personUndo()
         const back = (await markerNow())?.color
-        step('the marker dialog\'s OK makes the marker Rose in one history step, as previewed, and one undo restores its colour', markerOk.ok && rose === 'Rose' && back === marker.color && (await history()) === steps, JSON.stringify({ ...markerOk, rose, back, was: marker.color }))
+        step('the marker dialog\'s OK makes the marker Red in one history step, as previewed, and one undo restores its colour', markerOk.ok && red === 'Red' && back === marker.color && (await history()) === steps, JSON.stringify({ ...markerOk, red, back, was: marker.color }))
       }
 
       // Flash Cue Marker: the named cue previews at the playhead in the Markers panel and on the

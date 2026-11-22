@@ -1203,7 +1203,7 @@ const STATES = [
       await kit.getByTestId('film-dialog-marker').waitFor({ timeout: 10000 })
       await kit.getByTestId('film-dialog-marker-name').fill('Pick up here')
       await kit.getByTestId('film-dialog-marker-comment').fill('The second take is better.')
-      await kit.getByTestId('film-dialog-marker-color').selectOption('Rose')
+      await kit.getByTestId('film-dialog-marker-color').selectOption('Red')
       await kit.locator('[data-testid^="film-markers-row-"][data-preview="changed"]').first().waitFor({ timeout: 10000 })
       await page.waitForTimeout(600)
     },
