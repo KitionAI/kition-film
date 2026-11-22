@@ -4,7 +4,7 @@
 cargo test --workspace                          # everything; oracle tests skip without ffmpeg
 cargo test -p kition-film-h264                    # one crate
 cargo test --release -p kition-film-hevc          # codec tests are much faster in release
-cargo xtask ci                                  # all gates (fmt, clippy, tests, layers, assets, wasm)
+cargo xtask ci                                  # the full checks (fmt, clippy, tests, layers, assets, wasm), run in the kit's CI run
 cargo xtask fixtures                            # pre-generate the ffmpeg fixture matrix
 KITION_FILM_REQUIRE_ORACLES=1 cargo test --workspace   # CI: missing ffmpeg fails instead of skipping
 ```

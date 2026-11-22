@@ -33,8 +33,15 @@ cargo build --release -p kition-film                          # the same, optimi
 cd web && pnpm install && pnpm engine && pnpm dev             # the editor, served at web/dev.html
 cd web && pnpm test:flow                                      # the editor's flow tests
 cargo test --workspace                                        # the engine
-cargo xtask ci                                                # the check every change passes (docs/quality.md)
+cargo xtask ci                                                # the full checks, which the kit's CI run runs (below)
 ```
+
+On a developer machine run only the fast checks: `cargo fmt --all -- --check`, `cargo check -p
+<touched crates> --all-targets`, `cargo xtask wasm` and `pnpm typecheck` in `web/`. The full checks
+run on GitHub in the kit's CI run: `.github/workflows/ci.yml` calls Kition's reusable kit CI, which
+runs clippy, `cargo test --workspace`, `cargo xtask ci` and every `test:*` script of `web/`. A
+change is done when the CI run of its commit is green and the commit is on `origin/main` (Kition's
+`scripts/kit-ci.sh` `push`, `wait`, `land`).
 
 The Rust engine pins the public SDK revision in `Cargo.toml`.
 
@@ -95,7 +102,8 @@ machine: the Package workflow (`.github/workflows/package.yml`, which calls Kiti
 KitionAI/kition-film`, and publishes the Release with the package's lock entry,
 `kition-film-<version>.json`. Kition pins it with `node scripts/pin-kits.mjs film` (see
 `docs/kits.md` there). A version is published once: bump `version` in `kit.json` to publish a
-change.
+change. Releasing is the owner's step: agents do not start the Package workflow and do not change
+the version.
 
 ### Building with kition-fonts
 

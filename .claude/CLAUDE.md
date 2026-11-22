@@ -24,11 +24,11 @@ Kition Film is a clean-room, open-source, pure-Rust non-linear video editor targ
 - **Layering** ([`docs/architecture.md`](../docs/architecture.md) §1, enforced by `cargo xtask layers`): L0 codec/container crates depend only on `kition-film-bitstream`.
 - **Exact time:** all time is `kition_film_time::Tick` (254 016 000 000/s). Never use f64 seconds for edit math.
 - **Everything is a command** (`crates/engine/engine`): id, label, params, enabled(), run(). The editor and the headless executable both dispatch by id, and every command carries an agent schema.
-- **Quality gates** before every commit: `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`, `cargo xtask layers`, `cargo xtask assets`, `cargo xtask wasm` (checks L0–L4 crates and `kition-film-kit`). `cargo xtask ci` runs them all.
+- **Checks and CI.** On this machine run only the fast checks: `cargo fmt --all -- --check`, `cargo check -p <touched crates> --all-targets`, the wasm `cargo check` (`cargo xtask wasm`, which checks L0–L4 crates and `kition-film-kit`) and `pnpm typecheck` in `web/`. The full checks run in the kit's CI run on GitHub (`.github/workflows/ci.yml` calls Kition's reusable kit CI): clippy, `cargo test --workspace`, `cargo xtask ci` (`cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`, `cargo xtask layers`, `cargo xtask assets`, `cargo xtask wasm`) and every `test:*` script of `web/`. A task is done when the CI run of HEAD is green and HEAD is on `origin/main` (Kition's `scripts/kit-ci.sh` `push`, `wait`, `land`). Do not add other workflows, and do not start the Package workflow: releasing is the owner's step.
 - **Commits:** one task id per commit (`M2.4: CABAC residual decoding`). Only green states. End messages with the attribution line required by the environment.
 
 ## Running and looking at the editor
 - `cd web && pnpm install && pnpm engine && pnpm dev` builds the WebAssembly engine and serves `web/dev.html`, a standalone host for manual testing without Kition.
 - `cargo build -p kition-film` builds the headless executable Kition's agent drives (`kition-headless` protocol); there is no desktop window or control channel.
-- Parallel agents: separate git worktrees and `CARGO_TARGET_DIR=target/agent-<name>`; keep every `Cargo.toml` valid at all times (the `crates/*` glob means one broken manifest breaks everyone).
+- Agents commit on `main` in this checkout; one agent per repository at a time. Keep every `Cargo.toml` valid at all times (the `crates/*` glob means one broken manifest breaks everyone).
 - Test fixtures: generate with ffmpeg into `target/fixtures/` (never commit media). See [`docs/testing/README.md`](../docs/testing/README.md).
