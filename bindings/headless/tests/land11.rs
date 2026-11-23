@@ -291,7 +291,13 @@ async fn batch_color_receipt_reports_stored_precision() {
         )
         .await;
     let edits = entry(&ran["changes"]["changed"], &clip.to_string())["edits"].as_array().unwrap();
-    let after = &edits.iter().find(|edit| edit["field"].as_str().unwrap().ends_with("black.value.Color.0")).unwrap_or_else(|| panic!("{ran}"))["after"];
+    // The receipt tells the parameter's value at `black.value` or at a leaf inside it: the
+    // colour's first channel, read at the path that is left.
+    let told = format!("effects.{slot}.params.black.value");
+    let edit = edits.iter().find(|edit| edit["field"].as_str().unwrap().starts_with(&told)).unwrap_or_else(|| panic!("{ran}"));
+    let inside: Vec<&str> =
+        ["Color", "0"].into_iter().skip(edit["field"].as_str().unwrap()[told.len()..].split('.').filter(|part| !part.is_empty()).count()).collect();
+    let after = inside.iter().fold(&edit["after"], |at, key| key.parse::<usize>().map_or(&at[*key], |index| &at[index]));
     let disk = kition_film_format::decode(&std::fs::read(f.file()).unwrap()).unwrap();
     let clip = &disk.project.sequence(kition_film_project::ItemId(sequence["id"].as_u64().unwrap())).unwrap().video_tracks[0].items[0];
     let stored =

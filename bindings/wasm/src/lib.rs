@@ -886,6 +886,11 @@ impl KitDocument for FilmDocument {
             let now = id_of(&object.id).and_then(|id| sequence.find_item(kition_film_engine::project::ClipId(id)));
             let answer = if object.created {
                 Some(false)
+            } else if id_of(&object.id).is_none() {
+                // No tool id: not a clip (a caption, a marker, an effect is held as a path of the
+                // object that holds it), so no range covers it; the captions Extract consumes are
+                // held by `~markedCaptionMaterial`.
+                Some(false)
             } else if object.deleted && object.before.is_empty() && object.unknown.iter().all(|field| field == "$was") {
                 // The journal keeps `$was` for every deleted object whose type has a time
                 // (kition-kdm `to_recorded_json`: a clip's `start` and `duration`): none is kept
