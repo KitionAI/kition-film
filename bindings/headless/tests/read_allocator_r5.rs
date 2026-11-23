@@ -40,7 +40,7 @@ fn an_exhausted_saved_id_counter_is_an_error_instead_of_a_panic_or_invalid_id() 
 
 #[test]
 fn stored_inline_ids_are_reserved_before_editing_without_changing_the_decoded_counter() {
-    let bytes = include_bytes!("../../../crates/formats/format/tests/fixtures/v1-edit.kfilm");
+    let bytes = include_bytes!("../../../crates/formats/format/tests/fixtures/edit.kfilm");
     let loaded = kition_film_format::decode(bytes).unwrap();
     assert_eq!(loaded.project.next_id, 48, "the frozen format contract preserves this stored counter");
     let floor = loaded.project.minimum_next_id(true).unwrap();

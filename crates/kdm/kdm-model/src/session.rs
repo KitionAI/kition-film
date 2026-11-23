@@ -20,7 +20,7 @@ use std::sync::Arc;
 
 use kition_film_project::{BinEntry, ItemKind, Marker, Project};
 use kition_kit::kdm::{ActorId, DocId, Origin, Replica, UndoScope, Version};
-use kition_kit::session::{BlobSink, BlobSource, Damage, KitError, KitModel, KitSession, MemoryBlobs};
+use kition_kit::session::{BlobSink, Damage, KitError, KitModel, KitSession, MemoryBlobs};
 
 use crate::{FilmModel, Ids, Nodes, Result, normalize, objects, read_document, replace_document, write_changes, write_document};
 

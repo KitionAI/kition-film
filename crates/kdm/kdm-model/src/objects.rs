@@ -60,9 +60,9 @@ fn set_changed(tx: &mut Tx<'_>, object: &ObjectId, before: &Map<String, Value>, 
 }
 
 /// Brings the object list `owner.field` to the order of `keys`: an object whose key (`key_of`) is
-/// not among them (or repeats one already kept) is deleted and removed, a missing key gets a new
-/// object from `create`, and the rest are moved into place. Answers whether it wrote, and the
-/// object of every key.
+/// not among them (or repeats one more often than `keys` does) is deleted and removed, a missing
+/// key gets a new object from `create`, and the rest are moved into place. Answers whether it
+/// wrote, and the (first) object of every key.
 fn sync_list<K: Clone + Eq + std::hash::Hash>(
     tx: &mut Tx<'_>,
     owner: &ObjectId,
@@ -72,19 +72,23 @@ fn sync_list<K: Clone + Eq + std::hash::Hash>(
     mut create: impl FnMut(&mut Tx<'_>, &K) -> KdmResult<ObjectId>,
     mut delete: impl FnMut(&mut Tx<'_>, &ObjectId) -> KdmResult<()>,
 ) -> KdmResult<(bool, HashMap<K, ObjectId>)> {
+    let mut wanted: HashMap<&K, usize> = HashMap::new();
+    for key in keys {
+        *wanted.entry(key).or_default() += 1;
+    }
     let mut current = tx.list_items(owner, field)?;
     let mut wrote = false;
-    let mut found: HashMap<K, ObjectId> = HashMap::new();
+    let mut held: HashMap<K, std::collections::VecDeque<ObjectId>> = HashMap::new();
     let mut keep = vec![false; current.len()];
     for (index, object) in current.iter().enumerate() {
         if !tx.exists(object) {
             continue;
         }
-        if let Some(key) = key_of(&*tx, object)?
-            && keys.contains(&key)
-            && !found.contains_key(&key)
-        {
-            found.insert(key, object.clone());
+        let Some(key) = key_of(&*tx, object)? else { continue };
+        let room = wanted.get(&key).copied().unwrap_or(0);
+        let objects = held.entry(key).or_default();
+        if objects.len() < room {
+            objects.push_back(object.clone());
             keep[index] = true;
         }
     }
@@ -99,25 +103,29 @@ fn sync_list<K: Clone + Eq + std::hash::Hash>(
         tx.list_remove(owner, field, index)?;
         wrote = true;
     }
+    let mut found: HashMap<K, ObjectId> = HashMap::new();
     for (index, key) in keys.iter().enumerate() {
-        match found.get(key).and_then(|object| current.iter().position(|each| each == object)) {
-            Some(at) if at == index => {}
-            Some(at) => {
-                let at_end = index.min(current.len().saturating_sub(1));
-                tx.list_move(owner, field, at, at_end)?;
-                let moved = current.remove(at);
-                current.insert(at_end, moved);
-                wrote = true;
+        let object = match held.get_mut(key).and_then(std::collections::VecDeque::pop_front) {
+            Some(object) => {
+                let at = current.iter().position(|each| *each == object).ok_or_else(|| kdm_err("a kept object is not in its list"))?;
+                if at != index {
+                    tx.list_move(owner, field, at, index)?;
+                    let moved = current.remove(at);
+                    current.insert(index, moved);
+                    wrote = true;
+                }
+                object
             }
             None => {
                 let object = create(&mut *tx, key)?;
                 let at = index.min(current.len());
                 tx.list_insert(owner, field, at, &object)?;
                 current.insert(at, object.clone());
-                found.insert(key.clone(), object);
                 wrote = true;
+                object
             }
-        }
+        };
+        found.entry(key.clone()).or_insert(object);
     }
     Ok((wrote, found))
 }
