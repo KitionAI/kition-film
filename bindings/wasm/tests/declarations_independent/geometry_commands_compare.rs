@@ -155,7 +155,7 @@ fn expected(
         };
         want.premises.extend(ids.into_iter().map(|id| Premise::on(json!(id))));
         if command == "clip.insertFrameHoldSegment" {
-            want.premises.push(leaf(seq, &["sequence.captionTracks"]));
+            want.premises.push(leaf(seq, &["sequence.captionTracks", "sequence.captions"]));
         }
     }
     if trim {
@@ -185,7 +185,7 @@ fn expected(
             }
         }
         if command.starts_with("trim.ripple") {
-            want.premises.push(leaf(seq, &["sequence.captionTracks"]));
+            want.premises.push(leaf(seq, &["sequence.captionTracks", "sequence.captions"]));
         }
     }
     if transition {

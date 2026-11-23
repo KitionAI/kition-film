@@ -226,8 +226,9 @@ async fn a_tool_id_written_as_a_string_is_taken_in_on_and_in_a_clip_parameter() 
     f.shutdown().await;
 }
 
-/// A sequence marker is no object of its own: adding one is told as a change of the sequence's
-/// item, at `sequence.markers`, with the whole list before and after.
+/// A sequence marker has no tool id (a `Marker` in the sequence's `markers` list): adding one is
+/// told as a change of the sequence's item, at `sequence.markers` and the new marker's place in it
+/// (`sequence.markers.0`), with no marker before and the new one after.
 #[tokio::test(flavor = "multi_thread")]
 async fn a_marker_is_told_under_its_sequences_item() {
     let f = Fixture::new(2);
@@ -236,7 +237,10 @@ async fn a_marker_is_told_under_its_sequences_item() {
     let ran = f.ok("run", json!({ "steps": [{ "command": "markers.add", "at": { "time": 1.5 } }] })).await;
     assert_eq!(ids(&ran["changes"]["changed"]), std::slice::from_ref(&item), "{ran}");
     let told = entry(&ran["changes"]["changed"], &item);
-    assert_eq!((told["type"].as_str(), told["fields"].clone()), (Some("Item"), json!(["sequence.markers"])), "{ran}");
+    assert_eq!((told["type"].as_str(), told["fields"].clone()), (Some("Item"), json!(["sequence.markers", "sequence.markers.0"])), "{ran}");
+    let edit = &told["edits"][0];
+    assert_eq!((edit["field"].as_str(), &edit["before"]), (Some("sequence.markers.0"), &Value::Null), "{ran}");
+    assert_eq!(edit["after"]["kind"], json!("Comment"), "the new marker: {ran}");
     f.shutdown().await;
 }
 

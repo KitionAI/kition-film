@@ -1058,7 +1058,11 @@ fn scanner_audits_every_other_receiver_of_a_session_method_name() {
     // `kdm` is the replica, not Session (kdm_bridge.rs:175-189,420-435).
     // lib.rs:798,835 bind p/w from Session.persistence (autosave::Worker).
     // shortcuts.rs:1169-1170 call the ShortcutMap field.
+    // kdm_bridge.rs:164-176: Session::blobs/add_blobs hand the replica's (FilmSession's) LUT
+    // blobs through; `ensure_kdm()?` and `kdm` are the replica there too.
     let reviewed = BTreeSet::from([
+        ("kdm_bridge", "kdm", "add_blobs"),
+        ("kdm_bridge", "ensure_kdm()?", "blobs"),
         ("kdm_bridge", "kdm", "import_changes"),
         ("kdm_bridge", "kdm", "redo_in"),
         ("kdm_bridge", "kdm", "undo_in"),

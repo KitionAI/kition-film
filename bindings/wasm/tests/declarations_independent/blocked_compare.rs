@@ -69,7 +69,7 @@ pub fn compared_path(command: &str, path: &str) -> bool {
     PATHS.contains(&(command, path))
         && hash(include_str!("../../src/files.rs")) == 0xbcb45df58401d79f
         && hash(include_str!("../../../headless/src/main.rs")) == 0xc870109526ea3c97
-        && hash(include_str!("../../src/collab.rs")) == 0x853a599e3d37140d
+        && hash(include_str!("../../src/collab.rs")) == 0x831eab3f5c05dc80
 }
 
 #[test]

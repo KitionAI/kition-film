@@ -19,9 +19,7 @@ writing them is `crates/formats/format` (`kition-film-format`); the engine's `fi
   `kition_film_format::SCHEMA_VERSION` and no other.
 - `project` is the serialized `kition_film_project::Project` (bins, media clips, sequences, tracks,
   clips, effects, keyframes, markers). Media is referenced by path, never embedded.
-- Project files are written indented, every object's keys in a fixed order, so two saves of one
-  project are the same bytes and a change shows as a small diff. Auto-save and recovery snapshots
-  are written compact.
+- Files are written compact (no indentation). A 2,000-clip project is about 1.4 MB.
 - `view` (optional) is what was open when the project was saved: the Timeline's sequence tabs in
   order, the active one, and each sequence's zoom, scroll and track heights
   (`kition_film_project::ProjectView`). It is beside the project, not in it: it is not part of the
@@ -128,8 +126,8 @@ already keeps for undo, passed through a channel. JSON encoding and all file I/O
 
 | Step | Time | Size |
 |---|---|---|
-| encode, compact (what auto-save writes) | 2.5 ms | 1.4 MB |
-| encode, pretty (what a save writes) | 7.1 ms | 5.6 MB |
+| encode, compact (what is written) | 2.5 ms | 1.4 MB |
+| encode, pretty (not used) | 7.1 ms | 5.6 MB |
 | decode | 4.6 ms | |
 | atomic write + fsync (APFS SSD) | 30 ms | |
 

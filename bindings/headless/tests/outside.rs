@@ -724,10 +724,10 @@ fn caption_text(file: &std::path::Path, id: u64) -> String {
         .unwrap_or_else(|| panic!("no caption {id} in {text}"))
 }
 
-/// A caption has no tool id (a `Caption` in its track's `captions` map): the colleague changes
+/// A caption has no tool id (a `Caption` in its sequence's `captions` list): the colleague changes
 /// caption 1's text, and the agent sets the same caption's text with `basis`, naming it in `on` or
 /// in the command's `caption` parameter. The kit states the call's premise, the caption's path
-/// inside the sequence's item (`sequence.captionTracks[id=…].captions.caption-<id>`): refused
+/// inside the sequence's item (`sequence.captions[id=…]`): refused
 /// as `changed` on that item, the colleague's text kept (C8-fix-7; was applied over it). A change of
 /// another caption does not refuse it.
 #[tokio::test(flavor = "multi_thread")]

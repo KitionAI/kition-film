@@ -17,6 +17,7 @@ fn the_fixture_loads() {
     assert_eq!(p.next_id, 48);
     let media = p.item(ItemId(5)).unwrap();
     assert_eq!(media.name, "Ocean_Sunset.mp4");
+    assert!(media.metadata.is_empty());
     let seq = p.sequence(ItemId(21)).unwrap();
     assert_eq!(seq.video_tracks.len(), 1);
     assert_eq!(seq.audio_tracks.len(), 1);
@@ -24,7 +25,9 @@ fn the_fixture_loads() {
     let clip = &seq.video_tracks[0].items[0];
     assert_eq!(clip.id, ClipId(29));
     assert_eq!(clip.source_in, Tick(243_675_432_000));
+    assert!(!clip.reverse && clip.link.is_none() && clip.gain_db == 0.0 && !clip.scale_to_frame);
     assert_eq!(clip.effects.len(), 3);
+    assert!(seq.audio_tracks[0].effects.is_empty());
     seq.check().unwrap();
     // resaved, losslessly
     let again = decode(&encode(p, true)).unwrap();

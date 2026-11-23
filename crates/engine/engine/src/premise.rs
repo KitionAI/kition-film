@@ -11,15 +11,15 @@
 //! | `effects.toggleEnabled` | the clip | `effects` | none |
 //! | `clip.enable` | each clip and, with Linked Selection, its linked clips | `props.enabled`, `link` | none |
 //! | `clip.rename` | the clip, or the project item `item` | `props.name` (`name` for an item) | none |
-//! | `captions.setTrack`, `.deleteTrack`, `.setStyle` | the open sequence's item | `sequence.captionTracks[id=<id>]`; an ordinal also holds its indexed id | none |
-//! | `captions.setText` | the open sequence's item | track selector by id, then its caption's stable map key | none |
-//! | `captions.setTimes`, `.trim`, `.move`, `.delete`, `.merge`, `.split` (and `.setText` on a caption it cannot find, or the one under the playhead) | the open sequence's item | `sequence.captionTracks` | none |
+//! | `captions.setTrack`, `.deleteTrack`, `.setStyle` | the open sequence's item | `sequence.captionTracks[id=<id>]` (`.deleteTrack` also its captions, `sequence.captions[track=<id>]`); an ordinal also holds its indexed id | none |
+//! | `captions.setText` | the open sequence's item | its caption by its id, `sequence.captions[id=<id>]` | none |
+//! | `captions.setTimes`, `.trim`, `.move`, `.delete`, `.merge`, `.split` (and `.setText` on a caption it cannot find, or the one under the playhead) | the open sequence's item | `sequence.captionTracks`, `sequence.captions` | none |
 //! | `markers.edit` (program) | the open sequence's item | its marker by its id, `sequence.markers[id=<id>]` | none |
 //! | `markers.clearCurrent`, `markers.clearAll` (program) | the open sequence's item | `sequence.markers` | none |
 //! | `timeline.razor`, `sequence.addEdit`, `sequence.addEditAllTracks` at a place | each clip under it | every field | `start` |
 //! | `timeline.place` (insert or overwrite) at a place | each clip under it (bindings/wasm) | every field | `start`, `clipId` |
 //! | `sequence.lift`, `sequence.extract` | each clip in the marked range; for extract each later clip | every field; `link` | `start`, `clipId`; `start`, `clips` |
-//! | `sequence.addEditAllTracks` | the open sequence's item | `sequence.captionTracks` | none |
+//! | `sequence.addEditAllTracks` | the open sequence's item | `sequence.captionTracks`, `sequence.captions` | none |
 //! | `timeline.place` with `snap` | the open sequence's item (`markers`), every audio clip (`beats`) | `sequence.markers`; every field | none; every position |
 //!
 //! Why each is exact:
@@ -471,12 +471,12 @@ impl Session {
                         let end = sequence.mark_out.map(|out| out + sequence.settings.frame_rate.frame_duration()).unwrap_or_else(|| sequence.duration());
                         for track in &sequence.caption_tracks {
                             let path = format!("sequence.captionTracks[id={}]", track.id.0);
-                            fields.extend([format!("{path}.locked"), format!("{path}.sync_lock")]);
+                            fields.extend([format!("{path}.locked"), format!("{path}.syncLock")]);
                             if track.locked || !track.sync_lock {
                                 continue;
                             }
                             for caption in &track.captions {
-                                let path = format!("{path}.captions.caption-{}", caption.id.0);
+                                let path = format!("sequence.captions[id={}]", caption.id.0);
                                 if caption.start >= end {
                                     fields.push(format!("{path}.start"));
                                 } else if caption.end() > start {
@@ -691,8 +691,11 @@ impl Session {
                         {
                             for track in &sequence.caption_tracks {
                                 let path = format!("sequence.captionTracks[id={}]", track.id.0);
-                                let fields =
-                                    if !track.locked && track.sync_lock { vec![path] } else { vec![format!("{path}.locked"), format!("{path}.sync_lock")] };
+                                let fields = if !track.locked && track.sync_lock {
+                                    vec![path, format!("sequence.captions[track={}]", track.id.0)]
+                                } else {
+                                    vec![format!("{path}.locked"), format!("{path}.syncLock")]
+                                };
                                 out.push(Premise { id: item, fields: Some(fields), positions: Some(Vec::new()) });
                             }
                         }
@@ -741,7 +744,7 @@ impl Session {
                 if let (Some(item), Some(sequence), Some(track)) = (item, sequence, crate::captions::track_param(self, params)) {
                     let path = format!("sequence.captionTracks[id={}]", track.0);
                     let mut fields = if command == "captions.deleteTrack" {
-                        vec![path.clone()]
+                        vec![path.clone(), format!("sequence.captions[track={}]", track.0)]
                     } else if command == "captions.setStyle" {
                         if params.get("reset").and_then(Value::as_bool) == Some(true) {
                             vec![format!("{path}.style")]
@@ -773,7 +776,7 @@ impl Session {
                             ("language", "language"),
                             ("enabled", "enabled"),
                             ("locked", "locked"),
-                            ("syncLock", "sync_lock"),
+                            ("syncLock", "syncLock"),
                         ]
                         .into_iter()
                         .filter(|(key, _)| given(params, key))
@@ -798,13 +801,10 @@ impl Session {
                     let paths: Vec<String> = ids
                         .iter()
                         .filter_map(|id| {
-                            sequence.caption_tracks.iter().find_map(|track| {
-                                track
-                                    .captions
-                                    .iter()
-                                    .any(|caption| caption.id.0 == *id)
-                                    .then(|| format!("sequence.captionTracks[id={}].captions.caption-{id}", track.id.0))
-                            })
+                            sequence
+                                .caption_tracks
+                                .iter()
+                                .find_map(|track| track.captions.iter().any(|caption| caption.id.0 == *id).then(|| format!("sequence.captions[id={id}]")))
                         })
                         .collect();
                     if command == "captions.setText" && !paths.is_empty() && paths.len() == ids.len() {
@@ -840,13 +840,14 @@ impl Session {
                             }
                             let path = format!("sequence.captionTracks[id={}]", tr.id.0);
                             fields.push(format!("{path}.locked"));
-                            // The pinned SDK cannot replay time windows in this JSON map.
-                            // Keep membership so newly inserted neighbours cannot escape the
-                            // guard; hold timing leaves so text remains independent.
-                            fields.push(format!("{path}.captionOrder"));
+                            // The pinned SDK cannot replay time windows in a list by a member.
+                            // Keep the track's membership (a caption added to it or taken out of
+                            // it, `track` selects it) so newly inserted neighbours cannot escape
+                            // the guard; hold timing leaves so text remains independent.
+                            fields.push(format!("sequence.captions[track={}].id", tr.id.0));
                             for caption in &tr.captions {
-                                fields.push(format!("{path}.captions.caption-{}.start", caption.id.0));
-                                fields.push(format!("{path}.captions.caption-{}.duration", caption.id.0));
+                                fields.push(format!("sequence.captions[id={}].start", caption.id.0));
+                                fields.push(format!("sequence.captions[id={}].duration", caption.id.0));
                             }
                             if command == "captions.add" && !params.get("track").is_some_and(Value::is_number) {
                                 fields.push(format!("sequence.captionTracks.{index}.id"));
@@ -854,7 +855,7 @@ impl Session {
                         }
                         out.push(Premise { id: item, fields: Some(fields), positions: Some(Vec::new()) });
                     } else if CAPTION_EDITS.contains(&command) {
-                        out.push(Premise::content(item, &["sequence.captionTracks"]));
+                        out.push(Premise::content(item, &["sequence.captionTracks", "sequence.captions"]));
                     }
                 }
             }
@@ -864,13 +865,9 @@ impl Session {
                     && let (Some(item), Some(sequence)) = (item, sequence)
                 {
                     // Marker inserts use edit::insert, which also ripples sync-locked captions.
-                    out.extend(
-                        sequence
-                            .caption_tracks
-                            .iter()
-                            .filter(|track| track.sync_lock && !track.locked)
-                            .map(|track| Premise::content(item, &[&format!("sequence.captionTracks[id={}]", track.id.0)])),
-                    );
+                    out.extend(sequence.caption_tracks.iter().filter(|track| track.sync_lock && !track.locked).map(|track| {
+                        Premise::content(item, &[&format!("sequence.captionTracks[id={}]", track.id.0), &format!("sequence.captions[track={}]", track.id.0)])
+                    }));
                 }
             }
             "markers.edit" if program => {
@@ -915,7 +912,7 @@ impl Session {
             }
         }
         if command == "sequence.addEditAllTracks" {
-            out.extend(item.map(|item| Premise::content(item, &["sequence.captionTracks"])));
+            out.extend(item.map(|item| Premise::content(item, &["sequence.captionTracks", "sequence.captions"])));
         }
         out
     }

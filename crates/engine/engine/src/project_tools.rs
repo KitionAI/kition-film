@@ -651,7 +651,7 @@ fn save_as_template(s: &mut Session, p: &Value) -> Result<Value> {
     let mut proj = (*s.project).clone();
     proj.name = name.clone();
     proj.root.name = name.clone();
-    s.services.write_file(&path, &kition_film_format::encode(&proj, true)).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
+    s.services.write_file(&path, &kition_film_format::encode(&proj, false)).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
     Ok(json!({"path": path, "name": name}))
 }
 
@@ -776,7 +776,7 @@ fn export_selection(s: &mut Session, p: &Value) -> Result<Value> {
     let name = std::path::Path::new(&path).file_stem().map(|x| x.to_string_lossy().to_string()).unwrap_or_else(|| sub.name.clone());
     sub.name = name.clone();
     sub.root.name = name;
-    s.services.write_file(&path, &kition_film_format::encode(&sub, true)).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
+    s.services.write_file(&path, &kition_film_format::encode(&sub, false)).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
     Ok(json!({"path": path, "items": keep.iter().map(|i| i.0).collect::<Vec<_>>()}))
 }
 

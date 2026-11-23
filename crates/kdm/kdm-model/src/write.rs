@@ -51,7 +51,11 @@ fn align_str(align: TransitionAlign) -> &'static str {
 /// do not need to know that).
 pub fn write_document(tx: &mut Tx<'_>, project: &Project, ids: &mut Ids, nodes: &mut Nodes) -> KdmResult<ObjectId> {
     let proj = project_id();
-    let project_fields = fields(json!({ "name": project.name, "settings": serde_json::to_value(&project.settings).map_err(kdm_err)? }));
+    // The project's tool id is `project` (its object id too): the LUTs and search bins it holds,
+    // which have none of their own, are told and held as `project`'s, at `luts.<n>` and
+    // `searchBins.<n>`.
+    let project_fields =
+        fields(json!({ "projectId": proj.as_str(), "name": project.name, "settings": serde_json::to_value(&project.settings).map_err(kdm_err)? }));
     tx.create_with_id("Project", &proj, project_fields)?;
     write_bin_shell(tx, &proj, &project.root, None, ids, nodes)?;
     write_contents(tx, &proj, project, ids)?;
@@ -71,6 +75,7 @@ pub fn replace_document(tx: &mut Tx<'_>, project: &Project, ids: &mut Ids, nodes
     let root_node = nodes.get(&root).cloned().ok_or_else(|| kdm_err("the replica's root bin has no tree node"))?;
     for ty in [
         "Transition",
+        "Param",
         "Effect",
         "Marker",
         "Caption",

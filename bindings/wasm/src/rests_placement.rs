@@ -156,12 +156,12 @@ pub fn under(session: &Session, command: &str, params: &Value) -> Option<Under> 
         answer.premises.push(leaf(json!(seq.0), &["~captionTrackOrder"]));
         for track in &q.caption_tracks {
             let path = format!("sequence.captionTracks[id={}]", track.id.0);
-            let mut fields = vec![format!("{path}.locked"), format!("{path}.sync_lock")];
+            let mut fields = vec![format!("{path}.locked"), format!("{path}.syncLock")];
             if !track.locked && track.sync_lock {
-                // It shifts or splits the captions from the insert's time on; their list is held
-                // whole, as the engine's premise holds it (premise.rs:862-873), so a change of
-                // them refuses as `changed`.
-                fields.extend([format!("{path}.captions"), format!("{path}.captionOrder")]);
+                // It shifts or splits the captions from the insert's time on; the track's
+                // captions are held whole, as the engine's premise holds them (premise.rs), so a
+                // change of them refuses as `changed`.
+                fields.push(format!("sequence.captions[track={}]", track.id.0));
             }
             answer.premises.push(Premise::on(json!(seq.0)).fields(fields).positions(Vec::<String>::new()));
         }

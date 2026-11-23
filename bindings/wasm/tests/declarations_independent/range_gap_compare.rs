@@ -56,12 +56,12 @@ fn expected(project: &Project, seq: u64, command: &str, markers: bool, p: &Value
         fields.push("~markedCaptionMaterial".into());
         for track in &q.caption_tracks {
             let path = format!("sequence.captionTracks[id={}]", track.id.0);
-            fields.extend([format!("{path}.locked"), format!("{path}.sync_lock")]);
+            fields.extend([format!("{path}.locked"), format!("{path}.syncLock")]);
             if track.locked || !track.sync_lock {
                 continue;
             }
             for caption in &track.captions {
-                let path = format!("{path}.captions.caption-{}", caption.id.0);
+                let path = format!("sequence.captions[id={}]", caption.id.0);
                 if caption.start >= end {
                     fields.push(format!("{path}.start"));
                 } else if caption.end() > at {

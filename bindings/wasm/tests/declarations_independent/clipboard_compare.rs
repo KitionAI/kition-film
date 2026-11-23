@@ -41,7 +41,7 @@ fn expected(project: &Project, sequence: u64, command: &str, selected: &[u64], l
     let at = q.settings.frame_rate.snap(kition_film_time::Tick(at)).0;
     let mut want = Under::default();
     if captions {
-        want.premises.push(leaf(json!(sequence), ["sequence.captionTracks"]));
+        want.premises.push(leaf(json!(sequence), ["sequence.captionTracks", "sequence.captions"]));
         return want;
     }
     let copy = matches!(command, "edit.copy" | "edit.cut");
@@ -93,7 +93,7 @@ fn expected(project: &Project, sequence: u64, command: &str, selected: &[u64], l
             }
         }
         if ripple {
-            want.premises.push(leaf(json!(sequence), ["sequence.captionTracks"]));
+            want.premises.push(leaf(json!(sequence), ["sequence.captionTracks", "sequence.captions"]));
         }
         return want;
     }
@@ -139,7 +139,7 @@ fn expected(project: &Project, sequence: u64, command: &str, selected: &[u64], l
         }
     }
     if command == "edit.pasteInsert" {
-        want.premises.push(leaf(json!(sequence), ["sequence.captionTracks"]));
+        want.premises.push(leaf(json!(sequence), ["sequence.captionTracks", "sequence.captions"]));
     }
     want
 }

@@ -66,7 +66,7 @@ fn expected(p: &Project, seq: u64, command: &str) -> Under {
         }
     }
     if command == "graphics.upgradeCaption" {
-        want.premises.push(leaf(json!(seq), ["sequence.captionTracks"]));
+        want.premises.push(leaf(json!(seq), ["sequence.captionTracks", "sequence.captions"]));
     }
     want
 }

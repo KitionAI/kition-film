@@ -1,8 +1,8 @@
 //! The collections a project holds as objects of their own, each written whole, diffed and read
-//! here: an effect's parameters (`Effect.params`, a map by parameter id), markers (`Marker` lists
-//! on a sequence, a clip and a media item), caption tracks and their captions (`CaptionTrack`
-//! list, each caption a `Caption` in the track's `captions` map), a media item's transcript and
-//! source graphic, the project's LUTs and search bins.
+//! here: an effect's parameters (`Effect.params`, a map of `Param` objects by parameter id),
+//! markers (`Marker` lists on a sequence, a clip and a media item), caption tracks and captions
+//! (a sequence's `CaptionTrack` list, and its `Caption` list, each caption naming its track), a
+//! media item's transcript and source graphic, the project's LUTs and search bins.
 //!
 //! Text a person types (a marker's comment, a caption's text) is a KDM `text` field written as
 //! insertions and deletions ([`kition_kit::session::write_text`]), so two people typing in one
@@ -167,33 +167,95 @@ pub(crate) fn effect_value(effect: &EffectInstance) -> KdmResult<Value> {
     Ok(json!({ "registers": effect_registers(effect)?, "params": effect_params(effect)? }))
 }
 
-/// Creates an `Effect` object holding `effect`.
+/// A parameter's registers (`value`, and `keyframes` when it has any), as its `Param` object
+/// holds them.
+pub(crate) fn param_registers(param: &Param) -> KdmResult<Map<String, Value>> {
+    Ok(object_of(to_value(param)?))
+}
+
+/// A `Param` object's registers as stored (`keyframes` only when set).
+pub(crate) fn stored_param_registers(tx: &Tx<'_>, object: &ObjectId) -> KdmResult<Map<String, Value>> {
+    let mut fields = Map::new();
+    fields.insert("value".into(), tx.get(object, "value")?);
+    let keyframes = tx.get(object, "keyframes")?;
+    if !keyframes.is_null() {
+        fields.insert("keyframes".into(), keyframes);
+    }
+    Ok(fields)
+}
+
+fn create_param(tx: &mut Tx<'_>, param: &Param) -> KdmResult<ObjectId> {
+    tx.create("Param", param_registers(param)?)
+}
+
+/// The live `Param` objects an effect's `params` map holds, by parameter id.
+pub(crate) fn param_objects(tx: &Tx<'_>, effect: &ObjectId) -> KdmResult<BTreeMap<String, ObjectId>> {
+    let mut held = BTreeMap::new();
+    for (name, value) in tx.map_entries(effect, "params")? {
+        if let Some(object) = value.as_str().map(ObjectId::from_string)
+            && tx.exists(&object)
+        {
+            held.insert(name, object);
+        }
+    }
+    Ok(held)
+}
+
+/// Creates an `Effect` object holding `effect`, each parameter a `Param` object in its `params`
+/// map.
 pub(crate) fn create_effect(tx: &mut Tx<'_>, effect: &EffectInstance) -> KdmResult<ObjectId> {
     let object = tx.create("Effect", effect_registers(effect)?)?;
-    for (name, value) in effect_params(effect)? {
-        tx.map_set(&object, "params", &name, value)?;
+    for (name, param) in &effect.params {
+        let child = create_param(tx, param)?;
+        tx.map_set(&object, "params", name, json!(child.as_str()))?;
     }
     Ok(object)
 }
 
-/// Writes what differs between `before` and `after` onto the effect's object.
+/// Writes what differs between `before` and `after` onto the effect's object: a changed
+/// parameter's registers on its own `Param` object, so two people editing two parameters (or the
+/// value and the keyframes of one) both keep their edit.
 pub(crate) fn update_effect(tx: &mut Tx<'_>, object: &ObjectId, before: &EffectInstance, after: &EffectInstance) -> KdmResult<bool> {
     let mut wrote = set_changed(tx, object, &effect_registers(before)?, &effect_registers(after)?)?;
-    let old = effect_params(before)?;
-    let new = effect_params(after)?;
-    for (name, value) in &new {
-        if old.get(name) != Some(value) {
-            tx.map_set(object, "params", name, value.clone())?;
-            wrote = true;
+    let held = param_objects(tx, object)?;
+    for (name, param) in &after.params {
+        let new = param_registers(param)?;
+        match held.get(name) {
+            Some(child) => {
+                let old = match before.params.get(name) {
+                    Some(old) => param_registers(old)?,
+                    None => stored_param_registers(tx, child)?,
+                };
+                if old != new {
+                    wrote |= set_changed(tx, child, &old, &new)?;
+                }
+            }
+            None => {
+                let child = create_param(tx, param)?;
+                tx.map_set(object, "params", name, json!(child.as_str()))?;
+                wrote = true;
+            }
         }
     }
-    for name in old.keys() {
-        if !new.contains_key(name) {
+    for (name, child) in &held {
+        if !after.params.contains_key(name) {
             tx.map_delete(object, "params", name)?;
+            tx.delete(child)?;
             wrote = true;
         }
     }
     Ok(wrote)
+}
+
+/// Reads a `Param` object.
+fn read_param(replica: &Replica, object: &ObjectId) -> KdmResult<Param> {
+    let mut fields = Map::new();
+    fields.insert("value".into(), replica.get(object, "value")?);
+    let keyframes = replica.get(object, "keyframes")?;
+    if !keyframes.is_null() {
+        fields.insert("keyframes".into(), keyframes);
+    }
+    serde_json::from_value(Value::Object(fields)).map_err(kdm_err)
 }
 
 /// Reads an `Effect` object. A parameter that does not read as one is an error, never dropped.
@@ -201,8 +263,11 @@ pub(crate) fn read_effect(replica: &Replica, object: &ObjectId) -> KdmResult<Eff
     let def = replica.get(object, "def")?.as_str().map(str::to_owned).ok_or_else(|| kdm_err("`def` is not a string"))?;
     let mut params = BTreeMap::new();
     for (name, value) in replica.map_entries(object, "params")? {
-        let param: Param = serde_json::from_value(value).map_err(kdm_err)?;
-        params.insert(name, param);
+        let Some(child) = value.as_str().map(ObjectId::from_string) else { return Err(kdm_err(format!("parameter `{name}` names no object"))) };
+        if !replica.exists(&child) {
+            continue;
+        }
+        params.insert(name, read_param(replica, &child)?);
     }
     let masks = match replica.get(object, "masks")? {
         Value::Null => Vec::new(),
@@ -319,11 +384,14 @@ pub(crate) fn read_markers(replica: &Replica, owner: &ObjectId, field: &str, fre
 }
 
 // --- captions ----------------------------------------------------------------------------------
-
-/// The key of a caption in its track's `captions` map.
-pub(crate) fn caption_key(id: u64) -> String {
-    format!("caption-{id}")
-}
+//
+// A sequence's caption tracks are `CaptionTrack` objects in its `captionTracks` list; its captions
+// are `Caption` objects in one list of the sequence, `captions`, each naming its track by the
+// track's id (`track`). One list for every caption, not one per track: a premise names a caption
+// by its id in it (`sequence.captions[id=7]`) and a track's captions by their track
+// (`sequence.captions[track=3]`), and a caption another person adds or removes is told as that
+// caption alone, so it never touches a premise on another caption. The list's order is not the
+// captions' order: a track's captions read in time order (start, then id).
 
 fn caption_track_registers(track: &CaptionTrack) -> KdmResult<Map<String, Value>> {
     let mut fields = object_of(json!({
@@ -342,9 +410,10 @@ fn caption_track_registers(track: &CaptionTrack) -> KdmResult<Map<String, Value>
     Ok(fields)
 }
 
-fn caption_registers(caption: &Caption) -> Map<String, Value> {
+fn caption_registers(track: u64, caption: &Caption) -> Map<String, Value> {
     let mut fields = object_of(json!({
         "id": caption.id.0,
+        "track": track,
         "start": tick::to_string(caption.start),
         "duration": tick::to_string(caption.duration),
         "settings": caption.settings,
@@ -358,46 +427,35 @@ fn caption_registers(caption: &Caption) -> Map<String, Value> {
     fields
 }
 
-fn create_caption(tx: &mut Tx<'_>, caption: &Caption) -> KdmResult<ObjectId> {
-    let object = tx.create("Caption", caption_registers(caption))?;
+fn create_caption(tx: &mut Tx<'_>, track: u64, caption: &Caption) -> KdmResult<ObjectId> {
+    let object = tx.create("Caption", caption_registers(track, caption))?;
     if !caption.text.is_empty() {
         tx.text_insert(&object, "text", 0, &caption.text)?;
     }
     Ok(object)
 }
 
-fn create_caption_track(tx: &mut Tx<'_>, track: &CaptionTrack) -> KdmResult<ObjectId> {
-    let object = tx.create("CaptionTrack", caption_track_registers(track)?)?;
-    for caption in &track.captions {
-        let child = create_caption(tx, caption)?;
-        tx.map_set(&object, "captions", &caption_key(caption.id.0), json!(child.as_str()))?;
-    }
-    Ok(object)
+/// Every caption of `tracks`, with its track's id, in track order then the track's order.
+fn all_captions(tracks: &[CaptionTrack]) -> Vec<(u64, &Caption)> {
+    tracks.iter().flat_map(|track| track.captions.iter().map(move |caption| (track.id.0, caption))).collect()
 }
 
-/// Deletes a caption track's object and every caption object it holds.
-fn delete_caption_track(tx: &mut Tx<'_>, object: &ObjectId) -> KdmResult<()> {
-    for (_, value) in tx.map_entries(object, "captions")? {
-        if let Some(child) = value.as_str().map(ObjectId::from_string)
-            && tx.exists(&child)
-        {
-            tx.delete(&child)?;
-        }
-    }
-    tx.delete(object)
-}
-
-/// Writes `tracks` into the empty `captionTracks` list of a sequence.
+/// Writes `tracks` and their captions into the empty `captionTracks` and `captions` lists of a
+/// sequence.
 pub(crate) fn write_caption_tracks(tx: &mut Tx<'_>, sequence: &ObjectId, tracks: &[CaptionTrack]) -> KdmResult<()> {
     for (index, track) in tracks.iter().enumerate() {
-        let object = create_caption_track(tx, track)?;
+        let object = tx.create("CaptionTrack", caption_track_registers(track)?)?;
         tx.list_insert(sequence, "captionTracks", index, &object)?;
+    }
+    for (index, (track, caption)) in all_captions(tracks).into_iter().enumerate() {
+        let object = create_caption(tx, track, caption)?;
+        tx.list_insert(sequence, "captions", index, &object)?;
     }
     Ok(())
 }
 
-/// Writes what differs between `before` and `after` onto a sequence's caption tracks: tracks
-/// matched by id, captions by id within their track.
+/// Writes what differs between `before` and `after` onto a sequence's caption tracks and
+/// captions: tracks matched by id, captions by id.
 pub(crate) fn diff_caption_tracks(tx: &mut Tx<'_>, sequence: &ObjectId, before: &[CaptionTrack], after: &[CaptionTrack]) -> KdmResult<bool> {
     if before == after {
         return Ok(false);
@@ -411,58 +469,59 @@ pub(crate) fn diff_caption_tracks(tx: &mut Tx<'_>, sequence: &ObjectId, before: 
         &keys,
         stored_u64,
         |tx, key| match by_id.get(key) {
-            Some(track) => create_caption_track(tx, track),
+            Some(track) => Ok(tx.create("CaptionTrack", caption_track_registers(track)?)?),
             None => Err(kdm_err("a caption track to create has no value")),
         },
-        delete_caption_track,
+        plain_delete,
     )?;
     let was: HashMap<u64, &CaptionTrack> = before.iter().map(|track| (track.id.0, track)).collect();
     for track in after {
         let (Some(object), Some(old)) = (objects.get(&track.id.0), was.get(&track.id.0)) else { continue };
-        if *old == track {
-            continue;
-        }
         wrote |= set_changed(tx, object, &caption_track_registers(old)?, &caption_track_registers(track)?)?;
-        wrote |= diff_captions(tx, object, &old.captions, &track.captions)?;
     }
+    wrote |= diff_captions(tx, sequence, &all_captions(before), &all_captions(after))?;
     Ok(wrote)
 }
 
-fn diff_captions(tx: &mut Tx<'_>, track: &ObjectId, before: &[Caption], after: &[Caption]) -> KdmResult<bool> {
+/// Writes what differs between the captions `before` and `after` (each with its track's id) onto
+/// a sequence's `captions` list: a caption removed is deleted and taken out, one added is put at
+/// the end, one changed has only what changed written (its text character by character).
+fn diff_captions(tx: &mut Tx<'_>, sequence: &ObjectId, before: &[(u64, &Caption)], after: &[(u64, &Caption)]) -> KdmResult<bool> {
     let mut wrote = false;
-    // The caption objects the map holds now, by their id.
-    let mut held: HashMap<u64, (String, ObjectId)> = HashMap::new();
-    for (key, value) in tx.map_entries(track, "captions")? {
-        let Some(object) = value.as_str().map(ObjectId::from_string) else { continue };
+    let was: HashMap<u64, (u64, &Caption)> = before.iter().map(|(track, caption)| (caption.id.0, (*track, *caption))).collect();
+    let now: HashMap<u64, (u64, &Caption)> = after.iter().map(|(track, caption)| (caption.id.0, (*track, *caption))).collect();
+    // The caption objects the list holds now: the first object of each id.
+    let mut held: HashMap<u64, ObjectId> = HashMap::new();
+    let mut gone: Vec<usize> = Vec::new();
+    for (index, object) in tx.list_items(sequence, "captions")?.into_iter().enumerate() {
         if !tx.exists(&object) {
             continue;
         }
-        if let Some(id) = tx.get(&object, "id")?.as_u64() {
-            held.entry(id).or_insert((key, object));
-        }
-    }
-    let was: HashMap<u64, &Caption> = before.iter().map(|caption| (caption.id.0, caption)).collect();
-    let now: HashMap<u64, &Caption> = after.iter().map(|caption| (caption.id.0, caption)).collect();
-    for caption in before {
-        if now.contains_key(&caption.id.0) {
+        let Some(id) = tx.get(&object, "id")?.as_u64() else { continue };
+        if held.contains_key(&id) {
             continue;
         }
-        if let Some((key, object)) = held.remove(&caption.id.0) {
-            tx.map_delete(track, "captions", &key)?;
+        if was.contains_key(&id) && !now.contains_key(&id) {
             tx.delete(&object)?;
+            gone.push(index);
             wrote = true;
+            continue;
         }
+        held.insert(id, object);
     }
-    for caption in after {
+    for index in gone.into_iter().rev() {
+        tx.list_remove(sequence, "captions", index)?;
+    }
+    for (track, caption) in after {
         match (held.get(&caption.id.0), was.get(&caption.id.0)) {
-            (Some((_, object)), Some(old)) => {
-                if *old == caption {
+            (Some(object), Some((old_track, old))) => {
+                if (*old_track, *old) == (*track, *caption) {
                     continue;
                 }
-                wrote |= set_changed(tx, object, &caption_registers(old), &caption_registers(caption))?;
+                wrote |= set_changed(tx, object, &caption_registers(*old_track, old), &caption_registers(*track, caption))?;
                 wrote |= write_text(tx, object, "text", &old.text, &caption.text)?;
             }
-            (Some((_, object)), None) => {
+            (Some(object), None) => {
                 // Held but not in `before` (defensive): written whole over what it holds.
                 let object = object.clone();
                 let text = tx.text_len(&object, "text")?;
@@ -472,14 +531,15 @@ fn diff_captions(tx: &mut Tx<'_>, track: &ObjectId, before: &[Caption], after: &
                 if !caption.text.is_empty() {
                     tx.text_insert(&object, "text", 0, &caption.text)?;
                 }
-                for (field, value) in caption_registers(caption) {
+                for (field, value) in caption_registers(*track, caption) {
                     tx.set(&object, &field, value)?;
                 }
                 wrote = true;
             }
             (None, _) => {
-                let object = create_caption(tx, caption)?;
-                tx.map_set(track, "captions", &caption_key(caption.id.0), json!(object.as_str()))?;
+                let object = create_caption(tx, *track, caption)?;
+                let at = tx.list_items(sequence, "captions")?.len();
+                tx.list_insert(sequence, "captions", at, &object)?;
                 wrote = true;
             }
         }
@@ -487,8 +547,9 @@ fn diff_captions(tx: &mut Tx<'_>, track: &ObjectId, before: &[Caption], after: &
     Ok(wrote)
 }
 
-/// Reads a sequence's caption tracks. A track's captions are in time order (start, then id): the
-/// order the engine keeps them in, whatever order two replicas added them.
+/// Reads a sequence's caption tracks and their captions. A track's captions are in time order
+/// (start, then id): the order the engine keeps them in, whatever order two replicas added them.
+/// A caption whose track is gone (deleted by another person while this one added it) is not read.
 pub(crate) fn read_caption_tracks(
     replica: &Replica,
     sequence: &ObjectId,
@@ -500,24 +561,6 @@ pub(crate) fn read_caption_tracks(
             continue;
         }
         let id = fresh(&object, replica.get(&object, "id")?.as_u64());
-        let mut captions = Vec::new();
-        for (_, value) in replica.map_entries(&object, "captions")? {
-            let Some(child) = value.as_str().map(ObjectId::from_string) else { continue };
-            if !replica.exists(&child) {
-                continue;
-            }
-            let caption_id = fresh(&child, replica.get(&child, "id")?.as_u64());
-            captions.push(Caption {
-                id: kition_film_project::ClipId(caption_id),
-                start: tick::from_value(&replica.get(&child, "start")?)?,
-                duration: tick::from_value(&replica.get(&child, "duration")?)?,
-                text: replica.text(&child, "text")?,
-                speaker: replica.get(&child, "speaker")?.as_str().map(str::to_owned),
-                cue_id: replica.get(&child, "cueId")?.as_str().map(str::to_owned),
-                settings: replica.get(&child, "settings")?.as_str().unwrap_or_default().to_owned(),
-            });
-        }
-        captions.sort_by_key(|caption| (caption.start, caption.id.0));
         let vtt_blocks = match replica.get(&object, "vttBlocks")? {
             Value::Null => Vec::new(),
             value => serde_json::from_value(value).map_err(kdm_err)?,
@@ -531,9 +574,29 @@ pub(crate) fn read_caption_tracks(
             enabled: replica.get(&object, "enabled")?.as_bool().unwrap_or(true),
             locked: replica.get(&object, "locked")?.as_bool().unwrap_or(false),
             sync_lock: replica.get(&object, "syncLock")?.as_bool().unwrap_or(true),
-            captions,
+            captions: Vec::new(),
             vtt_blocks,
         });
+    }
+    for object in replica.list(sequence, "captions")? {
+        if !replica.exists(&object) {
+            continue;
+        }
+        let Some(track) = replica.get(&object, "track")?.as_u64() else { continue };
+        let Some(track) = tracks.iter_mut().find(|each| each.id.0 == track) else { continue };
+        let id = fresh(&object, replica.get(&object, "id")?.as_u64());
+        track.captions.push(Caption {
+            id: kition_film_project::ClipId(id),
+            start: tick::from_value(&replica.get(&object, "start")?)?,
+            duration: tick::from_value(&replica.get(&object, "duration")?)?,
+            text: replica.text(&object, "text")?,
+            speaker: replica.get(&object, "speaker")?.as_str().map(str::to_owned),
+            cue_id: replica.get(&object, "cueId")?.as_str().map(str::to_owned),
+            settings: replica.get(&object, "settings")?.as_str().unwrap_or_default().to_owned(),
+        });
+    }
+    for track in &mut tracks {
+        track.captions.sort_by_key(|caption| (caption.start, caption.id.0));
     }
     Ok(tracks)
 }

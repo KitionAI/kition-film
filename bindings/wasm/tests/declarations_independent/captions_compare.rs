@@ -1,5 +1,5 @@
-//! captions.rs and edit/captions.rs: stable caption identities live in the
-//! owning sequence's JSON. Timing edits consume peer ranges, not peer text.
+//! captions.rs and edit/captions.rs: a caption is a `Caption` in its sequence's `captions` list,
+//! named by its stable id. Timing edits consume peer ranges, not peer text.
 use super::sync_compare::normalized;
 use kition_film_kit::FilmDocument;
 use kition_kit::{EditorState, KitDocument, Premise, Under};
@@ -79,7 +79,7 @@ fn caption_track_patches_compare_all_subsets_resets_and_native_track_addresses()
         ("language", "language", json!("zh")),
         ("enabled", "enabled", json!(false)),
         ("locked", "locked", json!(true)),
-        ("syncLock", "sync_lock", json!(false)),
+        ("syncLock", "syncLock", json!(false)),
     ];
     let style = [
         ("font", "font", json!("Sans")),
@@ -118,7 +118,7 @@ fn caption_track_patches_compare_all_subsets_resets_and_native_track_addresses()
                         let prefix = format!("sequence.captionTracks[id={chosen}]");
                         let mut expected = Vec::new();
                         if command == "captions.deleteTrack" {
-                            expected.push(prefix.clone());
+                            expected.extend([prefix.clone(), format!("sequence.captions[track={chosen}]")]);
                         } else if reset && command == "captions.setStyle" {
                             expected.push(format!("{prefix}.style"));
                         }
@@ -211,7 +211,7 @@ fn caption_edits_compare_explicit_selection_and_point_targets_all_tracks_and_tim
                             "captions.setText" => {
                                 for (index, track) in tracks.iter().enumerate() {
                                     for caption in captions[index].iter().filter(|id| ids.contains(id)) {
-                                        let prefix = format!("sequence.captionTracks[id={track}].captions.caption-{caption}");
+                                        let prefix = format!("sequence.captions[id={caption}]");
                                         if address.is_null() {
                                             expected.push(prefix);
                                         } else {
@@ -242,12 +242,10 @@ fn caption_edits_compare_explicit_selection_and_point_targets_all_tracks_and_tim
                                         continue;
                                     }
                                     let prefix = format!("sequence.captionTracks[id={track}]");
-                                    expected.extend([format!("{prefix}.locked"), format!("{prefix}.captionOrder")]);
+                                    expected.extend([format!("{prefix}.locked"), format!("sequence.captions[track={track}].id")]);
                                     for caption in &captions[index] {
-                                        expected.extend([
-                                            format!("{prefix}.captions.caption-{caption}.start"),
-                                            format!("{prefix}.captions.caption-{caption}.duration"),
-                                        ]);
+                                        expected
+                                            .extend([format!("sequence.captions[id={caption}].start"), format!("sequence.captions[id={caption}].duration")]);
                                     }
                                 }
                             }
@@ -255,7 +253,7 @@ fn caption_edits_compare_explicit_selection_and_point_targets_all_tracks_and_tim
                                 expected.extend(tracks.iter().map(|track| format!("sequence.captionTracks[id={track}].enabled")))
                             }
                             _ => {
-                                expected.push("sequence.captionTracks".into());
+                                expected.extend(["sequence.captionTracks".into(), "sequence.captions".into()]);
                                 if command == "captions.split" {
                                     expected.push("sequence.settings.settings.frame_rate".into());
                                 }

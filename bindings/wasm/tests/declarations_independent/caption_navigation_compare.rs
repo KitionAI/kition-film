@@ -101,15 +101,15 @@ fn navigation_compares_caption_addresses_visibility_timebases_and_following_sele
                             let point = array.is_none() && explicit.is_none() && selected.is_empty();
                             for track in &q.caption_tracks {
                                 let base = format!("sequence.captionTracks[id={}]", track.id.0);
-                                fields.push(format!("{base}.captionOrder"));
+                                fields.push(format!("sequence.captions[track={}].id", track.id.0));
                                 if navigation || command == "captions.showActiveOnly" {
                                     fields.push(format!("{base}.enabled"));
                                 }
                                 for caption in &track.captions {
                                     if navigation && track.enabled || command == "captions.goTo" && (point || chosen == Some(caption.id.0)) {
-                                        fields.push(format!("{base}.captions.caption-{}.start", caption.id.0));
+                                        fields.push(format!("sequence.captions[id={}].start", caption.id.0));
                                         if command == "captions.goTo" && point {
-                                            fields.push(format!("{base}.captions.caption-{}.duration", caption.id.0));
+                                            fields.push(format!("sequence.captions[id={}].duration", caption.id.0));
                                         }
                                     }
                                 }

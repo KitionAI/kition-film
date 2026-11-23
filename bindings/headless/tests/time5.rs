@@ -632,7 +632,7 @@ async fn model_clip_ops(f: &Fixture, q: &Value, form: &str) -> Value {
     let item = &clip["objects"][0]["fields"]["item"];
     let item = item.as_u64().map(|id| json!(id.to_string())).unwrap_or_else(|| item.clone());
     let mut fields = clip["objects"][0]["fields"].clone();
-    for field in ["clipId", "missingItem", "effects"] {
+    for field in ["clipId", "missingItem", "effects", "markers"] {
         fields.as_object_mut().unwrap().remove(field);
     }
     fields["item"] = item;

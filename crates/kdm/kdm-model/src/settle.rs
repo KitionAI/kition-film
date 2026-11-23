@@ -45,11 +45,19 @@ pub fn settle_batch(tx: &mut Tx<'_>) -> Result<(), KdmError> {
     for object in tx.objects_of_type("Effect") {
         let def = tx.get(&object, "def")?.as_str().unwrap_or_default().to_owned();
         let mut params = Vec::new();
-        for (name, before) in tx.map_entries(&object, "params")? {
-            let param: Param = serde_json::from_value(before.clone()).map_err(kdm_err)?;
-            let after = serde_json::to_value(&param).map_err(kdm_err)?;
-            if before != after {
-                tx.map_set(&object, "params", &name, after)?;
+        for (name, child) in crate::objects::param_objects(tx, &object)? {
+            let before = crate::objects::stored_param_registers(tx, &child)?;
+            let param: Param = serde_json::from_value(Value::Object(before.clone())).map_err(kdm_err)?;
+            let after = crate::objects::param_registers(&param)?;
+            for (field, value) in &after {
+                if before.get(field) != Some(value) {
+                    tx.set(&child, field, value.clone())?;
+                }
+            }
+            for field in before.keys() {
+                if !after.contains_key(field) {
+                    tx.set(&child, field, Value::Null)?;
+                }
             }
             params.push((name, param));
         }
@@ -68,19 +76,13 @@ pub fn settle_batch(tx: &mut Tx<'_>) -> Result<(), KdmError> {
                 }
             }
         }
-        for track in tx.list_items(&object, "captionTracks")? {
-            if !tx.exists(&track) {
+        for caption in tx.list_items(&object, "captions")? {
+            if !tx.exists(&caption) {
                 continue;
             }
-            for (_, caption) in tx.map_entries(&track, "captions")? {
-                let Some(caption) = caption.as_str().map(ObjectId::from_string) else { continue };
-                if !tx.exists(&caption) {
-                    continue;
-                }
-                let start = tick::from_value(&tx.get(&caption, "start")?)?.0;
-                let duration = tick::from_value(&tx.get(&caption, "duration")?)?.0;
-                end = end.max(start.saturating_add(duration));
-            }
+            let start = tick::from_value(&tx.get(&caption, "start")?)?.0;
+            let duration = tick::from_value(&tx.get(&caption, "duration")?)?.0;
+            end = end.max(start.saturating_add(duration));
         }
         let duration = Value::String(end.to_string());
         if tx.get(&object, "duration")? != duration {

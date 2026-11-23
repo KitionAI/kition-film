@@ -302,7 +302,8 @@ synchronization and editor-input paths still need comparison.
   with the `revision` the refusal answered as `basis`. Do not resend the same time: it names
   another clip now.
 - **Captions and markers** have no tool id of their own: a change to one is told as a change of
-  its sequence's item at a path under `sequence.captionTracks` or `sequence.markers` (a media
+  its sequence's item at a path under `sequence.captions` (a caption's track is under
+  `sequence.captionTracks`) or `sequence.markers` (a media
   item's source markers under its `markers`, a clip's under the clip's `markers`). A write to a caption's
   text named by its id is refused (`changed`, naming the item) when others changed that caption's
   text (or speaker) or deleted it, not when they moved it in time; found by its time, the whole
@@ -341,8 +342,8 @@ synchronization and editor-input paths still need comparison.
   into. A colleague's insertion or deletion before that gap refuses the stale insertion.
   Its additional name and position holds can also refuse a distant appended track.
 - **Known diagnostic limit:** folded mixer names lack the SDK's exact-name relocation diagnostic
-  when a colleague renames the resolved track away. Caption text follows its track by id and
-  its caption by a stable map key; removing an earlier track does not refuse an unchanged text.
+  when a colleague renames the resolved track away. Caption text follows its caption by its id
+  in the sequence's `captions`; removing an earlier track does not refuse an unchanged text.
   An automation interval whose occupant was replaced reports `relocated`, including when the
   reread pairs its old and new occupants structurally.
 

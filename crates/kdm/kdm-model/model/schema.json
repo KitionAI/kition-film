@@ -53,12 +53,14 @@
         "fontUses": { "description": "Replace Fonts recipient and assignment facts indexed by canonical family and style.", "premiseOnly": true }
       },
       "fields": {
+        "projectId": { "kind": "string", "readOnly": true },
         "name": { "kind": "string" },
         "settings": { "kind": "json" },
         "bins": { "kind": "tree", "of": "Bin" },
         "luts": { "kind": "list", "of": "Lut" },
         "searchBins": { "kind": "list", "of": "SearchBin" }
-      }
+      },
+      "toolId": { "field": "projectId" }
     },
     "Lut": {
       "batchIndependent": true,
@@ -190,6 +192,7 @@
         "audioTracks": { "kind": "list", "of": "Track" },
         "submixTracks": { "kind": "list", "of": "Track" },
         "captionTracks": { "kind": "list", "of": "CaptionTrack" },
+        "captions": { "kind": "list", "of": "Caption" },
         "markers": { "kind": "list", "of": "Marker" },
         "masterEffects": { "kind": "list", "of": "Effect" },
         "mixer": { "kind": "json", "optional": true },
@@ -208,8 +211,7 @@
         "enabled": { "kind": "boolean" },
         "locked": { "kind": "boolean" },
         "syncLock": { "kind": "boolean" },
-        "vttBlocks": { "kind": "json", "optional": true },
-        "captions": { "kind": "map", "of": "Caption", "owns": true }
+        "vttBlocks": { "kind": "json", "optional": true }
       }
     },
     "Caption": {
@@ -217,6 +219,7 @@
       "batchOps": { "*": { "direct": true } },
       "fields": {
         "id": { "kind": "integer", "optional": true, "readOnly": true },
+        "track": { "kind": "integer" },
         "start": { "kind": "string", "display": { "kind": "time", "perSecond": 254016000000 } },
         "duration": { "kind": "string", "display": { "kind": "time", "perSecond": 254016000000 } },
         "text": { "kind": "text" },
@@ -284,11 +287,19 @@
       "fields": {
         "def": { "kind": "string", "readOnly": true, "sample": false },
         "enabled": { "kind": "boolean", "optional": true },
-        "params": { "kind": "map" },
+        "params": { "kind": "map", "of": "Param", "owns": true },
         "masks": { "kind": "json", "optional": true },
         "postFader": { "kind": "boolean", "optional": true },
         "audioMixing": { "kind": "boolean", "optional": true },
         "layer": { "kind": "json", "optional": true }
+      }
+    },
+    "Param": {
+      "batchIndependent": true,
+      "batchOps": { "*": { "direct": true } },
+      "fields": {
+        "value": { "kind": "json" },
+        "keyframes": { "kind": "json", "optional": true }
       }
     },
     "Transition": {

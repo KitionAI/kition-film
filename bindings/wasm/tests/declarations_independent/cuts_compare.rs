@@ -96,7 +96,7 @@ fn expected(project: &Project, seq: u64, command: &str, selected: &[u64], linked
         want.premises.push(leaf(seq, &["~videoTrackOrder", "~audioTrackOrder", "~submixTrackOrder"]));
     }
     if command == "sequence.addEditAllTracks" {
-        want.premises.push(leaf(seq, &["sequence.captionTracks"]));
+        want.premises.push(leaf(seq, &["sequence.captionTracks", "sequence.captions"]));
     }
     if linked
         && let Some(id) = named

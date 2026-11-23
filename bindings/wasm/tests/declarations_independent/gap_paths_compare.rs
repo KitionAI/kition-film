@@ -21,7 +21,7 @@ pub fn compared_path(command: &str, path: &str) -> bool {
     PATHS.contains(&(command, path))
         && hash(include_str!("../../../../crates/engine/engine/src/sequence_tools.rs")) == 0x9c4a17d3fd68bdd4
         && hash(include_str!("../../../../crates/engine/edit/src/through.rs")) == 0x4c6835072dd061dd
-        && hash(include_str!("../../../../crates/engine/engine/src/lib.rs")) == 0xc36863a28b095245
+        && hash(include_str!("../../../../crates/engine/engine/src/lib.rs")) == 0x6eb44792cbfab1e6
 }
 
 pub fn more(command: &str) -> Vec<&'static str> {

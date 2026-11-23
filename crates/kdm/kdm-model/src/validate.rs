@@ -55,7 +55,7 @@ pub(crate) fn validate(tx: &mut Tx<'_>, _changed: &BTreeSet<ObjectId>) -> KdmRes
     }
 
     for sequence in tx.objects_of_type("Sequence") {
-        for field in ["videoTracks", "audioTracks", "submixTracks", "captionTracks", "markers", "masterEffects"] {
+        for field in ["videoTracks", "audioTracks", "submixTracks", "captionTracks", "captions", "markers", "masterEffects"] {
             wrote |= clean_dangling(tx, &sequence, field)?;
         }
     }

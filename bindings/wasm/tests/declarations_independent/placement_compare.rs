@@ -128,9 +128,9 @@ fn expected(project: &Project, seq: u64, command: &str, p: &Value, source_id: u6
         want.premises.push(leaf(json!(seq), &["~captionTrackOrder"]));
         for track in &q.caption_tracks {
             let path = format!("sequence.captionTracks[id={}]", track.id.0);
-            let mut fields = vec![format!("{path}.locked"), format!("{path}.sync_lock")];
+            let mut fields = vec![format!("{path}.locked"), format!("{path}.syncLock")];
             if !track.locked && track.sync_lock {
-                fields.extend([format!("{path}.captions"), format!("{path}.captionOrder")]);
+                fields.push(format!("sequence.captions[track={}]", track.id.0));
             }
             want.premises.push(Premise::on(json!(seq)).fields(fields).positions(Vec::<String>::new()));
         }

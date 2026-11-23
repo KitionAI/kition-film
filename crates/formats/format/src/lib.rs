@@ -9,8 +9,6 @@
 //! - **Versioning.** [`SCHEMA_VERSION`] is the one version this build reads and writes. There is
 //!   no upgrade chain: a file of any other version is refused with
 //!   [`FormatError::Unsupported`], never half-read (and later overwritten with data loss).
-//! - **Diffable.** [`encode`] writes indented JSON with every object's keys in a fixed order, so
-//!   two saves of one project are byte-identical and a change shows as a small text diff.
 //! - **Atomic saves.** [`atomic_write`] writes a temp file in the destination directory, fsyncs it,
 //!   renames it over the target and fsyncs the directory: a crash or power cut during a save leaves
 //!   either the old file or the new one, never a torn mix.
@@ -99,9 +97,8 @@ struct Probe {
     schema_version: Option<u32>,
 }
 
-/// Serialize a project. `pretty` = indented (human-diffable; used for the project file itself),
-/// compact otherwise (recovery snapshots). Either way every object's keys are in a fixed order:
-/// struct fields in declaration order, map keys sorted (the project holds only ordered maps).
+/// Serialize a project. `pretty` = indented (human-diffable), compact otherwise (what project
+/// files and recovery snapshots are written as).
 pub fn encode(project: &Project, pretty: bool) -> Vec<u8> {
     encode_with_view(project, None, pretty)
 }
@@ -198,15 +195,55 @@ mod tests {
         assert_eq!(SCHEMA_VERSION, 1);
     }
 
-    /// Two saves of one project are the same bytes, indented.
     #[test]
-    fn saves_are_pretty_and_stable() {
-        let mut p = Project::new("Stable");
-        let _ = p.new_sequence("Sequence 01", kition_film_project::SequenceSettings::default(), 1, 1, None);
-        let a = encode(&p, true);
-        assert_eq!(a, encode(&decode(&a).unwrap().project, true));
-        let text = String::from_utf8(a).unwrap();
-        assert!(text.starts_with("{\n  \"format\": "), "indented: {text}");
+    fn damaged_sequence_settings_are_rejected_before_rendering() {
+        let mut p = Project::new("Invalid sequence");
+        let id = p.new_sequence("Bad", kition_film_project::SequenceSettings::default(), 1, 1, None);
+        for (width, height, sample_rate) in [(0, 90, 48000), (160, 0, 48000), (160, 90, 0), (65536, 90, 48000), (32768, 16384, 48000)] {
+            let settings = &mut p.sequence_mut(id).unwrap().settings;
+            (settings.width, settings.height, settings.sample_rate) = (width, height, sample_rate);
+            assert!(matches!(decode(&encode(&p, false)), Err(FormatError::Corrupt(_))));
+        }
+    }
+
+    /// Load-time validation refuses only overflowing values. A project that breaks a
+    /// structural rule (overlapping or zero-length clips) still opens; and 16K sequences are not
+    /// "too large".
+    #[test]
+    fn structural_rule_breaks_still_open() {
+        use kition_film_project::{ItemKind, SequenceSettings, TrackKind};
+        use kition_film_time::{FrameRate, Tick, TimeRange};
+        let mut p = Project::new("Legacy");
+        let rate = FrameRate::FPS_24;
+        let layer = p.add_item(
+            "Layer",
+            kition_film_project::Label::Iris,
+            ItemKind::AdjustmentLayer { width: 1920, height: 1080, rate, duration: rate.tick_of(48) },
+            None,
+        );
+        let settings = SequenceSettings { width: 15360, height: 8640, ..Default::default() };
+        let seq = p.new_sequence("Sequence 01", settings, 1, 1, None);
+        let range = TimeRange::new(Tick::ZERO, rate.tick_of(48));
+        let a = p.make_track_item(layer, TrackKind::Video, Tick::ZERO, range, rate).unwrap();
+        let b = p.make_track_item(layer, TrackKind::Video, rate.tick_of(24), range, rate).unwrap();
+        let mut c = p.make_track_item(layer, TrackKind::Video, rate.tick_of(200), range, rate).unwrap();
+        c.duration = Tick::ZERO;
+        p.sequence_mut(seq).unwrap().video_tracks[0].items = vec![a, b, c];
+        assert!(p.sequence(seq).unwrap().check().is_err(), "the sequence breaks the editor's invariants");
+        let loaded = decode(&encode(&p, false)).unwrap_or_else(|e| panic!("a project that opened before is refused: {e}"));
+        assert_eq!(loaded.project.sequence(seq).unwrap().video_tracks[0].items.len(), 3);
+    }
+
+    #[test]
+    fn roundtrip_current() {
+        let p = Project::new("Round Trip");
+        for pretty in [true, false] {
+            let b = encode(&p, pretty);
+            let l = decode(&b).unwrap();
+            assert_eq!(l.project, p);
+            assert_eq!(l.schema_version, SCHEMA_VERSION);
+            assert_eq!(l.generator.as_deref(), Some(generator().as_str()));
+        }
     }
 
     /// What is open is stored beside the project. A file without it, or with one that cannot be

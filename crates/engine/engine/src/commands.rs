@@ -3979,7 +3979,7 @@ fn name_project(p: &mut kition_film_project::Project, name: String) {
     p.name = name;
 }
 
-/// Serialize the project and write it (atomically, indented) to `path`. `adopt` = Save / Save As
+/// Serialize the project and write it (atomically, compact) to `path`. `adopt` = Save / Save As
 /// (the file becomes the project's path and the project is clean); otherwise Save a Copy.
 fn write_project(s: &mut Session, path: &str, adopt: bool) -> Result<Value> {
     let t0 = web_time::Instant::now();
@@ -3997,7 +3997,7 @@ fn write_project(s: &mut Session, path: &str, adopt: bool) -> Result<Value> {
     }
     // what is open (sequence tabs, how each is shown) goes into the file beside the project
     let view = s.project_view();
-    let bytes = kition_film_format::encode_with_view(&s.project, Some(&view), true);
+    let bytes = kition_film_format::encode_with_view(&s.project, Some(&view), false);
     s.services.write_file(path, &bytes).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
     if adopt {
         s.path = Some(path.to_string());

@@ -82,6 +82,40 @@ fn concurrent_caption_add_and_retime_both_survive() {
     assert_eq!(captions.iter().map(|c| (c.id.0, c.start.0)).collect::<Vec<_>>(), [(901, 0), (902, 2_500), (5_000_000_001, 4_000)]);
 }
 
+/// One person adds a caption to a track while another deletes the track: the replicas end
+/// identical, without the track and without a caption left over in it.
+#[test]
+fn concurrent_caption_add_and_track_delete_converge() {
+    let mut a = first(&captioned());
+    let mut b = peer(&a, 2);
+    let after = edit(&a, |p, s| p.sequence_mut(s).unwrap().caption_tracks[0].captions.push(caption(5_000_000_001, 4_000, "Third")));
+    record(&mut a, &person("a"), &after);
+    let after = edit(&b, |p, s| p.sequence_mut(s).unwrap().caption_tracks.clear());
+    record(&mut b, &person("b"), &after);
+    converge(&mut a, &mut b);
+    let project = &a.model().project;
+    assert!(project.sequence(sequence_id(project)).unwrap().caption_tracks.is_empty());
+}
+
+/// Captions added to two tracks at once, one by each person: each lands in its own track.
+#[test]
+fn concurrent_captions_on_two_tracks_stay_in_their_tracks() {
+    let mut project = captioned();
+    let sequence = sequence_id(&project);
+    project.sequence_mut(sequence).unwrap().caption_tracks.push(CaptionTrack::new(TrackId(910), "Second".into(), Default::default()));
+    let mut a = first(&project);
+    let mut b = peer(&a, 2);
+    let after = edit(&a, |p, s| p.sequence_mut(s).unwrap().caption_tracks[0].captions.push(caption(5_000_000_001, 4_000, "First track")));
+    record(&mut a, &person("a"), &after);
+    let after = edit(&b, |p, s| p.sequence_mut(s).unwrap().caption_tracks[1].captions.push(caption(6_000_000_001, 500, "Second track")));
+    record(&mut b, &person("b"), &after);
+    converge(&mut a, &mut b);
+    let project = &a.model().project;
+    let tracks = &project.sequence(sequence_id(project)).unwrap().caption_tracks;
+    assert_eq!(tracks[0].captions.iter().map(|c| c.id.0).collect::<Vec<_>>(), [901, 902, 5_000_000_001]);
+    assert_eq!(tracks[1].captions.iter().map(|c| c.text.as_str()).collect::<Vec<_>>(), ["Second track"]);
+}
+
 /// Two people add a marker each, and one edits the comment of the existing marker while the
 /// other types in it too: every marker and every character survives.
 #[test]
@@ -151,6 +185,29 @@ fn concurrent_edits_of_two_params_of_one_effect_are_both_kept() {
     let motion = project.sequence(sequence_id(project)).unwrap().video_tracks[0].items[0].effect("motion").unwrap().clone();
     assert_eq!(motion.params["scale"].value, ParamValue::Float(50.0));
     assert_eq!(motion.params["rotation"].value, ParamValue::Float(15.0));
+}
+
+/// One person changes a parameter's value while another keys the same parameter (each a
+/// register of its `Param` object in `Effect.params`): both edits are kept.
+#[test]
+fn concurrent_value_and_keyframes_of_one_param_are_both_kept() {
+    use kition_film_project::Keyframe;
+    let mut a = first(&captioned());
+    let mut b = peer(&a, 2);
+    let after = edit(&a, |p, s| {
+        p.sequence_mut(s).unwrap().video_tracks[0].items[0].effect_mut("motion").unwrap().params.get_mut("scale").unwrap().value = ParamValue::Float(50.0)
+    });
+    record(&mut a, &person("a"), &after);
+    let keys = vec![Keyframe::new(Tick::ZERO, ParamValue::Float(100.0)), Keyframe::new(Tick(5_000), ParamValue::Float(200.0))];
+    let after = edit(&b, |p, s| {
+        p.sequence_mut(s).unwrap().video_tracks[0].items[0].effect_mut("motion").unwrap().params.get_mut("scale").unwrap().keyframes = keys.clone()
+    });
+    record(&mut b, &person("b"), &after);
+    converge(&mut a, &mut b);
+    let project = &a.model().project;
+    let motion = project.sequence(sequence_id(project)).unwrap().video_tracks[0].items[0].effect("motion").unwrap().clone();
+    assert_eq!(motion.params["scale"].value, ParamValue::Float(50.0));
+    assert_eq!(motion.params["scale"].keyframes, keys);
 }
 
 /// One person adds a master effect while another turns the existing one off

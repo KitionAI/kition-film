@@ -949,7 +949,7 @@ impl KitDocument for FilmDocument {
 
     fn save(&self, _name: Option<&str>) -> Result<Vec<u8>, String> {
         let view = self.session.project_view();
-        Ok(kition_film_format::encode_with_view(&self.session.project, Some(&view), true))
+        Ok(kition_film_format::encode_with_view(&self.session.project, Some(&view), false))
     }
 
     fn mark_saved(&mut self) {

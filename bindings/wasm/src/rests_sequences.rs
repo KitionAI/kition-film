@@ -168,16 +168,16 @@ fn caption_navigation(session: &Session, command: &str, params: &Value) -> Optio
     let point = explicit.is_none() && params.get("captions").and_then(Value::as_array).is_none() && session.state.caption_selection.is_empty();
     for track in &q.caption_tracks {
         let prefix = format!("sequence.captionTracks[id={}]", track.id.0);
-        fields.push(format!("{prefix}.captionOrder"));
+        fields.push(format!("sequence.captions[track={}].id", track.id.0));
         if matches!(command, "captions.next" | "captions.previous" | "captions.showActiveOnly") {
             fields.push(format!("{prefix}.enabled"));
         }
         for caption in &track.captions {
             if matches!(command, "captions.next" | "captions.previous") && track.enabled || command == "captions.goTo" && (point || chosen == Some(caption.id))
             {
-                fields.push(format!("{prefix}.captions.caption-{}.start", caption.id.0));
+                fields.push(format!("sequence.captions[id={}].start", caption.id.0));
                 if command == "captions.goTo" && point {
-                    fields.push(format!("{prefix}.captions.caption-{}.duration", caption.id.0));
+                    fields.push(format!("sequence.captions[id={}].duration", caption.id.0));
                 }
             }
         }
@@ -589,7 +589,15 @@ fn copy_sequence(session: &Session, command: &str, params: &Value) -> Option<Und
     let mut answer = Under::default();
     let simplify = command == "sequence.simplify";
     let mut fields = if simplify {
-        vec!["sequence.settings", "sequence.masterVolumeDb", "sequence.masterEffects", "sequence.mixer", "sequence.captionTracks", "props.common.label"]
+        vec![
+            "sequence.settings",
+            "sequence.masterVolumeDb",
+            "sequence.masterEffects",
+            "sequence.mixer",
+            "sequence.captionTracks",
+            "sequence.captions",
+            "props.common.label",
+        ]
     } else {
         vec!["sequence.settings.settings", "sequence.settings.mark_in", "sequence.settings.mark_out"]
     };

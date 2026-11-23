@@ -21,7 +21,7 @@ pub fn under(session: &Session, command: &str, params: &Value) -> Option<Under> 
     let seq = session.state.active_sequence?.0;
     let mut answer = Under::default();
     if delete && params.get("clips").is_none() && params.get("clip").is_none() && session.state.selection.is_empty() {
-        answer.premises.push(leaf(seq, &["sequence.captionTracks"]));
+        answer.premises.push(leaf(seq, &["sequence.captionTracks", "sequence.captions"]));
         return Some(answer);
     }
     if paste {
@@ -123,6 +123,6 @@ fn paste_inputs(session: &Session, insert: bool, answer: &mut Under) {
         }
     }
     if insert {
-        answer.premises.push(leaf(seq.0, &["sequence.captionTracks"]));
+        answer.premises.push(leaf(seq.0, &["sequence.captionTracks", "sequence.captions"]));
     }
 }

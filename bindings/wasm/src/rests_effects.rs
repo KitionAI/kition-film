@@ -535,7 +535,7 @@ fn graphic_placement(session: &Session, command: &str, params: &Value) -> Option
         }
     }
     if command == "graphics.upgradeCaption" {
-        under.premises.push(content(id, &["sequence.captionTracks"]));
+        under.premises.push(content(id, &["sequence.captionTracks", "sequence.captions"]));
     }
     Some(under)
 }

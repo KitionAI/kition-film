@@ -498,7 +498,7 @@ async fn transition_at_a_time_holds_the_lanes_before_its_cut_not_the_lane_order(
 }
 
 /// A caption or a marker has no tool id, so its premise is a path in the sequence's item, naming it
-/// by its id (`sequence.captionTracks[id=…].captions.caption-<id>`, `sequence.markers[id=…]`). The
+/// by its id (`sequence.captions[id=…]`, `sequence.markers[id=…]`). The
 /// colleague changes a clip's opacity (no caption, no marker), and the agent edits a caption's
 /// text or a marker's name with `basis`: applied (kition-sdk C8-fix-9 holds a clip at its path
 /// under the item; before, at `sequence`, and the write was refused as `changed`).

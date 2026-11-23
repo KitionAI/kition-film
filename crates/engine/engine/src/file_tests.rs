@@ -62,7 +62,7 @@ fn project_file_opens_and_other_versions_are_refused() {
     let r = s.execute("file.save", json!({})).unwrap();
     assert!(r.get("backup").is_none(), "{r}");
     let saved = std::fs::read(&path).unwrap();
-    assert!(saved.starts_with(b"{\n  \"format\""), "the file is indented");
+    assert!(saved.starts_with(b"{\"format\""), "the file is compact");
     let mut v: Value = serde_json::from_slice(&saved).unwrap();
     assert_eq!(v["schema_version"], kition_film_format::SCHEMA_VERSION);
     for version in [kition_film_format::SCHEMA_VERSION + 1, 13] {

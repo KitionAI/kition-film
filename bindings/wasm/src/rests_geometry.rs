@@ -112,7 +112,7 @@ pub fn under(session: &Session, command: &str, params: &Value) -> Option<Under> 
         };
         answer.premises.extend(ids.into_iter().map(|id| Premise::on(json!(id.0))));
         if command == "clip.insertFrameHoldSegment" {
-            answer.premises.push(leaf(id.0, &["sequence.captionTracks"]));
+            answer.premises.push(leaf(id.0, &["sequence.captionTracks", "sequence.captions"]));
         }
     }
     if trim {
@@ -142,7 +142,7 @@ pub fn under(session: &Session, command: &str, params: &Value) -> Option<Under> 
             }
         }
         if command.starts_with("trim.ripple") {
-            answer.premises.push(leaf(id.0, &["sequence.captionTracks"]));
+            answer.premises.push(leaf(id.0, &["sequence.captionTracks", "sequence.captions"]));
         }
     }
     if transition {
