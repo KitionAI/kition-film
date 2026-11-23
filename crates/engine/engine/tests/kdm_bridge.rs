@@ -334,7 +334,8 @@ fn a_write_the_replica_refuses_resets_it_and_the_next_edit_rebuilds_it() {
 /// The project as read back fresh from the session's replica (not the session's own view of it),
 /// as it is: without flushing anything the session has not written yet (`ensure_kdm` would).
 fn replica_project(s: &mut Session) -> kition_film_project::Project {
-    kdm_model::read_document(s.kdm().expect("an edit made the replica").replica()).unwrap().0
+    let kdm = s.kdm().expect("an edit made the replica");
+    kdm_model::read_document(kdm.replica(), &kdm.blobs()).unwrap().0
 }
 
 fn same_content(a: &kition_film_project::Project, b: &kition_film_project::Project) -> bool {
@@ -700,7 +701,7 @@ fn random_wide_commands_keep_project_and_replica_equal_and_converge() {
                 let context = || format!("seed {seed}, step {step}, {name}; last commands:\n{}", log[log.len().saturating_sub(6)..].join("\n"));
                 assert_eq!(s.kdm_resets(), 0, "{}", context());
                 let Some(kdm) = s.kdm() else { panic!("no replica: {}", context()) };
-                let replica = kdm_model::read_document(kdm.replica()).unwrap_or_else(|e| panic!("read: {e}: {}", context())).0;
+                let replica = kdm_model::read_document(kdm.replica(), &kdm.blobs()).unwrap_or_else(|e| panic!("read: {e}: {}", context())).0;
                 let (mine, held) = (canonical(&s.project), canonical(&replica));
                 assert!(mine == held, "the project is not what its replica holds: {}\n{:#?}", context(), differences(&mine, &held));
                 if let Some(q) = s.active_sequence() {

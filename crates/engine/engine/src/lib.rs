@@ -408,9 +408,6 @@ pub struct Session {
     pub prefs_revision: u64,
     /// Auto-save ring + crash-recovery journal (native frontends start it; None = off).
     pub persistence: Option<autosave::Persistence>,
-    /// Schema version of the file at `path` as found on disk (older = upgraded on load; the first
-    /// save over it keeps a backup of the original).
-    pub loaded_schema: u32,
     /// Render preview files + render-bar segments (shared with the frontend's frame workers).
     pub previews: Arc<previews::PreviewStore>,
     /// Audio Track Mixer automation pass in progress.
@@ -458,6 +455,9 @@ pub struct Session {
     /// The project's KDM replica, made lazily ([`kdm_bridge`]): `None` until the first shared
     /// edit or the first host request for it.
     pub(crate) kdm: Option<kdm_model::FilmSession>,
+    /// Blobs a host handed over from a peer ([`Session::add_blobs`]: the text of the project's
+    /// LUTs), for the next replica this session opens from a snapshot.
+    pub(crate) peer_blobs: kdm_model::kition_kit::session::MemoryBlobs,
     /// The project as last written to (or read from) [`Session::kdm`]; a command's diff is
     /// computed against this, not against whatever the previous command happened to leave.
     pub(crate) synced: Arc<Project>,
@@ -582,7 +582,6 @@ impl Session {
             prefs_path: None,
             prefs_revision: 0,
             persistence: None,
-            loaded_schema: kition_film_format::SCHEMA_VERSION,
             previews: Arc::new(if host_files_only { previews::PreviewStore::off_disk() } else { previews::PreviewStore::temp() }),
             mixrec: Default::default(),
             mcrec: Default::default(),
@@ -603,6 +602,7 @@ impl Session {
             browser: Default::default(),
             exec_depth: 0,
             kdm: None,
+            peer_blobs: Default::default(),
             kdm_resets: 0,
             origin: None,
             scratch: false,
@@ -643,7 +643,6 @@ impl Session {
             prefs_path: None,
             prefs_revision: self.prefs_revision,
             persistence: None,
-            loaded_schema: self.loaded_schema,
             previews: Arc::new(if self.host_files_only { previews::PreviewStore::off_disk() } else { previews::PreviewStore::default() }),
             mixrec: Default::default(),
             mcrec: Default::default(),
@@ -665,6 +664,12 @@ impl Session {
             browser: Default::default(),
             exec_depth: 0,
             kdm: None,
+            // The LUT text a replica opened on it (a premise fork's) reads.
+            peer_blobs: {
+                let mut blobs = self.peer_blobs.clone();
+                blobs.0.extend(self.kdm.as_ref().map(kdm_model::FilmSession::blobs).unwrap_or_default().0);
+                blobs
+            },
             kdm_resets: 0,
             origin: None,
             scratch: true,

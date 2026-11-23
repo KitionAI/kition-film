@@ -3968,10 +3968,6 @@ pub fn secs(s: f64) -> Tick {
 
 // ---------- project files ----------
 
-/// Serialize the project in the current schema and write it (atomically) to `path`. `adopt` =
-/// Save / Save As (the file becomes the project's path and the project is clean); otherwise Save a
-/// Copy. The first save over a file upgraded from an older schema keeps the original as
-/// `<name> (schema vN backup).kfilm`.
 /// A project is named after its file (as in Premiere): `/a/b/Trailer v2.kfilm` → `Trailer v2`.
 fn project_name_for(path: &str) -> Option<String> {
     let stem = std::path::Path::new(path).file_stem()?.to_string_lossy().to_string();
@@ -3983,6 +3979,8 @@ fn name_project(p: &mut kition_film_project::Project, name: String) {
     p.name = name;
 }
 
+/// Serialize the project and write it (atomically, indented) to `path`. `adopt` = Save / Save As
+/// (the file becomes the project's path and the project is clean); otherwise Save a Copy.
 fn write_project(s: &mut Session, path: &str, adopt: bool) -> Result<Value> {
     let t0 = web_time::Instant::now();
     // Save As renames the project after its new file (not an edit: no undo step, not dirty).
@@ -3999,31 +3997,15 @@ fn write_project(s: &mut Session, path: &str, adopt: bool) -> Result<Value> {
     }
     // what is open (sequence tabs, how each is shown) goes into the file beside the project
     let view = s.project_view();
-    let bytes = kition_film_format::encode_with_view(&s.project, Some(&view), false);
-    let mut backup = None;
-    if adopt && s.path.as_deref() == Some(path) && s.loaded_schema < kition_film_format::SCHEMA_VERSION {
-        let b = schema_backup_path(path, s.loaded_schema);
-        if s.services.read_file(&b).is_err()
-            && let Ok(old) = s.services.read_file(path)
-        {
-            s.services.write_file(&b, &old).map_err(|e| EngineError::Other(format!("{b}: {e}")))?;
-            backup = Some(b);
-        }
-    }
+    let bytes = kition_film_format::encode_with_view(&s.project, Some(&view), true);
     s.services.write_file(path, &bytes).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
     if adopt {
         s.path = Some(path.to_string());
         s.previews_follow_path();
         s.note_recent_project();
         s.saved_revision = s.revision;
-        s.loaded_schema = kition_film_format::SCHEMA_VERSION;
     }
-    Ok(json!({"path": path, "bytes": bytes.len(), "ms": t0.elapsed().as_secs_f64() * 1000.0, "backup": backup}))
-}
-
-fn schema_backup_path(path: &str, schema: u32) -> String {
-    let stem = path.strip_suffix(".kfilm").unwrap_or(path);
-    format!("{stem} (schema v{schema} backup).kfilm")
+    Ok(json!({"path": path, "bytes": bytes.len(), "ms": t0.elapsed().as_secs_f64() * 1000.0}))
 }
 
 /// Make `proj` the session's project (fresh history, media pool and editor state).
@@ -4052,7 +4034,6 @@ fn install_project(s: &mut Session, mut proj: kition_film_project::Project, path
     s.revision += 1;
     // A recovered project is unsaved: its saved revision is one that never existed.
     s.saved_revision = if clean { s.revision } else { 0 };
-    s.loaded_schema = kition_film_format::SCHEMA_VERSION;
     s.events.push(crate::Event::ProjectChanged { revision: s.revision });
     Ok(())
 }
@@ -4060,7 +4041,7 @@ fn install_project(s: &mut Session, mut proj: kition_film_project::Project, path
 fn open_project(s: &mut Session, path: &str) -> Result<Value> {
     let bytes = s.services.read_file(path).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
     let loaded = kition_film_format::decode(&bytes).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
-    let (from, migrated) = (loaded.schema_version, loaded.migrated());
+    let version = loaded.schema_version;
     install_project(s, loaded.project, Some(path.to_string()), true)?;
     if let Some(view) = loaded.view.filter(|_| s.prefs.timeline.restore_open_sequences) {
         s.restore_project_view(view);
@@ -4070,12 +4051,8 @@ fn open_project(s: &mut Session, path: &str) -> Result<Value> {
         s.events.push(crate::Event::OpenSequence(seq));
     }
     s.note_recent_project();
-    s.loaded_schema = from;
-    if migrated {
-        s.toast(format!("Upgraded project from schema v{from} to v{}; the original is kept as a backup when you save", kition_film_format::SCHEMA_VERSION));
-    }
     let missing = crate::relink::on_open(s);
-    Ok(json!({"path": path, "schemaVersion": from, "migrated": migrated, "missingMedia": missing}))
+    Ok(json!({"path": path, "schemaVersion": version, "missingMedia": missing}))
 }
 
 /// Load a recovery candidate (newest when `id` is None) as the current, unsaved project.

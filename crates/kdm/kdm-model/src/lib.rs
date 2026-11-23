@@ -7,12 +7,16 @@
 //! entry points (phase 3b Task 2): writing a whole project in one creating transaction, or only
 //! what a command changed.
 //!
-//! Scope for this phase (the phase 3b design): media files are referenced by path
-//! plus a fingerprint, never embedded as blobs. Every field named by the schema (`model/schema.json`)
-//! merges at that field's own grain; everything else round-trips through an opaque `json` register
-//! next to it (`Item.props`, `Clip.props`/`gain`/`markers`, `Track.props`, `Sequence.settings`/
-//! `mixer`/`captionTracks`/`markers`, `Effect.params`, `Project.docState`) — last-writer-wins as a
-//! whole, but nothing is lost. See [`props`] for exactly what lives where.
+//! Media files are referenced by path plus a fingerprint, never embedded as blobs; the text of a
+//! LUT imported into the project is a blob (`Lut.data`). Every field named by the schema
+//! (`model/schema.json`) merges at that field's own grain: the collections a person edits a piece
+//! at a time are objects and containers of their own (markers, caption tracks and captions, an
+//! effect's parameters by id, master effects, transcripts, source graphics, LUTs, search bins —
+//! see [`objects`]), and text a person types (a marker's comment, a caption's text) merges by
+//! character. The rest round-trips through an opaque `json` register next to it (`Item.props`,
+//! `Clip.props`/`gain`, `Track.props`, `Sequence.settings`/`mixer`, an effect's masks and layer
+//! data) — last-writer-wins as a whole, but nothing is lost. See [`props`] for exactly what lives
+//! where.
 //!
 //! **Tick range.** `Clip.start`/`duration`/`sourceIn` and `Transition.start`/`duration` are the
 //! fields the repair pass (`validate`) and concurrent trims/ripples reason about byte-exactly, so
@@ -20,18 +24,18 @@
 //! a KDM `integer` (and in fact *any* JSON number anywhere in a replica, including inside a `json`
 //! register — `kition_kdm::schema::unportable`) is rejected once its magnitude passes ±2^53, which
 //! at `kition_film_time::TICKS_PER_SECOND` (254 016 000 000) is about 9.85 hours. A decimal string
-//! has no such limit. Every *other* `Tick` this crate writes (markers, keyframe times, mark
-//! in/out, frame holds, caption/transcript times…) stays the engine's own raw JSON number, inside
-//! an opaque `json` blob: this is a known, deliberately scoped residual risk (see the crate's
-//! implementation report) — such a field fails loudly (`Err`, not silent corruption or a panic) if
-//! a project ever needs one past ~9.85 hours; only the five promoted timing fields above are
-//! guaranteed safe at any magnitude a `Tick` can hold.
+//! has no such limit; a marker's and a caption's `start`/`duration` are written the same way.
+//! Every *other* `Tick` this crate writes (keyframe times, mark in/out, frame holds, transcript
+//! word times…) stays the engine's own raw JSON number, inside an opaque `json` value: this is a
+//! known, deliberately scoped residual risk — such a field fails loudly (`Err`, not silent
+//! corruption or a panic) if a project ever needs one past ~9.85 hours.
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
 mod compare;
 mod edits;
 mod ids;
+mod objects;
 mod props;
 mod read;
 mod session;
@@ -50,7 +54,7 @@ pub use compare::normalize;
 pub use edits::check_model_edits;
 pub use ids::{Ids, Known};
 pub use read::read_document;
-pub use session::FilmSession;
+pub use session::{FilmSession, decode_blobs, encode_blobs, slot_base};
 pub use settle::settle_batch;
 pub use write::write_changes;
 pub use write::{replace_document, write_document};
@@ -147,8 +151,8 @@ impl KitModel for FilmModel {
         Arc::new(Schema::parse(SCHEMA).expect("model/schema.json is a fixed, tested file"))
     }
 
-    fn load(replica: &Replica, _blobs: &dyn BlobSource) -> Result<Self> {
-        let (project, ids, nodes) = read::read_document_known(replica, &Known::default()).map_err(kit_err)?;
+    fn load(replica: &Replica, blobs: &dyn BlobSource) -> Result<Self> {
+        let (project, ids, nodes) = read::read_document_known(replica, &Known::default(), blobs).map_err(kit_err)?;
         Ok(Self::from_parts(project, ids, nodes))
     }
 
@@ -158,8 +162,16 @@ impl KitModel for FilmModel {
     /// through `known` (a surviving object keeps its local id) is the part that matters for a
     /// session's own state. Task 2 (the engine command bridge) can tighten this to real
     /// incremental damage if it turns out to matter for interactive performance.
-    fn apply(&mut self, replica: &Replica, _changed: &BTreeSet<ObjectId>, _blobs: &dyn BlobSource) -> Result<Damage> {
-        let (project, ids, nodes) = read::read_document_known(replica, &self.known).map_err(kit_err)?;
+    ///
+    /// The id counter never goes down within this actor's slot: an id this replica handed out may
+    /// be gone from the view (deleted by a peer, or undone) yet still live on a peer or in an undo
+    /// step, so minting it again would give two things one id.
+    fn apply(&mut self, replica: &Replica, _changed: &BTreeSet<ObjectId>, blobs: &dyn BlobSource) -> Result<Damage> {
+        let (mut project, ids, nodes) = read::read_document_known(replica, &self.known, blobs).map_err(kit_err)?;
+        let slot = slot_base(replica.actor());
+        if (slot..slot.saturating_add(session::SLOT_SIZE)).contains(&self.project.next_id) {
+            project.next_id = project.next_id.max(self.project.next_id);
+        }
         self.project = project;
         self.ids = ids;
         self.nodes = nodes;
@@ -171,8 +183,9 @@ impl KitModel for FilmModel {
         validate::validate(tx, changed).map_err(kit_err)
     }
 
-    fn import(_name: &str, bytes: &[u8], _blobs: &mut dyn BlobSink, actor: ActorId) -> Result<Replica> {
+    fn import(_name: &str, bytes: &[u8], blobs: &mut dyn BlobSink, actor: ActorId) -> Result<Replica> {
         let loaded = kition_film_format::decode(bytes).map_err(kit_err)?;
+        session::put_luts(&loaded.project, blobs);
         let mut ids = Ids::default();
         let mut nodes = Nodes::default();
         let (replica, ()) = Replica::create_with(Self::schema(), kition_kit::kdm::DocId::new(), actor, &kition_kit::kdm::Origin::system("import"), |tx| {

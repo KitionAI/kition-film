@@ -51,15 +51,26 @@ pub(crate) fn validate(tx: &mut Tx<'_>, _changed: &BTreeSet<ObjectId>) -> KdmRes
 
     for clip in tx.objects_of_type("Clip") {
         wrote |= clean_dangling(tx, &clip, "effects")?;
+        wrote |= clean_dangling(tx, &clip, "markers")?;
     }
 
     for sequence in tx.objects_of_type("Sequence") {
-        for field in ["videoTracks", "audioTracks", "submixTracks"] {
+        for field in ["videoTracks", "audioTracks", "submixTracks", "captionTracks", "markers", "masterEffects"] {
             wrote |= clean_dangling(tx, &sequence, field)?;
         }
     }
+    for item in tx.objects_of_type("Item") {
+        wrote |= clean_dangling(tx, &item, "markers")?;
+    }
+    for graphic in tx.objects_of_type("SourceGraphic") {
+        wrote |= clean_dangling(tx, &graphic, "layers")?;
+    }
+    for field in ["luts", "searchBins"] {
+        wrote |= clean_dangling(tx, &crate::project_id(), field)?;
+    }
 
     wrote |= number_objects(tx)?;
+    wrote |= number_data(tx)?;
 
     // Tree nodes naming a deleted bin need no write here: `Replica::tree` (and this crate's own
     // `read::read_bin_tree`) already skip a node whose object no longer exists, together with its
@@ -237,6 +248,33 @@ fn remove_bad_transitions(tx: &mut Tx<'_>, track: &ObjectId) -> KdmResult<bool> 
             tx.list_remove(track, "transitions", index)?;
             wrote = true;
         }
+    }
+    Ok(wrote)
+}
+
+/// The objects that keep an engine id as data in their `id` field.
+const DATA_TYPES: [&str; 4] = ["Marker", "CaptionTrack", "Caption", "SearchBin"];
+
+/// Gives every marker, caption track, caption and search bin without an id (one a batch or a
+/// collaborator made) one past every id the replica holds, in object-id order, so every replica
+/// writes the same ids. Ids two objects share are left as they are, as the engine leaves them.
+fn number_data(tx: &mut Tx<'_>) -> KdmResult<bool> {
+    let mut next = 0u64;
+    let mut missing = Vec::new();
+    for (ty, field) in crate::read::ID_FIELDS.iter().copied().chain(DATA_TYPES.iter().map(|ty| (*ty, "id"))) {
+        for object in tx.objects_of_type(ty) {
+            match crate::read::stored_id(&tx.get(&object, field)?) {
+                Some(id) => next = next.max(id),
+                None if field == "id" => missing.push(object),
+                None => {}
+            }
+        }
+    }
+    missing.sort_by(|a, b| a.as_str().cmp(b.as_str()));
+    let wrote = !missing.is_empty();
+    for object in missing {
+        next = next.saturating_add(1);
+        tx.set(&object, "id", json!(next))?;
     }
     Ok(wrote)
 }

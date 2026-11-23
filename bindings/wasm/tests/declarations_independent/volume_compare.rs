@@ -78,7 +78,7 @@ fn keyboard_volume_compares_all_shortcuts_link_modes_recipient_kinds_and_animati
                             fields.push(format!("effects.{index}.def"));
                         }
                         if let Some(index) = found {
-                            fields.push(format!("effects.{index}.params.params.level"));
+                            fields.push(format!("effects.{index}.params.level"));
                         }
                     }
                     want.premises.push(Premise::on(json!(id)).fields(fields).positions(["clips"]));

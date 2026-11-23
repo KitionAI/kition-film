@@ -32,7 +32,7 @@ fn picture(session: &Session, clip: &TrackItem, answer: &mut Under) {
         for param in effect.params.values() {
             let kition_film_engine::project::ParamValue::Text(reference) = &param.value else { continue };
             let Some(id) = reference.strip_prefix("lib:") else { continue };
-            let field = if id.bytes().all(|b| b.is_ascii_alphanumeric()) { format!("docState.luts[id={id}]") } else { "docState.luts".to_owned() };
+            let field = if id.bytes().all(|b| b.is_ascii_alphanumeric()) { format!("luts[id={id}]") } else { "luts".to_owned() };
             answer.premises.push(Premise::on(json!("project")).fields([field]).positions(Vec::<String>::new()));
         }
     }

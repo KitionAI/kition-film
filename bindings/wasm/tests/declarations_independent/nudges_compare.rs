@@ -50,7 +50,7 @@ fn motion_expected(project: &Project, sequence: u64, selection: &[u64]) -> Under
         for (index, effect) in clip.effects.iter().enumerate() {
             fields.push(format!("effects.{index}.def"));
             if effect.effect == "motion" {
-                fields.push(format!("effects.{index}.params.params.position"));
+                fields.push(format!("effects.{index}.params.position"));
                 found = true;
                 break;
             }

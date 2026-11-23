@@ -29,7 +29,7 @@ fn expected(project: &Project, sequence: u64, command: &str, selected: &[u64], l
     let q = project.sequence(ItemId(sequence)).unwrap();
     let simplify = command == "sequence.simplify";
     let mut fields = if simplify {
-        vec!["sequence.settings", "sequence.masterVolumeDb", "sequence.mixer", "sequence.captionTracks", "props.common.label"]
+        vec!["sequence.settings", "sequence.masterVolumeDb", "sequence.masterEffects", "sequence.mixer", "sequence.captionTracks", "props.common.label"]
     } else {
         vec!["sequence.settings.settings", "sequence.settings.mark_in", "sequence.settings.mark_out"]
     };

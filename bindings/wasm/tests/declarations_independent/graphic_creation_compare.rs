@@ -54,9 +54,9 @@ fn expected(p: &Project, seq: u64, command: &str) -> Under {
         json!(seq),
         ["sequence.settings.settings.width", "sequence.settings.settings.height", "sequence.settings.settings.frame_rate", "~videoTrackOrder"],
     ));
-    want.premises.push(leaf(json!("project"), ["~itemIds", "docState.source_graphics"]));
+    want.premises.push(leaf(json!("project"), ["~itemIds"]));
     for item in p.items.values() {
-        want.premises.push(leaf(json!(item.id.0), ["kind", "props.width", "props.height", "props.rate"]));
+        want.premises.push(leaf(json!(item.id.0), ["kind", "props.width", "props.height", "props.rate", "sourceGraphic"]));
     }
     for track in &q.video_tracks {
         want.premises.push(leaf(json!(track.id.0), ["props.locked", "~clipOrder"]));

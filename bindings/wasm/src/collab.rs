@@ -8,10 +8,9 @@
 //! (`crates/kition-kit/src/session/web.rs`), so Kition's host code is the same for every kit. The
 //! wasm bindings live in [`crate::web`].
 //!
-//! Film never embeds blobs in its replica (media are referenced by path, never embedded — see
-//! `kdm-model`'s own docs): [`FilmDocument::blobs`] and [`FilmDocument::add_blobs`] answer and
-//! take an empty store, so a host's generic replica code (which always calls both) works
-//! unchanged.
+//! Media are referenced by path, never embedded; the replica's only blobs are the text of the
+//! project's LUTs. [`FilmDocument::blobs`] answers them and [`FilmDocument::add_blobs`] takes a
+//! peer's, as a host's generic replica code expects.
 
 use std::sync::Arc;
 
@@ -32,10 +31,11 @@ impl FilmDocument {
     /// Empty `bytes` mean there is no file yet, only the replica (a host opening a shared
     /// project for the first time from its sync room's snapshot, to save it as a new file): the
     /// project is the replica's alone, as `PhotoDocument::open_with_replica` already does.
-    pub fn open_with_replica(name: &str, bytes: &[u8], snapshot: &[u8], _blobs: &[u8]) -> Result<Self, String> {
+    pub fn open_with_replica(name: &str, bytes: &[u8], snapshot: &[u8], blobs: &[u8]) -> Result<Self, String> {
         let services = Arc::new(KitServices::default());
         let restored = (|| -> Result<Session, String> {
             let mut session = Session::for_host(services.clone());
+            session.add_blobs(blobs).map_err(|error| error.to_string())?;
             if bytes.is_empty() {
                 session.open_snapshot(snapshot).map_err(|error| error.to_string())?;
                 // No file, so no saved view either: the first sequence is open, as for a file without one.
@@ -158,14 +158,16 @@ impl FilmDocument {
         Ok(result)
     }
 
-    /// Every blob the project's replica references: always empty, Film never embeds one.
-    pub fn blobs(&self) -> Result<Vec<u8>, String> {
-        Ok(Vec::new())
+    /// Every blob the project's replica references (the text of its LUTs), encoded for a peer's
+    /// [`FilmDocument::add_blobs`].
+    pub fn blobs(&mut self) -> Result<Vec<u8>, String> {
+        self.session.blobs().map_err(|error| error.to_string())
     }
 
-    /// Adds a peer's blobs: a no-op, Film never embeds one.
-    pub fn add_blobs(&mut self, _bytes: &[u8]) -> Result<(), String> {
-        Ok(())
+    /// Adds a peer's blobs (from their [`FilmDocument::blobs`]), for the changes a host imports
+    /// right after.
+    pub fn add_blobs(&mut self, bytes: &[u8]) -> Result<(), String> {
+        self.session.add_blobs(bytes).map_err(|error| error.to_string())
     }
 
     /// How many times the project left its replica because it refused a write or an undo (a
@@ -196,7 +198,8 @@ impl kition_kit::session::model::ReplicaPort for FilmDocument {
         let before = Replica::load(self.model_schema(), &snapshot, ActorId::random()).map_err(|e| e.to_string())?;
         let mut after = Replica::load(self.model_schema(), &snapshot, ActorId::random()).map_err(|e| e.to_string())?;
         after.import_changes(bytes).map_err(|e| e.to_string())?;
-        kdm_model::check_model_edits(&before, &after).map_err(|e| e.to_string())?;
+        let blobs = kdm_model::decode_blobs(&self.blobs()?).map_err(|e| e.to_string())?;
+        kdm_model::check_model_edits(&before, &after, &blobs).map_err(|e| e.to_string())?;
         self.import_changes(bytes).map(|_| ())
     }
 
@@ -210,13 +213,14 @@ impl kition_kit::session::model::ReplicaPort for FilmDocument {
 
     /// A shared project with no file yet (a server's headless kit opening a sync room): the
     /// replica alone, failing rather than falling back to an empty project as
-    /// [`FilmDocument::open_with_replica`] does. Film keeps no blobs.
-    fn model_open_replica(name: &str, snapshot: &[u8], _blobs: &[u8]) -> Result<Self, String> {
+    /// [`FilmDocument::open_with_replica`] does. `blobs` hold the text of the replica's LUTs.
+    fn model_open_replica(name: &str, snapshot: &[u8], blobs: &[u8]) -> Result<Self, String> {
         if snapshot.is_empty() {
             return Err("no replica to open".into());
         }
         let services = Arc::new(KitServices::default());
         let mut session = Session::for_host(services.clone());
+        session.add_blobs(blobs).map_err(|error| error.to_string())?;
         session.open_snapshot(snapshot).map_err(|error| error.to_string())?;
         let first = session.project.sequences().next().map(|item| item.id);
         session.state.active_sequence = first;
@@ -359,11 +363,13 @@ mod tests {
         assert!(FilmDocument::open_with_replica("Shared.kfilm", &[], b"not a replica", &[]).is_err());
     }
 
+    /// A project without LUTs has no blobs; blobs that are not what `blobs` encodes are refused.
     #[test]
-    fn blobs_are_an_empty_store() {
+    fn blobs_are_the_luts_text() {
         let mut doc = FilmDocument::open("Edit.kfilm", &fixture()).unwrap();
         assert_eq!(doc.blobs().unwrap(), Vec::<u8>::new());
-        doc.add_blobs(&[1, 2, 3]).unwrap();
+        doc.add_blobs(&[]).unwrap();
+        assert!(doc.add_blobs(&[1, 2, 3]).is_err(), "a truncated blob");
     }
 
     /// An `.kfilm` saved with its replica reopens as that replica: same version, same state, the
@@ -392,8 +398,7 @@ mod tests {
     }
 
     /// A damaged (or missing) stored replica never stops the file from opening: it opens
-    /// plainly, never as a blank project. Blobs are unused (Film never embeds any), so they are
-    /// never the reason a replica fails to open.
+    /// plainly, never as a blank project.
     #[test]
     fn a_damaged_stored_replica_opens_the_file_plainly() {
         let bytes = fixture();

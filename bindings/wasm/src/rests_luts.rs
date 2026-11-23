@@ -18,8 +18,7 @@ pub fn under(session: &Session, command: &str, params: &Value) -> Option<Under> 
         params.get("lut").and_then(Value::as_str).and_then(|id| id.trim().strip_prefix("lib:"))
     };
     if let Some(id) = library {
-        let field =
-            if !id.is_empty() && id.bytes().all(|b| b.is_ascii_alphanumeric()) { format!("docState.luts[id={id}]") } else { "docState.luts".to_owned() };
+        let field = if !id.is_empty() && id.bytes().all(|b| b.is_ascii_alphanumeric()) { format!("luts[id={id}]") } else { "luts".to_owned() };
         answer.premises.push(Premise::on(json!("project")).fields([field]).positions(Vec::<String>::new()));
     }
     if command == "lut.remove" {

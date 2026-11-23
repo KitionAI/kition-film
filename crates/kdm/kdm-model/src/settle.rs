@@ -1,5 +1,5 @@
 //! Settle file precision before batch receipts, and enforce the engine's hard parameter limits.
-use kition_film_project::{EffectInstance, ParamKind, ParamValue};
+use kition_film_project::{Param, ParamKind, ParamValue};
 use kition_kit::kdm::{KdmError, ObjectId, Tx};
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Value;
@@ -19,15 +19,16 @@ fn normalize<T: DeserializeOwned + Serialize>(tx: &mut Tx<'_>, object: &ObjectId
     Ok(())
 }
 
-fn check_effect(effect: &EffectInstance) -> Result<(), KdmError> {
-    let Some(definition) = effect.def() else { return Ok(()) };
-    for (name, param) in &effect.params {
+/// Refuses a parameter of a known effect whose value is out of its range.
+fn check_effect(def: &str, params: &[(String, Param)]) -> Result<(), KdmError> {
+    let Some(definition) = kition_film_project::find_effect(def) else { return Ok(()) };
+    for (name, param) in params {
         let Some(ParamKind::Float { min, max, .. }) = definition.param(name).map(|param| &param.kind) else { continue };
         for value in std::iter::once(&param.value).chain(param.keyframes.iter().map(|key| &key.value)) {
             if let ParamValue::Float(value) = value
                 && (!value.is_finite() || value < min || value > max)
             {
-                return Err(kdm_err(format!("{}.{} must be between {min} and {max}", effect.effect, name)));
+                return Err(kdm_err(format!("{def}.{name} must be between {min} and {max}")));
             }
         }
     }
@@ -42,12 +43,19 @@ pub fn settle_batch(tx: &mut Tx<'_>) -> Result<(), KdmError> {
         normalize::<props::ClipProps>(tx, &object, "props")?;
     }
     for object in tx.objects_of_type("Effect") {
-        let value = tx.get(&object, "params")?;
-        if !value.is_null() {
-            let def = tx.get(&object, "def")?.as_str().unwrap_or_default().to_owned();
-            check_effect(&props::effect_from_value(def, value)?)?;
-            normalize::<props::EffectParams>(tx, &object, "params")?;
+        let def = tx.get(&object, "def")?.as_str().unwrap_or_default().to_owned();
+        let mut params = Vec::new();
+        for (name, before) in tx.map_entries(&object, "params")? {
+            let param: Param = serde_json::from_value(before.clone()).map_err(kdm_err)?;
+            let after = serde_json::to_value(&param).map_err(kdm_err)?;
+            if before != after {
+                tx.map_set(&object, "params", &name, after)?;
+            }
+            params.push((name, param));
         }
+        check_effect(&def, &params)?;
+        normalize::<Vec<kition_film_project::Mask>>(tx, &object, "masks")?;
+        normalize::<kition_film_project::LayerExtra>(tx, &object, "layer")?;
     }
     for object in tx.objects_of_type("Sequence") {
         let mut end = 0i64;
@@ -60,24 +68,25 @@ pub fn settle_batch(tx: &mut Tx<'_>) -> Result<(), KdmError> {
                 }
             }
         }
-        let captions = tx.get(&object, "captionTracks")?;
-        if !captions.is_null() {
-            for track in props::caption_tracks_from_json(captions)? {
-                end = end.max(track.end().0);
+        for track in tx.list_items(&object, "captionTracks")? {
+            if !tx.exists(&track) {
+                continue;
+            }
+            for (_, caption) in tx.map_entries(&track, "captions")? {
+                let Some(caption) = caption.as_str().map(ObjectId::from_string) else { continue };
+                if !tx.exists(&caption) {
+                    continue;
+                }
+                let start = tick::from_value(&tx.get(&caption, "start")?)?.0;
+                let duration = tick::from_value(&tx.get(&caption, "duration")?)?.0;
+                end = end.max(start.saturating_add(duration));
             }
         }
         let duration = Value::String(end.to_string());
         if tx.get(&object, "duration")? != duration {
             tx.set(&object, "duration", duration)?;
         }
-        let value = tx.get(&object, "mixer")?;
-        if !value.is_null() {
-            let mixer: props::SeqMixer = serde_json::from_value(value).map_err(kdm_err)?;
-            for effect in &mixer.master_effects {
-                check_effect(effect)?;
-            }
-            normalize::<props::SeqMixer>(tx, &object, "mixer")?;
-        }
+        normalize::<kition_film_project::MixerStrip>(tx, &object, "mixer")?;
     }
     for object in tx.objects_of_type("Track") {
         normalize::<props::TrackProps>(tx, &object, "props")?;

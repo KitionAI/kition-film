@@ -1,12 +1,14 @@
 //! Object-model edits are checked before the live replica takes them.
 use kition_kit::kdm::{KdmError, Replica};
+use kition_kit::session::BlobSource;
 use std::collections::HashMap;
 
 use crate::kdm_err;
 
 /// A clip carries the effects and channel settings of its track kind. Moving it between
 /// audio and video is not a conversion; use the source item's placement command instead.
-pub fn check_model_edits(before: &Replica, after: &Replica) -> Result<(), KdmError> {
+/// `blobs` holds the text of the LUTs `after` references.
+pub fn check_model_edits(before: &Replica, after: &Replica, blobs: &dyn BlobSource) -> Result<(), KdmError> {
     let mut kinds = HashMap::new();
     for track in before.objects_of_type("Track") {
         let kind = before.get(&track, "props")?["kind"].clone();
@@ -23,7 +25,7 @@ pub fn check_model_edits(before: &Replica, after: &Replica) -> Result<(), KdmErr
         }
     }
     // Newly created clips must also have a source that can supply the destination's media.
-    let (project, ids, _) = crate::read_document(after)?;
+    let (project, ids, _) = crate::read_document(after, blobs)?;
     for sequence in project.items.values().filter_map(|item| item.as_sequence()) {
         for track in sequence.all_tracks() {
             for clip in &track.items {

@@ -80,7 +80,7 @@ async fn a_receipt_names_an_effect_or_keyframe_change_under_its_clip() {
     assert_eq!(ids(changed), [clip.to_string()], "{ran}");
     let told = entry(changed, &clip.to_string());
     assert_eq!(told["type"], "Clip", "{ran}");
-    assert_eq!(told["fields"], json!(["effects.1.params.params.opacity.value.Float"]), "{ran}");
+    assert_eq!(told["fields"], json!(["effects.1.params.opacity.value.Float"]), "{ran}");
     for list in ["created", "moved", "deleted"] {
         assert!(ids(&ran["changes"][list]).is_empty(), "{ran}");
     }
@@ -89,7 +89,7 @@ async fn a_receipt_names_an_effect_or_keyframe_change_under_its_clip() {
         .ok("run", json!({ "steps": [{ "command": "effects.setParam", "params": { "clip": clip, "effect": "opacity", "param": "opacity", "value": 20, "seconds": 1.5 } }] }))
         .await;
     assert_eq!(ids(&keyed["changes"]["changed"]), [clip.to_string()], "{keyed}");
-    assert_eq!(entry(&keyed["changes"]["changed"], &clip.to_string())["fields"], json!(["effects.1.params.params.opacity.keyframes"]), "{keyed}");
+    assert_eq!(entry(&keyed["changes"]["changed"], &clip.to_string())["fields"], json!(["effects.1.params.opacity.keyframes"]), "{keyed}");
     f.shutdown().await;
 }
 
@@ -314,15 +314,15 @@ fn every_integer_id_parameter_is_marked() {
 
 /// Integer parameters whose words say id but that name no object of the object model, each with why.
 const ALLOWED_IDS: &[(&str, &str)] = &[
-    // A search bin is a saved query in Project.docState, not a Bin object. `under` holds its entry by id.
+    // A search bin is a `SearchBin` in Project.searchBins, without a tool id: `under` holds it by its `id`.
     ("project.searchBinItems", "bin"),
     ("project.editSearchBin", "bin"),
     ("project.deleteSearchBin", "bin"),
     // A render job of the session: not in the file.
     ("jobs.cancel", "job"),
-    // A marker is an item of the sequence's `markers` json, no tool id; the kit's premise holds it in the sequence's item.
+    // A marker is a `Marker` in the sequence's `markers` list, without a tool id; the kit's premise holds it in the sequence's item.
     ("markers.edit", "marker"),
-    // A caption track is an item of the sequence's `captionTracks` json, no tool id: no object to hold.
+    // A caption track is a `CaptionTrack` in the sequence's `captionTracks` list, without a tool id: no object to hold.
     ("captions.deleteTrack", "track"),
     ("captions.setTrack", "track"),
     ("captions.setStyle", "track"),

@@ -226,7 +226,7 @@ fn keyboard_volume(session: &Session, command: &str) -> Option<Under> {
             for (index, effect) in clip.effects.iter().enumerate() {
                 names.push(format!("effects.{index}.def"));
                 if effect.effect == "volume" {
-                    names.push(format!("effects.{index}.params.params.level"));
+                    names.push(format!("effects.{index}.params.level"));
                     found = true;
                     break;
                 }
@@ -261,10 +261,10 @@ fn strip_field(session: &Session, strip: TrackId, name: &str) -> Option<Premise>
     }
     let name = match name {
         "volumeDb" => "sequence.masterVolumeDb".to_owned(),
-        "effects" => "sequence.mixer.master_effects".to_owned(),
+        "effects" => "sequence.masterEffects".to_owned(),
         "props.channels" => "sequence.settings.settings.audio_master".to_owned(),
-        n if n.starts_with("props.mixer") => format!("sequence.mixer.master_mixer{}", n.strip_prefix("props.mixer").unwrap_or_default()),
-        n if n.starts_with("effects.") => format!("sequence.mixer.master_effects.{}", n.strip_prefix("effects.").unwrap_or_default()),
+        n if n.starts_with("props.mixer") => format!("sequence.mixer{}", n.strip_prefix("props.mixer").unwrap_or_default()),
+        n if n.starts_with("effects.") => format!("sequence.masterEffects.{}", n.strip_prefix("effects.").unwrap_or_default()),
         _ => return None,
     };
     Some(fields(session.state.active_sequence?.0, [name]))
@@ -280,8 +280,7 @@ fn lane_fields(session: &Session, under: &mut Under, strip: TrackId, lane: &str)
     use kition_film_engine::project::mixer::{parse_fx_lane, parse_send_lane};
     if let Some((slot, param)) = parse_fx_lane(lane) {
         add_strip(session, under, strip, &format!("effects.{slot}.def"));
-        let prefix = if strip == MASTER_STRIP { "params" } else { "params.params" };
-        add_strip(session, under, strip, &format!("effects.{slot}.{prefix}.{param}"));
+        add_strip(session, under, strip, &format!("effects.{slot}.params.{param}"));
     } else {
         let lane_field = if lane.contains('.') { "props.mixer.lanes".to_owned() } else { format!("props.mixer.lanes.{lane}") };
         add_strip(session, under, strip, &lane_field);
@@ -424,14 +423,13 @@ fn mixer(session: &Session, command: &str, params: &Value) -> Option<Under> {
         "mixer.setInsert" => {
             let slot = params.get("slot").and_then(Value::as_u64)?;
             add_strip(session, &mut under, strip, &format!("effects.{slot}.def"));
-            let prefix = if strip == MASTER_STRIP { "" } else { "params." };
             for key in ["enabled", "postFader"] {
                 if params.get(key).is_some() {
-                    add_strip(session, &mut under, strip, &format!("effects.{slot}.{prefix}{}", if key == "enabled" { "enabled" } else { "post_fader" }));
+                    add_strip(session, &mut under, strip, &format!("effects.{slot}.{key}"));
                 }
             }
             for key in params.get("params").and_then(Value::as_object).into_iter().flatten().map(|(k, _)| k) {
-                add_strip(session, &mut under, strip, &format!("effects.{slot}.{prefix}params.{key}.value"));
+                add_strip(session, &mut under, strip, &format!("effects.{slot}.params.{key}.value"));
             }
         }
         "mixer.addSend" | "mixer.removeSend" => {
@@ -520,7 +518,10 @@ fn graphic_placement(session: &Session, command: &str, params: &Value) -> Option
         id,
         &["sequence.settings.settings.width", "sequence.settings.settings.height", "sequence.settings.settings.frame_rate", "~videoTrackOrder"],
     ));
-    under.premises.push(Premise::on(json!("project")).fields(["~itemIds", "docState.source_graphics"]).positions(Vec::<String>::new()));
+    under.premises.push(Premise::on(json!("project")).fields(["~itemIds"]).positions(Vec::<String>::new()));
+    for id in session.project.items.keys() {
+        under.premises.push(content(id.0, &["sourceGraphic"]));
+    }
     // graphic_source reuses the first matching non-shared source. Lane choice
     // examines occupancy across the new duration, beyond the insertion point.
     for item in session.project.items.values() {
@@ -648,7 +649,7 @@ fn motion_nudge(session: &Session, command: &str) -> Option<Under> {
             need.fields.get_or_insert_with(Vec::new).push(format!("effects.{index}.def"));
         }
         if let Some(index) = first_motion {
-            need.fields.get_or_insert_with(Vec::new).push(format!("effects.{index}.params.params.position"));
+            need.fields.get_or_insert_with(Vec::new).push(format!("effects.{index}.params.position"));
         }
         under.premises.push(need);
     }

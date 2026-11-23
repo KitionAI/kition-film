@@ -53,7 +53,8 @@ impl Session {
     pub fn reconcile_file(&mut self, project: &Project) -> Result<()> {
         // Validate the transaction on an isolated replica before touching the live histories.
         let snapshot = self.snapshot()?;
-        let mut check = FilmSession::open_snapshot(&snapshot).map_err(kdm_error)?;
+        let blobs = self.kdm.as_ref().map(FilmSession::blobs).unwrap_or_default();
+        let mut check = FilmSession::open_snapshot(&snapshot, blobs).map_err(kdm_error)?;
         check.reread(project).map_err(kdm_error)?;
         self.kdm.as_mut().ok_or_else(no_replica)?.reread(project).map_err(kdm_error)?;
         self.follow_kdm();
@@ -159,6 +160,22 @@ impl Session {
         self.kdm.as_mut()
     }
 
+    /// The text of every LUT the replica references, encoded for a peer's [`Session::add_blobs`].
+    pub fn blobs(&mut self) -> Result<Vec<u8>> {
+        Ok(kdm_model::encode_blobs(&self.ensure_kdm().ok_or_else(no_replica)?.blobs()))
+    }
+
+    /// Keeps a peer's blobs ([`Session::blobs`]) for the changes and snapshots that reference
+    /// them: hand them over before [`Session::import_changes`] or [`Session::open_snapshot`].
+    pub fn add_blobs(&mut self, bytes: &[u8]) -> Result<()> {
+        let blobs = kdm_model::decode_blobs(bytes).map_err(kdm_error)?;
+        if let Some(kdm) = self.kdm.as_mut() {
+            kdm.add_blobs(&blobs);
+        }
+        self.peer_blobs.0.extend(blobs.0);
+        Ok(())
+    }
+
     /// The replica's version (its own actor's and every peer's it has merged).
     pub fn version(&mut self) -> Result<Version> {
         Ok(self.ensure_kdm().ok_or_else(no_replica)?.version())
@@ -215,7 +232,7 @@ impl Session {
     /// `.kfilm`'s own view (open sequences, timeline zoom…) is restored separately with
     /// [`Session::restore_project_view`] (see [`Session::open_with_replica`]).
     pub fn open_snapshot(&mut self, bytes: &[u8]) -> Result<()> {
-        let kdm = FilmSession::open_snapshot(bytes).map_err(kdm_error)?;
+        let kdm = FilmSession::open_snapshot(bytes, self.peer_blobs.clone()).map_err(kdm_error)?;
         let project = view_of(&kdm, self.project.next_id);
         self.project = project.clone();
         self.synced = project;
@@ -249,7 +266,6 @@ impl Session {
         loaded.project.next_id =
             loaded.project.next_id.max(loaded.project.minimum_next_id(true).ok_or_else(|| EngineError::Other("project id space exhausted".into()))?);
         self.open_snapshot(snapshot)?;
-        self.loaded_schema = loaded.schema_version;
         let kdm = self.kdm.as_mut().ok_or_else(no_replica)?;
         if kdm.holds(&loaded.project).map_err(kdm_error)? {
             if let Some(view) = loaded.view {

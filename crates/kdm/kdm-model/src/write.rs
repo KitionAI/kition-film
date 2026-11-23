@@ -9,8 +9,8 @@
 //!    and every sequence's tracks, clips and (track-level, clip-level) effects (`Clip.item`
 //!    resolves through 1);
 //! 3. every sequence's transitions (`from`/`to` resolve through 2), then its `settings` (multicam/
-//!    merged resolve through 1 and 2) and `mixer`/`captionTracks`/`markers`, then the project's
-//!    `docState` (`transcripts`/`sourceGraphics` resolve through 1).
+//!    merged resolve through 1 and 2), master effects, `mixer`, caption tracks and markers, then
+//!    every item's transcript and source graphic and the project's LUTs and search bins.
 
 use std::collections::HashMap;
 
@@ -19,6 +19,7 @@ use kition_kit::kdm::{KdmError, NodeRef, ObjectId, Tx};
 use serde_json::{Map, Value, json};
 
 use crate::ids::Ids;
+use crate::objects;
 use crate::{Nodes, kdm_err, project_id, props, root_bin_id, tick};
 
 type KdmResult<T> = Result<T, KdmError>;
@@ -68,16 +69,33 @@ pub fn replace_document(tx: &mut Tx<'_>, project: &Project, ids: &mut Ids, nodes
     let proj = project_id();
     let root = root_bin_id();
     let root_node = nodes.get(&root).cloned().ok_or_else(|| kdm_err("the replica's root bin has no tree node"))?;
-    for ty in ["Transition", "Effect", "Clip", "Track", "Sequence", "Item", "Bin"] {
+    for ty in [
+        "Transition",
+        "Effect",
+        "Marker",
+        "Caption",
+        "CaptionTrack",
+        "Clip",
+        "Track",
+        "Sequence",
+        "Transcript",
+        "SourceGraphic",
+        "Item",
+        "Lut",
+        "SearchBin",
+        "Bin",
+    ] {
         for object in tx.objects_of_type(ty) {
             if object != root {
                 tx.delete(&object)?;
             }
         }
     }
-    let entries = tx.list_items(&root, "entries")?.len();
-    for index in (0..entries).rev() {
-        tx.list_remove(&root, "entries", index)?;
+    for (owner, field) in [(&root, "entries"), (&proj, "luts"), (&proj, "searchBins")] {
+        let entries = tx.list_items(owner, field)?.len();
+        for index in (0..entries).rev() {
+            tx.list_remove(owner, field, index)?;
+        }
     }
     tx.set(&proj, "name", json!(project.name))?;
     tx.set(&proj, "settings", serde_json::to_value(&project.settings).map_err(kdm_err)?)?;
@@ -95,7 +113,8 @@ pub fn replace_document(tx: &mut Tx<'_>, project: &Project, ids: &mut Ids, nodes
 }
 
 /// Everything [`write_document`] writes once the bin tree's objects exist: items, bin entries,
-/// sequences (tracks, clips, transitions, settings…) and the project's `docState`.
+/// sequences (tracks, clips, transitions, settings…), transcripts, source graphics, LUTs and
+/// search bins.
 fn write_contents(tx: &mut Tx<'_>, proj: &ObjectId, project: &Project, ids: &mut Ids) -> KdmResult<()> {
     let mut sequence_objects: HashMap<kition_film_project::ItemId, ObjectId> = HashMap::new();
     for item in project.items.values() {
@@ -119,6 +138,7 @@ fn write_contents(tx: &mut Tx<'_>, proj: &ObjectId, project: &Project, ids: &mut
         let Some(object) = ids.items.object(item.id).cloned() else { continue };
         let (_, props_value) = props::item_kind_and_props(item, ids)?;
         tx.set(&object, "props", props_value)?;
+        objects::write_markers(tx, &object, "markers", item_markers(item))?;
     }
     write_bin_entries(tx, &root_bin_id(), &project.root, ids)?;
 
@@ -138,9 +158,22 @@ fn write_contents(tx: &mut Tx<'_>, proj: &ObjectId, project: &Project, ids: &mut
         finalize_sequence_extras(tx, &seq_obj, seq, ids)?;
     }
 
-    let doc_state = props::build_doc_state(project, ids);
-    tx.set(proj, "docState", serde_json::to_value(doc_state).map_err(kdm_err)?)?;
+    for item in project.items.values() {
+        let Some(object) = ids.items.object(item.id).cloned() else { continue };
+        objects::diff_transcript(tx, &object, None, project.transcripts.get(&item.id).map(|t| t.as_ref()))?;
+        objects::diff_source_graphic(tx, &object, None, project.source_graphics.get(&item.id))?;
+    }
+    objects::diff_luts(tx, proj, &[], &project.luts)?;
+    objects::diff_search_bins(tx, proj, &[], &project.search_bins)?;
     Ok(())
+}
+
+/// A media item's markers (`Item.markers`); other items have none.
+fn item_markers(item: &ProjectItem) -> &[kition_film_project::Marker] {
+    match &item.kind {
+        ItemKind::Media(media) => &media.markers,
+        _ => &[],
+    }
 }
 
 /// Creates `bin`'s object and places it in the tree (recursing into sub-bins); does not populate
@@ -244,7 +277,6 @@ fn clip_fields(clip: &TrackItem, ids: &Ids) -> KdmResult<Map<String, Value>> {
         "link": clip.link.map(|v| v.to_string()),
         "group": clip.group.map(|v| v.to_string()),
         "gain": serde_json::to_value(props::ClipGain { gain_db: clip.gain_db }).map_err(kdm_err)?,
-        "markers": serde_json::to_value(&clip.markers).map_err(kdm_err)?,
         "props": serde_json::to_value(props).map_err(kdm_err)?,
     })))
 }
@@ -253,21 +285,20 @@ fn write_clip(tx: &mut Tx<'_>, clip: &TrackItem, ids: &mut Ids) -> KdmResult<Obj
     let object = tx.create("Clip", clip_fields(clip, ids)?)?;
     ids.clips.insert(object.clone(), clip.id);
     write_effects(tx, &object, "effects", &clip.effects)?;
+    objects::write_markers(tx, &object, "markers", &clip.markers)?;
     Ok(object)
 }
 
 fn write_effects(tx: &mut Tx<'_>, owner: &ObjectId, field: &str, effects: &[EffectInstance]) -> KdmResult<()> {
     for (index, effect) in effects.iter().enumerate() {
-        let (def, params) = props::effect_def_and_params(effect)?;
-        let object = tx.create("Effect", fields(json!({ "def": def, "params": params })))?;
+        let object = objects::create_effect(tx, effect)?;
         tx.list_insert(owner, field, index, &object)?;
     }
     Ok(())
 }
 
 fn transition_fields(tx: &mut Tx<'_>, t: &Transition, ids: &Ids) -> KdmResult<Map<String, Value>> {
-    let (def, params) = props::effect_def_and_params(&t.effect)?;
-    let effect_obj = tx.create("Effect", fields(json!({ "def": def, "params": params })))?;
+    let effect_obj = objects::create_effect(tx, &t.effect)?;
     Ok(fields(json!({
         "transitionId": t.id.0,
         "effect": effect_obj.as_str(),
@@ -304,16 +335,12 @@ fn finalize_sequence_extras(tx: &mut Tx<'_>, seq_obj: &ObjectId, seq: &Sequence,
     tx.set(seq_obj, "duration", json!(tick::to_string(seq.duration())))?;
     tx.set(seq_obj, "settings", serde_json::to_value(props::build_sequence_settings(seq, ids)).map_err(kdm_err)?)?;
     tx.set(seq_obj, "masterVolumeDb", json!(seq.master_volume_db))?;
-    if !seq.master_effects.is_empty() || seq.master_mixer != Default::default() {
-        let mixer = props::SeqMixer { master_effects: seq.master_effects.clone(), master_mixer: seq.master_mixer.clone() };
-        tx.set(seq_obj, "mixer", serde_json::to_value(mixer).map_err(kdm_err)?)?;
+    write_effects(tx, seq_obj, "masterEffects", &seq.master_effects)?;
+    if seq.master_mixer != Default::default() {
+        tx.set(seq_obj, "mixer", serde_json::to_value(&seq.master_mixer).map_err(kdm_err)?)?;
     }
-    if !seq.caption_tracks.is_empty() {
-        tx.set(seq_obj, "captionTracks", props::caption_tracks_json(&seq.caption_tracks)?)?;
-    }
-    if !seq.markers.is_empty() {
-        tx.set(seq_obj, "markers", serde_json::to_value(&seq.markers).map_err(kdm_err)?)?;
-    }
+    objects::write_caption_tracks(tx, seq_obj, &seq.caption_tracks)?;
+    objects::write_markers(tx, seq_obj, "markers", &seq.markers)?;
     Ok(())
 }
 
@@ -389,6 +416,7 @@ pub fn write_changes(tx: &mut Tx<'_>, before: &Project, after: &Project, ids: &m
         let Some(object) = ids.items.object(*id).cloned() else { continue };
         let (_, props_value) = props::item_kind_and_props(item, ids)?;
         tx.set(&object, "props", props_value)?;
+        objects::write_markers(tx, &object, "markers", item_markers(item))?;
     }
 
     // Field changes of items whose identity persists.
@@ -410,27 +438,22 @@ pub fn write_changes(tx: &mut Tx<'_>, before: &Project, after: &Project, ids: &m
         wrote |= diff_sequence(tx, &seq_obj, before_seq, after_seq, ids)?;
     }
 
-    if let Some(value) = doc_state_diff(before, after, ids)? {
-        tx.set(&proj, "docState", value)?;
-        wrote = true;
+    for item in after.items.values() {
+        let Some(object) = ids.items.object(item.id).cloned() else { continue };
+        let known = before_items.contains_key(&item.id);
+        let was = if known { before.transcripts.get(&item.id).map(|t| t.as_ref()) } else { None };
+        wrote |= objects::diff_transcript(tx, &object, was, after.transcripts.get(&item.id).map(|t| t.as_ref()))?;
+        let was = if known { before.source_graphics.get(&item.id) } else { None };
+        wrote |= objects::diff_source_graphic(tx, &object, was, after.source_graphics.get(&item.id))?;
     }
+    wrote |= objects::diff_luts(tx, &proj, &before.luts, &after.luts)?;
+    wrote |= objects::diff_search_bins(tx, &proj, &before.search_bins, &after.search_bins)?;
 
     Ok(wrote)
 }
 
 fn index_items(project: &Project) -> HashMap<kition_film_project::ItemId, &ProjectItem> {
     project.items.iter().map(|(id, item)| (*id, item)).collect()
-}
-
-fn doc_state_diff(before: &Project, after: &Project, ids: &Ids) -> KdmResult<Option<Value>> {
-    if before.luts == after.luts
-        && before.transcripts == after.transcripts
-        && before.search_bins == after.search_bins
-        && before.source_graphics == after.source_graphics
-    {
-        return Ok(None);
-    }
-    Ok(Some(serde_json::to_value(props::build_doc_state(after, ids)).map_err(kdm_err)?))
 }
 
 /// Diffs one item's own fields: `name`, `kind`, and `props`. Compares `item_kind_and_props`'s
@@ -455,6 +478,7 @@ fn diff_item(tx: &mut Tx<'_>, object: &ObjectId, before: &ProjectItem, after: &P
         tx.set(object, "props", after_props)?;
         wrote = true;
     }
+    wrote |= objects::diff_markers(tx, object, "markers", item_markers(before), item_markers(after))?;
     Ok(wrote)
 }
 
@@ -630,21 +654,13 @@ fn diff_sequence(tx: &mut Tx<'_>, seq_obj: &ObjectId, before: Option<&Sequence>,
         tx.set(seq_obj, "masterVolumeDb", json!(after.master_volume_db))?;
         wrote = true;
     }
-    let before_mixer = before.map(|s| (s.master_effects.clone(), s.master_mixer.clone()));
-    let after_mixer = (after.master_effects.clone(), after.master_mixer.clone());
-    if before_mixer != Some(after_mixer.clone()) {
-        let mixer = props::SeqMixer { master_effects: after_mixer.0, master_mixer: after_mixer.1 };
-        tx.set(seq_obj, "mixer", serde_json::to_value(mixer).map_err(kdm_err)?)?;
+    wrote |= diff_effects(tx, seq_obj, "masterEffects", before.map(|s| s.master_effects.as_slice()).unwrap_or_default(), &after.master_effects)?;
+    if before.map(|s| &s.master_mixer) != Some(&after.master_mixer) {
+        tx.set(seq_obj, "mixer", serde_json::to_value(&after.master_mixer).map_err(kdm_err)?)?;
         wrote = true;
     }
-    if before.map(|s| &s.caption_tracks) != Some(&after.caption_tracks) {
-        tx.set(seq_obj, "captionTracks", props::caption_tracks_json(&after.caption_tracks)?)?;
-        wrote = true;
-    }
-    if before.map(|s| &s.markers) != Some(&after.markers) {
-        tx.set(seq_obj, "markers", serde_json::to_value(&after.markers).map_err(kdm_err)?)?;
-        wrote = true;
-    }
+    wrote |= objects::diff_caption_tracks(tx, seq_obj, before.map(|s| s.caption_tracks.as_slice()).unwrap_or_default(), &after.caption_tracks)?;
+    wrote |= objects::diff_markers(tx, seq_obj, "markers", before.map(|s| s.markers.as_slice()).unwrap_or_default(), &after.markers)?;
     Ok(wrote)
 }
 
@@ -874,10 +890,7 @@ fn diff_clip_fields(tx: &mut Tx<'_>, object: &ObjectId, before: &TrackItem, afte
         tx.set(object, "gain", serde_json::to_value(props::ClipGain { gain_db: after.gain_db }).map_err(kdm_err)?)?;
         wrote = true;
     }
-    if before.markers != after.markers {
-        tx.set(object, "markers", serde_json::to_value(&after.markers).map_err(kdm_err)?)?;
-        wrote = true;
-    }
+    wrote |= objects::diff_markers(tx, object, "markers", &before.markers, &after.markers)?;
     let same_other = before.name == after.name
         && before.label == after.label
         && before.enabled == after.enabled
@@ -983,15 +996,10 @@ fn diff_sequence_transitions(tx: &mut Tx<'_>, before: &[&Track], after: &[&Track
 
 fn diff_transition_fields(tx: &mut Tx<'_>, object: &ObjectId, before: &Transition, after: &Transition, ids: &Ids) -> KdmResult<bool> {
     let mut wrote = false;
-    let (before_def, before_params) = props::effect_def_and_params(&before.effect)?;
-    let (after_def, after_params) = props::effect_def_and_params(&after.effect)?;
-    if (before_def != after_def || before_params != after_params)
+    if objects::effect_value(&before.effect)? != objects::effect_value(&after.effect)?
         && let Value::String(effect_obj) = tx.get(object, "effect")?
     {
-        let effect_obj = ObjectId::from_string(effect_obj);
-        tx.set(&effect_obj, "def", json!(after_def))?;
-        tx.set(&effect_obj, "params", after_params)?;
-        wrote = true;
+        wrote |= objects::update_effect(tx, &ObjectId::from_string(effect_obj), &before.effect, &after.effect)?;
     }
     if before.start != after.start {
         tx.set(object, "start", json!(tick::to_string(after.start)))?;
@@ -1030,15 +1038,13 @@ fn diff_transition_fields(tx: &mut Tx<'_>, object: &ObjectId, before: &Transitio
 /// is then matched by effect definition id, in order (an edited effect — same def, changed params
 /// — keeps its object); whatever is still unmatched after both passes is a real insert or delete.
 /// Matched objects are moved with `tx.list_move` only when their relative order actually changed.
-fn diff_effects(tx: &mut Tx<'_>, owner: &ObjectId, field: &str, before: &[EffectInstance], after: &[EffectInstance]) -> KdmResult<bool> {
+pub(crate) fn diff_effects(tx: &mut Tx<'_>, owner: &ObjectId, field: &str, before: &[EffectInstance], after: &[EffectInstance]) -> KdmResult<bool> {
     // Compared as the JSON this crate would write, not as the Rust structs: an "auto" point is
     // `f64::NAN`, never equal to itself under `==`, but always the same `null` once serialized,
     // so every freshly placed clip's intrinsic Motion effect would otherwise look "changed" on
     // every edit that touches nothing about it at all.
-    let before_values: Vec<Value> =
-        before.iter().map(props::effect_def_and_params).map(|r| r.map(|(def, params)| json!({ "def": def, "params": params }))).collect::<KdmResult<_>>()?;
-    let after_values: Vec<Value> =
-        after.iter().map(props::effect_def_and_params).map(|r| r.map(|(def, params)| json!({ "def": def, "params": params }))).collect::<KdmResult<_>>()?;
+    let before_values: Vec<Value> = before.iter().map(objects::effect_value).collect::<KdmResult<_>>()?;
+    let after_values: Vec<Value> = after.iter().map(objects::effect_value).collect::<KdmResult<_>>()?;
     if before_values == after_values {
         return Ok(false);
     }
@@ -1046,13 +1052,11 @@ fn diff_effects(tx: &mut Tx<'_>, owner: &ObjectId, field: &str, before: &[Effect
     let same_shape = before.len() == after.len() && existing.len() == before.len() && before.iter().zip(after).all(|(b, a)| b.effect == a.effect);
     if same_shape {
         let mut wrote = false;
-        for ((before_value, after_value), object) in before_values.iter().zip(after_values.iter()).zip(existing.iter()) {
-            if before_value == after_value {
+        for (index, object) in existing.iter().enumerate() {
+            if before_values[index] == after_values[index] {
                 continue;
             }
-            tx.set(object, "def", after_value["def"].clone())?;
-            tx.set(object, "params", after_value["params"].clone())?;
-            wrote = true;
+            wrote |= objects::update_effect(tx, object, &before[index], &after[index])?;
         }
         return Ok(wrote);
     }
@@ -1065,8 +1069,7 @@ fn diff_effects(tx: &mut Tx<'_>, owner: &ObjectId, field: &str, before: &[Effect
             tx.list_remove(owner, field, index)?;
         }
         for (index, effect) in after.iter().enumerate() {
-            let (def, params) = props::effect_def_and_params(effect)?;
-            let object = tx.create("Effect", fields(json!({ "def": def, "params": params })))?;
+            let object = objects::create_effect(tx, effect)?;
             tx.list_insert(owner, field, index, &object)?;
         }
         return Ok(true);
@@ -1133,8 +1136,7 @@ fn diff_effects(tx: &mut Tx<'_>, owner: &ObjectId, field: &str, before: &[Effect
                     .map(|(_, o)| o.clone())
                     .ok_or_else(|| kdm_err("diff_effects: a matched effect has no object"))?;
                 if before_values[before_index] != after_values[j] {
-                    tx.set(&object, "def", after_values[j]["def"].clone())?;
-                    tx.set(&object, "params", after_values[j]["params"].clone())?;
+                    objects::update_effect(tx, &object, &before[before_index], &after[j])?;
                 }
                 let current_index =
                     current.iter().position(|o| o == &object).ok_or_else(|| kdm_err("diff_effects: a matched effect's object is not in the live list"))?;
@@ -1145,8 +1147,7 @@ fn diff_effects(tx: &mut Tx<'_>, owner: &ObjectId, field: &str, before: &[Effect
                 }
             }
             None => {
-                let (def, params) = props::effect_def_and_params(&after[j])?;
-                let object = tx.create("Effect", fields(json!({ "def": def, "params": params })))?;
+                let object = objects::create_effect(tx, &after[j])?;
                 tx.list_insert(owner, field, j, &object)?;
                 current.insert(j, object);
             }

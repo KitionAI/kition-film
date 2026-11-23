@@ -104,7 +104,7 @@ fn freeform(session: &Session, command: &str, params: &Value) -> Option<Under> {
         // source graphic. Other kinds always participate in this bin's layout.
         let mut fields = vec!["kind".to_owned()];
         if matches!(item.kind, ItemKind::Graphic { .. }) {
-            premises.push(need(json!("project"), ["docState.source_graphics".to_owned()]));
+            premises.push(need(json!(item.id.0), ["sourceGraphic".to_owned()]));
         }
         if listed(&session.project, item) {
             if layout || command == "project.freeform.reset" || command == "project.freeform.restoreArrangement" {

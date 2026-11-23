@@ -55,7 +55,7 @@ fn a_replica_reads_every_object_with_the_id_its_project_gave_it() {
     wanted.sort_unstable();
     read.sort_unstable();
     assert_eq!(read, wanted);
-    let (read_again, _, _) = kdm_model::read_document(session.replica()).unwrap_or_else(|error| panic!("read: {error}"));
+    let (read_again, _, _) = kdm_model::read_document(session.replica(), session.blobs()).unwrap_or_else(|error| panic!("read: {error}"));
     assert_eq!(clip_ids(&read_again), clip_ids(&project));
 }
 

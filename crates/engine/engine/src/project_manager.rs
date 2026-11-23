@@ -304,7 +304,7 @@ fn execute(
     if let Some((from, to)) = previews {
         bytes += copy_dir(&from, &to).map_err(|e| format!("copying previews: {e}"))?;
     }
-    let data = kition_film_format::encode(&proj, false);
+    let data = kition_film_format::encode(&proj, true);
     kition_film_format::atomic_write(Path::new(project_path), &data).map_err(|e| format!("{project_path}: {e}"))?;
     prog.done.fetch_add(1, Ordering::Relaxed);
     Ok(bytes + data.len() as u64)

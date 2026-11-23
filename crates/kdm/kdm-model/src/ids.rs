@@ -6,9 +6,9 @@
 //! active sequence, a selection) names it by — the same role `PhotoModel::known` plays for layers.
 //!
 //! `EffectInstance` and `Marker` mint no local id: effects stay Vec-indexed in the engine (matched
-//! positionally at write time, see `crate::write::diff_effects`) and markers are never
-//! individually replicated (they round-trip inside an opaque `json` field, so their own
-//! `MarkerId` is just data, never remapped).
+//! positionally at write time, see `crate::write::diff_effects`), and a marker's, a caption's, a
+//! caption track's and a search bin's engine id is the object's own `id` field (data, never
+//! remapped; see `crate::objects`).
 
 use std::collections::HashMap;
 

@@ -75,7 +75,7 @@ fn expected(project: &Project, command: &str, bin: &Bin, selected: &[u64], name:
         let mut fields = vec!["kind".into()];
         let graphic = matches!(item.kind, ItemKind::Graphic { .. });
         if graphic {
-            answer.premises.push(leaf(json!("project"), ["docState.source_graphics".into()]));
+            answer.premises.push(leaf(json!(id.0), ["sourceGraphic".into()]));
         }
         if !graphic || project.source_graphics.contains_key(id) {
             if layout || command == "project.freeform.reset" || command == "project.freeform.restoreArrangement" {

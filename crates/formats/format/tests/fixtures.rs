@@ -1,6 +1,6 @@
-//! Old project files keep opening: hand-made fixtures of every past schema are upgraded on load.
+//! A hand-made project file opens: the edit in `tests/fixtures/edit.kfilm` (format version 1).
 
-use kition_film_format::{FormatError, SCHEMA_VERSION, decode, encode};
+use kition_film_format::{SCHEMA_VERSION, decode, encode};
 use kition_film_project::{ClipId, ItemId, ItemKind, Project};
 use kition_film_time::Tick;
 
@@ -9,36 +9,14 @@ fn fixture(name: &str) -> Vec<u8> {
 }
 
 #[test]
-fn v1_minimal_loads() {
-    let l = decode(&fixture("v1-minimal.kfilm")).unwrap();
-    assert_eq!(l.schema_version, 1);
-    assert!(l.migrated());
-    assert_eq!(l.project.name, "Legacy Minimal");
-    assert!(l.project.items.is_empty());
-    assert_eq!(l.project.next_id, 1);
-}
-
-/// Main briefly wrote bare projects with `"version": 2` (caption tracks) before the envelope landed.
-#[test]
-fn bare_version_2_loads_as_schema_v1() {
-    let mut v: serde_json::Value = serde_json::from_slice(&fixture("v1-edit.kfilm")).unwrap();
-    v["version"] = 2.into();
-    let l = decode(&serde_json::to_vec(&v).unwrap()).unwrap();
-    assert_eq!(l.schema_version, 1);
-    assert!(l.migrated());
-    assert_eq!(l.project.name, decode(&fixture("v1-edit.kfilm")).unwrap().project.name);
-}
-
-#[test]
-fn v1_edit_loads_with_defaults_for_later_fields() {
-    let l = decode(&fixture("v1-edit.kfilm")).unwrap();
-    assert_eq!(l.schema_version, 1);
+fn the_fixture_loads() {
+    let l = decode(&fixture("edit.kfilm")).unwrap();
+    assert_eq!(l.schema_version, SCHEMA_VERSION);
     let p = &l.project;
     assert_eq!(p.name, "Legacy Edit");
     assert_eq!(p.next_id, 48);
     let media = p.item(ItemId(5)).unwrap();
     assert_eq!(media.name, "Ocean_Sunset.mp4");
-    assert!(media.metadata.is_empty());
     let seq = p.sequence(ItemId(21)).unwrap();
     assert_eq!(seq.video_tracks.len(), 1);
     assert_eq!(seq.audio_tracks.len(), 1);
@@ -46,15 +24,16 @@ fn v1_edit_loads_with_defaults_for_later_fields() {
     let clip = &seq.video_tracks[0].items[0];
     assert_eq!(clip.id, ClipId(29));
     assert_eq!(clip.source_in, Tick(243_675_432_000));
-    assert!(!clip.reverse && clip.link.is_none() && clip.gain_db == 0.0 && !clip.scale_to_frame);
     assert_eq!(clip.effects.len(), 3);
-    assert!(seq.audio_tracks[0].effects.is_empty());
     seq.check().unwrap();
+    // resaved, losslessly
+    let again = decode(&encode(p, true)).unwrap();
+    assert_eq!(&again.project, p);
 }
 
 #[test]
 fn legacy_audio_field_becomes_primary_stream_and_clip_defaults_to_zero() {
-    let p = decode(&fixture("v1-edit.kfilm")).unwrap().project;
+    let p = decode(&fixture("edit.kfilm")).unwrap().project;
     let media = p.item(ItemId(5)).unwrap().as_media().unwrap();
     assert_eq!(media.info.audio_streams.len(), 1);
     assert!(media.info.has_audio());
@@ -67,7 +46,7 @@ fn legacy_audio_field_becomes_primary_stream_and_clip_defaults_to_zero() {
 /// Out-of-range audio stream data is repaired on load, never a reason to refuse the project.
 #[test]
 fn hostile_audio_stream_counts_and_indices_are_repaired_not_rejected() {
-    let mut p = decode(&fixture("v1-edit.kfilm")).unwrap().project;
+    let mut p = decode(&fixture("edit.kfilm")).unwrap().project;
     let seq = ItemId(21);
     for bad in [kition_film_media::MAX_AUDIO_STREAMS, usize::MAX] {
         p.sequence_mut(seq).unwrap().audio_tracks[0].items[0].audio_stream = bad;
@@ -84,50 +63,9 @@ fn hostile_audio_stream_counts_and_indices_are_repaired_not_rejected() {
     assert_eq!(loaded.item(ItemId(5)).unwrap().as_media().unwrap().info.audio_streams.len(), kition_film_media::MAX_AUDIO_STREAMS);
 }
 
-/// Schema 8 (before M3.10): no time interpolation / Hold Filters / Field Options / source channels
-/// on clips, no audio channel map, subclips without Restrict Trims.
-#[test]
-fn v8_subclip_loads_with_m3_10_defaults() {
-    let l = decode(&fixture("v8-subclip.kfilm")).unwrap();
-    assert_eq!(l.schema_version, 8);
-    assert!(l.migrated());
-    let p = &l.project;
-    assert_eq!(p.name, "Schema 8 Edit");
-    let ItemKind::Subclip { parent, range, restrict_trims } = &p.item(ItemId(48)).unwrap().kind else { panic!("not a subclip") };
-    assert_eq!((*parent, range.duration.0 > 0, *restrict_trims), (ItemId(5), true, false));
-    assert!(p.item(ItemId(5)).unwrap().as_media().unwrap().interpret.audio_channels.is_none());
-    let clip = &p.sequence(ItemId(21)).unwrap().video_tracks[0].items[0];
-    assert!(clip.time_interpolation.is_default() && !clip.hold_filters && clip.field_options.is_none() && clip.source_channels.is_empty());
-    // resaved in the current schema, losslessly
-    let again = decode(&encode(p, true)).unwrap();
-    assert_eq!(again.schema_version, SCHEMA_VERSION);
-    assert_eq!(&again.project, p);
-}
-
-#[test]
-fn upgraded_file_resaves_in_current_schema_losslessly() {
-    let old = decode(&fixture("v1-edit.kfilm")).unwrap().project;
-    let bytes = encode(&old, true);
-    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
-    assert_eq!(v["schema_version"], SCHEMA_VERSION);
-    let again = decode(&bytes).unwrap();
-    assert!(!again.migrated());
-    assert_eq!(again.project, old);
-}
-
-#[test]
-fn future_schema_is_refused_with_a_clear_error() {
-    let mut v: serde_json::Value = serde_json::from_slice(&fixture("v1-minimal.kfilm")).unwrap();
-    // A bare v1-shaped project claiming a future `version` is refused too.
-    v["version"] = 99.into();
-    let e = decode(&serde_json::to_vec(&v).unwrap()).unwrap_err();
-    assert!(matches!(e, FormatError::TooNew { found: 99, .. }), "{e}");
-    assert!(e.to_string().contains("Update Kition Film"));
-}
-
 /// Build a project with `n` clips (half video, half linked audio) on 4+4 tracks.
 pub fn big_project(n: usize) -> Project {
-    let mut p = decode(&fixture("v1-edit.kfilm")).unwrap().project;
+    let mut p = decode(&fixture("edit.kfilm")).unwrap().project;
     let seq_id = ItemId(21);
     let mut next = 1_000_000u64;
     let seq = match &mut p.items.get_mut(&seq_id).unwrap().kind {
@@ -206,56 +144,16 @@ fn large_project_roundtrip_and_timing() {
     );
 }
 
+/// A transcript is kept in the file.
 #[test]
-fn v8_loads_without_transcripts_and_v9_roundtrips_them() {
-    let l = decode(&fixture("v8-minimal.kfilm")).unwrap();
-    assert_eq!(l.schema_version, 8);
-    assert!(l.migrated());
-    assert!(l.project.transcripts.is_empty());
-    let mut p = l.project;
+fn transcripts_round_trip() {
+    let mut p = decode(&fixture("edit.kfilm")).unwrap().project;
     let mut t = kition_film_project::Transcript { language: "en".into(), source: "manual".into(), ..Default::default() };
     t.words.push(kition_film_project::Word::new("Hello", Tick(0), Tick(1000)));
     t.words[0].speaker = Some(0);
     t.normalize();
-    p.transcripts.insert(ItemId(7), std::sync::Arc::new(t));
+    p.transcripts.insert(ItemId(5), std::sync::Arc::new(t));
     let again = decode(&encode(&p, true)).unwrap();
-    assert!(!again.migrated());
     assert_eq!(again.project, p);
-    assert_eq!(again.project.transcripts[&ItemId(7)].speakers[0].name, "Speaker 1");
-}
-
-/// Schema 11 (before M10.7): no source graphics; graphic clips without template / roll /
-/// responsive data and layers without style runs or pins load with those empty.
-#[test]
-fn v11_minimal_loads_without_graphics_design_data() {
-    let l = decode(&fixture("v11-minimal.kfilm")).unwrap();
-    assert_eq!(l.schema_version, 11);
-    assert!(l.migrated());
-    let p = &l.project;
-    assert_eq!(p.name, "Before Graphics Templates");
-    assert!(p.source_graphics.is_empty());
-    assert!(p.root.find_bin(kition_film_project::BinId(1)).is_some());
-    let again = decode(&encode(p, true)).unwrap();
-    assert_eq!(again.schema_version, SCHEMA_VERSION);
-    const { assert!(SCHEMA_VERSION >= 12) };
-    assert_eq!(&again.project, p);
-}
-
-/// Schema 10 (before M3.11): no search bins, no safe areas / capture format / scratch disks in
-/// the project settings.
-#[test]
-fn v10_minimal_loads_with_m3_11_defaults() {
-    let l = decode(&fixture("v10-minimal.kfilm")).unwrap();
-    assert_eq!(l.schema_version, 10);
-    assert!(l.migrated());
-    let p = &l.project;
-    assert_eq!(p.name, "Before Search Bins");
-    assert!(p.search_bins.is_empty());
-    assert_eq!((p.settings.title_safe, p.settings.action_safe), ((20.0, 20.0), (10.0, 10.0)));
-    assert_eq!(p.settings.capture_format, "DV");
-    assert_eq!(p.settings.scratch, Default::default());
-    assert!(p.root.find_bin(kition_film_project::BinId(1)).is_some());
-    let again = decode(&encode(p, true)).unwrap();
-    assert_eq!(again.schema_version, SCHEMA_VERSION);
-    assert_eq!(&again.project, p);
+    assert_eq!(again.project.transcripts[&ItemId(5)].speakers[0].name, "Speaker 1");
 }

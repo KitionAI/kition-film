@@ -51,7 +51,7 @@ async fn s1_a_colleagues_change_of_another_clip_applies_and_others_names_that_cl
     assert_eq!(others["by"], json!(["outside"]), "{ran}");
     assert_eq!(ids(&others["changed"]), [theirs.to_string()], "others names the colleague's clip alone: {others}");
     // kition-sdk C8-fix-6 (b0dbf77, past this kit's pin): a json value is told at its leaves.
-    assert_eq!(entry(&others["changed"], &theirs.to_string())["fields"], json!(["effects.1.params.params.opacity.value.Float"]), "{others}");
+    assert_eq!(entry(&others["changed"], &theirs.to_string())["fields"], json!(["effects.1.params.opacity.value.Float"]), "{others}");
     for list in ["created", "moved", "deleted"] {
         assert!(ids(&others[list]).is_empty(), "{others}");
     }
@@ -724,10 +724,10 @@ fn caption_text(file: &std::path::Path, id: u64) -> String {
         .unwrap_or_else(|| panic!("no caption {id} in {text}"))
 }
 
-/// A caption is no object of the object model (captions are a JSON field of the sequence): the
-/// colleague changes caption 1's text, and the agent sets the same caption's text with `basis`,
-/// naming it in `on` or in the command's `caption` parameter. The kit states the call's premise,
-/// the caption's path inside the sequence's item (`sequence.captionTracks.0.captions.0`): refused
+/// A caption has no tool id (a `Caption` in its track's `captions` map): the colleague changes
+/// caption 1's text, and the agent sets the same caption's text with `basis`, naming it in `on` or
+/// in the command's `caption` parameter. The kit states the call's premise, the caption's path
+/// inside the sequence's item (`sequence.captionTracks[id=…].captions.caption-<id>`): refused
 /// as `changed` on that item, the colleague's text kept (C8-fix-7; was applied over it). A change of
 /// another caption does not refuse it.
 #[tokio::test(flavor = "multi_thread")]

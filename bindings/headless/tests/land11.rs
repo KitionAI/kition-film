@@ -282,7 +282,7 @@ async fn batch_color_receipt_reports_stored_precision() {
     f.ok("run", json!({"steps": [{"command": "effects.apply", "params": {"clips": [clip], "effect": "tint"}}]})).await;
     let (sequence, _) = f.inspect().await;
     let slot = sequence["video"][0]["items"][0]["effects"].as_array().unwrap().iter().position(|effect| effect["effect"] == "tint").unwrap();
-    let path = format!("effects.{slot}.params.params.black.value.Color");
+    let path = format!("effects.{slot}.params.black.value.Color");
     let ran = f
         .ok(
             "batch",
@@ -336,7 +336,7 @@ async fn batch_effect_numbers_obey_the_engines_hard_limits() {
     let (sequence, _) = f.inspect().await;
     let clip = v1(&sequence)[0];
     let before = std::fs::read(f.file()).unwrap();
-    f.refused("batch", json!({"ops": [{"op": "set", "target": clip, "field": "effects.1.params.params.opacity.value.Float", "value": 101}]})).await;
+    f.refused("batch", json!({"ops": [{"op": "set", "target": clip, "field": "effects.1.params.opacity.value.Float", "value": 101}]})).await;
     assert_eq!(std::fs::read(f.file()).unwrap(), before);
     f.shutdown().await;
 }

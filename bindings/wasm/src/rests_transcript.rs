@@ -8,6 +8,12 @@ fn leaf(id: Value, fields: impl IntoIterator<Item = &'static str>) -> Premise {
     Premise::on(id).fields(fields).positions(Vec::<String>::new())
 }
 
+/// Every item's transcript (`Item.transcript`): what a command that reads or replaces the
+/// transcripts of the media it resolves holds.
+pub(super) fn transcripts(session: &Session) -> impl Iterator<Item = Premise> + '_ {
+    session.project.items.keys().map(|id| leaf(json!(id.0), ["transcript"]))
+}
+
 pub fn under(session: &Session, command: &str, params: &Value) -> Option<Under> {
     if !matches!(
         command,
@@ -23,7 +29,7 @@ pub fn under(session: &Session, command: &str, params: &Value) -> Option<Under> 
     ) {
         return None;
     }
-    let mut answer = Under { premises: vec![leaf(json!("project"), ["docState.transcripts"])], ..Default::default() };
+    let mut answer = Under { premises: transcripts(session).collect(), ..Default::default() };
     if matches!(command, "transcript.set" | "transcript.delete" | "transcript.renameSpeaker") {
         let ids = params
             .get("items")

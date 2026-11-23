@@ -4,10 +4,11 @@ use std::collections::HashSet;
 
 use kition_film_project::{Bin, BinEntry, BinId, ClipId, ItemId, ItemKind, Project, ProjectItem, Sequence, Track, TrackId, TransitionId};
 use kition_kit::kdm::{KdmError, ObjectId, Replica, TreeEntry};
+use kition_kit::session::BlobSource;
 use serde_json::Value;
 
 use crate::ids::{Ids, Known};
-use crate::{Nodes, kdm_err, project_id, props, root_bin_id, tick};
+use crate::{Nodes, kdm_err, objects, project_id, props, root_bin_id, tick};
 
 type KdmResult<T> = Result<T, KdmError>;
 
@@ -38,6 +39,8 @@ struct Mint {
     tracks: HashSet<TrackId>,
     clips: HashSet<ClipId>,
     transitions: HashSet<TransitionId>,
+    /// Ids kept as data (markers, caption tracks, captions, search bins).
+    data: HashSet<u64>,
 }
 
 fn mint<L: Copy + Eq + std::hash::Hash>(
@@ -105,17 +108,43 @@ impl Mint {
     fn transition(&mut self, object: &ObjectId, known: &Known) -> TransitionId {
         mint(object, self.stored.get(object).copied(), &known.transitions, &mut self.transitions, &mut self.next, TransitionId)
     }
+    /// The id of an object that keeps an engine id as data (`stored`, its `id` field), or, when it
+    /// has none yet (a batch made it and the repair has not numbered it), a fresh one past every
+    /// id the replica holds.
+    fn data(&mut self, stored: Option<u64>) -> u64 {
+        if let Some(id) = stored {
+            self.data.insert(id);
+            return id;
+        }
+        loop {
+            self.next = self.next.saturating_add(1);
+            if (!self.data.contains(&self.next) && self.data.insert(self.next)) || self.next == u64::MAX {
+                return self.next;
+            }
+        }
+    }
 }
 
 /// Rebuilds the whole project from a committed replica, minting a fresh local id for every object.
-pub fn read_document(replica: &Replica) -> KdmResult<(Project, Ids, Nodes)> {
-    read_document_known(replica, &Known::default())
+/// The LUTs' file text is read from `blobs`.
+pub fn read_document(replica: &Replica, blobs: &dyn BlobSource) -> KdmResult<(Project, Ids, Nodes)> {
+    read_document_known(replica, &Known::default(), blobs)
 }
 
 /// [`read_document`], but an object a view has already given a local id (`known`) keeps it, so a
 /// reload (after an undo, a redo or an import) does not change the ids a session's own state (the
 /// active sequence, a selection) names.
-pub fn read_document_known(replica: &Replica, known: &Known) -> KdmResult<(Project, Ids, Nodes)> {
+///
+/// A replica made on another schema version is refused, never read: there is no migration, so a
+/// project whose replica an earlier build made is opened again from its `.kfilm` file.
+pub fn read_document_known(replica: &Replica, known: &Known, blobs: &dyn BlobSource) -> KdmResult<(Project, Ids, Nodes)> {
+    let made = replica.min_schema_version();
+    let reads = replica.schema().schema_version;
+    if made != reads {
+        return Err(kdm_err(format!(
+            "this replica was made on schema {made} by another version of the Film kit, which reads schema {reads} only: open the project's .kfilm file instead"
+        )));
+    }
     let proj = project_id();
     let name = as_str(&replica.get(&proj, "name")?, "name")?;
     let settings: kition_film_project::ProjectSettings = serde_json::from_value(replica.get(&proj, "settings")?).map_err(kdm_err)?;
@@ -132,7 +161,18 @@ pub fn read_document_known(replica: &Replica, known: &Known) -> KdmResult<(Proje
 
     read_items(replica, &mut project, known, &mut mint, &mut ids)?;
     for item in std::mem::take(&mut project.items).into_values() {
-        let resolved = resolve_item_props(replica, item, &ids)?;
+        let mut resolved = resolve_item_props(replica, item, &ids)?;
+        if let Some(object) = ids.items.object(resolved.id).cloned() {
+            if let ItemKind::Media(media) = &mut resolved.kind {
+                media.markers = objects::read_markers(replica, &object, "markers", &mut |_, stored| mint.data(stored))?;
+            }
+            if let Some(transcript) = objects::read_transcript(replica, &object)? {
+                project.transcripts.insert(resolved.id, std::sync::Arc::new(transcript));
+            }
+            if let Some(graphic) = objects::read_source_graphic(replica, &object)? {
+                project.source_graphics.insert(resolved.id, graphic);
+            }
+        }
         project.items.insert(resolved.id, resolved);
     }
     read_bin_entries(replica, &root_object, &mut project.root, &ids)?;
@@ -154,11 +194,12 @@ pub fn read_document_known(replica: &Replica, known: &Known) -> KdmResult<(Proje
         let Some(ProjectItem { kind: ItemKind::Sequence(seq), .. }) = project.items.get_mut(id) else { continue };
         read_sequence_transitions(replica, &seq_object, seq, known, &mut mint, &mut ids)?;
         props::apply_sequence_settings(seq, replica.get(&seq_object, "settings")?, &ids)?;
-        apply_sequence_extras(replica, &seq_object, seq)?;
+        apply_sequence_extras(replica, &seq_object, seq, &mut mint)?;
     }
 
-    props::apply_doc_state(&mut project, replica.get(&proj, "docState")?, &ids)?;
-    project.next_id = project.minimum_next_id(true).ok_or_else(|| kdm_err("project id space exhausted"))?.max(crate::session::slot_base(replica.actor()));
+    project.luts = objects::read_luts(replica, &proj, blobs)?;
+    project.search_bins = objects::read_search_bins(replica, &proj, &mut |_, stored| mint.data(stored))?;
+    project.next_id = crate::session::next_id_hint(&project, crate::session::slot_base(replica.actor()));
     Ok((project, ids, nodes))
 }
 
@@ -377,7 +418,7 @@ fn read_tracks(replica: &Replica, seq_object: &ObjectId, field: &str, known: &Kn
         track.volume_db = replica.get(&object, "volumeDb")?.as_f64().unwrap_or(0.0);
         track.pan = replica.get(&object, "pan")?.as_f64().unwrap_or(0.0);
         track.mixer = props.mixer;
-        track.effects = read_effects(replica, &object, "effects")?;
+        track.effects = objects::read_effects(replica, &object, "effects")?;
         for clip_object in replica.list(&object, "clips")? {
             if !replica.exists(&clip_object) {
                 continue;
@@ -388,18 +429,6 @@ fn read_tracks(replica: &Replica, seq_object: &ObjectId, field: &str, known: &Kn
         tracks.push(track);
     }
     Ok(tracks)
-}
-
-fn read_effects(replica: &Replica, owner: &ObjectId, field: &str) -> KdmResult<Vec<kition_film_project::EffectInstance>> {
-    let mut effects = Vec::new();
-    for object in replica.list(owner, field)? {
-        if !replica.exists(&object) {
-            continue;
-        }
-        let def = as_str(&replica.get(&object, "def")?, "def")?;
-        effects.push(props::effect_from_value(def, replica.get(&object, "params")?)?);
-    }
-    Ok(effects)
 }
 
 fn read_clip(replica: &Replica, object: &ObjectId, known: &Known, mint: &mut Mint, ids: &mut Ids) -> KdmResult<kition_film_project::TrackItem> {
@@ -419,11 +448,10 @@ fn read_clip(replica: &Replica, object: &ObjectId, known: &Known, mint: &mut Min
     let group = replica.get(object, "group")?.as_str().and_then(|s| s.parse::<u64>().ok());
     let gain_value = replica.get(object, "gain")?;
     let gain: props::ClipGain = if gain_value.is_null() { Default::default() } else { serde_json::from_value(gain_value).map_err(kdm_err)? };
-    let markers_value = replica.get(object, "markers")?;
-    let markers = if markers_value.is_null() { Vec::new() } else { serde_json::from_value(markers_value).map_err(kdm_err)? };
+    let markers = objects::read_markers(replica, object, "markers", &mut |_, stored| mint.data(stored))?;
     let props_value = replica.get(object, "props")?;
     let props: Option<props::ClipProps> = if props_value.is_null() { None } else { Some(serde_json::from_value(props_value).map_err(kdm_err)?) };
-    let effects = read_effects(replica, object, "effects")?;
+    let effects = objects::read_effects(replica, object, "effects")?;
 
     Ok(kition_film_project::TrackItem {
         id,
@@ -474,9 +502,7 @@ fn read_transition(replica: &Replica, object: &ObjectId, known: &Known, mint: &m
     let id = mint.transition(object, known);
     ids.transitions.insert(object.clone(), id);
     let Value::String(effect_object) = replica.get(object, "effect")? else { return Err(kdm_err("transition has no effect object")) };
-    let effect_object = ObjectId::from_string(effect_object);
-    let def = as_str(&replica.get(&effect_object, "def")?, "def")?;
-    let effect = props::effect_from_value(def, replica.get(&effect_object, "params")?)?;
+    let effect = objects::read_effect(replica, &ObjectId::from_string(effect_object))?;
     let start = tick::from_value(&replica.get(object, "start")?)?;
     let duration = tick::from_value(&replica.get(object, "duration")?)?;
     let from = match replica.get(object, "from")? {
@@ -496,21 +522,14 @@ fn read_transition(replica: &Replica, object: &ObjectId, known: &Known, mint: &m
     Ok(kition_film_project::Transition { id, effect, start, duration, from, to, align, reverse })
 }
 
-fn apply_sequence_extras(replica: &Replica, seq_object: &ObjectId, seq: &mut Sequence) -> KdmResult<()> {
+fn apply_sequence_extras(replica: &Replica, seq_object: &ObjectId, seq: &mut Sequence, mint: &mut Mint) -> KdmResult<()> {
     seq.master_volume_db = replica.get(seq_object, "masterVolumeDb")?.as_f64().unwrap_or(0.0);
+    seq.master_effects = objects::read_effects(replica, seq_object, "masterEffects")?;
     let mixer_value = replica.get(seq_object, "mixer")?;
     if !mixer_value.is_null() {
-        let mixer: props::SeqMixer = serde_json::from_value(mixer_value).map_err(kdm_err)?;
-        seq.master_effects = mixer.master_effects;
-        seq.master_mixer = mixer.master_mixer;
+        seq.master_mixer = serde_json::from_value(mixer_value).map_err(kdm_err)?;
     }
-    let captions_value = replica.get(seq_object, "captionTracks")?;
-    if !captions_value.is_null() {
-        seq.caption_tracks = props::caption_tracks_from_json(captions_value)?;
-    }
-    let markers_value = replica.get(seq_object, "markers")?;
-    if !markers_value.is_null() {
-        seq.markers = serde_json::from_value(markers_value).map_err(kdm_err)?;
-    }
+    seq.caption_tracks = objects::read_caption_tracks(replica, seq_object, &mut |_, stored| mint.data(stored))?;
+    seq.markers = objects::read_markers(replica, seq_object, "markers", &mut |_, stored| mint.data(stored))?;
     Ok(())
 }

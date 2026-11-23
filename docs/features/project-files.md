@@ -1,6 +1,6 @@
 # Project files
 
-Kition Film projects are `.kfilm` files: UTF-8 JSON with an explicit schema version. Reading and
+Kition Film projects are `.kfilm` files: UTF-8 JSON with an explicit format version. Reading and
 writing them is `crates/formats/format` (`kition-film-format`); the engine's `file.*` commands use it.
 
 ## Format
@@ -8,24 +8,26 @@ writing them is `crates/formats/format` (`kition-film-format`); the engine's `fi
 ```json
 {
   "format": "kition-film.project",
-  "schema_version": 13,
+  "schema_version": 1,
   "generator": "Kition Film 0.1.0",
   "project": { "name": "…", "settings": { … }, "root": { … }, "items": { … }, "next_id": 48 },
   "view": { "open_sequences": [21, 50], "active_sequence": 50, "sequences": { "21": { "pps": 40.0, "scroll": 0.0, … } } }
 }
 ```
 
-- `schema_version` is the version of the whole document. This build writes
-  `kition_film_format::SCHEMA_VERSION` and reads every version from 1 up to it.
+- `schema_version` is the version of the whole document: 1. This build reads and writes
+  `kition_film_format::SCHEMA_VERSION` and no other.
 - `project` is the serialized `kition_film_project::Project` (bins, media clips, sequences, tracks,
   clips, effects, keyframes, markers). Media is referenced by path, never embedded.
-- Files are written compact (no indentation). A 2,000-clip project is about 1.4 MB.
+- Project files are written indented, every object's keys in a fixed order, so two saves of one
+  project are the same bytes and a change shows as a small diff. Auto-save and recovery snapshots
+  are written compact.
 - `view` (optional) is what was open when the project was saved: the Timeline's sequence tabs in
   order, the active one, and each sequence's zoom, scroll and track heights
   (`kition_film_project::ProjectView`). It is beside the project, not in it: it is not part of the
   edit, never an undo step, and changing it does not mark the project as changed. Opening a
   project restores it when the Timeline preference "Restore open sequences when opening projects"
-  is on. It is outside the schema version: older builds ignore it, ids that are not sequences and
+  is on. It is outside the project: ids that are not sequences and
   numbers out of range are dropped or clamped, and a `view` that cannot be read is ignored (the
   project opens on its first sequence, as it does without one or with no open sequence in it).
 - A coordinate of an effect's point parameter may be `null`. Point parameters use NaN for "auto"
@@ -36,54 +38,14 @@ writing them is `crates/formats/format` (`kition-film-format`); the engine's `fi
   and with it the real picture size; a file that merely comes back at its old path does not
   change it. `null` anywhere else is a damaged file.
 
-### Schema versions
+### Other versions
 
-| Version | Shape |
-|---|---|
-| 1 | the bare `Project` object with a `"version": 1` field |
-| 2 | the envelope above; the project's own `version` field is gone |
-| 3 | graphic clips (`ItemKind::Graphic` with text/shape layers); a no-op step for older data |
-| 4 | Audio mixing: clip audio types and settings; no-op step |
-| 5 | colour management: working space, Interpret Footage colour space, LUT library; no-op step |
-| 6 | media identity fingerprints, ingest settings; no-op step |
-| 7 | effect masks: `masks` on effect instances with keyframable Bézier `Path` values; no-op step |
-| 8 | multi-camera source sequences and clips, merged clips; no-op step |
-| 9 | transcripts of media items (`project.transcripts`); no-op step |
-| 10 | clip time interpolation, Hold Filters, Field Options, audio source channels, Modify ▸ Audio Channels map, subclip Restrict Trims; no-op step |
-| 11 | search bins (`project.search_bins`), Flash Cue markers, Project Settings safe areas, capture format and scratch disks; no-op step |
-| 12 | graphics design data: `TrackItem::graphic` (roll / crawl, responsive time, template link), `EffectInstance::layer` (layer uid, per-character styles, responsive pins), `project.source_graphics`; no-op step |
-| 13 | `MediaInfo::audio_streams` and `TrackItem::audio_stream`; older `audio` objects load as stream zero, missing clip indices default to zero; no-op step |
+There is no upgrade chain. A file whose `schema_version` is not 1 (a file from a development build
+before the format was fixed, or one from a future build) is **refused**, not half-read:
 
-### Migrations
+> this project file is format version 13; this build of Kition Film reads version 1 only
 
-Older files are upgraded on load, in memory, by a chain of single-step functions
-(`kition_film_format::MIGRATIONS`, where entry *i* upgrades v*i+1* to v*i+2*). Each step rewrites the JSON
-document; after the last one the result is deserialized into the current model. To change the schema:
-
-1. add a function `vN_to_vN1(doc: Value) -> Result<Value, String>` and append it to `MIGRATIONS`
-   (`SCHEMA_VERSION` follows automatically);
-2. add a small hand-made fixture of the old shape to `crates/formats/format/tests/fixtures/` and a test that it
-   loads;
-3. never edit a migration that has shipped.
-
-Fields added with `#[serde(default)]` don't need a migration: missing values take their defaults.
-But when new data would make the file unreadable to an older build (a new enum variant such as
-`ItemKind::Graphic`, a new required shape), bump the schema with a no-op step so older builds refuse
-the file with the message below instead of failing with a parse error. Do the same when an older
-build would load the file but silently drop new fields on its next save.
-
-When you open an older file Kition Film says so ("Upgraded project from schema v1 to v2"). The file
-on disk is unchanged until you save. The **first save over it** keeps the original next to it as
-`<name> (schema v1 backup).kfilm`, so an older Kition Film can still open your work.
-
-### Newer files
-
-A file with a `schema_version` newer than the build supports is **refused**, not half-read:
-
-> this project was saved by a newer version of Kition Film (project schema v12); this build reads up to
-> v11. Update Kition Film to open it.
-
-Reading it partially and saving it back would silently drop whatever the newer version added.
+Reading it partially and saving it back would silently drop or garble what the other version wrote.
 
 ## Saving is atomic
 
@@ -106,7 +68,7 @@ one. If a step fails, the temp file is removed and the old file is untouched.
 | `file.saveAs {path}` | File ▸ Save As… (⇧⌘S) | write and adopt the new path |
 | `file.saveCopy {path}` | File ▸ Save a Copy… (⌥⌘S) | write a copy; the project keeps its path and unsaved state |
 | `file.revert` | File ▸ Revert | reload the last saved version, discarding changes |
-| `file.open {path}` | File ▸ Open Project… (⌘O) | returns `{schemaVersion, migrated}` |
+| `file.open {path}` | File ▸ Open Project… (⌘O) | returns `{path, schemaVersion, missingMedia}` |
 
 In the editor the host opens and saves the document: `file.open`, `file.save`, `file.saveAs`,
 `file.saveCopy` and `file.revert` are not shown there (`web/src/menus/hidden.ts`).
@@ -166,8 +128,8 @@ already keeps for undo, passed through a channel. JSON encoding and all file I/O
 
 | Step | Time | Size |
 |---|---|---|
-| encode, compact (what is written) | 2.5 ms | 1.4 MB |
-| encode, pretty (not used) | 7.1 ms | 5.6 MB |
+| encode, compact (what auto-save writes) | 2.5 ms | 1.4 MB |
+| encode, pretty (what a save writes) | 7.1 ms | 5.6 MB |
 | decode | 4.6 ms | |
 | atomic write + fsync (APFS SSD) | 30 ms | |
 
@@ -226,9 +188,8 @@ The remaining fields are kept for parity but have no effect yet (`wired: false`)
 Media is referenced by path. Each imported file also records its **identity**
 (`MediaClip::identity`): the size and a 64-bit fingerprint of the size, the first MiB and the last
 MiB. Reading 2 MiB is cheap on any file, and it tells a moved original from a different take with
-the same name. The field is optional (`skip_serializing_if`); it and `ProjectSettings::ingest` came with schema
-v6, so builds that would drop them on save refuse the file instead. Projects from older builds
-have no identity, so relinking them skips the fingerprint check.
+the same name. The field is optional (`skip_serializing_if`): an item without one (a generator)
+is relinked without the fingerprint check.
 
 ### Offline media
 

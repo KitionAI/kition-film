@@ -104,7 +104,7 @@ fn expected(project: &Project, sequence: u64, command: &str, params: &Value, sel
         }
         if scene {
             let root = project.resolve_media(clip.item).map(|(id, _, _)| id).unwrap_or(clip.item);
-            want.premises.push(leaf(root.0, ["name", "props.common.label", "props.media.markers"]));
+            want.premises.push(leaf(root.0, ["name", "props.common.label", "markers"]));
             if params["applyCuts"].as_bool() != Some(false) {
                 want.premises.push(leaf(owner.0, ["transitions"]));
                 want.premises.push(leaf(id, ["~linkedGroup"]));

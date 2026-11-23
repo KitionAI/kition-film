@@ -44,7 +44,7 @@ fn stored(sequence: u64, strip: Option<u64>, field: &str) -> Premise {
             "volumeDb" => "sequence.masterVolumeDb".into(),
             "pan" => return leaf(sequence, Vec::<String>::new()),
             "props.muted" => return leaf(sequence, Vec::<String>::new()),
-            field => field.replacen("props.mixer", "sequence.mixer.master_mixer", 1),
+            field => field.replacen("props.mixer", "sequence.mixer", 1),
         }
     };
     leaf(strip.unwrap_or(sequence), [field])

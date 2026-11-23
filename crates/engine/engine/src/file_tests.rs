@@ -1,4 +1,4 @@
-//! `.kfilm` save/open through the command interface: schema envelope, legacy upgrade, Save a Copy,
+//! `.kfilm` save/open through the command interface: the versioned envelope, Save a Copy,
 //! Revert.
 
 use super::*;
@@ -46,33 +46,32 @@ fn saved_file_is_versioned_and_save_copy_keeps_state() {
     let _ = std::fs::remove_dir_all(&d);
 }
 
+/// A saved project file opens; a file of another format version is refused clearly, and no
+/// backup or upgrade is made.
 #[test]
-fn legacy_project_opens_and_first_save_keeps_a_backup() {
-    let d = temp_dir("legacy");
-    let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../formats/format/tests/fixtures/v1-edit.kfilm");
-    let path = d.join("old.kfilm");
+fn project_file_opens_and_other_versions_are_refused() {
+    let d = temp_dir("versions");
+    let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../formats/format/tests/fixtures/edit.kfilm");
+    let path = d.join("edit.kfilm");
     std::fs::copy(&fixture, &path).unwrap();
     let p = path.to_string_lossy().to_string();
     let mut s = Session::default();
     let r = s.execute("file.open", json!({"path": p})).unwrap();
     assert_eq!(r["schemaVersion"], 1);
-    assert_eq!(r["migrated"], true);
     assert_eq!(s.project.name, "Legacy Edit");
-    assert!(s.drain_events().iter().any(|e| matches!(e, Event::Toast { message, .. } if message.contains("Upgraded"))));
     let r = s.execute("file.save", json!({})).unwrap();
-    let backup = r["backup"].as_str().unwrap().to_string();
-    assert!(backup.ends_with("old (schema v1 backup).kfilm"), "{backup}");
-    assert_eq!(std::fs::read(&backup).unwrap(), std::fs::read(&fixture).unwrap());
-    let v: Value = serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+    assert!(r.get("backup").is_none(), "{r}");
+    let saved = std::fs::read(&path).unwrap();
+    assert!(saved.starts_with(b"{\n  \"format\""), "the file is indented");
+    let mut v: Value = serde_json::from_slice(&saved).unwrap();
     assert_eq!(v["schema_version"], kition_film_format::SCHEMA_VERSION);
-    // Second save: no new backup.
-    assert!(s.execute("file.save", json!({})).unwrap()["backup"].is_null());
-    // A file from the future is refused clearly.
-    let mut v = v;
-    v["schema_version"] = json!(kition_film_format::SCHEMA_VERSION + 1);
-    std::fs::write(&path, serde_json::to_vec(&v).unwrap()).unwrap();
-    let e = Session::default().execute("file.open", json!({"path": p})).unwrap_err().to_string();
-    assert!(e.contains("newer version of Kition Film"), "{e}");
+    for version in [kition_film_format::SCHEMA_VERSION + 1, 13] {
+        v["schema_version"] = json!(version);
+        std::fs::write(&path, serde_json::to_vec(&v).unwrap()).unwrap();
+        let e = Session::default().execute("file.open", json!({"path": p})).unwrap_err().to_string();
+        assert!(e.contains("reads version 1 only"), "{e}");
+    }
+    assert_eq!(std::fs::read_dir(&d).unwrap().count(), 1, "no backup next to the file");
     let _ = std::fs::remove_dir_all(&d);
 }
 

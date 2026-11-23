@@ -227,7 +227,7 @@ fn source_marker_writes_compare_parent_routes_filtered_destinations_and_duration
         let marker = doc.execute("markers.add", json!({"target":"source","time":254_016_000_000i64})).unwrap()["marker"].as_u64().unwrap();
         let project = kition_film_format::decode(&doc.save(None).unwrap()).unwrap().project;
         let root = if source == sequence { sequence } else { media };
-        let path = if root == sequence { "sequence.markers" } else { "props.media.markers" };
+        let path = if root == sequence { "sequence.markers" } else { "markers" };
         for &(command, blind_path) in PATHS.iter().filter(|(_, path)| *path == "target=source") {
             assert!(compared_path(command, blind_path));
             for time in [0, 254_016_000_000i64, 762_048_000_000i64] {

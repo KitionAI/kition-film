@@ -114,7 +114,7 @@ fn picture(project: &Project, clip: &TrackItem, want: &mut Under) {
             if let kition_film_engine::project::ParamValue::Text(value) = &param.value
                 && let Some(id) = value.strip_prefix("lib:")
             {
-                let field = if id.bytes().all(|b| b.is_ascii_alphanumeric()) { format!("docState.luts[id={id}]") } else { "docState.luts".into() };
+                let field = if id.bytes().all(|b| b.is_ascii_alphanumeric()) { format!("luts[id={id}]") } else { "luts".into() };
                 want.premises.push(leaf(json!("project"), [field]));
             }
         }
@@ -142,6 +142,7 @@ fn render_consumers_compare_mix_graph_and_reference_frame_membership() {
                     "~audioTrackOrder",
                     "~submixTrackOrder",
                     "sequence.masterVolumeDb",
+                    "sequence.masterEffects",
                     "sequence.mixer",
                     "sequence.settings.settings.sample_rate",
                     "sequence.settings.settings.audio_master",

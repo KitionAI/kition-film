@@ -1,7 +1,7 @@
 {
   "kdm": 1,
   "kit": "kit.film",
-  "schemaVersion": 3,
+  "schemaVersion": 1,
   "root": "Project",
   "types": {
     "SearchPremises": {
@@ -56,7 +56,28 @@
         "name": { "kind": "string" },
         "settings": { "kind": "json" },
         "bins": { "kind": "tree", "of": "Bin" },
-        "docState": { "kind": "json", "optional": true }
+        "luts": { "kind": "list", "of": "Lut" },
+        "searchBins": { "kind": "list", "of": "SearchBin" }
+      }
+    },
+    "Lut": {
+      "batchIndependent": true,
+      "batchOps": { "*": { "direct": true } },
+      "fields": {
+        "id": { "kind": "string", "readOnly": true },
+        "name": { "kind": "string" },
+        "sourcePath": { "kind": "string", "optional": true },
+        "format": { "kind": "string", "readOnly": true },
+        "data": { "kind": "blob", "readOnly": true }
+      }
+    },
+    "SearchBin": {
+      "batchIndependent": true,
+      "batchOps": { "*": { "direct": true } },
+      "fields": {
+        "id": { "kind": "integer", "optional": true, "readOnly": true },
+        "name": { "kind": "string" },
+        "query": { "kind": "json" }
       }
     },
     "Bin": {
@@ -120,10 +141,44 @@
         "kind": { "kind": "enum", "values": ["media", "sequence", "subclip", "adjustment", "graphic"], "sample": false },
         "name": { "kind": "string" },
         "props": { "kind": "json", "optional": true },
+        "markers": { "kind": "list", "of": "Marker" },
         "sequence": { "kind": "ref", "of": "Sequence", "optional": true, "owns": true },
+        "transcript": { "kind": "ref", "of": "Transcript", "optional": true, "owns": true },
+        "sourceGraphic": { "kind": "ref", "of": "SourceGraphic", "optional": true, "owns": true },
         "itemId": { "kind": "integer", "optional": true, "readOnly": true }
       },
       "toolId": { "field": "itemId" }
+    },
+    "Transcript": {
+      "batchIndependent": true,
+      "batchOps": { "*": { "direct": true } },
+      "fields": {
+        "language": { "kind": "string" },
+        "source": { "kind": "string" },
+        "speakers": { "kind": "json" },
+        "words": { "kind": "json" }
+      }
+    },
+    "SourceGraphic": {
+      "batchIndependent": true,
+      "batchOps": { "*": { "direct": true } },
+      "fields": {
+        "layers": { "kind": "list", "of": "Effect" },
+        "meta": { "kind": "json", "optional": true }
+      }
+    },
+    "Marker": {
+      "batchIndependent": true,
+      "batchOps": { "*": { "direct": true } },
+      "fields": {
+        "id": { "kind": "integer", "optional": true, "readOnly": true },
+        "start": { "kind": "string", "display": { "kind": "time", "perSecond": 254016000000 } },
+        "duration": { "kind": "string", "display": { "kind": "time", "perSecond": 254016000000 } },
+        "name": { "kind": "string" },
+        "comment": { "kind": "text" },
+        "kind": { "kind": "enum", "values": ["Comment", "Chapter", "Segmentation", "WebLink", "FlashCue"] },
+        "color": { "kind": "enum", "values": ["Violet", "Iris", "Caribbean", "Lavender", "Cerulean", "Forest", "Rose", "Mango", "Purple", "Blue", "Teal", "Magenta", "Tan", "Green", "Brown", "Yellow"] }
+      }
     },
     "Sequence": {
       "batchIndependent": true,
@@ -134,10 +189,40 @@
         "videoTracks": { "kind": "list", "of": "Track" },
         "audioTracks": { "kind": "list", "of": "Track" },
         "submixTracks": { "kind": "list", "of": "Track" },
-        "captionTracks": { "kind": "json", "optional": true },
-        "markers": { "kind": "json", "optional": true },
+        "captionTracks": { "kind": "list", "of": "CaptionTrack" },
+        "markers": { "kind": "list", "of": "Marker" },
+        "masterEffects": { "kind": "list", "of": "Effect" },
         "mixer": { "kind": "json", "optional": true },
         "masterVolumeDb": { "kind": "number", "optional": true, "minimum": -96, "maximum": 15 }
+      }
+    },
+    "CaptionTrack": {
+      "batchIndependent": true,
+      "batchOps": { "*": { "direct": true } },
+      "fields": {
+        "id": { "kind": "integer", "optional": true, "readOnly": true },
+        "name": { "kind": "string" },
+        "format": { "kind": "enum", "values": ["Subtitle", "Cea608", "Cea708", "Teletext"] },
+        "language": { "kind": "string" },
+        "style": { "kind": "json" },
+        "enabled": { "kind": "boolean" },
+        "locked": { "kind": "boolean" },
+        "syncLock": { "kind": "boolean" },
+        "vttBlocks": { "kind": "json", "optional": true },
+        "captions": { "kind": "map", "of": "Caption", "owns": true }
+      }
+    },
+    "Caption": {
+      "batchIndependent": true,
+      "batchOps": { "*": { "direct": true } },
+      "fields": {
+        "id": { "kind": "integer", "optional": true, "readOnly": true },
+        "start": { "kind": "string", "display": { "kind": "time", "perSecond": 254016000000 } },
+        "duration": { "kind": "string", "display": { "kind": "time", "perSecond": 254016000000 } },
+        "text": { "kind": "text" },
+        "speaker": { "kind": "string", "optional": true },
+        "cueId": { "kind": "string", "optional": true },
+        "settings": { "kind": "string" }
       }
     },
     "Track": {
@@ -185,7 +270,7 @@
         "link": { "kind": "string", "optional": true },
         "group": { "kind": "string", "optional": true },
         "gain": { "kind": "json", "optional": true },
-        "markers": { "kind": "json", "optional": true },
+        "markers": { "kind": "list", "of": "Marker" },
         "props": { "kind": "json", "optional": true },
         "effects": { "kind": "list", "of": "Effect" },
         "clipId": { "kind": "integer", "optional": true, "readOnly": true, "position": true }
@@ -198,7 +283,12 @@
       "batchOps": { "*": { "direct": true } },
       "fields": {
         "def": { "kind": "string", "readOnly": true, "sample": false },
-        "params": { "kind": "json", "optional": true }
+        "enabled": { "kind": "boolean", "optional": true },
+        "params": { "kind": "map" },
+        "masks": { "kind": "json", "optional": true },
+        "postFader": { "kind": "boolean", "optional": true },
+        "audioMixing": { "kind": "boolean", "optional": true },
+        "layer": { "kind": "json", "optional": true }
       }
     },
     "Transition": {

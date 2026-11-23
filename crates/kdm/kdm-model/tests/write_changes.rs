@@ -122,7 +122,7 @@ fn a_clip_moved_across_tracks_keeps_its_object() {
         replica
             .transact(&Origin::person("user:test"), |tx| kdm_model::write_changes(tx, &before, &after, &mut ids, &mut nodes))
             .unwrap_or_else(|error| panic!("write_changes: {error}"));
-        let (read, _, _) = kdm_model::read_document(&replica).unwrap();
+        let (read, _, _) = kdm_model::read_document(&replica, &kition_kit::session::MemoryBlobs::default()).unwrap();
         common::assert_same_content(&read, &after);
         assert!(replica.exists(&object), "V{} -> V{}: the moved clip keeps its object", from + 1, to + 1);
         assert_eq!(ids.clips.object(moved), Some(&object), "V{} -> V{}: and its id mapping", from + 1, to + 1);
@@ -163,16 +163,17 @@ fn a_new_bin_writes_the_items_filed_into_it() {
     replica
         .transact(&Origin::person("user:test"), |tx| kdm_model::write_changes(tx, &project, &after, &mut ids, &mut nodes))
         .unwrap_or_else(|error| panic!("write_changes: {error}"));
-    let (read, _, _) = kdm_model::read_document(&replica).unwrap();
+    let (read, _, _) = kdm_model::read_document(&replica, &kition_kit::session::MemoryBlobs::default()).unwrap();
     assert_eq!(item_bins(&read), item_bins(&after), "every item is in its new bin in the replica");
 }
 
-/// `read_document`'s `next_id` is past every id the project holds, also those kept only as data
-/// in an opaque register (markers, links, groups, caption tracks and captions, LUTs, search
-/// bins): a reload must never hand one of them out again.
+/// `read_document`'s `next_id` is past every id the project holds in the reading actor's own slot
+/// (`kdm_model::slot_base`), also those kept only as data (markers, links, groups, caption tracks
+/// and captions, LUTs, search bins): a reload must never hand one of them out again.
 #[test]
 fn next_id_after_a_read_is_past_ids_kept_as_data() {
     use kition_film_project::{Marker, MarkerId};
+    let base = kdm_model::slot_base(ActorId::from_u64(1).unwrap()) + 50_000;
     let marker = |id: u64| Marker {
         id: MarkerId(id),
         start: kition_film_time::Tick::ZERO,
@@ -183,32 +184,32 @@ fn next_id_after_a_read_is_past_ids_kept_as_data() {
         color: kition_film_project::Label::Iris,
     };
     let edits: Vec<(&str, Box<dyn Fn(&mut kition_film_project::Project, kition_film_project::ItemId, kition_film_project::ItemId)>)> = vec![
-        ("sequence marker", Box::new(move |p, _, seq| p.sequence_mut(seq).unwrap().markers.push(marker(50_000)))),
-        ("clip marker", Box::new(move |p, _, seq| p.sequence_mut(seq).unwrap().video_tracks[0].items[0].markers.push(marker(50_000)))),
+        ("sequence marker", Box::new(move |p, _, seq| p.sequence_mut(seq).unwrap().markers.push(marker(base)))),
+        ("clip marker", Box::new(move |p, _, seq| p.sequence_mut(seq).unwrap().video_tracks[0].items[0].markers.push(marker(base)))),
         (
             "media marker",
             Box::new(move |p, media, _| {
                 if let kition_film_project::ItemKind::Media(m) = &mut p.items.get_mut(&media).unwrap().kind {
-                    m.markers.push(marker(50_000));
+                    m.markers.push(marker(base));
                 }
             }),
         ),
-        ("link", Box::new(|p, _, seq| p.sequence_mut(seq).unwrap().video_tracks[0].items[0].link = Some(50_000))),
-        ("group", Box::new(|p, _, seq| p.sequence_mut(seq).unwrap().video_tracks[0].items[0].group = Some(50_000))),
+        ("link", Box::new(move |p, _, seq| p.sequence_mut(seq).unwrap().video_tracks[0].items[0].link = Some(base))),
+        ("group", Box::new(move |p, _, seq| p.sequence_mut(seq).unwrap().video_tracks[0].items[0].group = Some(base))),
         (
             "caption track",
-            Box::new(|p, _, seq| {
-                let track = kition_film_project::caption::CaptionTrack::new(kition_film_project::TrackId(50_000), "Subtitles".into(), Default::default());
+            Box::new(move |p, _, seq| {
+                let track = kition_film_project::caption::CaptionTrack::new(kition_film_project::TrackId(base), "Subtitles".into(), Default::default());
                 p.sequence_mut(seq).unwrap().caption_tracks.push(track);
             }),
         ),
         (
             "caption",
-            Box::new(|p, _, seq| {
+            Box::new(move |p, _, seq| {
                 let mut track =
                     kition_film_project::caption::CaptionTrack::new(kition_film_project::TrackId(p.alloc_id()), "Subtitles".into(), Default::default());
                 track.captions.push(kition_film_project::caption::Caption {
-                    id: kition_film_project::ClipId(50_000),
+                    id: kition_film_project::ClipId(base),
                     start: kition_film_time::Tick::ZERO,
                     duration: kition_film_time::Tick(1000),
                     text: "Hi".into(),
@@ -221,9 +222,9 @@ fn next_id_after_a_read_is_past_ids_kept_as_data() {
         ),
         (
             "lut",
-            Box::new(|p, _, _| {
+            Box::new(move |p, _, _| {
                 p.luts.push(kition_film_project::ProjectLut {
-                    id: "lut50000".into(),
+                    id: format!("lut{base}"),
                     name: "Look".into(),
                     source_path: None,
                     format: "cube".into(),
@@ -233,9 +234,9 @@ fn next_id_after_a_read_is_past_ids_kept_as_data() {
         ),
         (
             "search bin",
-            Box::new(|p, _, _| {
+            Box::new(move |p, _, _| {
                 p.search_bins.push(kition_film_project::find::SearchBin {
-                    id: kition_film_project::BinId(50_000),
+                    id: kition_film_project::BinId(base),
                     name: "Find".into(),
                     query: kition_film_project::find::FindQuery { rows: Vec::new(), match_all: true, case_sensitive: false },
                 })
@@ -248,9 +249,36 @@ fn next_id_after_a_read_is_past_ids_kept_as_data() {
         add_clip(&mut project, sequence, media, kition_film_time::Tick::ZERO, rate.tick_of(24));
         edit(&mut project, media, sequence);
         let (replica, _, _) = new_replica(&project);
-        let (read, _, _) = kdm_model::read_document(&replica).unwrap();
-        assert!(read.next_id > 50_000, "{what}: next_id {} is past the id it keeps", read.next_id);
+        let blobs = lut_blobs(&project);
+        let (read, _, _) = kdm_model::read_document(&replica, &blobs).unwrap();
+        assert!(read.next_id > base, "{what}: next_id {} is past the id it keeps", read.next_id);
     }
+}
+
+/// An id in another actor's slot is not counted: a link a peer minted never moves this actor's
+/// counter into the peer's slot, where both would then mint the same link and group ids.
+#[test]
+fn next_id_after_a_read_stays_in_the_actors_own_slot() {
+    let (mut project, media, sequence) = demo_project();
+    let rate = project.sequence(sequence).unwrap().settings.frame_rate;
+    add_clip(&mut project, sequence, media, kition_film_time::Tick::ZERO, rate.tick_of(24));
+    let own = kdm_model::slot_base(ActorId::from_u64(1).unwrap());
+    let peer = kdm_model::slot_base(ActorId::from_u64(2).unwrap());
+    assert_ne!(own, peer);
+    project.sequence_mut(sequence).unwrap().video_tracks[0].items[0].link = Some(peer + 7);
+    let (replica, _, _) = new_replica(&project);
+    let (read, _, _) = kdm_model::read_document(&replica, &kition_kit::session::MemoryBlobs::default()).unwrap();
+    assert_eq!(read.next_id, own, "the read starts at its own slot, not past the peer's link");
+}
+
+/// The text of `project`'s LUTs, as a session keeps it.
+fn lut_blobs(project: &kition_film_project::Project) -> kition_kit::session::MemoryBlobs {
+    use kition_kit::session::BlobSink;
+    let mut blobs = kition_kit::session::MemoryBlobs::default();
+    for lut in &project.luts {
+        blobs.put(lut.text.as_bytes(), "text/plain");
+    }
+    blobs
 }
 
 /// Removing the middle of a clip's three (intrinsic) effects deletes exactly that effect's own

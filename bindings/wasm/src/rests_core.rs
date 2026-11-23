@@ -676,7 +676,7 @@ pub fn under(session: &Session, command: &str, params: &Value) -> Option<Under> 
         current = *parent;
     }
     let sequence = session.project.sequence(view.media).is_some();
-    let markers = if sequence { "sequence.markers" } else { "props.media.markers" };
+    let markers = if sequence { "sequence.markers" } else { "markers" };
     let fields = match command {
         "markers.edit" => {
             let marker = params.get("marker").and_then(Value::as_u64)?;

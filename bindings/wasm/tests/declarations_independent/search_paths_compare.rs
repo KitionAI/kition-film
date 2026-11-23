@@ -107,7 +107,7 @@ fn search_bins_compare_live_results_query_precedence_column_spellings_and_full_r
                                 }
                             } else {
                                 want.objects.push(json!("project"));
-                                want.premises.push(Premise::on(json!("project")).fields([format!("docState.search_bins[id={bin}]")]));
+                                want.premises.push(Premise::on(json!("project")).fields([format!("searchBins[id={bin}]")]));
                             }
                             if command != "project.deleteSearchBin" {
                                 let columns: Vec<_> = if let Some(rows) = p["rows"].as_array() {

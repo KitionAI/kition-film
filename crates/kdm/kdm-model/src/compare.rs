@@ -23,8 +23,8 @@ struct Maps {
 /// An id-blind copy of `project`: every `BinId`/`ItemId`/`TrackId`/`ClipId`/`TransitionId`
 /// renumbered from 1 in a deterministic traversal order, with every reference to one of them (a
 /// subclip's parent, a clip's item, a transition's clip, a multicam camera's track/source, a
-/// merged clip's items, `docState`'s transcripts/sourceGraphics keys) rewritten to match. Two
-/// projects with the same content normalize to the same value regardless of which concrete ids
+/// merged clip's items, the items transcripts and source graphics belong to) rewritten to match.
+/// Two projects with the same content normalize to the same value regardless of which concrete ids
 /// either happens to hold.
 pub fn normalize(project: &Project) -> Project {
     let mut maps = Maps::default();

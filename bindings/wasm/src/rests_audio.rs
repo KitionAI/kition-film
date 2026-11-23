@@ -69,6 +69,7 @@ pub fn under(session: &Session, command: &str, params: &Value) -> Option<Under> 
                     "~audioTrackOrder",
                     "~submixTrackOrder",
                     "sequence.masterVolumeDb",
+                    "sequence.masterEffects",
                     "sequence.mixer",
                     "sequence.settings.settings.sample_rate",
                     "sequence.settings.settings.audio_master",
@@ -91,7 +92,7 @@ pub fn under(session: &Session, command: &str, params: &Value) -> Option<Under> 
             }
         }
         // transcript.generate replaces the transcripts of its resolved media.
-        answer.premises.push(Premise::on(json!("project")).fields(["docState.transcripts"]).positions(Vec::<String>::new()));
+        answer.premises.extend(super::rests_transcript::transcripts(session));
     }
     Some(answer)
 }
@@ -151,7 +152,7 @@ fn analysis(session: &Session, command: &str, params: &Value) -> Option<Under> {
         }
         if scene {
             let root = session.project.resolve_media(clip.item).map(|(id, _, _)| id).unwrap_or(clip.item);
-            answer.premises.push(need(root.0, &["name", "props.common.label", "props.media.markers"]));
+            answer.premises.push(need(root.0, &["name", "props.common.label", "markers"]));
             if params.get("applyCuts").and_then(Value::as_bool) != Some(false) {
                 answer.premises.push(need(owner.0, &["transitions"]));
                 answer.premises.push(need(id.0, &["~linkedGroup"]));

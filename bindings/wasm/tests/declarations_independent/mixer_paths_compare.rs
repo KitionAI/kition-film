@@ -59,9 +59,9 @@ fn strip_field(sequence: u64, strip: Option<u64>, name: &str) -> Option<Premise>
     let physical = match name {
         "volumeDb" => "sequence.masterVolumeDb".into(),
         "props.channels" => "sequence.settings.settings.audio_master".into(),
-        "effects" => "sequence.mixer.master_effects".into(),
-        s if s.starts_with("effects.") => s.replacen("effects.", "sequence.mixer.master_effects.", 1),
-        s if s.starts_with("props.mixer") => s.replacen("props.mixer", "sequence.mixer.master_mixer", 1),
+        "effects" => "sequence.masterEffects".into(),
+        s if s.starts_with("effects.") => s.replacen("effects.", "sequence.masterEffects.", 1),
+        s if s.starts_with("props.mixer") => s.replacen("props.mixer", "sequence.mixer", 1),
         _ => return None,
     };
     Some(leaf(sequence, [physical]))
@@ -205,18 +205,17 @@ fn inserts_sends_and_lanes_compare_index_fields_parameter_types_and_keyframe_rou
                                 "mixer.addInsert" | "mixer.removeInsert" => fields.push("effects".into()),
                                 "mixer.setInsert" => {
                                     fields.push(format!("effects.{index}.def"));
-                                    let prefix = if strip.is_none() { "" } else { "params." };
                                     if mask & 1 != 0 {
                                         p["enabled"] = json!(false);
-                                        fields.push(format!("effects.{index}.{prefix}enabled"));
+                                        fields.push(format!("effects.{index}.enabled"));
                                     }
                                     if mask & 2 != 0 {
                                         p["postFader"] = json!(true);
-                                        fields.push(format!("effects.{index}.{prefix}post_fader"));
+                                        fields.push(format!("effects.{index}.postFader"));
                                     }
                                     if mask & 4 != 0 {
                                         p["params"] = json!({"wet":15,"room":25});
-                                        fields.extend(["wet", "room"].map(|param| format!("effects.{index}.{prefix}params.{param}.value")));
+                                        fields.extend(["wet", "room"].map(|param| format!("effects.{index}.params.{param}.value")));
                                     }
                                 }
                                 "mixer.addSend" | "mixer.removeSend" => {
@@ -242,7 +241,7 @@ fn inserts_sends_and_lanes_compare_index_fields_parameter_types_and_keyframe_rou
                                     if let Some(rest) = lane.strip_prefix("fx.") {
                                         let (slot, param) = rest.split_once('.').unwrap();
                                         fields.push(format!("effects.{slot}.def"));
-                                        fields.push(format!("effects.{slot}.{}params.{param}", if strip.is_none() { "" } else { "params." }));
+                                        fields.push(format!("effects.{slot}.params.{param}"));
                                     } else {
                                         fields.push(if lane.contains('.') { "props.mixer.lanes".into() } else { format!("props.mixer.lanes.{lane}") });
                                         fields.push(match lane {

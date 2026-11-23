@@ -72,7 +72,7 @@ fn transcript_paths_compare_all_source_routes_word_operations_and_empty_audio_me
             assert!(spec.name_params.is_empty() && spec.name_field.is_none() && spec.index.is_none() && !spec.index_numbers && !spec.index_reversed);
             for target in [None, Some(source), Some(sub)] {
                 let mut params = json!({"from":0,"to":0});
-                let mut want = Under { premises: vec![leaf(json!("project"), ["docState.transcripts"])], ..Default::default() };
+                let mut want = Under { premises: project.items.keys().map(|id| leaf(json!(id.0), ["transcript"])).collect(), ..Default::default() };
                 if sources {
                     if let Some(id) = target {
                         params[if command == "transcript.delete" { "items" } else { "item" }] =

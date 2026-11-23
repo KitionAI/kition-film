@@ -661,7 +661,7 @@ impl KitDocument for FilmDocument {
             {
                 return Ok(Some(kition_kit::Under {
                     objects: vec![json!("project")],
-                    premises: vec![kition_kit::Premise::on(json!("project")).fields([format!("docState.search_bins[id={id}]")])],
+                    premises: vec![kition_kit::Premise::on(json!("project")).fields([format!("searchBins[id={id}]")])],
                     ..Default::default()
                 }));
             }
@@ -675,7 +675,11 @@ impl KitDocument for FilmDocument {
                     if track == kition_film_engine::project::mixer::MASTER_STRIP {
                         if let Some(item) = self.session.state.active_sequence {
                             under.objects.push(json!(item.0));
-                            under.premises.push(kition_kit::Premise::on(json!(item.0)).fields(["sequence.masterVolumeDb", "sequence.mixer"]));
+                            under.premises.push(kition_kit::Premise::on(json!(item.0)).fields([
+                                "sequence.masterVolumeDb",
+                                "sequence.masterEffects",
+                                "sequence.mixer",
+                            ]));
                         }
                     } else {
                         under.objects.push(json!(track.0));
@@ -945,7 +949,7 @@ impl KitDocument for FilmDocument {
 
     fn save(&self, _name: Option<&str>) -> Result<Vec<u8>, String> {
         let view = self.session.project_view();
-        Ok(kition_film_format::encode_with_view(&self.session.project, Some(&view), false))
+        Ok(kition_film_format::encode_with_view(&self.session.project, Some(&view), true))
     }
 
     fn mark_saved(&mut self) {
@@ -1481,12 +1485,12 @@ pub mod web {
             self.0.execute_as(command, params, &origin).map(|value| value.to_string()).map_err(error)
         }
 
-        /// Every blob the replica references: always empty, Film never embeds one.
-        pub fn blobs(&self) -> Result<Vec<u8>, JsError> {
+        /// Every blob the replica references: the text of the project's LUTs.
+        pub fn blobs(&mut self) -> Result<Vec<u8>, JsError> {
             self.0.blobs().map_err(error)
         }
 
-        /// Adds a peer's blobs: a no-op, Film never embeds one.
+        /// Adds a peer's blobs (from their `blobs()`), before the changes that reference them.
         #[wasm_bindgen(js_name = addBlobs)]
         pub fn add_blobs(&mut self, bytes: &[u8]) -> Result<(), JsError> {
             self.0.add_blobs(bytes).map_err(error)

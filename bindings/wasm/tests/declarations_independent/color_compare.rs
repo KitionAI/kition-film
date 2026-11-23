@@ -83,11 +83,8 @@ fn color_paths_compare_video_eligibility_preferred_effects_library_refs_and_all_
                             reference.trim().strip_prefix("lib:")
                         };
                         if let Some(id) = library {
-                            let field = if !id.is_empty() && id.bytes().all(|byte| byte.is_ascii_alphanumeric()) {
-                                format!("docState.luts[id={id}]")
-                            } else {
-                                "docState.luts".into()
-                            };
+                            let field =
+                                if !id.is_empty() && id.bytes().all(|byte| byte.is_ascii_alphanumeric()) { format!("luts[id={id}]") } else { "luts".into() };
                             expected.premises.push(Premise::on(json!("project")).fields([field]).positions(Vec::<String>::new()));
                         }
                         if !remove {
