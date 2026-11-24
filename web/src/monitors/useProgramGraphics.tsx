@@ -1088,7 +1088,10 @@ export function useProgramGraphics(options: Options) {
           const boxes = clipBoxes.current
           const chosen = boxes.frames.find((each) => each.clip === boxes.selected)
           const pl = chosen && shownView ? placementOf(chosen, size, shownView) : null
-          const grab = pl ? grabAt(pl, press) : null
+          // Inside the box, a clip shown over it is the one the pointer is on: that one is taken.
+          const over = shownView ? clipUnder(boxes.frames, size, shownView, press) : null
+          const covered = chosen != null && over != null && boxes.frames.indexOf(over) < boxes.frames.indexOf(chosen)
+          const grab = pl && !(covered && grabAt(pl, press)?.kind === 'move') ? grabAt(pl, press) : null
           if (chosen && pl && grab && grab.kind !== 'move') startBox(chosen, pl, grab)
           else if (hit && grant.layer.usable) {
             // Upstream ends the edit, selects the layer if it is not, and moves it.
@@ -1099,7 +1102,7 @@ export function useProgramGraphics(options: Options) {
           } else if (chosen && pl && grab) startBox(chosen, pl, grab)
           else if (!hit && shownView) {
             // Another clip's picture: it is selected and moves with the drag.
-            const under = clipUnder(boxes.frames, size, shownView, press)
+            const under = over
             const placed = under ? placementOf(under, size, shownView) : null
             if (under && placed) {
               endEdit()

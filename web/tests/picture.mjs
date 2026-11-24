@@ -230,6 +230,97 @@ try {
   }
   assert.ok(await until(async () => JSON.stringify((await motion(10)).position) === JSON.stringify(before.position)), 'undone')
 
+  /** A move drag of the selected clip from inside its box by (dx, dy): the box must follow the pointer, the picture change, and the drag be one undo step; then it is undone. */
+  const moveFollows = async (label, dx, dy) => {
+    const at = await settledBox()
+    const from = await motion(10)
+    const steps3 = await undoSteps()
+    const was = await picture()
+    let changed = false
+    await drag(inBox(at), { x: inBox(at).x + dx, y: inBox(at).y + dy }, async () => {
+      changed = await until(async () => (await picture()) !== was, 20)
+    })
+    assert.ok(changed, `${label}: the picture changes during the drag`)
+    assert.ok(await until(async () => (await undoSteps()) === steps3 + 1), `${label}: one undo step`)
+    const to = await settledBox()
+    assert.ok(near(to.quad[0].x - at.quad[0].x, dx, 3) && near(to.quad[0].y - at.quad[0].y, dy, 3), `${label}: the box followed the pointer (${to.quad[0].x - at.quad[0].x}, ${to.quad[0].y - at.quad[0].y})`)
+    await undo()
+    assert.ok(await until(async () => JSON.stringify((await motion(10)).position) === JSON.stringify(from.position)), `${label}: undone`)
+  }
+
+  // Magnified to 200% and scrolled: the box is where the picture is, and a drag follows the pointer.
+  await kit.getByTestId('film-program-zoom').click()
+  await kit.getByTestId('film-program-zoom-200').click()
+  assert.ok(await until(async () => (await kit.getByTestId('film-program-zoom').textContent()) === '200%'), 'at 200%')
+  await page.mouse.move(middle.x, middle.y)
+  await page.mouse.wheel(60, 40)
+  await page.waitForTimeout(300)
+  const zoomedBox = await settledBox()
+  assert.ok(zoomedBox && zoomedBox.quad[1].x - zoomedBox.quad[0].x > (box.quad[1].x - box.quad[0].x) * 1.5, 'the box is drawn magnified')
+  await moveFollows('at 200%, scrolled', -50, 30)
+  await shot('picture-zoomed')
+  await kit.getByTestId('film-program-zoom').click()
+  await kit.getByTestId('film-program-zoom-fit').click()
+  assert.ok(await until(async () => (await kit.getByTestId('film-program-zoom').textContent()) === zh('Fit')), 'back to Fit')
+
+  // At 1/2 Paused Resolution: the same.
+  const half = kit.getByTestId('film-program-settings-pausedRes-half')
+  for (let attempt = 0; attempt < 4 && !(await half.isVisible().catch(() => false)); attempt += 1) {
+    if ((await kit.locator('[role="menu"]').count()) === 0) await kit.getByTestId('film-program-settings').click()
+    await kit.locator('[data-kit-ui-id="menu:View/Paused Resolution"]').hover({ timeout: 3000 }).catch(() => undefined)
+    await page.waitForTimeout(200)
+  }
+  await half.click()
+  assert.ok(await until(async () => (await kit.getByTestId('film-program').getAttribute('data-render-scale')) === '0.5'), 'the Program renders at 1/2')
+  await moveFollows('at 1/2 resolution', 70, -20)
+
+  // A clip on V2 over V1: a click selects the top-most under the pointer; a click off it selects V1's.
+  await person('timeline.place', { item: 8, track: 'V2', seconds: 0 })
+  const top = async () => (await sequence()).video[1].items[0]?.clip ?? null
+  assert.ok(await until(async () => (await top()) != null), 'set up: a clip on V2')
+  const upper = await top()
+  await person('effects.setParam', { clip: upper, effect: 'motion', param: 'scale', value: 150 })
+  await person('timeline.select', { clips: [] })
+  await page.mouse.click(middle.x, middle.y)
+  assert.ok(await until(async () => (await selection()).includes(upper) && !(await selection()).includes(10)), `the top-most clip under the pointer is selected: ${await selection()}`)
+  assert.ok(await until(async () => (await clipBox())?.clip === upper), 'and shows its box')
+  const lower = await settledBox()
+  await page.mouse.click(lower.quad[0].x - 20, lower.quad[0].y - 10)
+  assert.ok(await until(async () => (await selection()).includes(10) && !(await selection()).includes(upper)), `beside it, V1's clip is selected: ${await selection()}`)
+  // Pressing on V2's clip while V1's is selected selects it and moves it at once.
+  const v2Before = (await motion(upper)).position
+  await drag({ x: middle.x + 10, y: middle.y + 8 }, { x: middle.x + 60, y: middle.y + 8 })
+  assert.ok(await until(async () => (await selection()).includes(upper) && (await motion(upper)).position[0] > v2Before[0] + 50), `a drag on the other clip's picture selects and moves it: ${JSON.stringify((await motion(upper)).position)}`)
+  await shot('picture-two-clips')
+
+  // A locked track's clip refuses, in Chinese, and stays.
+  await kit.getByTestId('film-track-V2-lock').click()
+  assert.ok(await until(async () => (await sequence()).video[1].locked === true), 'V2 is locked')
+  const lockedAt = (await motion(upper)).position
+  const lockedBox = await settledBox()
+  await drag(inBox(lockedBox), { x: inBox(lockedBox).x + 40, y: inBox(lockedBox).y })
+  const refusal = await message()
+  assert.ok(refusal.includes(zh('track is locked')), `the locked track says so in Chinese: ${refusal}`)
+  assert.ok(!/`|effects\.setParam|not available/.test(refusal), `no command id or English: ${refusal}`)
+  assert.deepEqual((await motion(upper)).position, lockedAt, 'the clip stays')
+  await kit.getByTestId('film-track-V2-lock').click()
+  assert.ok(await until(async () => (await sequence()).video[1].locked === false), 'V2 unlocked')
+
+  // Cmd+Right with the Program monitor focused nudges the selected clip one pixel (upstream's Nudge Selected Object).
+  const upperBox = await settledBox()
+  await page.mouse.click(inBox(upperBox).x, inBox(upperBox).y)
+  const nudgeFrom = (await motion(upper)).position
+  await page.keyboard.press(`${mod}+ArrowRight`)
+  assert.ok(await until(async () => near((await motion(upper)).position[0], nudgeFrom[0] + 1, 1e-6)), `Cmd+Right nudges it: ${JSON.stringify((await motion(upper)).position)} from ${JSON.stringify(nudgeFrom)}`)
+
+  // Keyframed Position: a drag at another time writes a keyframe at the playhead.
+  await person('effects.toggleAnimation', { clip: upper, effect: 'motion', param: 'position' })
+  assert.ok(await until(async () => (await motion(upper)).keyframes === 1), 'set up: Position animated, one keyframe')
+  await person('playhead.set', { frame: 20 })
+  const keyedBox = await settledBox()
+  await drag(inBox(keyedBox), { x: inBox(keyedBox).x - 40, y: inBox(keyedBox).y + 20 })
+  assert.ok(await until(async () => (await motion(upper)).keyframes === 2), `a drag at frame 20 adds a keyframe there: ${(await motion(upper)).keyframes}`)
+
   assert.deepEqual(errors, [], 'no page errors')
   console.log(`picture ${which}: ok`)
 } finally {
