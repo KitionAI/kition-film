@@ -552,3 +552,12 @@ features:
     gap: "Single-threaded WebAssembly decodes on the editor's worker: a frame seconds from a keyframe of 1080p H.264 still takes about a second to become exact (decoding in a worker pool or with the browser's WebCodecs would cut it). Playback is a seek and a render per frame, with no prefetch."
     cases: [film.monitor.scrub/by-hand]
     since: "2026-11-24"
+  - id: film.media.in-out
+    title: "Media in and film out by hand: File ▸ Export ▸ Media… opens an Export dialog on the active sequence (named), with the range (the whole sequence or In to Out), the frame size (the sequence's or a preset of its shape), the frame rate, the quality (default, constant quality or a bitrate) and the file it writes beside the project; its progress with the percentage and time left, Cancel that stops the job, and the result or the failure in the person's language; the app bar's Export MP4 still exports at once. The Project panel's Import… and a double-click on its empty space take several files at once and import them in one go, with one status message that names each file that did not come in and why; files dropped from the computer on the Project panel are written beside the project and imported, on the Timeline also placed where they landed; F2 renames the selected item in the Project panel"
+    dimension: [function]
+    priority: P0
+    status: partial
+    paths: [web/src/dialogs/ExportDialog.tsx, web/src/dialogs/exportModel.ts, web/src/movie.ts, web/src/session/imports.ts, web/src/panels/ProjectPanel.tsx, web/src/timeline/useGestures.ts, web/src/App.tsx, web/tests/media.mjs]
+    gap: "File ▸ Import… and Cmd+I still pick one file: they ask with the Kit UI protocol's host/pick, which the protocol has replaced and which answers one path; the multiple choice goes through links/pick (the scenario F06 holds host/pick by name). A file dropped from the computer is read whole into the page and written through the host's write of a new file beside the project (host/write mode export), which the protocol has replaced with files/create and files/write; those answer a handle, and the engine needs a path it can lend. A desktop host's files/dropped (read handles) is not taken for the same reason. The engine keeps one undo step per imported file. The export is H.264 MP4 only, named after the project."
+    cases: [film.media.in-out/export-dialog, film.media.in-out/import-and-drop]
+    since: "2026-11-24"

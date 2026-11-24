@@ -4406,3 +4406,59 @@ button.film-project-tab {
   outline: 2px solid var(--kit-primary);
   outline-offset: -2px;
 }
+
+/* File ▸ Export ▸ Media…'s dialog (dialogs/ExportDialog.tsx). */
+.film-export {
+  display: flex;
+  flex-direction: column;
+  min-width: 420px;
+}
+
+.film-export-row > span:first-child {
+  flex: none;
+  width: 72px;
+}
+
+.film-export-target,
+.film-export-summary,
+.film-export-result {
+  margin: 10px 0 0;
+}
+
+.film-export-result[data-result='failed'] {
+  color: var(--kui-danger, var(--kui-text));
+}
+
+.film-export-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.film-export-progress .film-status-job-bar {
+  flex: 1;
+  width: auto;
+}
+
+/* Files from the computer dragged over the Project panel (ProjectPanel.tsx). */
+.film-project {
+  position: relative;
+}
+
+.film-project[data-files-over] {
+  outline: 2px dashed var(--kit-primary);
+  outline-offset: -3px;
+}
+
+.film-project-files-over {
+  position: absolute;
+  inset: auto 8px 40px 8px;
+  z-index: 2;
+  padding: 6px 10px;
+  border-radius: 4px;
+  background: var(--kit-surface);
+  color: var(--kit-text);
+  text-align: center;
+  pointer-events: none;
+}

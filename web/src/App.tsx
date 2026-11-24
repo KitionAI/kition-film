@@ -34,7 +34,8 @@ import { IMPORT_TYPES, MEDIA_TYPES, VIDEO_TYPES, TICKS_PER_SECOND, describe, pro
 import { jobStatus } from './session/jobPump'
 import { FilmAudioPlayer } from './audio'
 import { FaultBoundary } from './FaultBoundary'
-import { exportMovie, type ExportProgress } from './movie'
+import { exportMovie, exportTarget, type ExportOptions, type ExportProgress } from './movie'
+import { ExportDialog, type ExportJob } from './dialogs/ExportDialog'
 import { SequenceRows, SequenceTabs, TimelinePanel } from './timeline/TimelinePanel'
 import { createTimelineView, useTimelineView, type TimelineViewStore } from './timeline/view'
 import { createTimelineMedia, type TimelineMedia } from './timeline/media'
@@ -56,6 +57,7 @@ import { ProgramMonitor } from './monitors/ProgramMonitor'
 import { createProxiesRead, useProxies, useSourceView, type ProxiesRead } from './monitors/useMonitorReads'
 import { createInvoke, type InvokeOptions } from './session/invoke'
 import { personMessage } from './session/errors'
+import { importMessage, importReport, type ImportFailure, type ImportReport } from './session/imports'
 import { closeGapTrack } from './timeline/closeGap'
 import { createPreviewGate, type PreviewGate } from './session/previewGate'
 import { applyEvents, type EngineEvent } from './session/events'
@@ -80,7 +82,7 @@ import { HistoryPanel } from './panels/HistoryPanel'
 import { InfoPanel } from './panels/InfoPanel'
 import { createMeterFeed, type MeterFeed } from './panels/meters'
 import { ProjectMenu } from './panels/projectMenus'
-import { FLOATING_BINS, binWindowFocus, binWindowOf, createProjectUi, findBin, shownBin, windowFocusFallback, type ProjectUi, type ProjectView } from './panels/projectModel'
+import { FLOATING_BINS, binWindowFocus, binWindowOf, createProjectUi, focusedPanel, findBin, shownBin, windowFocusFallback, type ProjectUi, type ProjectView } from './panels/projectModel'
 import { shareTurnReads } from './panels/sharedRead'
 import { giveKeysBack } from './workspace/editorFocus'
 import { firstSizeReports, watchFloatingBoxes } from './workspace/floatingBoxes'
@@ -182,6 +184,12 @@ type Live = {
   status: (text: string) => void
   /** The status bar for engine and error text (`errorStatus`): translated when the catalog has it, never noted as a missing label. */
   errorStatus: (text: string) => void
+  /**
+   * Files the person dropped from their computer (`File` objects, KitPointer 1.0 section 9): each
+   * written beside the project through the host, then all imported in one go into `bin`;
+   * answers the new items, in the order dropped.
+   */
+  dropFiles: (files: readonly File[], bin: number | null) => Promise<number[]>
   /** Why an edit command would be refused now (a dialog's preview is open, `previewGate.ts`), or null. */
   editRefusal: (id: string) => string | null
   /** Moves the program playhead to `ticks` and refreshes the editor. */
@@ -373,6 +381,7 @@ function TimelinePart() {
       phrase={live.phrase}
       t={live.t}
       doc={live.doc}
+      dropFiles={(files) => live.dropFiles(files, null)}
     />
   )
 }
@@ -456,6 +465,8 @@ function ProjectPart() {
       notAvailable={notAvailable}
       status={live.status}
       errorStatus={live.errorStatus}
+      dropFiles={live.dropFiles}
+      dropHint={live.t('import.dropHere')}
     />
   )
 }
@@ -789,7 +800,13 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
   // The name of the sequence an export in progress writes, which the status bar shows with its progress.
   const [exporting, setExporting] = useState<string | null>(null)
   const abort = useRef<AbortController | null>(null)
+  // File ▸ Export ▸ Media…'s dialog and where its export is (null: closed).
+  const [exportDialog, setExportDialog] = useState<ExportJob | null>(null)
   const canPick = host.init.capabilities.includes('pick-file')
+  // The host's chooser of workspace files to link, several at once (`links/pick`, UI-N2).
+  const canPickMany = host.init.capabilities.includes('links-pick')
+  const dropFilesNow = useRef<(files: readonly File[], bin: number | null) => Promise<number[]>>(async () => [])
+  const importFilesNow = useRef<(paths: string[], bin: number | null) => Promise<{ result: { items?: number[]; errors?: string[] } | null; report: ImportReport }>>(async () => ({ result: null, report: { imported: 0, items: [], failures: [] } }))
   /** The project's folder, which picked files are named relative to (as File ▸ Import names them). */
   const projectFolder = () => host.init.document.path.split('/').filter(Boolean).slice(0, -1).join('/')
   // The tool (upstream's `app.ui.tool`, a manifest id), which the Tools panel, the timeline, and the status bar's hint read.
@@ -807,6 +824,8 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
     return () => window.clearTimeout(timer)
   }, [message])
   const query = editor.query
+  // The Export dialog reads the sequence it is to export (its size, rate, In and Out).
+  const inspectSequence = useCallback((sequence: number) => query('sequence.inspect', { item: sequence }).catch(() => null), [query])
   // Guide templates: in the engine's preferences (`prefs.guides.templates`, as upstream's), kept
   // across reloads and pages with every preference (`session/prefsSync.ts`).
   // Read and written with the preferences' revision (`prefsValue`, the conditional `loadPrefs`), so
@@ -1398,18 +1417,31 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
           }),
     })
 
-  const exportStart = async () => {
+  /**
+   * Runs the stepped MP4 export: the one-click Export MP4 with no options (the active sequence,
+   * In to Out when marked, else all of it), the Export dialog with its own (`ExportOptions`,
+   * `sequence` the name it shows). `report` hears how it ended, for the dialog.
+   */
+  const exportStart = async (options: ExportOptions = {}, named?: string, report?: (job: ExportJob) => void) => {
     if (!session.doc || abort.current) return
     const controller = new AbortController()
     abort.current = controller
-    const sequence = stateNow.current?.name ?? ''
+    const sequence = named ?? stateNow.current?.name ?? ''
     setExporting(sequence || null)
     setProgress({ fraction: 0, secondsLeft: null })
+    report?.({ phase: 'running', progress: { fraction: 0, secondsLeft: null } })
     try {
-      const written = await exportMovie(session.doc, host, setProgress, controller.signal)
-      status(t('exported', { sequence, name: written.split('/').pop() ?? written }))
+      const written = await exportMovie(session.doc, host, (next) => {
+        setProgress(next)
+        report?.({ phase: 'running', progress: next })
+      }, controller.signal, options)
+      const name = written.split('/').pop() ?? written
+      status(t('exported', { sequence, name }))
+      report?.({ phase: 'done', name })
     } catch (error) {
-      if (!controller.signal.aborted) errorStatus(`${t('exportFailed')}: ${error instanceof Error ? error.message : String(error)}`)
+      const message = error instanceof Error ? error.message : String(error)
+      if (!controller.signal.aborted) errorStatus(`${t('exportFailed')}: ${message}`)
+      report?.(controller.signal.aborted ? { phase: 'cancelled' } : { phase: 'failed', message: personMessage(message, t, phrase) })
     } finally {
       abort.current = null
       setProgress(null)
@@ -1417,6 +1449,21 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
     }
   }
   useEffect(() => () => abort.current?.abort(), [])
+  // Files dropped where no panel takes them are refused, so the browser never opens one in place
+  // of the editor (UI-K4: the frame stays on its entry).
+  useEffect(() => {
+    const refuse = (event: DragEvent) => {
+      if (event.defaultPrevented || !Array.from(event.dataTransfer?.types ?? []).includes('Files')) return
+      event.preventDefault()
+      if (event.dataTransfer && event.type === 'dragover') event.dataTransfer.dropEffect = 'none'
+    }
+    window.addEventListener('dragover', refuse)
+    window.addEventListener('drop', refuse)
+    return () => {
+      window.removeEventListener('dragover', refuse)
+      window.removeEventListener('drop', refuse)
+    }
+  }, [])
 
   /**
    * Upstream's `file_dialog`, read by `invoke` at each call. File ▸ Import: the media the person
@@ -1429,6 +1476,58 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
    * no dialog). Each first asks the engine whether the command can run, as upstream's `execute`
    * does.
    */
+  /**
+   * Imports `paths` (the project's names for them) into `bin` with one `file.import`, and says in
+   * one status message how many came in and which did not, each with why (`session/imports.ts`).
+   */
+  const importFiles = async (paths: string[], bin: number | null, unwritten: readonly ImportFailure[] = []) => {
+    let answer: string | null = null
+    let refusal: string | null = null
+    if (paths.length) {
+      try {
+        answer = (await session.run('file.import', { paths, ...(bin != null ? { bin } : {}) })) as string | null
+      } catch (error) {
+        refusal = error instanceof Error ? error.message : String(error)
+      }
+    }
+    const result = answer ? (JSON.parse(answer) as { items?: number[]; errors?: string[] }) : null
+    const imported = importReport(paths, result, refusal)
+    const report = { ...imported, failures: [...unwritten, ...imported.failures] }
+    const said = importMessage(report, t)
+    if (said.error) errorStatus(said.text)
+    else status(said.text)
+    return { result, report }
+  }
+  importFilesNow.current = importFiles
+
+  /**
+   * Files dropped from the computer (`File` objects: bytes and a name, no path, KitPointer 1.0
+   * section 9): files of a kind File ▸ Import takes are written beside the project through the
+   * host (which keeps an existing file and numbers the new one), then imported in one go; a file
+   * of another kind, or one the host would not write, is named in the same message.
+   */
+  dropFilesNow.current = async (files, bin) => {
+    if (!session.doc || !files.length) return []
+    const folder = projectFolder()
+    const paths: string[] = []
+    const unwritten: ImportFailure[] = []
+    if (files.length > 1) status(t('import.copying', { count: files.length }))
+    for (const file of files) {
+      const extension = file.name.includes('.') ? file.name.slice(file.name.lastIndexOf('.') + 1).toLowerCase() : ''
+      if (!(IMPORT_TYPES as readonly string[]).includes(extension)) {
+        unwritten.push({ name: file.name, reason: 'format' })
+        continue
+      }
+      try {
+        const written = await host.exportFile(folder ? `${folder}/${file.name}` : file.name, new Uint8Array(await file.arrayBuffer()))
+        paths.push(relativePath(folder, written))
+      } catch {
+        unwritten.push({ name: file.name, reason: 'unwritten' })
+      }
+    }
+    return (await importFiles(paths, bin, unwritten)).report.items
+  }
+
   useLayoutEffect(() => {
     fileDialog.current = async (id, params) => {
       const opened = docNow.current
@@ -1441,7 +1540,16 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
         await session.doc?.execute(id, {})
         throw new Error(id === 'file.exportMedia' ? t('exportUnavailable') : t('notAvailable'))
       }
-      if (id === 'file.exportMedia') return exportStart()
+      // The app bar's Export MP4 exports at once; the menu, its key and the Home tab open the Export dialog.
+      if (id === 'file.exportMedia') return params.quick === true ? exportStart() : setExportDialog((shown) => shown ?? (abort.current ? { phase: 'running', progress: { fraction: 0, secondsLeft: null } } : { phase: 'setup' }))
+      // The Project panel's Import… and its empty space ask for several files at once: the host's
+      // chooser of files to link (`links/pick`, `multiple`), whose paths are already the project's.
+      if (id === 'file.import' && params.multiple === true && canPickMany) {
+        const links = await host.pickLinks({ purpose: 'Import media into the project', accept: [...IMPORT_TYPES], multiple: true })
+        if (!links.length || !current()) return null
+        const bin = typeof params.bin === 'number' ? params.bin : shownBin(projectTarget().get(), state?.root ?? null).bin
+        return (await importFiles(links.map((link) => link.path), bin ?? null)).result
+      }
       if (!canPick) throw new Error(t('notAvailable'))
       const relinks = id === 'media.attachProxies' || id === 'media.reconnectFullRes'
       // The item the Project item menu names, else the selection's first (upstream's route); the
@@ -1466,10 +1574,7 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
       }
       // Into the bin the Project panel (or the focused floating bin window) shows, as upstream's `import_bin`, unless the call names one.
       const bin = params.bin ?? shownBin(projectTarget().get(), state?.root ?? null).bin
-      const answer = await session.run('file.import', { paths: [relativePath(folder, picked)], ...(bin != null ? { bin } : {}) })
-      const result = answer ? (JSON.parse(answer) as { errors?: string[] }) : null
-      if (result?.errors?.length) errorStatus(result.errors.join('; '))
-      return result
+      return (await importFiles([relativePath(folder, picked)], typeof bin === 'number' ? bin : null)).result
     }
   })
 
@@ -1481,6 +1586,11 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
   const keyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (!state || event.nativeEvent.isComposing || event.keyCode === 229) return false
     if (programKeys.current?.(event)) return true
+    // F2 in the Project panel renames the selected item in place (Clip ▸ Rename…'s inline rename).
+    if (event.key === 'F2' && !event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey && focusedPanel(focusedNow.current) === 'project') {
+      void invoke('clip.rename', {})
+      return true
+    }
     // A key bound to a command nothing serves yet falls to its next binding (`resolveKey`); a
     // served command runs through `invoke` and keeps the key even when the engine refuses it.
     const id = resolveKey(event, focusedNow.current, keys, (command) => invoke.serves(command))
@@ -1527,6 +1637,7 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
     setGuides,
     status,
     errorStatus,
+    dropFiles: (files, bin) => dropFilesNow.current(files, bin),
     editRefusal,
     playheadMoves,
     proxiesRead,
@@ -1599,7 +1710,7 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
             />
           }
           actions={
-            <Button variant="ghost" disabled={!state?.duration || progress != null} onClick={() => void invoke('file.exportMedia', {})} data-testid="film-export" data-kit-ui-id="control:appBar.exportMovie">
+            <Button variant="ghost" disabled={!state?.duration || progress != null} onClick={() => void invoke('file.exportMedia', { quick: true })} data-testid="film-export" data-kit-ui-id="control:appBar.exportMovie">
               {progress ? <Loader2 size={14} className="kui-spin" aria-hidden="true" /> : <Download size={14} aria-hidden="true" />}
               {t('exportMovie')}
             </Button>
@@ -1663,6 +1774,19 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
               run={runWorkspace}
               onClose={() => setWorkspaceDialog(null)}
               phrase={phrase}
+            />
+          ) : null}
+          {exportDialog ? (
+            <ExportDialog
+              sequences={state?.root ? [...projectItems(state.root).values()].filter((item) => item.type === 'Sequence').map((item) => ({ id: item.item, name: item.name })) : []}
+              active={state?.activeSequence ?? null}
+              inspect={inspectSequence}
+              target={exportTarget(host.init.document.path).split('/').pop() ?? ''}
+              job={exportDialog.phase === 'running' && progress ? { phase: 'running', progress } : exportDialog}
+              onStart={(options, name) => void exportStart(options, name, (job) => setExportDialog((shown) => (shown ? job : shown)))}
+              onCancel={() => abort.current?.abort()}
+              onClose={() => setExportDialog(null)}
+              t={t}
             />
           ) : null}
           {help ? <HelpDialog topic={help} reserved={isReserved} onClose={() => setHelp(null)} /> : null}

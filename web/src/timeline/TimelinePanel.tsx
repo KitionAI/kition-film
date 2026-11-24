@@ -100,6 +100,8 @@ export type TimelinePanelProps = {
   t: (key: string, values?: Record<string, string | number>) => string
   /** The open document: another one drops a gesture in progress. */
   doc: unknown
+  /** Imports files dropped from the computer (`App`'s `dropFiles`): the Timeline places them where they were dropped. */
+  dropFiles?: (files: readonly File[]) => Promise<number[]>
 }
 
 /** The source patching and targeting of the active sequence (`Session::targeting`: V1 and A1 patched and every track targeted until changed). */
@@ -518,7 +520,7 @@ function EmptyTimeline({ film, invoke, phrase }: { film: FilmInfo | null; invoke
  * (`useGestures`, upstream `interact`): one engine command per gesture, its drag drawn locally.
  */
 export function TimelinePanel(props: TimelinePanelProps) {
-  const { film: documentFilm, session, labels, revision, playback, store, media, tool, invoke, query, scrub: scrubber, phrase, t, doc } = props
+  const { film: documentFilm, session, labels, revision, playback, store, media, tool, invoke, query, scrub: scrubber, phrase, t, doc, dropFiles } = props
   const view = useTimelineView(store)
   // A dialog's preview (Task 10): the Timeline draws its timeline, markers, and selection kinds
   // while it shows a sequence (the strip lists them otherwise), laid out from the preview's
@@ -676,7 +678,7 @@ export function TimelinePanel(props: TimelinePanelProps) {
 
   const gestureGeometry = useRef<GestureGeometry>({ headerWidth, contentWidth, rows: [], maxVideo: 0 })
   const geometryOf = useCallback(() => gestureGeometry.current, [])
-  const gestures = useGestures({ film, session, store, tool, invoke, scrub, rollRipple: prefs.rollRipple, still: prefs.still, transitionDurations: prefs.transitions, items, geometry: geometryOf, root, doc, previewClips: documentClips })
+  const gestures = useGestures({ film, session, store, tool, invoke, scrub, rollRipple: prefs.rollRipple, still: prefs.still, transitionDurations: prefs.transitions, items, geometry: geometryOf, root, doc, previewClips: documentClips, dropFiles, query })
   const { scene } = gestures
   const editMarks = useMemo(() => {
     const byTrack = new Map<number, ReturnType<typeof editPointMarks>>()

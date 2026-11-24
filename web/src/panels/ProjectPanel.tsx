@@ -18,6 +18,7 @@ import { PreviewContext, previewCacheKey, useDrawsPreview, usePreviewState } fro
 import { focusAfterBlur } from '../workspace/editorFocus'
 
 const ArrowDownWideNarrow = TesseraIcons.ArrowDownWideNarrowIcon
+const FileInput = TesseraIcons.FileInputIcon
 const ChevronDown = TesseraIcons.ChevronDownIcon
 const ChevronRight = TesseraIcons.ChevronRightIcon
 const FilePlus2 = TesseraIcons.FilePlusCornerIcon
@@ -256,6 +257,9 @@ type Actions = {
   resize: (column: string, width: number) => Promise<boolean>
 }
 
+/** Whether a drag carries files from the computer (the browser's `Files` type). */
+const hasFiles = (data: DataTransfer | null) => data != null && Array.from(data.types).includes('Files')
+
 export type ProjectPanelProps = {
   root: FilmBin | null
   projectName: string
@@ -277,6 +281,13 @@ export type ProjectPanelProps = {
   /** The status bar for engine and error text (`App`'s `errorStatus`); `status` when absent. */
   errorStatus?: (text: string) => void
   /**
+   * Imports files dropped from the computer into a bin (`App`'s `dropFiles`); absent where the
+   * panel takes no such drop.
+   */
+  dropFiles?: (files: readonly File[], bin: number | null) => Promise<number[]>
+  /** What the panel says while files from the computer are dragged over it. */
+  dropHint?: string
+  /**
    * The floating bin window this instance draws (upstream `floating`'s body, `Inst::Tab`), with
    * `ui` its instance; absent for the panel itself. A window draws no tab strip.
    */
@@ -289,7 +300,7 @@ export type ProjectPanelProps = {
  * view, and the footer. View settings, sorting, columns, and the selection are the engine's;
  * the search, the open bins, the bin shown, and the rename are the panel's (`ProjectUi`).
  */
-export const ProjectPanel = memo(function ProjectPanel({ root, projectName, selection, labels, revision, ui, viewRefresh, thumbnails, previewPictures, deps, invoke, query, phrase, notAvailable, status, errorStatus = status, window: floating }: ProjectPanelProps) {
+export const ProjectPanel = memo(function ProjectPanel({ root, projectName, selection, labels, revision, ui, viewRefresh, thumbnails, previewPictures, deps, invoke, query, phrase, notAvailable, status, errorStatus = status, dropFiles, dropHint, window: floating }: ProjectPanelProps) {
   const state = useSyncExternalStore(ui.subscribe, ui.get)
   const rootId = root?.id ?? null
   const tab = state.activeTab != null ? (state.tabs[state.activeTab] ?? null) : null
@@ -347,6 +358,8 @@ export const ProjectPanel = memo(function ProjectPanel({ root, projectName, sele
   const selected = useMemo(() => new Set(selection), [selection])
   const parentForNew = bin != null && bin !== rootId ? bin : null
   const [dropBin, setDropBin] = useState<number | null>(null)
+  // Files from the computer are dragged over the panel: it is outlined and says it imports them.
+  const [filesOver, setFilesOver] = useState(false)
 
   // The latest of what the actions read.
   const now = useRef({ selection, selected, rows, root, state })
@@ -369,6 +382,8 @@ export const ProjectPanel = memo(function ProjectPanel({ root, projectName, sele
       const payload = filmDrag(event.dataTransfer)
       return payload && payload.sourceIn === undefined ? payload : null
     }
+    // Files dragged from the computer onto a bin go into that bin.
+    const carriesFiles = (event: ReactDragEvent) => dropFiles != null && hasFiles(event.dataTransfer)
     return {
       /** A click on an item (upstream `item_interactions`): Cmd (Ctrl) or Shift toggles it in the selection. */
       clickItem(event, item) {
@@ -420,7 +435,7 @@ export const ProjectPanel = memo(function ProjectPanel({ root, projectName, sele
         startFilmDrag(event.nativeEvent, { item })
       },
       binOver(event, target) {
-        if (!payloadOf(event)) return
+        if (!payloadOf(event) && !carriesFiles(event)) return
         event.preventDefault()
         event.dataTransfer.dropEffect = 'copy'
         setDropBin((shown) => (shown === target ? shown : target))
@@ -434,6 +449,13 @@ export const ProjectPanel = memo(function ProjectPanel({ root, projectName, sele
       binDrop(event, target) {
         const payload = payloadOf(event)
         setDropBin(null)
+        if (!payload && carriesFiles(event)) {
+          event.preventDefault()
+          event.stopPropagation()
+          setFilesOver(false)
+          void dropFiles?.([...event.dataTransfer.files], target)
+          return
+        }
         if (!payload) return
         event.preventDefault()
         endFilmDrag()
@@ -465,7 +487,7 @@ export const ProjectPanel = memo(function ProjectPanel({ root, projectName, sele
         return answer != null
       },
     }
-  }, [invoke, notAvailable, open, status, ui])
+  }, [dropFiles, invoke, notAvailable, open, status, ui])
 
   // The Freeform view's actions: a card's own menu acts on the items named as it opens (the card,
   // or the selection holding it), never a selection that lands later.
@@ -525,7 +547,8 @@ export const ProjectPanel = memo(function ProjectPanel({ root, projectName, sele
         if (ui.get().selectedBin != null) ui.set({ selectedBin: null })
         void invoke('project.select', { items: [] })
       },
-      onDoubleClick: () => void invoke('file.import', bin != null ? { bin } : {}),
+      // Upstream's double-click on empty space imports; here several files at once (`multiple`).
+      onDoubleClick: () => void invoke('file.import', { multiple: true, ...(bin != null ? { bin } : {}) }),
       onContextMenu: (event: ReactMouseEvent) => {
         event.preventDefault()
         setMenu({ kind: 'background', at: { x: event.clientX, y: event.clientY } })
@@ -586,7 +609,34 @@ export const ProjectPanel = memo(function ProjectPanel({ root, projectName, sele
   )
 
   return (
-    <div ref={panelRoot} className="film-project" style={{ '--film-project-font': `${font}px` } as CSSProperties} data-testid={floating != null ? `film-project-window-${floating}` : 'film-project'} data-view={mode}>
+    <div
+      ref={panelRoot}
+      className="film-project"
+      style={{ '--film-project-font': `${font}px` } as CSSProperties}
+      data-testid={floating != null ? `film-project-window-${floating}` : 'film-project'}
+      data-view={mode}
+      data-files-over={filesOver || undefined}
+      onDragOver={(event) => {
+        if (!dropFiles || !hasFiles(event.dataTransfer)) return
+        event.preventDefault()
+        event.dataTransfer.dropEffect = 'copy'
+        if (!filesOver) setFilesOver(true)
+      }}
+      onDragLeave={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFilesOver(false)
+      }}
+      onDrop={(event) => {
+        setFilesOver(false)
+        if (!dropFiles || !hasFiles(event.dataTransfer)) return
+        event.preventDefault()
+        void dropFiles([...event.dataTransfer.files], bin)
+      }}
+    >
+      {filesOver ? (
+        <div className="film-project-files-over" data-testid="film-project-files-over">
+          {dropHint}
+        </div>
+      ) : null}
       {state.tabs.length && floating == null ? (
         <div className="film-project-tabs" role="tablist">
           <button type="button" role="tab" aria-selected={state.activeTab == null} className="film-project-tab" data-kit-ui-id="control:project.tab.project" data-testid="film-project-tab-project" onClick={() => ui.set({ activeTab: null })}>
@@ -684,6 +734,7 @@ export const ProjectPanel = memo(function ProjectPanel({ root, projectName, sele
         <span className="film-project-footer-group">
           <IconButton icon={WandSparkles} label={phrase('Automate to Sequence')} onClick={() => void invoke('clip.automateToSequence', {})} data-kit-ui-id="control:project.button.clip.automateToSequence" data-testid="film-project-automate" />
           <IconButton icon={Search} label={phrase('Find')} onClick={() => void invoke('edit.find', {})} data-kit-ui-id="control:project.button.find" data-testid="film-project-footer-find" />
+          <IconButton icon={FileInput} label={phrase('Import…')} onClick={() => void invoke('file.import', { multiple: true, ...(bin != null ? { bin } : {}) })} data-kit-ui-id="control:project.button.file.import" data-testid="film-project-import" />
           <IconButton icon={FolderPlus} label={phrase('New Bin')} onClick={() => void invoke('file.newBin', { name: phrase('New Bin'), parent: parentForNew })} data-kit-ui-id="control:project.button.file.newBin" data-testid="film-project-new-bin" />
           <MenuButton align="end" placement="auto" trigger={({ toggle, open: shown }) => <IconButton icon={FilePlus2} label={phrase('New Item')} aria-expanded={shown} onClick={toggle} data-kit-ui-id="control:project.button.new-item" data-testid="film-project-new-item" />}>
             <NewItemRows invoke={invoke} phrase={phrase} />

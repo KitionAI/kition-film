@@ -64,6 +64,34 @@ type Options = {
    * press only selects one of these (`previewCommands`). No drag, trim, cut, drop, or clip menu.
    */
   previewClips?: ReadonlySet<number> | null
+  /**
+   * Files dropped from the computer (`App`'s `dropFiles`): imported, then placed where they were
+   * dropped, one after another; absent where the Timeline takes no such drop.
+   */
+  dropFiles?: (files: readonly File[]) => Promise<number[]>
+  /** A read-only engine query, answered as parsed JSON (where a placed clip ends). */
+  query?: (id: string, params?: Record<string, unknown>) => Promise<unknown>
+}
+
+/** Whether a drag carries files from the computer (the browser's `Files` type). */
+const carriesFiles = (data: DataTransfer | null) => data != null && Array.from(data.types).includes('Files')
+
+/** A command's answer as JSON (a session answers a string). */
+const answerOf = (answer: unknown) => {
+  if (typeof answer !== 'string') return (answer ?? null) as Record<string, unknown> | null
+  try {
+    return JSON.parse(answer) as Record<string, unknown>
+  } catch {
+    return null
+  }
+}
+
+/** Where the clip `id` ends on the inspected sequence (`sequence.inspect`), in ticks, or null. */
+function clipEnd(inspected: unknown, id: number): number | null {
+  const sequence = inspected as { video?: Array<{ items?: Array<{ id: number; start?: number; duration?: number; end?: number }> }>; audio?: Array<{ items?: Array<{ id: number; start?: number; duration?: number; end?: number }> }> } | null
+  for (const track of [...(sequence?.video ?? []), ...(sequence?.audio ?? [])])
+    for (const item of track.items ?? []) if (item.id === id) return item.end ?? (item.start != null && item.duration != null ? item.start + item.duration : null)
+  return null
 }
 
 /**
@@ -135,15 +163,15 @@ function cursorFor(tool: string, grab: ReturnType<typeof hitTest>) {
  * the cursor and hover feedback, the clip menu, a double-click into a nested sequence, and drops
  * from the Project panel or the Source monitor.
  */
-export function useGestures({ film, session, store, tool, invoke, scrub, rollRipple, still, transitionDurations, items, geometry, root, doc, previewClips = null }: Options) {
+export function useGestures({ film, session, store, tool, invoke, scrub, rollRipple, still, transitionDurations, items, geometry, root, doc, previewClips = null, dropFiles, query }: Options) {
   const { store: uiStore } = useUi()
   // A replacement project can reuse both this Worker and the same sequence/clip IDs.
   const projectEpoch = (doc as { info?: { inspected?: { project?: { epoch?: number } } } } | null)?.info?.inspected?.project?.epoch
   const epoch = useRef(0)
   const dragView = useMemo(createDragView, [])
   const scene = useMemo(() => (film ? sceneOf(film, session, rollRipple) : null), [film, session, rollRipple])
-  const latest = useRef({ scene, tool, invoke, film, still, items, previewClips, transitionDurations, scrub })
-  latest.current = { scene, tool, invoke, film, still, items, previewClips, transitionDurations, scrub }
+  const latest = useRef({ scene, tool, invoke, film, still, items, previewClips, transitionDurations, scrub, dropFiles, query })
+  latest.current = { scene, tool, invoke, film, still, items, previewClips, transitionDurations, scrub, dropFiles, query }
   const gesture = useRef<Gesture | null>(null)
   // Commands go out one after another, in the order the gesture made them.
   const queue = useRef<Promise<unknown>>(Promise.resolve())
@@ -908,6 +936,17 @@ export function useGestures({ film, session, store, tool, invoke, scrub, rollRip
         dragView.set({ effectDrop: target?.view ?? null })
         return
       }
+      // Files from the computer: where the first one will land, on the row under the pointer.
+      if (scene && film && !previewing && latest.current.dropFiles && carriesFiles(event.dataTransfer) && !event.dataTransfer.types.includes(FILM_DRAG_TYPE)) {
+        event.preventDefault()
+        event.dataTransfer.dropEffect = 'copy'
+        const { x, y } = placeOf(event)
+        const layout = layoutNow()
+        const row = x >= 0 && x <= layout.width ? dropRow(layout, y, { item: 0 }) : null
+        const snapped = snapAt(scene, layout, x)
+        dragView.set({ drop: row ? { x: xOf(scene, layout, snapped.time), width: 3, top: row.top, height: row.height, insert: modsOf(event).command } : null, snapX: row ? snapped.x : null })
+        return
+      }
       if (!scene || !film || previewing || !event.dataTransfer.types.includes(FILM_DRAG_TYPE)) return
       event.preventDefault()
       event.dataTransfer.dropEffect = 'copy'
@@ -948,6 +987,31 @@ export function useGestures({ film, session, store, tool, invoke, scrub, rollRip
         dragView.set({ effectDrop: null })
         endEffectDrag()
         if (target) send(target.commands)
+        return
+      }
+      const placeFiles = latest.current.dropFiles
+      if (scene && placeFiles && carriesFiles(event.dataTransfer) && !event.dataTransfer.types.includes(FILM_DRAG_TYPE)) {
+        event.preventDefault()
+        dragView.set({ drop: null, snapX: null })
+        const { x, y } = placeOf(event)
+        // The drop's track and time, as a project item's drop would have them.
+        const template = placeCommand(scene, layoutNow(), x, y, { item: 0 }, modsOf(event))
+        const files = Array.from(event.dataTransfer.files)
+        if (!template || !files.length) return
+        const generation = epoch.current
+        void (async () => {
+          const imported = await placeFiles(files)
+          let time = template.params.time as number
+          // Each new item where the one before it ends: one Place Clip each, in the order dropped.
+          for (const item of imported) {
+            if (epoch.current !== generation) return
+            const placed = answerOf(await latest.current.invoke('timeline.place', { ...template.params, item, time }).catch(() => null))
+            const clip = (placed?.clips as number[] | undefined)?.[0]
+            const end = clip != null ? clipEnd(await latest.current.query?.('sequence.inspect').catch(() => null), clip) : null
+            if (end == null) return
+            time = end
+          }
+        })()
         return
       }
       const payload = filmDrag(event.dataTransfer)

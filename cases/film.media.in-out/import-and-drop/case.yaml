@@ -1,0 +1,30 @@
+format: 1
+id: film.media.in-out/import-and-drop
+feature: film.media.in-out
+intent: >-
+  A person brings media in by hand, in Chromium: the Project panel's Import… opens the host's
+  chooser for several files; two video and sound files and a truncated one chosen together come in
+  with one message, "已导入 2 个文件；没有导入：broken.mp4（…）"; two files chosen with "从电脑选择…"
+  come in together; a video, a WAV and a text file dropped from the computer on the Project panel
+  outline it and say they will be imported, then the media are written beside the project and come
+  in, the text file named as not supported, in one message; a video dropped on the Timeline over V2
+  shows where it lands and is imported and placed on V2 at the time it was dropped; a double-click
+  opens an item in the Source monitor, and F2 renames it in place. Before, Import took one file and
+  said nothing when it worked, and a file dropped on the editor did nothing.
+layer: gate
+source:
+  kind: probe
+  from: web/tests/media.mjs chromium (plan "Film usable by hand", phase 6)
+  license: Apache-2.0
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/media.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 300
+since: "2026-11-24"

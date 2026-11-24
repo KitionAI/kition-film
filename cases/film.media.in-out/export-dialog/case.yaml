@@ -1,0 +1,30 @@
+format: 1
+id: film.media.in-out/export-dialog
+feature: film.media.in-out
+intent: >-
+  A person exports by hand, in WebKit (Kition Desktop's engine on macOS): with In and Out marked
+  by keys, File ▸ Export ▸ Media… opens the Export dialog on the active sequence, shown by name as
+  the current sequence, with In to Out chosen and Sample.mp4 named as the file; 640 × 360, 25 fps
+  and the smaller file chosen, Export shows its progress and then "已导出为 Sample.mp4", and the
+  written MP4's sample entry is 640 × 360 with as many frames as In to Out holds at 25 fps (fewer
+  than the whole sequence); a second export at 3840 × 2160 is stopped by Cancel, which says no file
+  was written, and none is; a write the host refuses shows "导出失败：" with the reason; Close
+  closes the dialog, and the app bar's Export MP4 still exports with one click and no dialog.
+  Before, the only export was that one click: no range, size, rate or quality, and no dialog.
+layer: gate
+source:
+  kind: probe
+  from: web/tests/media.mjs webkit (plan "Film usable by hand", phase 6)
+  license: Apache-2.0
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/media.mjs, webkit]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [webkit]
+timeout_s: 300
+since: "2026-11-24"

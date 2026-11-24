@@ -398,6 +398,27 @@ const TIMELINE_BY_HAND: readonly KitUiItem[] = [
 ]
 
 /**
+ * File ▸ Export ▸ Media…'s dialog (plan "Film usable by hand", phase 6, C3): Kition's own until
+ * Export mode arrives; upstream's export settings are a mode, not a dialog.
+ */
+const EXPORT_DIALOG: readonly KitUiItem[] = [
+  { id: 'control:export.dialog', label: 'Export' },
+  { id: 'control:export.sequence', label: 'Sequence' },
+  { id: 'control:export.range', label: 'Range' },
+  { id: 'control:export.size', label: 'Frame Size' },
+  { id: 'control:export.rate', label: 'Frame Rate' },
+  { id: 'control:export.quality', label: 'Quality' },
+  { id: 'control:export.bitrate', label: 'Bitrate' },
+  { id: 'control:export.progress', label: 'Export progress' },
+  { id: 'control:export.start', label: 'Export' },
+  { id: 'control:export.cancel', label: 'Cancel' },
+  { id: 'control:export.hide', label: 'Hide' },
+  { id: 'control:export.close', label: 'Close' },
+  // The Project panel's Import… button (upstream's footer has none: it imports from the empty space).
+  { id: 'control:project.button.file.import', label: 'Import…' },
+]
+
+/**
  * Controls upstream does not register, which Kition draws: Export MP4 in the app bar (until
  * Export mode, wave 3), the status bar's message (upstream's whole bar is one click target), the monitors' wrench rows upstream draws without an id, the Project
  * panel's Sort Icons column rows, whose id upstream builds at run time, and Effect Controls' and
@@ -405,7 +426,7 @@ const TIMELINE_BY_HAND: readonly KitUiItem[] = [
  * declared control is an element upstream registers (`film-upstream.json` `elements`, without
  * its run-time `{}` parts), or a shared id standing for some (`SHARED_ALIASES`).
  */
-export const KITION_ONLY: readonly KitUiItem[] = [{ id: 'control:appBar.exportMovie', label: 'exportMovie' }, { id: 'control:status.message', label: 'Status' }, ...MONITOR_UNREGISTERED, ...PROJECT_UNREAD, ...EFFECTS_UNREGISTERED, ...EFFECTS_PANEL_UNREGISTERED, ...HISTORY_UNREGISTERED, ...DIALOG_KITION, ...TIMELINE_BY_HAND]
+export const KITION_ONLY: readonly KitUiItem[] = [{ id: 'control:appBar.exportMovie', label: 'exportMovie' }, { id: 'control:status.message', label: 'Status' }, ...MONITOR_UNREGISTERED, ...PROJECT_UNREAD, ...EFFECTS_UNREGISTERED, ...EFFECTS_PANEL_UNREGISTERED, ...HISTORY_UNREGISTERED, ...DIALOG_KITION, ...TIMELINE_BY_HAND, ...EXPORT_DIALOG]
 
 /**
  * Every element the Film editor draws (Kit UI protocol section 9). Ids are public: a host hides or

@@ -172,7 +172,7 @@
   "menu:File/Export/file.exportMedia": {
     "status": "done",
     "wave": 1,
-    "note": "Kition's stepped MP4 export (movie.ts) serves it in wave 1, as the Export MP4 button does",
+    "note": "Kition's Export dialog (dialogs/ExportDialog.tsx: sequence, range, frame size and rate, quality; progress and Cancel) runs the stepped MP4 export (movie.ts) until Export mode; the Export MP4 button exports at once",
     "followUps": [
       {
         "wave": 3,
@@ -1017,7 +1017,7 @@
   "menu:File/file.import": {
     "status": "done",
     "wave": 1,
-    "note": "As upstream's file_dialog: the host's picker, upstream's media, caption, and interchange types, imported only, into the bin the Project panel shows (upstream import_bin) unless the call names params.bin.",
+    "note": "As upstream's file_dialog: the host's picker, upstream's media, caption, and interchange types, imported only, into the bin the Project panel shows (upstream import_bin) unless the call names params.bin. With params.multiple (the Project panel's Import… and its empty space) the host's chooser takes several files (links/pick); one status message says how many came in and which did not.",
     "followUps": [
       {
         "wave": 3,
