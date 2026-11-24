@@ -18,7 +18,9 @@ import {
   SCROLLBAR_H,
   TOP_H,
   clampPps,
+  DEFAULT_VIEW,
   clampSplit,
+  fitTrackHeight,
   headerWidthFor,
   maxScroll,
   scrollHalf,
@@ -39,8 +41,9 @@ import { useDragView, type DragViewStore } from './dragView'
 import { ClipMenu } from './ClipMenu'
 import { useGestures, type GestureGeometry, type StillDuration, type TransitionDurations } from './useGestures'
 import { TransitionMenu, TransitionDurationDialog } from './TransitionControls'
-import { useLocalSelection } from '../session/localSelection'
+import { localSelection, useLocalSelection } from '../session/localSelection'
 import { PreviewGhosts } from './PreviewGhosts'
+import { fadeAt } from './fades'
 import type { Thumbnails } from './thumbnails'
 import { PreviewContext, previewCacheKey, useDrawsPreview, usePreviewFilm, usePreviewState } from '../dialogs/usePreview'
 import { highlightsOnly, previewClickable, previewOnlyItems, previewPictureItems, previewTimeline, type TimelinePreview } from '../dialogs/previewViews'
@@ -128,8 +131,14 @@ function PlayheadTimecode({ film, playback, onSeek, phrase }: { film: FilmInfo; 
  * view store set its transform directly, so playback redraws nothing else. While playing it pages
  * the view along (Settings ▸ Timeline ▸ Timeline Playback Auto-Scrolling, page scroll by default).
  */
-function Playhead({ film, playback, store, width, autoScroll }: { film: FilmInfo; playback: Playback; store: TimelineViewStore; width: number; autoScroll: string }) {
+function Playhead({ film, playback, store, width, autoScroll, onScrub, phrase }: { film: FilmInfo; playback: Playback; store: TimelineViewStore; width: number; autoScroll: string; onScrub: (seconds: number, phase: 'start' | 'move' | 'end') => void; phrase: Phrases }) {
   const element = useRef<HTMLDivElement>(null)
+  // The line through the tracks is grabbed and dragged like the ruler (upstream's playhead line): the same scrub.
+  const grabbed = useRef<number | null>(null)
+  const timeOfPointer = (event: { clientX: number }) => {
+    const area = element.current?.parentElement?.getBoundingClientRect()
+    return Math.max(0, timeAt(store.get(), event.clientX - (area?.left ?? 0)))
+  }
   const resting = useRef(film.playhead)
   resting.current = film.playhead
   const latest = useRef({ width, autoScroll })
@@ -178,6 +187,38 @@ function Playhead({ film, playback, store, width, autoScroll }: { film: FilmInfo
     <div ref={element} className="film-tl-playhead" data-testid="film-playhead">
       <span className="film-tl-playhead-head" />
       <span className="film-tl-playhead-line" />
+      <span
+        className="film-tl-playhead-grip"
+        title={phrase('Playhead')}
+        onPointerDown={(event) => {
+          if (event.button !== 0) return
+          event.stopPropagation()
+          event.currentTarget.setPointerCapture(event.pointerId)
+          grabbed.current = event.pointerId
+          element.current?.setAttribute('data-dragging', '')
+          onScrub(timeOfPointer(event), 'start')
+        }}
+        onPointerMove={(event) => {
+          if (grabbed.current !== event.pointerId) return
+          event.stopPropagation()
+          onScrub(timeOfPointer(event), 'move')
+        }}
+        onPointerUp={(event) => {
+          if (grabbed.current !== event.pointerId) return
+          event.stopPropagation()
+          grabbed.current = null
+          element.current?.removeAttribute('data-dragging')
+          onScrub(timeOfPointer(event), 'end')
+        }}
+        onPointerCancel={(event) => {
+          if (grabbed.current !== event.pointerId) return
+          grabbed.current = null
+          element.current?.removeAttribute('data-dragging')
+          onScrub(timeOfPointer(event), 'end')
+        }}
+        data-kit-ui-id="control:timeline.playhead"
+        data-testid="film-playhead-line"
+      />
     </div>
   )
 }
@@ -318,6 +359,10 @@ function TrackHalf({ kind, tracks, rows, top, height, headerWidth, contentWidth,
   const previews = useDragView(dragView, (shown) => shown.previews)
   const resized = useDragView(dragView, (shown) => shown.transition)
   const chosenTransition = useLocalSelection((selection) => selection.transition)
+  const chosenKey = useLocalSelection((selection) => selection.keyframe)
+  const volumeShown = useDragView(dragView, (shown) => shown.volume)
+  const fadeShown = useDragView(dragView, (shown) => shown.fade)
+  const fadeLabels = useMemo(() => ({ in: phrase('Fade In'), out: phrase('Fade Out') }), [phrase])
   if (height <= 0) return null
   const tps = film.ticksPerSecond
   const visibleFrom = timeAt(view, -2)
@@ -325,6 +370,15 @@ function TrackHalf({ kind, tracks, rows, top, height, headerWidth, contentWidth,
   const shift = -view.scroll * view.pps
   const inOut = film.in != null || film.out != null ? { from: film.in ?? 0, to: film.out != null ? film.out + film.frame : film.duration } : null
   const animating = view.pps !== view.targetPps
+  // A clip's fade handles, at its free ends (none while a drag or a preview shows it, or on a locked track).
+  const fadeProps = (track: FilmTrack, id: number, none: boolean) => {
+    if (none) return { fadeIn: null, fadeOut: null }
+    const of = (edge: 'in' | 'out') => {
+      const fade = fadeAt(track, id, edge, film.frame)
+      return fade ? fade.duration * view.pps : null
+    }
+    return { fadeIn: of('in'), fadeOut: of('out') }
+  }
   const thumbnailWidth = Math.round(160 * dpr)
   return (
     <div className="film-tl-half" data-kind={kind} style={{ top, height }} data-testid={`film-timeline-${kind}`}>
@@ -408,6 +462,11 @@ function TrackHalf({ kind, tracks, rows, top, height, headerWidth, contentWidth,
                       previewSelected={preview?.selected?.has(clip.id)}
                       pictures={ownPictures}
                       noPeaks={previewOnly.has(clip.item)}
+                      volume={volumeShown?.clip === clip.id ? volumeShown : null}
+                      selectedKey={chosenKey?.clip === clip.id ? chosenKey.mediaTime : null}
+                      {...fadeProps(track, clip.id, shown != null || previewing || track.locked)}
+                      fadeActive={fadeShown?.clip === clip.id ? fadeShown.edge : null}
+                      fadeLabels={fadeLabels}
                     />
                   )
                 })}
@@ -651,6 +710,11 @@ export function TimelinePanel(props: TimelinePanelProps) {
     for (const mark of editPointMarks(scene, session.editPoints)) byTrack.set(mark.track, [...(byTrack.get(mark.track) ?? []), mark])
     return byTrack
   }, [scene, session])
+  // A keyframe chosen on a Volume line is let go when the clip selection changes, so Delete then removes clips.
+  const selectionKey = film?.selection.join() ?? ''
+  useEffect(() => {
+    localSelection.set({ keyframe: null })
+  }, [selectionKey])
   const clipsById = useMemo(() => new Map((film?.tracks ?? []).flatMap((track) => track.clips.map((clip) => [clip.id, clip] as const))), [film?.tracks])
 
   // The wheel, as upstream (Premiere on macOS): the tracks under the pointer up and down, Cmd
@@ -712,7 +776,16 @@ export function TimelinePanel(props: TimelinePanelProps) {
     if (!previewState.open) revealed.current.clear()
   })
 
+  // A newly shown sequence's tracks are fitted to the halves once their heights are known (`fitTrackHeight`).
+  const fitInput = useRef<{ videoHeight: number; audioHeight: number; video: number; audio: number } | null>(null)
+  useLayoutEffect(() => {
+    const input = fitInput.current
+    if (!input || !store.get().fitHeights) return
+    store.set({ videoTrackHeight: fitTrackHeight(input.videoHeight, input.video, DEFAULT_VIEW.videoTrackHeight), audioTrackHeight: fitTrackHeight(input.audioHeight, input.audio, DEFAULT_VIEW.audioTrackHeight), fitHeights: false })
+  })
+
   if (!film || !hasSequence) {
+    fitInput.current = null
     return (
       <div ref={root} className="film-tl" data-testid="film-timeline">
         <EmptyTimeline film={film} invoke={invoke} phrase={phrase} />
@@ -729,6 +802,7 @@ export function TimelinePanel(props: TimelinePanelProps) {
   const audioTop = splitY + DIVIDER_H
   const audioHeight = Math.max(0, tracksTop + tracksHeight - MASTER_H - audioTop)
   const rows = trackRows(view, { video: video.length, audio: audio.length, videoHeight, audioHeight })
+  fitInput.current = size.height > 0 && tracksHeight > 0 && !preview ? { videoHeight, audioHeight, video: video.length, audio: audio.length } : null
   geometry.current = { headerWidth, contentWidth, splitY, duration, mouseScrolling: prefs.mouseScrolling, maxVideo: rows.maxVideoScroll, maxAudio: rows.maxAudioScroll }
   maxes.current = { video: rows.maxVideoScroll, audio: rows.maxAudioScroll }
   reveal.current = []
@@ -822,7 +896,7 @@ export function TimelinePanel(props: TimelinePanelProps) {
       <VerticalBar top={tracksTop} height={videoHeight} value={Math.min(view.vScroll, rows.maxVideoScroll)} max={rows.maxVideoScroll} invert onValue={(vScroll) => store.set({ vScroll })} />
       <VerticalBar top={audioTop} height={audioHeight} value={Math.min(view.aScroll, rows.maxAudioScroll)} max={rows.maxAudioScroll} invert={false} onValue={(aScroll) => store.set({ aScroll })} />
       <div className="film-tl-playhead-area" style={{ left: headerWidth, width: contentWidth, top: TOP_H - RULER_H, height: Math.max(0, size.height - SCROLLBAR_H - (TOP_H - RULER_H)) }}>
-        <Playhead film={film} playback={playback} store={store} width={contentWidth} autoScroll={prefs.autoScroll} />
+        <Playhead film={film} playback={playback} store={store} width={contentWidth} autoScroll={prefs.autoScroll} onScrub={scrub} phrase={phrase} />
       </div>
       <div className="film-tl-zoombar-wrap" style={{ left: headerWidth, top: size.height - SCROLLBAR_H + 2 }}>
         <ZoomBar view={view} store={store} width={contentWidth} duration={duration} testId="film-timeline-zoombar" />
@@ -861,6 +935,16 @@ function GestureOverlay({ dragView, left, width, top, bottom, phrase }: { dragVi
             </span>
           ) : null}
         </>
+      ) : null}
+      {shown.fade?.ramp && shown.fade.ramp.width > 0 ? (
+        <svg className="film-tl-fade-ramp" style={{ left: shown.fade.ramp.x, top: shown.fade.ramp.top, width: shown.fade.ramp.width, height: shown.fade.ramp.height }} viewBox={`0 0 ${shown.fade.ramp.width} ${shown.fade.ramp.height}`} aria-hidden="true" data-testid="film-timeline-fade-ramp">
+          <polygon points={shown.fade.edge === 'in' ? `0,0 0,${shown.fade.ramp.height} ${shown.fade.ramp.width},0` : `0,0 ${shown.fade.ramp.width},0 ${shown.fade.ramp.width},${shown.fade.ramp.height}`} />
+        </svg>
+      ) : null}
+      {shown.tip ? (
+        <span className="film-tl-tip" style={{ left: shown.tip.x, top: shown.tip.y }} data-testid="film-timeline-tip">
+          {shown.tip.text}
+        </span>
       ) : null}
       {shown.drop ? (
         <span className="film-tl-drop" style={{ left: shown.drop.x, width: Math.max(2, shown.drop.width), top: shown.drop.top + 1, height: Math.max(0, shown.drop.height - 2) }} data-testid="film-timeline-drop">

@@ -3,6 +3,8 @@ import type { FilmClip } from '../film'
 import { CHUNK_SECONDS, PAIRS_PER_CHUNK, PEAK_RATE, PEAK_SAMPLES, sourceTimeAt, waveformBar, waveformDisplayGain } from './layout'
 import type { TimelineMedia } from './media'
 import { paintFrame, type Thumbnails } from './thumbnails'
+import { bandOf, linePoints, yOfDb } from './volumeBand'
+import { handleX } from './fades'
 
 /** The name band's height (`draw_clip`'s `name_h`). */
 const NAME_H = 16
@@ -83,8 +85,7 @@ type WaveformProps = {
 
 /**
  * `draw_waveform`: the clip's sound rectified in the lower 42% (logarithmic, −48 dB to full, as
- * upstream's default Dynamic Audio Waveforms), its channel tag, and the Volume rubber band in the
- * upper part, drawn for the part of the clip in view from the 4 s peak chunks it covers. While the
+ * upstream's default Dynamic Audio Waveforms) and its channel tag (the Volume line is `VolumeLine`), drawn for the part of the clip in view from the 4 s peak chunks it covers. While the
  * zoom animates, the last drawing is stretched to the clip's new width and drawn again once the
  * zoom settles, so a zoom costs no waveform drawing per frame.
  */
@@ -126,7 +127,6 @@ const ClipWaveform = memo(function ClipWaveform({ media, clip, revision, bodyWid
     target.style.width = `${width}px`
     const zone = Math.max(8, bodyHeight * 0.42)
     const bottom = bodyHeight - 1
-    const top = bottom - zone
     const loudest = media.peaks.loudest(clip.item, revision) || media.peaks.loudestShown(clip.item)
     const chunks = new Map<number, Float32Array | undefined>()
     const chunkOf = (index: number) => {
@@ -164,15 +164,6 @@ const ClipWaveform = memo(function ClipWaveform({ media, clip, revision, bodyWid
       context.textBaseline = 'middle'
       context.fillText('1', 7 - from, bodyHeight - 6.5)
     }
-    // The Volume rubber band: −60 dB at the bottom of the upper part, +6 dB at its top.
-    const upper = top - NAME_H
-    if (upper > 6) {
-      const y = Math.round(top - Math.min(1, Math.max(0, (clip.volumeDb + 60) / 66)) * upper) + 0.5
-      context.fillStyle = '#000'
-      context.fillRect(0, y + 0.5, width, 1)
-      context.fillStyle = '#fff'
-      context.fillRect(0, y - 0.5, width, 1)
-    }
     // `arrivals` redraws as chunks come in.
   }, [media, wave, revision, width, bodyWidth, bodyHeight, from, to, perPx, color, arrivals, animating, dpr, dynamic])
   if (width <= 0) return null
@@ -191,7 +182,52 @@ const ClipWaveform = memo(function ClipWaveform({ media, clip, revision, bodyWid
  * never reads (a source time is relative to the clip's start), so a clip a ripple or a preview
  * only moves does not draw its waveform again.
  */
-const waveOf = (clip: FilmClip) => `${clip.item}|${clip.sourceIn}|${clip.sourceOut}|${clip.speed}|${clip.reverse}|${clip.duration}|${clip.gainDb}|${clip.volumeDb}`
+const waveOf = (clip: FilmClip) => `${clip.item}|${clip.sourceIn}|${clip.sourceOut}|${clip.speed}|${clip.reverse}|${clip.duration}|${clip.gainDb}`
+
+/** What the Volume line shows of a gesture: the line hovered or dragged, a keyframe hovered or dragged (and where a drag in time has it). */
+export type VolumeShown = { line: boolean; key: number | null; keyTime: number | null }
+
+/**
+ * The Volume line on an audio clip (upstream `timeline_volume::paint`): white with a dark shadow
+ * on the faders' scale, through its keyframes, drawn as diamonds (the selected one filled); drawn
+ * thicker while the pointer is on it. A drag of the line or a keyframe is `useGestures`'s.
+ */
+const VolumeLine = memo(function VolumeLine({ clip, start, duration, width, height, shown, selectedKey }: { clip: FilmClip; start: number; duration: number; width: number; height: number; shown: VolumeShown | null; selectedKey: number | null }) {
+  const band = bandOf(height)
+  if (!band || width < 2) return null
+  // A keyframe dragged in time is drawn where the drag has it.
+  const keys = shown?.key != null && shown.keyTime != null ? clip.volumeKeys.map((key, index) => (index === shown.key ? { ...key, time: shown.keyTime! } : key)).sort((a, b) => a.time - b.time) : clip.volumeKeys
+  const points = linePoints(keys, clip.volumeDb, start, duration, width, band)
+  const path = points.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
+  const xOf = (t: number) => (duration > 0 ? ((t - start) / duration) * width : 0)
+  return (
+    <svg className="film-clip-volume" width={width} height={height} data-hover={shown?.line || undefined} aria-hidden="true" data-kit-ui-id="control:timeline.clip.volume" data-testid={`film-clip-volume-${clip.id}`} data-level={clip.volumeDb.toFixed(2)}>
+      <polyline className="film-clip-volume-shadow" points={path} transform="translate(0 1)" />
+      <polyline className="film-clip-volume-line" points={path} />
+      {keys.map((key, index) => {
+        const x = xOf(key.time)
+        if (x < -6 || x > width + 6) return null
+        const y = yOfDb(band, key.value)
+        const original = clip.volumeKeys.indexOf(clip.volumeKeys.find((each) => each.mediaTime === key.mediaTime) ?? key)
+        return (
+          <rect
+            key={key.mediaTime}
+            className="film-clip-volume-key"
+            x={x - 3.5}
+            y={y - 3.5}
+            width={7}
+            height={7}
+            transform={`rotate(45 ${x} ${y})`}
+            data-selected={selectedKey === key.mediaTime || undefined}
+            data-hover={shown?.key === original || undefined}
+            data-kit-ui-id="control:timeline.clip.volumeKey"
+            data-testid={`film-clip-volume-key-${clip.id}-${original}`}
+          />
+        )
+      })}
+    </svg>
+  )
+})
 
 export type ClipViewProps = {
   clip: FilmClip
@@ -239,6 +275,18 @@ export type ClipViewProps = {
   pictures?: Thumbnails<HTMLCanvasElement>
   /** Its item is one only the preview has: the document has no peaks of it to draw. */
   noPeaks?: boolean
+  /** An audio clip's Volume line as a gesture shows it, and its selected keyframe (media time), if any. */
+  volume?: VolumeShown | null
+  selectedKey?: number | null
+  /**
+   * Its fade handles (a free clip end only, as a transition from or to nothing): the fade's length
+   * there in points (0 without one), or null where a clip touches it; `fadeActive` the end a gesture holds.
+   */
+  fadeIn?: number | null
+  fadeOut?: number | null
+  fadeActive?: 'in' | 'out' | null
+  /** The handles' tooltips (Fade In, Fade Out), in the person's language. */
+  fadeLabels?: { in: string; out: string }
 }
 
 /**
@@ -248,7 +296,7 @@ export type ClipViewProps = {
  * place on the track's layer, which scrolls by a transform: scrolling does not redraw it.
  */
 export const ClipView = memo(function ClipView(props: ClipViewProps) {
-  const { clip, kind, track, pps, fps, rowHeight, color, inRange, noHead, noTail, thumbnail, thumbnailWidth, waveform, dynamicWaveform, revision, stamp, from, to, animating, dpr, start, duration, carried, media, preview, previewSelected, pictures, noPeaks } = props
+  const { clip, kind, track, pps, fps, rowHeight, color, inRange, noHead, noTail, thumbnail, thumbnailWidth, waveform, dynamicWaveform, revision, stamp, from, to, animating, dpr, start, duration, carried, media, preview, previewSelected, pictures, noPeaks, volume = null, selectedKey = null, fadeIn = null, fadeOut = null, fadeActive = null, fadeLabels } = props
   const left = start * pps
   const width = Math.max(1, duration * pps)
   const selected = clip.selected || Boolean(carried)
@@ -291,6 +339,9 @@ export const ClipView = memo(function ClipView(props: ClipViewProps) {
           fx
         </span>
       ) : null}
+      {kind === 'audio' ? <VolumeLine clip={clip} start={start} duration={duration} width={width} height={height} shown={volume} selectedKey={selectedKey} /> : null}
+      {fadeIn != null && width > 24 ? <span className="film-clip-fade" data-edge="in" data-active={fadeActive === 'in' || undefined} style={{ left: handleX('in', fadeIn, width) }} title={fadeLabels?.in} data-kit-ui-id="control:timeline.clip.fadeIn" data-testid={`film-clip-fade-in-${clip.id}`} /> : null}
+      {fadeOut != null && width > 24 ? <span className="film-clip-fade" data-edge="out" data-active={fadeActive === 'out' || undefined} style={{ left: handleX('out', fadeOut, width) }} title={fadeLabels?.out} data-kit-ui-id="control:timeline.clip.fadeOut" data-testid={`film-clip-fade-out-${clip.id}`} /> : null}
       {noHead && width > 12 ? <span className="film-clip-corner" data-side="head" /> : null}
       {noTail && width > 12 ? <span className="film-clip-corner" data-side="tail" /> : null}
     </div>

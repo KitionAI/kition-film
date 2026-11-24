@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent as ReactDragEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type RefObject } from 'react'
-import { isMac, useUi, type ContextMenuPoint } from '@kition/sdk/editor'
-import type { FilmInfo, FilmProjectItem } from '../film'
+import { formatTimecode, isMac, useUi, type ContextMenuPoint } from '@kition/sdk/editor'
+import type { FilmClip, FilmInfo, FilmProjectItem, FilmTrack } from '../film'
 import type { FilmSessionState } from '../session/useFilmSession'
 import { scrollHalf, zoomAt } from './layout'
 import type { TimelineViewStore } from './view'
@@ -12,6 +12,8 @@ import { snapTo } from './snap'
 import { carriesEffect, effectDrag, endEffectDrag } from './effectDrag'
 import { fitsTrack, isTransition, type EffectPayload } from '../panels/effectsTree'
 import { localSelection } from '../session/localSelection'
+import { FADER_MAX_DB, FADER_MIN_DB, bandHit, bandOf, dbText, draggedDb, keysAround, keyTimeBetween, levelAt } from './volumeBand'
+import { draggedFrames, fadeAt, fadeCommand, onHandle } from './fades'
 import { ALIGNMENT_LABELS, alignedMaxFrames, alignmentAt, alignmentOf, boundsOf, cutOf, defaultDuration, dragEnd, dropAlignment, dropEdge, durationCommand, grabEnd, maxFrames, removeCommand, slideSpan, spanCommand, transitionSpan, type SpanClip, type TransitionGrab, type TransitionInfo } from './transitions'
 
 /** Where the track rows are this render: the header's width, the content's, the rows (y from the panel's top), and the video half's scroll range. */
@@ -66,7 +68,37 @@ type Options = {
  * A press in progress: what it grabbed (with the modifiers at the press), whether it became a
  * drag, the drag, the modifiers of the latest pointer event, and the long-press timer.
  */
-type Gesture = { pointer: number; pressed: Pressed; mods: Mods; started: boolean; drag: Drag | null; x: number; y: number; frame: number; timer: ReturnType<typeof setTimeout> | null; transition?: { id: number; grab: TransitionGrab | null; frames: number; pressT: number; span: { start: number; duration: number } | null } }
+type Gesture = {
+  pointer: number
+  pressed: Pressed
+  mods: Mods
+  started: boolean
+  drag: Drag | null
+  x: number
+  y: number
+  frame: number
+  timer: ReturnType<typeof setTimeout> | null
+  transition?: { id: number; grab: TransitionGrab | null; frames: number; pressT: number; span: { start: number; duration: number } | null }
+  /**
+   * An audio clip's Volume line pressed (upstream `Grab::Volume`): the line (`key` null; a drag
+   * changes the level there, or the keyframes either side of it) or one keyframe (a drag up or down
+   * changes its level, sideways moves it in time, the way the drag first goes). Each drag is one
+   * undo step: every level it sends is one `effects.setParam` merged under `merge`.
+   */
+  volume?: { clip: number; key: number | null; from: number; around: Array<{ ticks: number; value: number }>; axis: 'value' | 'time' | null; token: LiveToken; keyTime: number | null }
+  /** A fade handle pressed: the clip, its end, its track's kind, the fade there (if any), and the length the drag gives (frames). */
+  fade?: { clip: number; edge: 'in' | 'out'; kind: 'video' | 'audio'; existing: { id: number; duration: number } | null; frames: number }
+}
+
+/** Where a clip is drawn on the tracks: its track and clip (seconds), its body's left (content x), top (panel y), width and height. */
+type Body = { track: FilmTrack; clip: FilmClip; left: number; top: number; width: number; height: number }
+
+/** The Selection and Pen tools take the Volume line and the fade handles (upstream `grab_at`). */
+const takesBand = (tool: string) => tool === 'Selection' || tool === 'Pen'
+/** A drag's own merge key: its levels are one undo step, a new drag another; `begun` once its first level went out. */
+type LiveToken = { merge: string; begun: boolean }
+let volumeDrags = 0
+const VOLUME = { effect: 'volume', param: 'level' }
 
 /** Upstream's drag auto-scroll: within 20 px of the right edge or 10 px of the left, 6 px a frame. */
 const EDGE_RIGHT = 20
@@ -117,6 +149,33 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
     }
   }, [])
 
+  // A live drag's levels: the latest waits while one is on its way, older ones are dropped.
+  const live = useRef<{ busy: boolean; next: { token: LiveToken; commands: Command[] } | null }>({ busy: false, next: null })
+  const sendLive = useCallback((token: LiveToken, commands: Command[]) => {
+    const state = live.current
+    if (state.busy) {
+      state.next = { token, commands }
+      return
+    }
+    state.busy = true
+    const generation = epoch.current
+    const run = async () => {
+      for (const [index, command] of commands.entries()) {
+        if (epoch.current !== generation) return
+        // The drag's first level starts its undo step; the rest join it.
+        const params = { ...command.params, merge: token.merge, begin: index === 0 && !token.begun }
+        if (index === 0) token.begun = true
+        await latest.current.invoke(command.id, params).catch(() => undefined)
+      }
+    }
+    void run().finally(() => {
+      state.busy = false
+      const next = state.next
+      state.next = null
+      if (next) sendLive(next.token, next.commands)
+    })
+  }, [])
+
   /** The gestures' layout now: the view's zoom and scroll, and this render's rows. */
   const layoutNow = useCallback((): Layout => {
     const { pps, scroll } = store.get()
@@ -130,6 +189,49 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       return { x: event.clientX - (box?.left ?? 0) - geometry().headerWidth, y: event.clientY - (box?.top ?? 0) }
     },
     [root, geometry],
+  )
+
+  /** The clip drawn at a point of the tracks (the document's, not a preview's), or null. */
+  const bodyAt = useCallback(
+    (x: number, y: number): Body | null => {
+      const { film } = latest.current
+      if (!film || latest.current.previewClips) return null
+      const layout = layoutNow()
+      const row = layout.rows.find((each) => each.top <= y && y < each.top + each.height)
+      const track = row ? film.tracks.find((each) => each.id === row.track) : undefined
+      if (!row || !track || x < 0 || x > layout.width) return null
+      const t = layout.scroll + x / layout.pps
+      const clip = track.clips.find((each) => each.start <= t && t < each.start + each.duration)
+      if (!clip) return null
+      return { track, clip, left: (clip.start - layout.scroll) * layout.pps, top: row.top + 1, width: Math.max(1, clip.duration * layout.pps), height: Math.max(1, row.height - 2) }
+    },
+    [layoutNow],
+  )
+
+  /**
+   * What the Selection or Pen tool takes at a point of a clip: a fade handle (at a free clip end's
+   * top corner), a keyframe of an audio clip's Volume line, or its line (away from the trim zones),
+   * as upstream's `grab_at` puts the Volume line before the clip; or null.
+   */
+  const bandGrabAt = useCallback(
+    (x: number, y: number, edgeFree: boolean): { body: Body; fade: 'in' | 'out' } | { body: Body; key: number | null } | null => {
+      const { tool, film } = latest.current
+      const body = bodyAt(x, y)
+      if (!body || !film || !takesBand(tool) || body.track.locked) return null
+      const pps = layoutNow().pps
+      for (const edge of ['in', 'out'] as const) {
+        const fade = fadeAt(body.track, body.clip.id, edge, film.frame)
+        if (fade && onHandle(edge, fade.duration * pps, body.width, x - body.left, y - body.top)) return { body, fade: edge }
+      }
+      if (body.track.kind !== 'audio') return null
+      // Keyframes are set through their timeline time, which names them exactly only at normal speed, forward, inside the clip.
+      const exact = Math.abs(body.clip.speed - 1) < 1e-9 && !body.clip.reverse && body.clip.volumeKeys.every((key) => key.time >= body.clip.start && key.time <= body.clip.start + body.clip.duration)
+      if (!exact) return null
+      const hit = bandHit(body.clip.volumeKeys, body.clip.volumeDb, body.clip.start, body.clip.duration, body.width, body.height, x - body.left, y - body.top)
+      if (!hit || (hit.kind === 'line' && !edgeFree)) return null
+      return { body, key: hit.kind === 'key' ? hit.index : null }
+    },
+    [bodyAt, layoutNow],
   )
 
   const show = useCallback(
@@ -227,7 +329,7 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
   const clearHover = useCallback(() => {
     hovered.current = null
     if (root.current) root.current.style.cursor = ''
-    if (!gesture.current) dragView.set({ razor: null, brackets: [], snapX: null })
+    if (!gesture.current) dragView.set({ razor: null, brackets: [], snapX: null, volume: null, fade: null })
   }, [dragView, root])
 
   /** The hover feedback: the cursor, the edge a press would trim, and the Razor's cut line (snapped, with the snap indicator). */
@@ -268,9 +370,21 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
           brackets.push({ x: xOf(scene, layout, t), top: row.top, height: row.height, out: mark.out, ripple: grab.trim === 'ripple' })
         }
       }
-      dragView.set({ razor, brackets, snapX })
+      // The Volume line and the fade handles come before the clip (upstream `grab_at`).
+      const band = bandGrabAt(x, y, grab.kind === 'clip' && grab.edge == null)
+      let volume = null
+      let fade = null
+      if (band && 'fade' in band) {
+        element.style.cursor = 'ew-resize'
+        fade = { clip: band.body.clip.id, edge: band.fade, ramp: null }
+        brackets.length = 0
+      } else if (band) {
+        element.style.cursor = band.key != null ? 'move' : mods.command || tool === 'Pen' ? 'copy' : 'ns-resize'
+        volume = { clip: band.body.clip.id, line: band.key == null, key: band.key, keyTime: null }
+      }
+      dragView.set({ razor, brackets, snapX, volume, fade })
     },
-    [clearHover, dragView, layoutNow, root],
+    [bandGrabAt, clearHover, dragView, layoutNow, root],
   )
   // Another tool: what a press would grab changes under a pointer that stays put (upstream redraws it every frame).
   useEffect(() => {
@@ -344,6 +458,85 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
     [dragView, layoutNow],
   )
 
+  /** Clip `id`'s body where it is drawn now, or null. */
+  const bodyOf = useCallback(
+    (id: number): Body | null => {
+      const { film } = latest.current
+      const layout = layoutNow()
+      for (const track of film?.tracks ?? []) {
+        const clip = track.clips.find((each) => each.id === id)
+        const row = clip ? layout.rows.find((each) => each.track === track.id) : undefined
+        if (clip && row) return { track, clip, left: (clip.start - layout.scroll) * layout.pps, top: row.top + 1, width: Math.max(1, clip.duration * layout.pps), height: Math.max(1, row.height - 2) }
+      }
+      return null
+    },
+    [layoutNow],
+  )
+
+  /**
+   * A drag of the Volume line or one of its keyframes where the pointer is now (upstream
+   * `timeline_volume::drag` and its keyframe drag): the line's level (or the keyframes either side
+   * of the press, by as much) and a keyframe's level go to the engine as the pointer moves, heard
+   * and drawn, every one merged into the drag's one undo step; a keyframe moved in time is drawn
+   * where it would land and moved on release. The level shows next to the pointer.
+   */
+  const updateVolume = useCallback(
+    (current: Gesture) => {
+      const held = current.volume
+      const { scene } = latest.current
+      const body = held ? bodyOf(held.clip) : null
+      const band = body ? bandOf(body.height) : null
+      if (!held || !body || !band || !scene) return
+      const key = held.key != null ? body.clip.volumeKeys[held.key] : undefined
+      if (held.key != null && !key) return
+      const dx = current.x - current.pressed.x
+      const dy = current.y - current.pressed.y
+      // A keyframe goes the way the drag first goes: sideways in time, else up or down in level.
+      if (held.key != null && held.axis == null) {
+        if (dx === 0 && dy === 0) return
+        held.axis = Math.abs(dx) > Math.abs(dy) ? 'time' : 'value'
+      }
+      if (held.axis === 'time' && key) {
+        const pps = layoutNow().pps
+        const time = keyTimeBetween(body.clip.volumeKeys, held.key!, key.time + dx / pps, scene.frame / scene.tps, body.clip.start, body.clip.start + body.clip.duration)
+        held.keyTime = time
+        dragView.set({ volume: { clip: held.clip, line: false, key: held.key, keyTime: time }, tip: null })
+        return
+      }
+      const db = draggedDb(band, held.from, current.pressed.y, current.y)
+      const tip = { x: current.x, y: current.y, text: dbText(db) }
+      // Nothing changed yet (a press held still): no undo step.
+      if (!held.token.begun && Math.abs(db - held.from) < 1e-9) {
+        dragView.set({ volume: { clip: held.clip, line: held.key == null, key: held.key, keyTime: null }, tip })
+        return
+      }
+      const clamp = (value: number) => Math.min(FADER_MAX_DB, Math.max(FADER_MIN_DB, value))
+      const commands: Command[] = held.around.length
+        ? held.around.map((each) => ({ id: 'effects.setParam', params: { clip: held.clip, ...VOLUME, time: each.ticks, value: clamp(each.value + db - held.from) } }))
+        : [{ id: 'effects.setParam', params: { clip: held.clip, ...VOLUME, value: db } }]
+      sendLive(held.token, commands)
+      dragView.set({ volume: { clip: held.clip, line: held.key == null, key: held.key, keyTime: null }, tip })
+    },
+    [bodyOf, dragView, layoutNow, sendLive],
+  )
+
+  /** A fade handle's drag where the pointer is now: the ramp it would give, and its length next to the pointer. */
+  const updateFade = useCallback(
+    (current: Gesture) => {
+      const held = current.fade
+      const { scene, film } = latest.current
+      const body = held ? bodyOf(held.clip) : null
+      if (!held || !body || !scene || !film) return
+      const pps = layoutNow().pps
+      const frame = scene.frame / scene.tps
+      held.frames = draggedFrames(held.edge, current.x - body.left, body.width, pps, frame, body.clip.duration)
+      const width = held.frames * frame * pps
+      const ramp = { x: held.edge === 'in' ? body.left : body.left + body.width - width, width, top: body.top, height: body.height }
+      dragView.set({ fade: { clip: held.clip, edge: held.edge, ramp }, tip: { x: current.x, y: current.y, text: formatTimecode(held.frames * frame, film.fps, film.dropFrame) } })
+    },
+    [bodyOf, dragView, layoutNow],
+  )
+
   /**
    * The press becomes a drag (upstream `drag_started`): what that sends now, with the modifiers of
    * the frame it starts on, and the drag it starts.
@@ -356,6 +549,14 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       current.started = true
       if (current.timer) clearTimeout(current.timer)
       current.timer = null
+      if (current.fade) {
+        updateFade(current)
+        return
+      }
+      if (current.volume) {
+        updateVolume(current)
+        return
+      }
       // A transition's end resizes it, its middle moves it over its cut (upstream `Drag::Transition`).
       if (current.transition) {
         updateTransition(current)
@@ -367,7 +568,7 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       if (current.drag) current.frame = requestAnimationFrame(autoScroll)
       update()
     },
-    [autoScroll, layoutNow, send, update, updateTransition],
+    [autoScroll, layoutNow, send, update, updateFade, updateTransition, updateVolume],
   )
 
   const onPointerDown = useCallback(
@@ -379,10 +580,30 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       event.currentTarget.setPointerCapture(event.pointerId)
       const current: Gesture = { pointer: event.pointerId, pressed: { x, y, grab: hitTest(scene, layoutNow(), x, y, tool, mods) }, mods, started: false, drag: null, x, y, frame: 0, timer: null }
       const grab = current.pressed.grab
+      const band = grab.kind === 'transition' ? null : bandGrabAt(x, y, grab.kind === 'clip' && grab.edge == null)
       // The Selection tool on a transition: a click selects it, a drag of an end resizes it, of its middle moves it.
-      if (tool === 'Selection' && grab.kind === 'transition') current.transition = { id: grab.id, grab: transitionGrabAt(grab.id, x), frames: 0, pressT: tickAt(scene, layoutNow(), x), span: null }
-      // A press anywhere else on the tracks lets go of the transition chosen.
-      else localSelection.set({ transition: null })
+      if (tool === 'Selection' && grab.kind === 'transition') {
+        current.transition = { id: grab.id, grab: transitionGrabAt(grab.id, x), frames: 0, pressT: tickAt(scene, layoutNow(), x), span: null }
+        localSelection.set({ keyframe: null })
+      } else if (band && 'fade' in band) {
+        // A fade handle: a drag sets the fade's length at that free end.
+        const fade = latest.current.film ? fadeAt(band.body.track, band.body.clip.id, band.fade, latest.current.film.frame) : null
+        current.fade = { clip: band.body.clip.id, edge: band.fade, kind: band.body.track.kind, existing: fade?.transition ? { id: fade.transition.id, duration: fade.transition.duration } : null, frames: 0 }
+        // A click on it (no drag) is a click on the clip.
+        current.pressed = { ...current.pressed, grab: { kind: 'clip', track: band.body.track.id, clip: band.body.clip.id, edge: null } }
+        localSelection.set({ transition: null, keyframe: null })
+      } else if (band) {
+        // The Volume line or a keyframe on it: a keyframe pressed is chosen (Delete removes it).
+        const { clip } = band.body
+        const t = clip.start + (x - band.body.left) / Math.max(1e-9, layoutNow().pps)
+        const key = band.key != null ? clip.volumeKeys[band.key] : undefined
+        const around = band.key == null && clip.volumeKeys.length ? keysAround(clip.volumeKeys, t).map((index) => ({ ticks: Math.round(clip.volumeKeys[index].time * scene.tps), value: clip.volumeKeys[index].value })) : []
+        const from = key ? key.value : levelAt(clip.volumeKeys, clip.volumeDb, t)
+        current.volume = { clip: clip.id, key: band.key, from, around: key ? [{ ticks: Math.round(key.time * scene.tps), value: key.value }] : around, axis: null, token: { merge: `volume-line-${(volumeDrags += 1)}`, begun: false }, keyTime: null }
+        localSelection.set({ transition: null, keyframe: key ? { clip: clip.id, mediaTime: key.mediaTime } : null })
+      }
+      // A press anywhere else on the tracks lets go of the transition and the keyframe chosen.
+      else localSelection.set({ transition: null, keyframe: null })
       // Held past egui's click time, a press is a drag where it is.
       current.timer = setTimeout(() => {
         current.timer = null
@@ -392,7 +613,7 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       hovered.current = null
       dragView.set({ razor: null, brackets: [], snapX: null })
     },
-    [dragView, layoutNow, placeOf, startDrag, transitionGrabAt],
+    [bandGrabAt, dragView, layoutNow, placeOf, startDrag, transitionGrabAt],
   )
 
   const onPointerMove = useCallback(
@@ -412,10 +633,12 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
         if (isDrag(x - current.pressed.x, y - current.pressed.y)) startDrag(current)
         return
       }
-      if (current.transition) updateTransition(current)
+      if (current.fade) updateFade(current)
+      else if (current.volume) updateVolume(current)
+      else if (current.transition) updateTransition(current)
       else update()
     },
-    [clearHover, hover, placeOf, root, startDrag, update, updateTransition],
+    [clearHover, hover, placeOf, root, startDrag, update, updateFade, updateTransition, updateVolume],
   )
 
   const onPointerLeave = useCallback(() => {
@@ -444,6 +667,31 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       if (!current || event.pointerId !== current.pointer) return
       const { scene, tool } = latest.current
       const { x, y } = placeOf(event)
+      if (current.fade && current.started) {
+        const { clip, edge, kind, existing, frames } = current.fade
+        finish()
+        const command = scene ? fadeCommand(kind, clip, edge, existing, frames, scene.frame / scene.tps) : null
+        if (command) send([command])
+        return
+      }
+      if (current.volume && (current.started || current.volume.key != null)) {
+        const { clip, key, axis, keyTime } = current.volume
+        finish()
+        // A keyframe moved in time: one `effects.moveKeyframe` (its level was not changed).
+        const found = key != null ? bodyOf(clip)?.clip.volumeKeys[key] : undefined
+        if (found && axis === 'time' && keyTime != null && scene && Math.abs(keyTime - found.time) * scene.tps >= 1) {
+          send([{ id: 'effects.moveKeyframe', params: { clip, ...VOLUME, mediaTime: found.mediaTime, to: found.mediaTime + Math.round((keyTime - found.time) * scene.tps) } }])
+        }
+        return
+      }
+      // A Cmd/Ctrl-click on the Volume line, or a Pen click, adds a keyframe there (upstream `add_keyframe`).
+      if (current.volume && scene && (modsOf(event).command || tool === 'Pen')) {
+        const { clip } = current.volume
+        finish()
+        const t = Math.max(0, Math.round(tickAt(scene, layoutNow(), x) / scene.frame) * scene.frame)
+        send([{ id: 'effects.addKeyframe', params: { clip, ...VOLUME, time: t } }])
+        return
+      }
       if (current.transition) {
         const { id, grab, frames, span } = current.transition
         finish()
@@ -471,7 +719,7 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       }
       finish()
     },
-    [commitTransition, finish, layoutNow, placeOf, selectTransition, send, store],
+    [bodyOf, commitTransition, finish, layoutNow, placeOf, selectTransition, send, store],
   )
 
   // The clip menu (upstream's `context_menu` on the tracks): a right-click selects an unselected clip first.

@@ -23,9 +23,18 @@ export type DragView = {
   effectDrop: { x: number; width: number; top: number; height: number; transition: boolean; cutX: number | null; label: string | null } | null
   /** A transition whose end is being dragged: its span as drawn while the drag lasts (ticks). */
   transition: { id: number; start: number; duration: number } | null
+  /**
+   * An audio clip's Volume line under the pointer or being dragged: the line drawn thicker, or one
+   * keyframe (its index) highlighted; a keyframe dragged along the clip is drawn at `keyTime` (seconds).
+   */
+  volume: { clip: number; line: boolean; key: number | null; keyTime: number | null } | null
+  /** A clip's fade handle under the pointer or being dragged, and the ramp a drag would give it (x and width from the content's left). */
+  fade: { clip: number; edge: 'in' | 'out'; ramp: { x: number; width: number; top: number; height: number } | null } | null
+  /** The value next to the pointer while dragging (the level, a fade's length); x and y from the content's left and the panel's top. */
+  tip: { x: number; y: number; text: string } | null
 }
 
-const EMPTY: DragView = { previews: new Map(), snapX: null, marquee: null, razor: null, brackets: [], drop: null, effectDrop: null, transition: null }
+const EMPTY: DragView = { previews: new Map(), snapX: null, marquee: null, razor: null, brackets: [], drop: null, effectDrop: null, transition: null, volume: null, fade: null, tip: null }
 
 /** The store: a drag redraws the track halves and the overlay that read it, not the whole panel. */
 export function createDragView() {

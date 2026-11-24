@@ -23,6 +23,8 @@ export const MAX_TRACK_H = 240
 export const HEIGHT_STEP = 12
 export const DRAG_MIN_TRACK_H = 22
 export const DRAG_MAX_TRACK_H = 220
+/** The lowest a newly shown sequence's tracks are fitted to: the name, lock and eye still show. */
+export const FIT_MIN_TRACK_H = 36
 /** The header column: upstream's fixed 204 px, kept between these so the tracks keep some width. */
 export const MIN_HEADER_W = 150
 export const MAX_HEADER_W = 400
@@ -62,6 +64,8 @@ export type TimelineView = {
   savedHeights: [number, number] | null
   /** Where a wheel zoom is anchored: a time and its x, kept under the pointer while zooming. */
   zoomAnchor: { time: number; x: number } | null
+  /** Fit the track heights to the halves once the panel's height is known (a newly shown sequence). */
+  fitHeights: boolean
 }
 
 export const DEFAULT_VIEW: TimelineView = {
@@ -83,6 +87,7 @@ export const DEFAULT_VIEW: TimelineView = {
   fitEmpty: null,
   savedHeights: null,
   zoomAnchor: null,
+  fitHeights: true,
 }
 
 /** The fields kept in the kit store (`timeline`); zoom, scroll, and track heights follow the sequence shown, as upstream. */
@@ -310,6 +315,16 @@ export function trackRows(view: TimelineView, { video, audio, videoHeight, audio
     maxVideoScroll,
     maxAudioScroll,
   }
+}
+
+/**
+ * A half's track height for a newly shown sequence: `preferred` (the default) when its `count`
+ * tracks fit in `room` points, else as tall as lets them all show, never under `FIT_MIN_TRACK_H`
+ * (then the half scrolls). Without it a short Timeline showed V3 as a sliver under the ruler.
+ */
+export function fitTrackHeight(room: number, count: number, preferred: number) {
+  if (!(count > 0) || !Number.isFinite(room) || count * preferred <= room) return preferred
+  return Math.max(Math.min(FIT_MIN_TRACK_H, preferred), Math.min(preferred, Math.floor(Math.max(0, room) / count)))
 }
 
 /**

@@ -1253,6 +1253,92 @@
   top: 0;
 }
 
+/* An audio clip's Volume line (upstream `timeline_volume::paint`): white over a dark shadow, its keyframes as diamonds. */
+.film-clip-volume {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.film-clip-volume polyline {
+  fill: none;
+  stroke-width: 1;
+}
+
+.film-clip-volume-shadow {
+  stroke: #000;
+}
+
+.film-clip-volume-line {
+  stroke: #fff;
+}
+
+.film-clip-volume[data-hover] .film-clip-volume-line {
+  stroke-width: 2;
+}
+
+.film-clip-volume-key {
+  fill: #c8c8c8;
+  stroke: #000;
+  stroke-width: 0.75;
+}
+
+.film-clip-volume-key[data-hover],
+.film-clip-volume-key[data-selected] {
+  fill: #fff;
+}
+
+.film-clip-volume-key[data-selected] {
+  stroke: var(--kit-primary);
+  stroke-width: 1.5;
+}
+
+/* A fade handle at a free clip end's top corner: shown while the pointer is over the clip, or held. */
+.film-clip-fade {
+  position: absolute;
+  top: 0;
+  width: 8px;
+  height: 8px;
+  box-sizing: border-box;
+  border: 1px solid #000;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.film-clip:hover .film-clip-fade,
+.film-clip-fade[data-active] {
+  opacity: 1;
+}
+
+/* A fade's ramp while its handle is dragged, and the value next to the pointer. */
+.film-tl-fade-ramp {
+  position: absolute;
+  pointer-events: none;
+}
+
+.film-tl-fade-ramp polygon {
+  fill: rgba(0, 0, 0, 0.35);
+  stroke: #fff;
+  stroke-width: 1;
+}
+
+.film-tl-tip {
+  position: absolute;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--kit-surface);
+  box-shadow: 0 0 0 1px var(--kit-border);
+  color: var(--kit-text);
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  white-space: pre;
+  pointer-events: none;
+  transform: translate(12px, -22px);
+}
+
 /* Transitions: hatched, outlined (upstream `draw_transition`). */
 .film-tl-transition {
   position: absolute;
@@ -1403,6 +1489,24 @@
   left: 0;
   width: 1px;
   background: var(--kit-primary);
+}
+
+/* The line's grip: 9 px wide over the tracks, the line drawn thicker while hovered or dragged. */
+.film-tl-playhead-grip {
+  position: absolute;
+  top: 40px;
+  bottom: 0;
+  left: -4px;
+  width: 9px;
+  cursor: ew-resize;
+  pointer-events: auto;
+}
+
+.film-tl-playhead-grip:hover ~ .film-tl-playhead-line,
+.film-tl-playhead:has(.film-tl-playhead-grip:hover) .film-tl-playhead-line,
+.film-tl-playhead[data-dragging] .film-tl-playhead-line {
+  left: -1px;
+  width: 3px;
 }
 
 .film-tl-zoombar-wrap {

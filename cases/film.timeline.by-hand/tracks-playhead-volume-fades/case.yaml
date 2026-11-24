@@ -1,0 +1,33 @@
+format: 1
+id: film.timeline.by-hand/tracks-playhead-volume-fades
+feature: film.timeline.by-hand
+intent: >-
+  A person works the Timeline with a real pointer and keyboard, in WebKit (Kition Desktop's engine
+  on macOS): in the dev host's short Timeline all three video tracks show whole below the ruler and
+  a press on V3 lands on V3 (before, V3 was a sliver under the ruler); the playhead's line, grabbed
+  over V2 and dragged to the middle of the clip, moves the timecode while dragging and lands the
+  playhead there, no edit; with the audio tracks expanded, A1's Volume line shows an up-down cursor,
+  dragged up it raises the level with "+n.nn dB" shown at the pointer, one undo step that one undo
+  takes back; two Cmd/Ctrl-clicks add two keyframes; the first dragged down lowers only it, the
+  second dragged left moves it earlier keeping its level, the line between them dragged up raises
+  both by as much, each one undo step; a click chooses a keyframe and Delete removes only it. The
+  V1 clip's fade-in handle, dragged in, shows a ramp and the length and makes a fade in of that
+  length from the clip's In, dragged further lengthens the same fade, dragged back to the In clears
+  it; A1's fade-out handle makes a fade out ending at its Out; each one undo step.
+layer: gate
+source:
+  kind: probe
+  from: web/tests/timeline.mjs webkit (plan "Film usable by hand", phase 4)
+  license: Apache-2.0
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/timeline.mjs, webkit]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [webkit]
+timeout_s: 240
+since: "2026-11-24"

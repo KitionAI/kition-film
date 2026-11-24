@@ -80,7 +80,8 @@ export function createTimelineView(kit = 'film') {
     width: () => geometry.width,
     /**
      * Another sequence shown: as upstream's `timeline_view_of` without a stored view, its tracks
-     * scroll to the start at the default heights and it fits on the next frame. A sequence of
+     * scroll to the start at the default heights (lowered so every track shows, when the panel is
+     * short: `fitTrackHeight`) and it fits on the next frame. A sequence of
      * another `document` (the file reopened after it changed on disk) is another sequence, though
      * its id may be the same.
      */
@@ -88,7 +89,7 @@ export function createTimelineView(kit = 'film') {
       if (sequence === shownSequence && document === shownDocument) return
       shownSequence = sequence
       shownDocument = document
-      set((current) => ({ ...current, vScroll: 0, aScroll: 0, videoTrackHeight: DEFAULT_VIEW.videoTrackHeight, audioTrackHeight: DEFAULT_VIEW.audioTrackHeight, fitPending: true, fitEmpty: null, savedHeights: null }))
+      set((current) => ({ ...current, vScroll: 0, aScroll: 0, videoTrackHeight: DEFAULT_VIEW.videoTrackHeight, audioTrackHeight: DEFAULT_VIEW.audioTrackHeight, fitPending: true, fitEmpty: null, savedHeights: null, fitHeights: true }))
     },
     /** One of `invoke`'s Timeline view commands, about the program playhead (`playhead`, seconds); its answer. */
     command(id: string, params: Record<string, unknown>, playhead: number) {

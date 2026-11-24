@@ -5,9 +5,14 @@ import { useSyncExternalStore } from 'react'
  * Timeline (upstream's `transition_selection`), and the effect chosen in Effect Controls (upstream's
  * `selected_effect`, `effects.select`). Delete reads them (`App.tsx`'s run). One store per page.
  */
-export type LocalSelection = { transition: number | null; effect: { clip: number; index: number } | null }
+export type LocalSelection = {
+  transition: number | null
+  effect: { clip: number; index: number } | null
+  /** A keyframe chosen on an audio clip's Volume line (its media time names it to the engine). */
+  keyframe: { clip: number; mediaTime: number } | null
+}
 
-const EMPTY: LocalSelection = { transition: null, effect: null }
+const EMPTY: LocalSelection = { transition: null, effect: null, keyframe: null }
 
 export function createLocalSelection() {
   let value = EMPTY
@@ -20,7 +25,7 @@ export function createLocalSelection() {
     },
     set(patch: Partial<LocalSelection>) {
       const next = { ...value, ...patch }
-      if (next.transition === value.transition && JSON.stringify(next.effect) === JSON.stringify(value.effect)) return
+      if (next.transition === value.transition && JSON.stringify(next.effect) === JSON.stringify(value.effect) && JSON.stringify(next.keyframe) === JSON.stringify(value.keyframe)) return
       value = next
       for (const listener of listeners) listener()
     },

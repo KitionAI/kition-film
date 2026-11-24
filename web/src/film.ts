@@ -23,8 +23,10 @@ export type FilmClip = {
   label: string
   selected: boolean
   effects: FilmEffectSummary[]
-  /** The Volume effect's level, in dB, which the waveform's rubber band shows. */
+  /** The Volume effect's level, in dB, which the Volume line shows. */
   volumeDb: number
+  /** The Volume level's keyframes: timeline time (seconds), media time (ticks), level (dB), in time order. */
+  volumeKeys: Array<{ time: number; mediaTime: number; value: number }>
   /** Its time interpolation (`frameSampling`, `frameBlending`, `opticalFlow`), or null when the engine does not say. */
   timeInterpolation: string | null
 }
@@ -240,6 +242,7 @@ export function describe(info: KitEngineInfo): FilmInfo {
         keyframed: Object.entries(effect.params ?? {}).filter(([, param]) => (param.keyframes?.length ?? 0) > 0).map(([name]) => name),
       })),
       volumeDb: floatParam(item.effects?.find((effect) => effect.effect === 'volume')?.params?.level?.value) ?? 0,
+      volumeKeys: volumeKeysOf(item.effects?.find((effect) => effect.effect === 'volume')?.params?.level?.keyframes, tps),
       timeInterpolation: item.timeInterpolation ?? null,
     })),
     transitions: (track.transitions ?? []).map((transition) => ({
@@ -333,6 +336,18 @@ export function picturePanBounds(width: number, height: number, zoom: number | n
   if (!zoom || !(width > 0) || !(height > 0)) return null
   const margin = SCROLL_MARGIN / zoom
   return { x0: -margin, y0: -margin, x1: width + margin, y1: height + margin }
+}
+
+/** The Volume level's keyframes as `inspect()` gives them (`time` on the timeline, `mediaTime`, `value`), the damaged ones left out. */
+function volumeKeysOf(keyframes: unknown[] | undefined, tps: number): FilmClip['volumeKeys'] {
+  const out: FilmClip['volumeKeys'] = []
+  for (const raw of keyframes ?? []) {
+    const key = raw as { time?: unknown; mediaTime?: unknown; value?: unknown }
+    const value = floatParam(key.value)
+    if (typeof key.time !== 'number' || typeof key.mediaTime !== 'number' || value == null || !Number.isFinite(key.time)) continue
+    out.push({ time: key.time / tps, mediaTime: key.mediaTime, value })
+  }
+  return out.sort((a, b) => a.time - b.time)
 }
 
 /** A transition's settings as `sequence.inspect` gives them, as `{param: value}` (a keyframed parameter's `{value}`). */

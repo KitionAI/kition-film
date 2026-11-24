@@ -372,6 +372,21 @@ const STATUS: readonly KitUiItem[] = [
 const HISTORY_UNREGISTERED: readonly KitUiItem[] = [{ id: 'control:history.row', label: 'History step' }]
 
 /**
+ * What the Timeline draws by hand (plan "Film usable by hand", phase 4) without an id the manifest
+ * reads: an audio clip's Volume line and its keyframes (upstream registers them per clip at run
+ * time, `timeline.clip.<id>.volume…`, after the manifest was read), the fade handles, the
+ * playhead's line through the tracks, the In and Out marks on the ruler, and the menus of the
+ * ruler, a marker and empty track space.
+ */
+const TIMELINE_BY_HAND: readonly KitUiItem[] = [
+  { id: 'control:timeline.clip.volume', label: 'Volume' },
+  { id: 'control:timeline.clip.volumeKey', label: 'Volume keyframe' },
+  { id: 'control:timeline.clip.fadeIn', label: 'Fade In' },
+  { id: 'control:timeline.clip.fadeOut', label: 'Fade Out' },
+  { id: 'control:timeline.playhead', label: 'Playhead' },
+]
+
+/**
  * Controls upstream does not register, which Kition draws: Export MP4 in the app bar (until
  * Export mode, wave 3), the status bar's message (upstream's whole bar is one click target), the monitors' wrench rows upstream draws without an id, the Project
  * panel's Sort Icons column rows, whose id upstream builds at run time, and Effect Controls' and
@@ -379,7 +394,7 @@ const HISTORY_UNREGISTERED: readonly KitUiItem[] = [{ id: 'control:history.row',
  * declared control is an element upstream registers (`film-upstream.json` `elements`, without
  * its run-time `{}` parts), or a shared id standing for some (`SHARED_ALIASES`).
  */
-export const KITION_ONLY: readonly KitUiItem[] = [{ id: 'control:appBar.exportMovie', label: 'exportMovie' }, { id: 'control:status.message', label: 'Status' }, ...MONITOR_UNREGISTERED, ...PROJECT_UNREAD, ...EFFECTS_UNREGISTERED, ...EFFECTS_PANEL_UNREGISTERED, ...HISTORY_UNREGISTERED, ...DIALOG_KITION]
+export const KITION_ONLY: readonly KitUiItem[] = [{ id: 'control:appBar.exportMovie', label: 'exportMovie' }, { id: 'control:status.message', label: 'Status' }, ...MONITOR_UNREGISTERED, ...PROJECT_UNREAD, ...EFFECTS_UNREGISTERED, ...EFFECTS_PANEL_UNREGISTERED, ...HISTORY_UNREGISTERED, ...DIALOG_KITION, ...TIMELINE_BY_HAND]
 
 /**
  * Every element the Film editor draws (Kit UI protocol section 9). Ids are public: a host hides or
