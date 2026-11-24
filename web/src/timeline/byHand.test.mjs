@@ -115,3 +115,27 @@ test('fade handles: only at a free clip end, at the fade\'s length, and the one 
   assert.deepEqual(fadeCommand('video', 3, 'in', { id: 9, duration: 0.5 }, 0, frame), { id: 'sequence.removeTransition', params: { transitions: [9] } })
   assert.equal(fadeCommand('video', 3, 'in', { id: 9, duration: 0.5 }, 13, frame), null, 'unchanged')
 })
+
+test('the ruler: a marker by place, a dragged In or Out mark on a frame and on its side of the other', async () => {
+  const { draggedMark, laneMenuState, markerNear, rulerTicks } = await import('./menusAt.ts')
+  const markers = [{ id: 1, start: 1, duration: 0 }, { id: 2, start: 2, duration: 1 }]
+  const view = { pps: 100, scroll: 0 }
+  assert.equal(markerNear(markers, view, 103, 5)?.id, 1, 'its head')
+  assert.equal(markerNear(markers, view, 250, 5)?.id, 2, 'its span')
+  assert.equal(markerNear(markers, view, 103, 30), null, 'not below the markers row')
+  assert.equal(markerNear(markers, view, 150, 5), null)
+  const fps = 25
+  assert.ok(Math.abs(draggedMark('in', 1.013, fps, null) - 1) < 1e-9, 'on a frame')
+  assert.ok(Math.abs(draggedMark('in', 5, fps, 2) - 2) < 1e-9, 'the In stops at the Out')
+  // The Out mark is its frame's start: the band's end, a frame later, follows the pointer.
+  assert.ok(Math.abs(draggedMark('out', 3, fps, null) - (3 - 1 / fps)) < 1e-9)
+  assert.ok(Math.abs(draggedMark('out', 0.5, fps, 2) - 2) < 1e-9, 'the Out stops at the In')
+  assert.equal(draggedMark('in', -4, fps, null), 0)
+  assert.equal(rulerTicks(1.013, fps, 1000), 1000)
+  assert.equal(rulerTicks(Number.NaN, fps, 1000), 0)
+  assert.equal(rulerTicks(1, 0, 1000), 0)
+  const track = { clips: [{ id: 1, start: 0, duration: 2 }, { id: 2, start: 4, duration: 2 }] }
+  assert.deepEqual(laneMenuState(track, 3, 0.04), { gap: true, forward: [2] })
+  assert.deepEqual(laneMenuState(track, 1, 0.04), { gap: false, forward: [1, 2] })
+  assert.deepEqual(laneMenuState(track, 7, 0.04), { gap: false, forward: [] })
+})

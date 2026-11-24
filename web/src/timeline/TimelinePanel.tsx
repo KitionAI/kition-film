@@ -44,6 +44,8 @@ import { TransitionMenu, TransitionDurationDialog } from './TransitionControls'
 import { localSelection, useLocalSelection } from '../session/localSelection'
 import { PreviewGhosts } from './PreviewGhosts'
 import { fadeAt } from './fades'
+import { LaneMenu, RulerMenu } from './TimelineMenus'
+import { rulerTicks } from './menusAt'
 import type { Thumbnails } from './thumbnails'
 import { PreviewContext, previewCacheKey, useDrawsPreview, usePreviewFilm, usePreviewState } from '../dialogs/usePreview'
 import { highlightsOnly, previewClickable, previewOnlyItems, previewPictureItems, previewTimeline, type TimelinePreview } from '../dialogs/previewViews'
@@ -552,7 +554,7 @@ function EmptyTimeline({ film, invoke, phrase }: { film: FilmInfo | null; invoke
  * (`useGestures`, upstream `interact`): one engine command per gesture, its drag drawn locally.
  */
 export function TimelinePanel(props: TimelinePanelProps) {
-  const { film: documentFilm, session, labels, revision, playback, store, media, tool, invoke, query, scrub: scrubber, phrase, doc } = props
+  const { film: documentFilm, session, labels, revision, playback, store, media, tool, invoke, query, scrub: scrubber, phrase, t, doc } = props
   const view = useTimelineView(store)
   // A dialog's preview (Task 10): the Timeline draws its timeline, markers, and selection kinds
   // while it shows a sequence (the strip lists them otherwise), laid out from the preview's
@@ -685,6 +687,14 @@ export function TimelinePanel(props: TimelinePanelProps) {
   )
 
   const run = useCallback((command: string, params: Record<string, unknown>) => void invoke(command, params), [invoke])
+  // The ruler by hand: its In and Out marks dragged (one Mark In or Mark Out there), a marker double-clicked (its dialog), its menu.
+  const fps = documentFilm?.fps ?? 30
+  const tpsNow = documentFilm?.ticksPerSecond ?? 0
+  const onMark = useCallback((which: 'in' | 'out', seconds: number) => void invoke(which === 'in' ? 'markers.markIn' : 'markers.markOut', { time: rulerTicks(seconds, fps, tpsNow) }), [invoke, fps, tpsNow])
+  const onEditMarker = useCallback((marker: number) => void invoke('markers.edit', { marker }), [invoke])
+  const [rulerMenu, setRulerMenu] = useState<{ at: { x: number; y: number }; seconds: number; marker: number | null } | null>(null)
+  const onRulerMenu = useCallback((at: { x: number; y: number }, seconds: number, marker: number | null) => setRulerMenu({ at, seconds, marker }), [])
+  const closeRulerMenu = useCallback(() => setRulerMenu(null), [])
   const onResize = useCallback(
     (kind: FilmTrack['kind'], delta: number) => {
       const key = kind === 'video' ? 'videoTrackHeight' : 'audioTrackHeight'
@@ -864,7 +874,7 @@ export function TimelinePanel(props: TimelinePanelProps) {
         ) : null}
       </div>
       <div className="film-tl-ruler-wrap" style={{ left: headerWidth, top: TOP_H - RULER_H, width: contentWidth }}>
-        <Ruler film={film} pps={view.pps} scroll={view.scroll} width={contentWidth} renderBar={renderBar} phrase={phrase} onScrub={scrub} markerMarks={preview?.markers} markerSelected={preview?.selectedMarkers ?? undefined} />
+        <Ruler film={film} pps={view.pps} scroll={view.scroll} width={contentWidth} renderBar={renderBar} phrase={phrase} onScrub={scrub} markerMarks={preview?.markers} markerSelected={preview?.selectedMarkers ?? undefined} onMark={preview ? undefined : onMark} onEditMarker={preview ? undefined : onEditMarker} onMenu={preview ? undefined : onRulerMenu} />
       </div>
       <TrackHalf kind="video" tracks={video} rows={rows.video} top={tracksTop} height={videoHeight} {...halfProps} />
       <div
@@ -904,6 +914,8 @@ export function TimelinePanel(props: TimelinePanelProps) {
       <GestureOverlay dragView={gestures.dragView} left={headerWidth} width={contentWidth} top={TOP_H - RULER_H} bottom={audioTop + audioHeight} phrase={phrase} />
       {gestures.transitionMenu ? <TransitionMenu at={gestures.transitionMenu.at} onClose={gestures.closeTransitionMenu} onDuration={() => gestures.openDurationDialog(gestures.transitionMenu!.id)} onClear={() => gestures.clearTransition(gestures.transitionMenu!.id)} phrase={phrase} /> : null}
       {gestures.durationDialog != null ? <TransitionDurationDialog id={gestures.durationDialog} film={film} invoke={invoke} onClose={gestures.closeDurationDialog} phrase={phrase} /> : null}
+      {gestures.laneMenu ? <LaneMenu at={gestures.laneMenu.at} track={gestures.laneMenu.track} seconds={gestures.laneMenu.seconds} film={film} invoke={invoke} onClose={gestures.closeLaneMenu} phrase={phrase} t={t} /> : null}
+      {rulerMenu ? <RulerMenu at={rulerMenu.at} seconds={rulerMenu.seconds} marker={rulerMenu.marker} film={film} invoke={invoke} onClose={closeRulerMenu} phrase={phrase} /> : null}
       {gestures.menu ? <ClipMenu at={gestures.menu.at} onClose={gestures.closeMenu} film={film} labels={labels} clip={gestures.menu.clip} invoke={invoke} query={query} phrase={phrase} /> : null}
     </div>
   )

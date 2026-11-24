@@ -1,0 +1,33 @@
+format: 1
+id: film.timeline.by-hand/ruler-and-menus
+feature: film.timeline.by-hand
+intent: >-
+  A person uses the ruler and the Timeline's menus with a real pointer, in Chromium: the ruler's
+  right-click menu reads 标记入点 and 添加标记 and sets In and Out at the times right-clicked, each one
+  undo step; the In mark's handle dragged right follows the pointer and moves In later (Out stays),
+  the Out mark's handle dragged left moves Out earlier, In dragged past Out stops at it, each one undo
+  step; Add Marker from the menu puts a marker where it was opened, a double-click on it puts the
+  playhead on it and opens its dialog, its menu reads 编辑标记… and its Clear Selected Marker clears
+  it; Clear In and Out clears both. Empty track space's menu reads 添加轨道 and adds a video track
+  (one undo step); with a gap on V1 its Close Gap moves the clip after the gap back (one undo step),
+  its select-from-here row selects that clip (and its linked sound), and Paste puts a copy at the
+  time right-clicked. The whole script also runs the tracks, playhead, Volume line and fade steps.
+  Before, the In and Out marks and markers could not be touched on the ruler, the ruler had no menu
+  and empty track space opened the clip menu with every row disabled.
+layer: gate
+source:
+  kind: probe
+  from: web/tests/timeline.mjs chromium (plan "Film usable by hand", phase 4)
+  license: Apache-2.0
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/timeline.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 240
+since: "2026-11-24"

@@ -384,6 +384,17 @@ const TIMELINE_BY_HAND: readonly KitUiItem[] = [
   { id: 'control:timeline.clip.fadeIn', label: 'Fade In' },
   { id: 'control:timeline.clip.fadeOut', label: 'Fade Out' },
   { id: 'control:timeline.playhead', label: 'Playhead' },
+  { id: 'control:timeline.ruler.in', label: 'In Point' },
+  { id: 'control:timeline.ruler.out', label: 'Out Point' },
+  { id: 'control:timeline.rulerMenu.markIn', label: 'Mark In' },
+  { id: 'control:timeline.rulerMenu.markOut', label: 'Mark Out' },
+  { id: 'control:timeline.rulerMenu.clearInOut', label: 'Clear In and Out' },
+  { id: 'control:timeline.rulerMenu.addMarker', label: 'Add Marker' },
+  { id: 'control:timeline.markerMenu.edit', label: 'Edit Marker…' },
+  { id: 'control:timeline.markerMenu.clear', label: 'Clear Selected Marker' },
+  { id: 'control:timeline.gapMenu.closeGap', label: 'Close Gap' },
+  { id: 'control:timeline.gapMenu.selectForward', label: 'timeline.selectForward' },
+  { id: 'control:timeline.gapMenu.addTrack', label: 'Add Track' },
 ]
 
 /**

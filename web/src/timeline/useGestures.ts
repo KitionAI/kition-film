@@ -398,6 +398,8 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
   // The transition menu (Set Transition Duration…), and the Set Transition Duration dialog's transition.
   const [transitionMenu, setTransitionMenu] = useState<{ at: ContextMenuPoint; id: number } | null>(null)
   const [durationDialog, setDurationDialog] = useState<number | null>(null)
+  // Empty track space's menu: where it was opened, the track and the time there.
+  const [laneMenu, setLaneMenu] = useState<{ at: ContextMenuPoint; track: number; seconds: number } | null>(null)
   useLayoutEffect(() => {
     // Pending input belongs to the document/sequence and configuration that accepted it.
     // Subscribe synchronously: a deny/allow pair may arrive before React renders either one.
@@ -407,6 +409,7 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       finish()
       clearHover()
       setMenu(null)
+      setLaneMenu(null)
       setTransitionMenu(null)
       setDurationDialog(null)
       localSelection.set({ transition: null })
@@ -740,7 +743,12 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
         setTransitionMenu({ at: { x: event.clientX, y: event.clientY }, id: hit.id })
         return
       }
-      localSelection.set({ transition: null })
+      localSelection.set({ transition: null, keyframe: null })
+      // Empty track space: its own menu (paste, close the gap, select from here, add a track).
+      if (hit.kind === 'empty') {
+        setLaneMenu({ at: { x: event.clientX, y: event.clientY }, track: hit.track, seconds: tickAt(scene, layoutNow(), x) / scene.tps })
+        return
+      }
       const clip = hit.kind === 'clip' ? hit.clip : null
       if (clip != null && !scene.selection.includes(clip)) send([{ id: 'timeline.select', params: { clips: [clip] } }])
       setMenu({ at: { x: event.clientX, y: event.clientY }, clip })
@@ -748,6 +756,7 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
     [layoutNow, placeOf, selectTransition, send],
   )
   const closeMenu = useCallback(() => setMenu(null), [])
+  const closeLaneMenu = useCallback(() => setLaneMenu(null), [])
   const closeTransitionMenu = useCallback(() => setTransitionMenu(null), [])
   const closeDurationDialog = useCallback(() => setDurationDialog(null), [])
   /** Clears transition `id` (its menu's Clear Transition): one undo step. */
@@ -894,5 +903,5 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
   )
 
   const handlers = { onPointerDown, onPointerMove, onPointerUp, onPointerLeave, onPointerCancel: finish, onLostPointerCapture: finish, onContextMenu, onDoubleClick, onDragOver, onDragLeave, onDrop }
-  return { dragView, handlers, menu, closeMenu, scene, transitionMenu, closeTransitionMenu, durationDialog, openDurationDialog: setDurationDialog, closeDurationDialog, clearTransition }
+  return { dragView, handlers, menu, closeMenu, laneMenu, closeLaneMenu, scene, transitionMenu, closeTransitionMenu, durationDialog, openDurationDialog: setDurationDialog, closeDurationDialog, clearTransition }
 }

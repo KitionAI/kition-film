@@ -1,7 +1,8 @@
-import { memo, useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { memo, useEffect, useLayoutEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { formatTimecode, type Phrases } from '@kition/sdk/editor'
 import type { FilmInfo, FilmMarker } from '../film'
 import { RULER_H, rulerSteps, xOf } from './layout'
+import { draggedMark, markerNear } from './menusAt'
 
 /** A stretch of the render bar (`sequence.renderBar`), in seconds. */
 export type RenderSpan = { start: number; end: number; state: 'yellow' | 'red' | 'green' }
@@ -103,6 +104,12 @@ type RulerProps = {
   markerMarks?: ReadonlyMap<number, 'added' | 'removed' | 'changed'>
   /** The markers a dialog's preview highlights (Find's marker matches), drawn dashed. */
   markerSelected?: ReadonlySet<number>
+  /** The In or Out mark dragged to a new place (seconds; the Out mark's own frame): one engine command on release. */
+  onMark?: (which: 'in' | 'out', seconds: number) => void
+  /** A marker double-clicked: its dialog. */
+  onEditMarker?: (marker: number) => void
+  /** A right-click on the ruler: the time under the pointer and the marker there, if any. */
+  onMenu?: (at: { x: number; y: number }, seconds: number, marker: number | null) => void
 }
 
 /**
@@ -110,12 +117,16 @@ type RulerProps = {
  * upstream's steps, the In/Out band, the split edit brackets, and the 2 px render bar. A press or
  * drag scrubs the playhead.
  */
-export const Ruler = memo(function Ruler({ film, pps, scroll, width, renderBar, phrase, onScrub, markerMarks, markerSelected }: RulerProps) {
+export const Ruler = memo(function Ruler({ film, pps, scroll, width, renderBar, phrase, onScrub, markerMarks, markerSelected, onMark, onEditMarker, onMenu }: RulerProps) {
   const canvas = useRef<HTMLCanvasElement>(null)
   const theme = useThemeVersion()
   const dpr = useDevicePixelRatio()
   const at = { pps, scroll }
   const dragging = useRef(false)
+  // The In or Out mark being dragged, drawn where it is until the engine has it.
+  const [markDrag, setMarkDrag] = useState<{ which: 'in' | 'out'; time: number; pointer: number } | null>(null)
+  const shownIn = markDrag?.which === 'in' ? markDrag.time : film.in
+  const shownOut = markDrag?.which === 'out' ? markDrag.time : film.out
   useLayoutEffect(() => {
     const target = canvas.current
     if (!target || width <= 0) return
@@ -132,9 +143,9 @@ export const Ruler = memo(function Ruler({ film, pps, scroll, width, renderBar, 
     const tickBase = RULER_H - 3
     const view = { pps, scroll }
     // In/Out band.
-    if (film.in != null || film.out != null) {
-      const a = xOf(view, film.in ?? 0)
-      const b = xOf(view, film.out != null ? film.out + film.frame : film.duration)
+    if (shownIn != null || shownOut != null) {
+      const a = xOf(view, shownIn ?? 0)
+      const b = xOf(view, shownOut != null ? shownOut + film.frame : film.duration)
       context.fillStyle = bandColor(ink, getComputedStyle(target.parentElement ?? target).backgroundColor)
       context.fillRect(a, labelY + 7, b - a, tickBase - labelY - 7)
     }
@@ -185,11 +196,24 @@ export const Ruler = memo(function Ruler({ film, pps, scroll, width, renderBar, 
     }
     context.stroke()
     context.globalAlpha = 1
-  }, [film, pps, scroll, width, theme, dpr])
+  }, [film, pps, scroll, width, theme, dpr, shownIn, shownOut])
 
-  const timeOf = (event: ReactPointerEvent<HTMLDivElement>) => {
+  const timeOf = (event: ReactPointerEvent<HTMLDivElement> | ReactMouseEvent<HTMLDivElement>) => {
     const box = event.currentTarget.getBoundingClientRect()
     return Math.max(0, scroll + (event.clientX - box.left) / pps)
+  }
+  // The handles follow a drag of their mark.
+  const inX = shownIn != null ? xOf(at, shownIn) : null
+  const outX = shownOut != null ? xOf(at, shownOut + film.frame) : null
+  /**
+   * The marker a press is on (its head, or its span), or null: by its element, else by place (a
+   * double-click's target is the ruler itself, which the press captured).
+   */
+  const markerOf = (event: { target: EventTarget; clientX: number; clientY: number; currentTarget: Element }) => {
+    const id = (event.target as Element).closest?.('[data-marker]')?.getAttribute('data-marker')
+    if (id != null) return film.markers.find((marker) => marker.id === Number(id)) ?? null
+    const box = event.currentTarget.getBoundingClientRect()
+    return markerNear(film.markers, at, event.clientX - box.left, event.clientY - box.top)
   }
 
   return (
@@ -199,21 +223,54 @@ export const Ruler = memo(function Ruler({ film, pps, scroll, width, renderBar, 
       onPointerDown={(event) => {
         if (event.button !== 0) return
         event.currentTarget.setPointerCapture(event.pointerId)
+        // The In or Out mark's handle: a drag moves that mark.
+        const handle = (event.target as Element).closest?.('[data-mark]')?.getAttribute('data-mark')
+        if (onMark && (handle === 'in' || handle === 'out')) {
+          setMarkDrag({ which: handle, time: handle === 'in' ? (film.in ?? 0) : (film.out ?? 0), pointer: event.pointerId })
+          return
+        }
         dragging.current = true
-        onScrub(timeOf(event), 'start')
+        // A press on a marker puts the playhead on its start (upstream `marker_at`).
+        const marker = markerOf(event)
+        onScrub(marker ? marker.start : timeOf(event), 'start')
       }}
       onPointerMove={(event) => {
+        if (markDrag?.pointer === event.pointerId) {
+          const time = draggedMark(markDrag.which, timeOf(event), film.fps, markDrag.which === 'in' ? film.out : film.in)
+          if (time !== markDrag.time) setMarkDrag({ ...markDrag, time })
+          return
+        }
         if (dragging.current) onScrub(timeOf(event), 'move')
       }}
       onPointerUp={(event) => {
+        if (markDrag?.pointer === event.pointerId) {
+          const { which, time } = markDrag
+          setMarkDrag(null)
+          if (time !== (which === 'in' ? film.in : film.out)) onMark?.(which, time)
+          return
+        }
+        if (!dragging.current) return
+        dragging.current = false
+        const marker = markerOf(event)
+        onScrub(marker ? marker.start : timeOf(event), 'end')
+      }}
+      onPointerCancel={(event) => {
+        if (markDrag?.pointer === event.pointerId) {
+          setMarkDrag(null)
+          return
+        }
         if (!dragging.current) return
         dragging.current = false
         onScrub(timeOf(event), 'end')
       }}
-      onPointerCancel={(event) => {
-        if (!dragging.current) return
-        dragging.current = false
-        onScrub(timeOf(event), 'end')
+      onDoubleClick={(event) => {
+        const marker = markerOf(event)
+        if (marker && onEditMarker) onEditMarker(marker.id)
+      }}
+      onContextMenu={(event) => {
+        if (!onMenu) return
+        event.preventDefault()
+        onMenu({ x: event.clientX, y: event.clientY }, timeOf(event), markerOf(event)?.id ?? null)
       }}
       data-testid="film-ruler"
       data-kit-ui-id="control:timeline.ruler"
@@ -225,12 +282,14 @@ export const Ruler = memo(function Ruler({ film, pps, scroll, width, renderBar, 
         if (right <= left) return null
         return <span key={index} className="film-tl-render" style={{ left, width: right - left, background: RENDER[span.state].color }} title={phrase(RENDER[span.state].tip)} data-state={span.state} data-kit-ui-id="control:timeline.renderBar" />
       })}
+      {onMark && inX != null && inX >= -6 && inX <= width + 6 ? <span className="film-tl-mark" data-mark="in" style={{ left: inX - 1 }} title={phrase('In Point')} data-kit-ui-id="control:timeline.ruler.in" data-testid="film-ruler-in" /> : null}
+      {onMark && outX != null && outX >= -6 && outX <= width + 6 ? <span className="film-tl-mark" data-mark="out" style={{ left: outX - 6 }} title={phrase('Out Point')} data-kit-ui-id="control:timeline.ruler.out" data-testid="film-ruler-out" /> : null}
       {film.markers.map((marker: FilmMarker) => {
         const x = xOf(at, marker.start)
         if (x < -40 || x > width + 4) return null
         const color = markerColor(marker.color)
         return (
-          <span key={marker.id} className="film-tl-marker" style={{ left: x - 4 }} title={marker.name || undefined} data-preview={markerMarks?.get(marker.id)} data-preview-selected={markerSelected?.has(marker.id) || undefined} data-kit-ui-id="control:timeline.marker" data-testid={`film-marker-${marker.id}`}>
+          <span key={marker.id} className="film-tl-marker" data-marker={marker.id} style={{ left: x - 4 }} title={marker.name || undefined} data-preview={markerMarks?.get(marker.id)} data-preview-selected={markerSelected?.has(marker.id) || undefined} data-kit-ui-id="control:timeline.marker" data-testid={`film-marker-${marker.id}`}>
             {marker.duration > 0 ? <span className="film-tl-marker-span" style={{ width: marker.duration * pps, background: color }} /> : null}
             <span className="film-tl-marker-head" style={{ background: color }} />
           </span>

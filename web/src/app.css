@@ -1004,6 +1004,29 @@
   height: 2px;
 }
 
+/* The In and Out marks' handles on the ruler: a bracket at each end of the In/Out band. */
+.film-tl-mark {
+  position: absolute;
+  top: 29px;
+  width: 7px;
+  height: 13px;
+  box-sizing: border-box;
+  border: 2px solid var(--kit-text-muted);
+  cursor: col-resize;
+}
+
+.film-tl-mark[data-mark='in'] {
+  border-right: 0;
+}
+
+.film-tl-mark[data-mark='out'] {
+  border-left: 0;
+}
+
+.film-tl-mark:hover {
+  border-color: var(--kit-text);
+}
+
 .film-tl-marker {
   position: absolute;
   top: 2px;

@@ -225,7 +225,7 @@ try {
   // ---- B2: fade handles. V1's clip: dragged in from its In, a fade in of that length.
   const handle = async (edge, id) => center(await box(`film-clip-fade-${edge}-${id}`))
   await page.mouse.move(center(await box('film-clip-10')).x, center(await box('film-clip-10')).y)
-  assert.equal(await kit.getByTestId('film-clip-fade-in-10').evaluate((element) => getComputedStyle(element).opacity), '1', 'the fade handles show while the pointer is over the clip')
+  assert.ok(await until(async () => (await kit.getByTestId('film-clip-fade-in-10').evaluate((element) => getComputedStyle(element).opacity)) === '1'), 'the fade handles show while the pointer is over the clip')
   let from = await handle('in', 10)
   await page.mouse.move(from.x, from.y)
   assert.ok(await until(async () => (await cursor()) === 'ew-resize'), `the handle shows a sideways cursor: ${await cursor()}`)
@@ -268,6 +268,142 @@ try {
   assert.equal((await fadeOut()).start + (await fadeOut()).duration, audioItem.start + audioItem.duration, 'it ends at the clip Out')
   assert.equal(await undoSteps(), steps + 1, 'one undo step')
   await shot('timeline-5-fades')
+
+  // ---- B6 (ruler) and B3: the ruler's menu sets In and Out where it was opened; the marks are dragged.
+  const rulerAt = async (f) => {
+    const clip = await box('film-clip-10')
+    const area = await box('film-ruler')
+    return { x: clip.x + clip.width * f, y: area.y + area.height / 2 }
+  }
+  const frameAt = (f) => Math.round(f * clip10.durationFrames)
+  const near = (a, b) => Math.abs(a - b) <= 1
+  const rulerMenu = async (f) => {
+    const spot = await rulerAt(f)
+    await page.mouse.click(spot.x, spot.y, { button: 'right' })
+    await kit.getByTestId('film-ruler-menu').waitFor({ timeout: 5000 })
+  }
+  await rulerMenu(0.2)
+  assert.equal((await kit.getByTestId('film-ruler-menu-mark-in').textContent()).trim(), zh('Mark In'), 'the ruler menu reads 标记入点')
+  assert.equal((await kit.getByTestId('film-ruler-menu-add-marker').textContent()).trim(), zh('Add Marker'))
+  steps = await undoSteps()
+  await kit.getByTestId('film-ruler-menu-mark-in').click()
+  assert.ok(await until(async () => (await sequence()).in != null && near((await sequence()).in / frameTicks, frameAt(0.2))), `Mark In there: ${(await sequence()).in / frameTicks} for ${frameAt(0.2)} (${await message()})`)
+  assert.equal(await undoSteps(), steps + 1, 'one undo step')
+  await rulerMenu(0.7)
+  await kit.getByTestId('film-ruler-menu-mark-out').click()
+  assert.ok(await until(async () => (await sequence()).out != null && near((await sequence()).out / frameTicks + 1, frameAt(0.7))), `Mark Out there: ${(await sequence()).out / frameTicks}`)
+  // The In mark's handle dragged right: drawn moving, then one Mark In there.
+  let marks = await sequence()
+  let handleBox = await box('film-ruler-in')
+  assert.ok(handleBox, 'the In mark has a handle on the ruler')
+  steps = await undoSteps()
+  let moving = false
+  await drag(center(handleBox), { x: center(handleBox).x + 60, y: center(handleBox).y }, async () => {
+    moving = (await box('film-ruler-in')).x > handleBox.x + 30
+  })
+  assert.ok(moving, 'the In handle follows the drag')
+  assert.ok(await until(async () => (await sequence()).in > marks.in + 2 * frameTicks), `the In mark moves later: ${marks.in / frameTicks} → ${(await sequence()).in / frameTicks}`)
+  assert.equal((await sequence()).out, marks.out, 'the Out mark stays')
+  assert.equal(await undoSteps(), steps + 1, 'one undo step')
+  // The Out mark's handle dragged left.
+  marks = await sequence()
+  handleBox = await box('film-ruler-out')
+  steps = await undoSteps()
+  await drag(center(handleBox), { x: center(handleBox).x - 50, y: center(handleBox).y })
+  assert.ok(await until(async () => (await sequence()).out < marks.out - 2 * frameTicks), `the Out mark moves earlier: ${marks.out / frameTicks} → ${(await sequence()).out / frameTicks}`)
+  assert.equal((await sequence()).in, marks.in, 'the In mark stays')
+  assert.equal(await undoSteps(), steps + 1, 'one undo step')
+  // Dragged past the Out, the In stops at it.
+  marks = await sequence()
+  handleBox = await box('film-ruler-in')
+  await drag(center(handleBox), { x: center(handleBox).x + 600, y: center(handleBox).y })
+  assert.ok(await until(async () => (await sequence()).in === marks.out), `the In stops at the Out: ${(await sequence()).in / frameTicks} ${marks.out / frameTicks}`)
+  await undo()
+  assert.ok(await until(async () => (await sequence()).in === marks.in), 'undo')
+  await shot('timeline-6-in-out')
+
+  // A marker added from the ruler menu where it was opened; a double-click on it opens its dialog.
+  await rulerMenu(0.4)
+  steps = await undoSteps()
+  await kit.getByTestId('film-ruler-menu-add-marker').click()
+  assert.ok(await until(async () => (await sequence()).markers?.length === 1), `Add Marker there (${await message()})`)
+  const marker = (await sequence()).markers[0]
+  assert.ok(near(marker.start / frameTicks, frameAt(0.4)), `at the time right-clicked: ${marker.start / frameTicks} for ${frameAt(0.4)}`)
+  assert.equal(await undoSteps(), steps + 1, 'one undo step')
+  const markerBox = await box(`film-marker-${marker.id}`)
+  await page.mouse.dblclick(markerBox.x + 4, markerBox.y + 5)
+  await kit.getByTestId('film-dialog').waitFor({ timeout: 5000 })
+  assert.ok(near((await sequence()).playhead / frameTicks, marker.start / frameTicks), 'a press on a marker puts the playhead on it')
+  await kit.getByTestId('film-dialog-cancel').click()
+  await kit.getByTestId('film-dialog').waitFor({ state: 'detached', timeout: 5000 })
+  // The menu on the marker: Edit Marker… and Clear Selected Marker, which clears it.
+  await page.mouse.click(markerBox.x + 4, markerBox.y + 5, { button: 'right' })
+  await kit.getByTestId('film-ruler-menu').waitFor({ timeout: 5000 })
+  assert.equal((await kit.getByTestId('film-ruler-menu-edit-marker').textContent()).trim(), zh('Edit Marker…'))
+  steps = await undoSteps()
+  await kit.getByTestId('film-ruler-menu-clear-marker').click()
+  assert.ok(await until(async () => ((await sequence()).markers?.length ?? 0) === 0), `Clear Selected Marker clears it (${await message()})`)
+  assert.equal(await undoSteps(), steps + 1, 'one undo step')
+  // Clear In and Out.
+  await rulerMenu(0.5)
+  await kit.getByTestId('film-ruler-menu-clear-in-out').click()
+  assert.ok(await until(async () => (await sequence()).in == null && (await sequence()).out == null), 'Clear In and Out')
+  await shot('timeline-7-marker')
+
+  // ---- B6 (tracks): empty track space's menu.
+  // Places along the clip as it was before the cut below (the view does not move).
+  const clipArea = await box('film-clip-10')
+  const laneMenu = async (name, f) => {
+    const lane = await box(`film-track-${name}`)
+    const clip = clipArea
+    await page.mouse.click(clip.x + clip.width * f, lane.y + lane.height / 2, { button: 'right' })
+    await kit.getByTestId('film-lane-menu').waitFor({ timeout: 5000 })
+  }
+  await laneMenu('Video 2', 0.5)
+  assert.equal((await kit.getByTestId('film-lane-menu-add-track').textContent()).trim(), zh('Add Track'), 'the menu reads 添加轨道')
+  assert.equal(await kit.getByTestId('film-lane-menu-close-gap').getAttribute('aria-disabled').catch(() => null) ?? String(await kit.getByTestId('film-lane-menu-close-gap').isDisabled()), 'true', 'no gap on an empty track')
+  steps = await undoSteps()
+  const videoTracks = (await sequence()).video.length
+  await kit.getByTestId('film-lane-menu-add-track').click()
+  assert.ok(await until(async () => (await sequence()).video.length === videoTracks + 1), `Add Track adds a video track (${await message()})`)
+  assert.equal(await undoSteps(), steps + 1, 'one undo step')
+  await undo()
+  assert.ok(await until(async () => (await sequence()).video.length === videoTracks), 'undo')
+  // A gap on V1: the clip cut in two with the Razor, its first half cleared.
+  await kit.locator('.kui-app').focus()
+  const whole = await box('film-clip-10')
+  await page.keyboard.press('c')
+  await page.mouse.click(whole.x + whole.width / 2, whole.y + whole.height / 2)
+  await page.keyboard.press('v')
+  assert.ok(await until(async () => (await v1()).items.length === 2), 'the Razor cut V1 in two')
+  const [firstHalf, secondHalf] = (await v1()).items
+  await frame.evaluate((clip) => window.filmPreview.run('timeline.select', { clips: [clip], linked: false }), firstHalf.clip)
+  await frame.evaluate(() => window.filmPreview.run('edit.clear', {}))
+  assert.ok(await until(async () => (await v1()).items.length === 1), 'the first half is cleared: a gap')
+  await laneMenu('Video 1', 0.25)
+  steps = await undoSteps()
+  await kit.getByTestId('film-lane-menu-close-gap').click()
+  assert.ok(await until(async () => (await v1()).items[0].start === 0), `Close Gap moves the clip after it back (${await message()})`)
+  assert.equal(await undoSteps(), steps + 1, 'one undo step')
+  await undo()
+  assert.ok(await until(async () => (await v1()).items[0].start === secondHalf.start), 'undo')
+  // Select this track's clips from here: the second half (V1 only).
+  await laneMenu('Video 1', 0.25)
+  await kit.getByTestId('film-lane-menu-select-forward').click()
+  // With Linked Selection on, the clip's sound joins it, as any selection does.
+  const partner = (await a1()).items.find((item) => item.link != null && item.link === secondHalf.link)?.clip
+  assert.ok(await until(async () => JSON.stringify([...(await sequence()).selection].sort()) === JSON.stringify([secondHalf.clip, partner].filter((id) => id != null).sort())), `the clips from here on V1 are selected: ${JSON.stringify((await sequence()).selection)}`)
+  // Paste at the time right-clicked: the copied clip lands there on V1.
+  await kit.locator('.kui-app').focus()
+  await page.keyboard.press(`${mod}+c`)
+  await page.waitForTimeout(200)
+  await laneMenu('Video 1', 0.1)
+  steps = await undoSteps()
+  await kit.getByTestId('film-cmd-edit.paste').click()
+  assert.ok(await until(async () => (await v1()).items.length === 2), `Paste puts a copy there (${await message()})`)
+  assert.ok(near((await v1()).items[0].start / frameTicks, frameAt(0.1)), `at the time right-clicked: ${(await v1()).items[0].start / frameTicks} for ${frameAt(0.1)}`)
+  assert.equal(await undoSteps(), steps + 1, 'one undo step')
+  await shot('timeline-8-menus')
 
   assert.deepEqual(errors, [], 'no page errors')
   console.log(`timeline ${which}: ok`)
