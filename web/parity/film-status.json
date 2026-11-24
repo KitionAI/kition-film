@@ -1397,7 +1397,7 @@
   "menu:Window/Workspaces/window.workspace.audio": {
     "status": "hidden",
     "wave": 1,
-    "reason": "Its panels (the audio mixers) are not drawn; without them it is Assembly."
+    "reason": "Its Audio Clip Mixer and Audio Mixing panels are not drawn; the Audio Track Mixer opens from Window ▸ Audio Track Mixer."
   },
   "menu:Window/Workspaces/window.workspace.captionsandgraphics": {
     "status": "hidden",
@@ -1658,9 +1658,8 @@
     "wave": 1
   },
   "menu:Window/window.panel.AudioTrackMixer": {
-    "status": "hidden",
-    "wave": 1,
-    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
+    "status": "done",
+    "wave": 1
   },
   "menu:Window/window.panel.Color": {
     "status": "hidden",
@@ -2864,9 +2863,9 @@
     ]
   },
   "panel:audioTrackMixer": {
-    "status": "hidden",
+    "status": "done",
     "wave": 2,
-    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
+    "note": "The plan \"Film usable by hand\", phase 7: one strip per audio track and the Mix (fader, pan, Mute, Solo, name; the Mix's meter). Automation modes, effects and sends, submixes, input and output routing and per-track meters are not drawn."
   },
   "panel:color": {
     "status": "hidden",
@@ -5777,7 +5776,7 @@
     "wave": 2
   },
   "element:mixer.{}.pan": {
-    "status": "todo",
+    "status": "done",
     "wave": 2
   },
   "element:mixer.{}.panValue": {
@@ -5793,11 +5792,11 @@
     "wave": 2
   },
   "element:mixer.{}.mute": {
-    "status": "todo",
+    "status": "done",
     "wave": 2
   },
   "element:mixer.{}.solo": {
-    "status": "todo",
+    "status": "done",
     "wave": 2
   },
   "element:mixer.{}.soloSafe": {
@@ -5809,19 +5808,20 @@
     "wave": 2
   },
   "element:mixer.{}.fader": {
-    "status": "todo",
+    "status": "done",
     "wave": 2
   },
   "element:mixer.{}.meter": {
     "status": "todo",
-    "wave": 2
+    "wave": 2,
+    "note": "Drawn on the Mix strip only (the sound output's peaks, as Audio Meters); a track's strip needs the engine to report each track's level, which it does not (it mixes the sequence in one pass)."
   },
   "element:mixer.{}.value": {
-    "status": "todo",
+    "status": "done",
     "wave": 2
   },
   "element:mixer.{}.name": {
-    "status": "todo",
+    "status": "done",
     "wave": 2
   },
   "element:mixer.{}.pan51": {

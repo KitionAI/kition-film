@@ -1,0 +1,29 @@
+format: 1
+id: film.audio.track-mixer/by-hand
+feature: film.audio.track-mixer
+intent: >-
+  A person mixes by hand, in WebKit (Kition Desktop's engine on macOS): Window ▸ 音频轨道混合器 shows
+  a strip for each of the sample's audio tracks, named, then 混合 (the Mix); A1's fader dragged
+  down with a real pointer shows about -12.0 while dragging and sets A1's volume to -12 dB on
+  release, one undo step that one undo takes back; dragged to the foot it reads -∞ and the track is
+  silent, and a double-click puts it back at 0 dB; a click on A1's pan pans it right, one undo
+  step; Mute in the mixer mutes A1 and its track header shows it, the header's Mute unmutes it in
+  the mixer, and Solo follows the same way both ways; while the program plays the Mix meter rises
+  above -30 dB and falls after a stop. Before, Window ▸ Audio Track Mixer was hidden.
+layer: gate
+source:
+  kind: probe
+  from: web/tests/mixer.mjs webkit (plan "Film usable by hand", phase 7)
+  license: Apache-2.0
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/mixer.mjs, webkit]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [webkit]
+timeout_s: 240
+since: "2026-11-24"

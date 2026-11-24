@@ -23,6 +23,7 @@
     "test:scrub": "node tests/scrub.mjs chromium && node tests/scrub.mjs webkit",
     "test:timeline": "node tests/timeline.mjs chromium && node tests/timeline.mjs webkit",
     "test:media": "node tests/media.mjs chromium && node tests/media.mjs webkit",
+    "test:mixer": "node tests/mixer.mjs chromium && node tests/mixer.mjs webkit",
     "test:scenarios": "pnpm test:scenarios:1 && pnpm test:scenarios:2 && pnpm test:scenarios:3 && pnpm test:scenarios:4",
     "test:scenarios:1": "playwright test --shard=1/4",
     "test:scenarios:2": "playwright test --shard=2/4",

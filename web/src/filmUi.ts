@@ -238,7 +238,33 @@ const DIALOG_CONTROLS: readonly KitUiItem[] = DIALOG_ITEMS.filter((item) => item
 const DIALOG_KITION: readonly KitUiItem[] = DIALOG_ITEMS.filter((item) => item.upstream.length === 0).map(({ id, label }) => ({ id, label }))
 
 /** Every shared id and the upstream ids it stands for. */
-export const SHARED_ALIASES: Readonly<Record<string, readonly string[]>> = { ...TRACK_ALIASES, ...MONITOR_ALIASES, ...EFFECT_ALIASES, ...DIALOG_ALIASES }
+/**
+ * The Audio Track Mixer's strip controls (`panels/mixer.rs`), one id for every strip, each standing
+ * for upstream's per-strip ids (`mixer.A1.fader`, `mixer.Mix.fader`, …).
+ */
+export const MIXER_ALIASES: Readonly<Record<string, readonly string[]>> = {
+  'control:mixer.fader': ['mixer.{}.fader'],
+  'control:mixer.pan': ['mixer.{}.pan'],
+  'control:mixer.mute': ['mixer.{}.mute'],
+  'control:mixer.solo': ['mixer.{}.solo'],
+  'control:mixer.meter': ['mixer.{}.meter'],
+  'control:mixer.value': ['mixer.{}.value'],
+  'control:mixer.name': ['mixer.{}.name'],
+}
+
+const MIXER_LABELS: Readonly<Record<string, string>> = {
+  'control:mixer.fader': 'Volume',
+  'control:mixer.pan': 'Pan',
+  'control:mixer.mute': 'Mute Track',
+  'control:mixer.solo': 'Solo Track',
+  'control:mixer.meter': 'Audio Meters',
+  'control:mixer.value': 'Volume',
+  'control:mixer.name': 'Name',
+}
+
+const MIXER: readonly KitUiItem[] = Object.keys(MIXER_ALIASES).map((id) => ({ id, label: MIXER_LABELS[id] ?? id }))
+
+export const SHARED_ALIASES: Readonly<Record<string, readonly string[]>> = { ...TRACK_ALIASES, ...MONITOR_ALIASES, ...EFFECT_ALIASES, ...DIALOG_ALIASES, ...MIXER_ALIASES }
 
 const MONITOR_LABELS: Readonly<Record<string, string>> = {
   'control:monitor.picture': 'picture',
@@ -441,6 +467,6 @@ export const FILM_UI: KitUiDeclaration & { tools: KitUiItem[]; panels: KitUiItem
   tabs: [{ id: 'tab:home', label: 'homeTab' }],
   tools: FILM_TOOLS.map((tool) => ({ id: `tool:${tool.id}`, label: tool.label })),
   panels: upstream.panels.map((panel) => ({ id: `panel:${panel.id}`, label: panel.title })),
-  controls: [...MODES, ...HEADER, ...WORKSPACE_DIALOGS, ...TIMELINE, ...TRACK, ...MONITOR, ...PROJECT, ...EFFECTS, ...METERS_AND_MARKERS, ...STATUS, ...DIALOG_CONTROLS, ...KITION_ONLY],
+  controls: [...MODES, ...HEADER, ...WORKSPACE_DIALOGS, ...TIMELINE, ...TRACK, ...MONITOR, ...PROJECT, ...EFFECTS, ...METERS_AND_MARKERS, ...MIXER, ...STATUS, ...DIALOG_CONTROLS, ...KITION_ONLY],
   menus: FILM_MENUS.filter((row) => !isHiddenOnWeb(row)),
 }

@@ -4462,3 +4462,160 @@ button.film-project-tab {
   text-align: center;
   pointer-events: none;
 }
+
+/* Audio Track Mixer (panels/AudioTrackMixer.tsx): one strip per audio track, then the Mix. */
+.film-mixer {
+  display: flex;
+  gap: 2px;
+  height: 100%;
+  padding: 6px;
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+.film-mixer-empty {
+  align-items: center;
+  justify-content: center;
+  color: var(--kit-text-muted, var(--kit-text));
+}
+
+.film-mixer-strip {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 76px;
+  padding: 6px 4px;
+  border-radius: 4px;
+  background: var(--kit-surface);
+  box-sizing: border-box;
+}
+
+.film-mixer-strip[data-kind='mix'] {
+  margin-left: 6px;
+  border-left: 1px solid var(--kit-border);
+}
+
+.film-mixer-pan {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.film-mixer-pan input {
+  width: 100%;
+  accent-color: var(--kit-primary);
+}
+
+.film-mixer-buttons {
+  display: flex;
+  gap: 4px;
+  min-height: 20px;
+}
+
+.film-mixer-toggle {
+  width: 22px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--kit-border);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--kit-text);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.film-mixer-toggle[aria-pressed='true'] {
+  background: var(--kit-primary);
+  border-color: var(--kit-primary);
+  color: var(--kit-surface);
+}
+
+.film-mixer-toggle[data-solo][aria-pressed='true'] {
+  background: var(--kit-warning, var(--kit-primary));
+  border-color: var(--kit-warning, var(--kit-primary));
+}
+
+.film-mixer-body {
+  display: flex;
+  gap: 6px;
+}
+
+.film-mixer-fader {
+  position: relative;
+  width: 18px;
+  cursor: ns-resize;
+  touch-action: none;
+}
+
+.film-mixer-fader::before {
+  content: '';
+  position: absolute;
+  inset: 0 7px;
+  border-radius: 2px;
+  background: var(--kit-border);
+}
+
+.film-mixer-zero {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--kit-text);
+  opacity: 0.4;
+}
+
+.film-mixer-knob {
+  position: absolute;
+  left: 0;
+  width: 18px;
+  height: 10px;
+  margin-top: -5px;
+  border-radius: 2px;
+  background: var(--kit-text);
+  box-shadow: 0 0 0 1px var(--kit-surface);
+}
+
+.film-mixer-fader[data-dragging] .film-mixer-knob,
+.film-mixer-fader:focus-visible .film-mixer-knob {
+  background: var(--kit-primary);
+}
+
+.film-mixer-meter {
+  display: flex;
+  gap: 2px;
+  height: 160px;
+}
+
+.film-mixer-meter-bar {
+  position: relative;
+  width: 5px;
+  background: var(--kit-border);
+  overflow: hidden;
+}
+
+.film-mixer-meter-bar::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(var(--film-mixer-level, 0) * 100%);
+  background: var(--kit-success, var(--kit-primary));
+}
+
+.film-mixer-value {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.film-mixer-name {
+  width: 100%;
+  overflow: hidden;
+  font-size: 11px;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

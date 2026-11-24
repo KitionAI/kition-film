@@ -561,3 +561,12 @@ features:
     gap: "File ▸ Import… and Cmd+I still pick one file: they ask with the Kit UI protocol's host/pick, which the protocol has replaced and which answers one path; the multiple choice goes through links/pick (the scenario F06 holds host/pick by name). A file dropped from the computer is read whole into the page and written through the host's write of a new file beside the project (host/write mode export), which the protocol has replaced with files/create and files/write; those answer a handle, and the engine needs a path it can lend. A desktop host's files/dropped (read handles) is not taken for the same reason. The engine keeps one undo step per imported file. The export is H.264 MP4 only, named after the project."
     cases: [film.media.in-out/export-dialog, film.media.in-out/import-and-drop]
     since: "2026-11-24"
+  - id: film.audio.track-mixer
+    title: "The Audio Track Mixer by hand (Window ▸ Audio Track Mixer): one strip per audio track and the Mix, each named, with its fader on upstream's taper (dragged, the level shown as it moves, heard live and one undo step on release; a double-click back to 0 dB), its pan (one undo step), Mute and Solo (the tracks' own, the same as the Timeline's track headers, both ways), and on the Mix a meter that moves while the program plays"
+    dimension: [function]
+    priority: P1
+    status: partial
+    paths: [web/src/panels/AudioTrackMixer.tsx, web/src/panels/mixerModel.ts, web/src/App.tsx, web/src/menus/hidden.ts, web/tests/mixer.mjs]
+    gap: "The tracks' strips have no meter: the engine mixes the sequence in one pass and reports no level per track (only the Mix is metered, from the sound output). Automation modes and recording, track effects and sends, submixes, input mapping and output routing are not drawn. The Audio workspace stays hidden: its Audio Clip Mixer and Audio Mixing panels are not drawn."
+    cases: [film.audio.track-mixer/by-hand]
+    since: "2026-11-24"

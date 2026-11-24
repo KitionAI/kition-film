@@ -115,7 +115,6 @@ const HIDDEN_PANELS: Readonly<Record<string, string>> = {
   libraries: 'Libraries are not built.',
   audioClipMixer: PANEL_LATER,
   metadata: PANEL_LATER,
-  audioTrackMixer: PANEL_LATER,
   color: PANEL_LATER,
   scopes: PANEL_LATER,
   graphicsTemplates: PANEL_LATER,
@@ -130,7 +129,7 @@ const HIDDEN_PANELS: Readonly<Record<string, string>> = {
 /** Built-in workspaces left out: every panel they are for is one the editor does not draw. */
 const HIDDEN_WORKSPACES: Readonly<Record<string, string>> = {
   Color: 'Its panels (Color, Scopes) are not drawn; without them it is Assembly.',
-  Audio: 'Its panels (the audio mixers) are not drawn; without them it is Assembly.',
+  Audio: 'Its Audio Clip Mixer and Audio Mixing panels are not drawn; the Audio Track Mixer opens from Window ▸ Audio Track Mixer.',
   'Captions and Graphics': 'Its panels (Text, Graphics Templates) are not drawn; without them it is Editing.',
 }
 

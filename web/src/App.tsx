@@ -77,6 +77,7 @@ import { EffectsPanel } from './panels/EffectsPanel'
 import { localSelection } from './session/localSelection'
 import { PropertiesPanel } from './panels/PropertiesPanel'
 import { AudioMeters } from './panels/AudioMeters'
+import { AudioTrackMixer } from './panels/AudioTrackMixer'
 import { MarkersPanel } from './panels/MarkersPanel'
 import { HistoryPanel } from './panels/HistoryPanel'
 import { InfoPanel } from './panels/InfoPanel'
@@ -240,6 +241,8 @@ type Live = {
   projectQuery: (id: string, params?: Record<string, unknown>) => Promise<unknown>
   /** The sound as it is scheduled, which the Audio Meters take as the audio clock reaches it. */
   meterFeed: MeterFeed
+  /** The same sound for the Audio Track Mixer's Mix meter. */
+  mixerFeed: MeterFeed
 }
 
 const LiveContext = createContext<Live | null>(null)
@@ -663,6 +666,12 @@ function AudioMetersPart() {
   return <AudioMeters feed={meterFeed} playing={clocks.program.playing} />
 }
 
+/** Audio Track Mixer (upstream `panels/mixer.rs`): the active sequence's audio tracks and its Mix. */
+function AudioTrackMixerPart() {
+  const { state, revision, query, invoke, mixerFeed, clocks, phrase } = useLive()
+  return <AudioTrackMixer revision={revision} sequence={state?.activeSequence ?? null} query={query} invoke={invoke} feed={mixerFeed} playing={clocks.program.playing} phrase={phrase} />
+}
+
 /** Markers (upstream `misc.rs` `markers`): the active sequence's. */
 function MarkersPart() {
   const { state, filmState, invoke, phrase } = useLive()
@@ -703,6 +712,7 @@ const PARTS: Readonly<Record<string, PanelParts>> = {
   effects: { render: () => <EffectsPart /> },
   properties: { render: () => <PropertiesPart /> },
   audioMeters: { render: () => <AudioMetersPart /> },
+  audioTrackMixer: { render: () => <AudioTrackMixerPart /> },
   markers: { render: () => <MarkersPart /> },
   history: { render: () => <HistoryPart /> },
   info: { render: () => <InfoPart /> },
@@ -873,6 +883,8 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
   sourceContextNow.current = sourceContext
   // What the Audio Meters show: the sound output's chunks as its clock reaches them.
   const meterFeed = useMemo(() => createMeterFeed(), [])
+  // The Audio Track Mixer's Mix meter reads the same sound from a feed of its own (a feed's windows are taken once).
+  const mixerFeed = useMemo(() => createMeterFeed(), [])
   // Upstream's two clocks (program and source) and the shuttle; the sound output is made in the first play gesture.
   const { playback, state: clocks } = usePlayback({
     program: () => (state ? { playhead: state.playhead, duration: state.duration, in: state.in, out: state.out, frame: state.frame, sourceItem: state.sourceItem } : null),
@@ -894,10 +906,16 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
       const player = new FilmAudioPlayer(() => docNow.current, { onError: status })
       // The Audio Meters read the Mix as it is scheduled, on the player's own clock; source playback is not metered, as upstream.
       player.onChunk = (samples, when, rate, kind) => {
-        if (kind === 'program') meterFeed.push(samples, when, rate)
+        if (kind !== 'program') return
+        meterFeed.push(samples, when, rate)
+        mixerFeed.push(samples, when, rate)
       }
-      player.onSilence = () => meterFeed.clear()
+      player.onSilence = () => {
+        meterFeed.clear()
+        mixerFeed.clear()
+      }
       meterFeed.setClock(() => player.heardTime)
+      mixerFeed.setClock(() => player.heardTime)
       return player
     },
     onError: status,
@@ -1672,6 +1690,7 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
     projectDeps,
     projectQuery,
     meterFeed,
+    mixerFeed,
   }
   // Upstream's title: the project's name, and " - Edited" while it has unsaved changes.
   const title = state ? (session.dirty ? phrase('{name} - Edited').replace('{name}', state.project) : state.project) : ''
