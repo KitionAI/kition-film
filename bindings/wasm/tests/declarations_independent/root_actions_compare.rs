@@ -37,7 +37,8 @@ fn root_actions_hold_every_serialized_or_replaced_field_in_empty_and_populated_p
                 assert!(spec.name_params.is_empty() && spec.name_field.is_none() && spec.index.is_none() && !spec.index_numbers && !spec.index_reversed);
                 assert_eq!(
                     spec.reads,
-                    if command == "file.saveAll" { vec![EditorState::Part, EditorState::Mode, EditorState::Active] } else { vec![EditorState::Part] }
+                    // Save All writes the project only (the open sequence is the person's view state, never the file's): it reads no editor state.
+                    if command == "file.saveAll" { vec![] } else { vec![EditorState::Part] }
                 );
                 for force in [false, true] {
                     let params =

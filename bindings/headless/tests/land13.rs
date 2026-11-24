@@ -111,10 +111,15 @@ async fn expanded_nests_hold_the_source_state_they_copy() {
         let inside = v1(&doc.inspect().unwrap()["sequence"])[0];
         doc.execute("sequence.open", json!({"item":outer})).unwrap();
         let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
-        let (_, basis) = f.inspect().await;
+        let (shown, basis) = f.inspect().await;
+        assert_eq!(shown["id"], outer, "the file opens on its first sequence, the outer one");
         f.colleague(&[("sequence.open", json!({"item":inner})), opacity(inside, 25.0), ("sequence.open", json!({"item":outer}))]);
-        // The file keeps no placement mode (it is the person's view state): the run sets it.
-        let steps = json!([{"command":"sequence.nestSequences","params":{"on":!expand}},{"command":"sequence.open","params":{"item":outer}},{"command":"timeline.place","params":{"item":inner,"track":"V2","seconds":6}}]);
+        // The file keeps no placement mode (it is the person's view state): nesting is the
+        // default, and the run turns it off to expand.
+        let mut steps = vec![json!({"command":"timeline.place","params":{"item":inner,"track":"V2","seconds":6}})];
+        if expand {
+            steps.insert(0, json!({"command":"sequence.nestSequences","params":{"on":false}}));
+        }
         let answer = f.call("run", json!({"basis":basis,"steps":steps})).await;
         if expand {
             assert!(answer.is_err(), "expanded source content changed: {answer:?}");

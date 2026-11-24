@@ -30,6 +30,10 @@ test('UI-R1 a .kfilm changed outside merges into the stored replica as one impor
   const checkpoint = await page.evaluate(() => window.devHost.recordCheckpoint({ origin: 'save' }))
   expect(checkpoint, 'a checkpoint of the saved version').toBeTruthy()
   const since = await page.evaluate(() => window.devHost.connection().ai.version())
+  const docId = () => page.evaluate(() => window.devHost.connection().replica.info())
+  const changesSince = () => page.evaluate(([since, schema]) => window.devHost.connection().ai.changes(since, schema), [since, SCHEMA])
+  const id = await docId()
+  expect(typeof id === 'string' && id.length > 0, `the document has a replica id: ${id}`).toBe(true)
   const root = JSON.stringify((await film.details()).project.root)
 
   // Another program renames the sequence in the file; the document reopens with the stored replica.
@@ -43,17 +47,25 @@ test('UI-R1 a .kfilm changed outside merges into the stored replica as one impor
   expect(after, 'the outside change shows').toContain('Changed outside')
   expect(after.replaceAll('Changed outside', 'Sequence 01'), 'and the rest is the project the person saved, their matte too').toEqual(root)
 
-  // The replica's lineage continued: its history holds the version before the change, and what
-  // changed since is the outside rename (one import), not a replica started over.
-  const answer = await page.evaluate(([since, schema]) => window.devHost.connection().ai.changes(since, schema), [since, SCHEMA])
+  // The replica's lineage continued: it keeps its id, its history holds the version before the
+  // change, and the outside rename is recorded on it.
+  expect(await docId(), 'the document keeps its replica id').toBe(id)
+  const answer = await changesSince()
   expect(answer.changes, `the replica still holds the earlier version: ${JSON.stringify(answer).slice(0, 400)}`).not.toBeNull()
   expect(JSON.stringify(answer.changes)).toContain('Changed outside')
-  expect(answer.changes.created ?? [], 'no object made anew').toEqual([])
-  expect(answer.changes.deleted ?? [], 'no object dropped').toEqual([])
   expect(await page.evaluate(path => window.devHost.history.replica(path) != null, PATH), 'the replica is still kept').toBe(true)
   await save(film, page)
   const kept = await page.evaluate(path => window.devHost.history.checkpoints(path), PATH)
   expect(kept.some(entry => entry.id === checkpoint.id && entry.available), `the earlier checkpoint stays available: ${JSON.stringify(kept)}`).toBe(true)
+
+  // The control: the same file opened alone (its replica dropped) starts another replica.
+  const current = await bytes(page)
+  await page.evaluate(([path, list]) => window.devHost.open(path, new Uint8Array(list).buffer), [PATH, current])
+  await expect.poll(() => film.frame()?.evaluate(() => typeof window.filmPreview?.run === 'function').catch(() => false), { timeout: 45_000 }).toBe(true)
+  await expect.poll(async () => JSON.stringify((await film.details()) ?? null).includes('Changed outside'), { timeout: 45_000 }).toBe(true)
+  const alone = await changesSince()
+  expect(alone.changes, 'a file opened alone does not hold the earlier version').toBeNull()
+  expect(await docId(), 'a file opened alone has another replica').not.toBe(id)
 })
 
 test('7n the open sequence is the person\'s view state, kept by the host and put back on reopening, never in the file', async ({ film, page }) => {
