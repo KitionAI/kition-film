@@ -133,14 +133,8 @@ function PlayheadTimecode({ film, playback, onSeek, phrase }: { film: FilmInfo; 
  * view store set its transform directly, so playback redraws nothing else. While playing it pages
  * the view along (Settings ▸ Timeline ▸ Timeline Playback Auto-Scrolling, page scroll by default).
  */
-function Playhead({ film, playback, store, width, autoScroll, onScrub, phrase }: { film: FilmInfo; playback: Playback; store: TimelineViewStore; width: number; autoScroll: string; onScrub: (seconds: number, phase: 'start' | 'move' | 'end') => void; phrase: Phrases }) {
+function Playhead({ film, playback, store, width, autoScroll, phrase }: { film: FilmInfo; playback: Playback; store: TimelineViewStore; width: number; autoScroll: string; phrase: Phrases }) {
   const element = useRef<HTMLDivElement>(null)
-  // The line through the tracks is grabbed and dragged like the ruler (upstream's playhead line): the same scrub.
-  const grabbed = useRef<number | null>(null)
-  const timeOfPointer = (event: { clientX: number }) => {
-    const area = element.current?.parentElement?.getBoundingClientRect()
-    return Math.max(0, timeAt(store.get(), event.clientX - (area?.left ?? 0)))
-  }
   const resting = useRef(film.playhead)
   resting.current = film.playhead
   const latest = useRef({ width, autoScroll })
@@ -189,38 +183,8 @@ function Playhead({ film, playback, store, width, autoScroll, onScrub, phrase }:
     <div ref={element} className="film-tl-playhead" data-testid="film-playhead">
       <span className="film-tl-playhead-head" />
       <span className="film-tl-playhead-line" />
-      <span
-        className="film-tl-playhead-grip"
-        title={phrase('Playhead')}
-        onPointerDown={(event) => {
-          if (event.button !== 0) return
-          event.stopPropagation()
-          event.currentTarget.setPointerCapture(event.pointerId)
-          grabbed.current = event.pointerId
-          element.current?.setAttribute('data-dragging', '')
-          onScrub(timeOfPointer(event), 'start')
-        }}
-        onPointerMove={(event) => {
-          if (grabbed.current !== event.pointerId) return
-          event.stopPropagation()
-          onScrub(timeOfPointer(event), 'move')
-        }}
-        onPointerUp={(event) => {
-          if (grabbed.current !== event.pointerId) return
-          event.stopPropagation()
-          grabbed.current = null
-          element.current?.removeAttribute('data-dragging')
-          onScrub(timeOfPointer(event), 'end')
-        }}
-        onPointerCancel={(event) => {
-          if (grabbed.current !== event.pointerId) return
-          grabbed.current = null
-          element.current?.removeAttribute('data-dragging')
-          onScrub(timeOfPointer(event), 'end')
-        }}
-        data-kit-ui-id="control:timeline.playhead"
-        data-testid="film-playhead-line"
-      />
+      {/* Where the line is grabbed on empty track space (`useGestures`): drawn thicker under the pointer and while dragged. */}
+      <span className="film-tl-playhead-grip" title={phrase('Playhead')} data-kit-ui-id="control:timeline.playhead" data-testid="film-playhead-line" />
     </div>
   )
 }
@@ -712,7 +676,7 @@ export function TimelinePanel(props: TimelinePanelProps) {
 
   const gestureGeometry = useRef<GestureGeometry>({ headerWidth, contentWidth, rows: [], maxVideo: 0 })
   const geometryOf = useCallback(() => gestureGeometry.current, [])
-  const gestures = useGestures({ film, session, store, tool, invoke, rollRipple: prefs.rollRipple, still: prefs.still, transitionDurations: prefs.transitions, items, geometry: geometryOf, root, doc, previewClips: documentClips })
+  const gestures = useGestures({ film, session, store, tool, invoke, scrub, rollRipple: prefs.rollRipple, still: prefs.still, transitionDurations: prefs.transitions, items, geometry: geometryOf, root, doc, previewClips: documentClips })
   const { scene } = gestures
   const editMarks = useMemo(() => {
     const byTrack = new Map<number, ReturnType<typeof editPointMarks>>()
@@ -906,7 +870,7 @@ export function TimelinePanel(props: TimelinePanelProps) {
       <VerticalBar top={tracksTop} height={videoHeight} value={Math.min(view.vScroll, rows.maxVideoScroll)} max={rows.maxVideoScroll} invert onValue={(vScroll) => store.set({ vScroll })} />
       <VerticalBar top={audioTop} height={audioHeight} value={Math.min(view.aScroll, rows.maxAudioScroll)} max={rows.maxAudioScroll} invert={false} onValue={(aScroll) => store.set({ aScroll })} />
       <div className="film-tl-playhead-area" style={{ left: headerWidth, width: contentWidth, top: TOP_H - RULER_H, height: Math.max(0, size.height - SCROLLBAR_H - (TOP_H - RULER_H)) }}>
-        <Playhead film={film} playback={playback} store={store} width={contentWidth} autoScroll={prefs.autoScroll} onScrub={scrub} phrase={phrase} />
+        <Playhead film={film} playback={playback} store={store} width={contentWidth} autoScroll={prefs.autoScroll} phrase={phrase} />
       </div>
       <div className="film-tl-zoombar-wrap" style={{ left: headerWidth, top: size.height - SCROLLBAR_H + 2 }}>
         <ZoomBar view={view} store={store} width={contentWidth} duration={duration} testId="film-timeline-zoombar" />

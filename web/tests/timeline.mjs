@@ -100,7 +100,8 @@ try {
   const lane2 = await box('film-track-Video 2')
   const gripAt = { x: grip.x + grip.width / 2, y: lane2.y + lane2.height / 2 }
   await page.mouse.move(gripAt.x, gripAt.y)
-  assert.equal(await kit.getByTestId('film-playhead-line').evaluate((element) => getComputedStyle(element).cursor), 'ew-resize', 'the line shows a sideways cursor')
+  assert.ok(await until(async () => (await cursor()) === 'ew-resize'), `the line shows a sideways cursor on empty track space: ${await cursor()}`)
+  assert.equal(await kit.getByTestId('film-playhead').getAttribute('data-hover'), '', 'and is drawn thicker')
   const playheadSteps = await undoSteps()
   const target = { x: clipBox.x + clipBox.width * 0.5, y: gripAt.y }
   let timecodeWhileDragging = null
@@ -111,6 +112,12 @@ try {
   assert.ok(await until(async () => Math.abs((await sequence()).playhead / frameTicks - expected) <= 1), `the playhead lands where the line was dropped: frame ${(await sequence()).playhead / frameTicks} for ${expected}`)
   assert.notEqual(timecodeWhileDragging, '00:00:00:00', `the timecode followed the line while dragging (${timecodeWhileDragging})`)
   assert.equal(await undoSteps(), playheadSteps, 'moving the playhead is no edit')
+  // On a clip the line takes no press: a click there selects the clip, the playhead stays.
+  const parked = (await sequence()).playhead
+  const line = await box('film-playhead-line')
+  await page.mouse.click(line.x + line.width / 2, center(await box('film-clip-10')).y)
+  assert.ok(await until(async () => (await sequence()).selection?.includes(10)), 'a click on the clip under the line selects the clip')
+  assert.equal((await sequence()).playhead, parked, 'and leaves the playhead')
   await shot('timeline-2-playhead')
 
   // Taller audio tracks (the wrench's Expand All Tracks), so the Volume line has room.

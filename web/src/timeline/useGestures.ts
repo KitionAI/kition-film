@@ -48,6 +48,8 @@ type Options = {
   store: TimelineViewStore
   tool: string
   invoke: (id: string, params?: Record<string, unknown>) => Promise<unknown>
+  /** Scrubs the program playhead (the ruler's scrub): a press on the playhead's line on empty track space drags it. */
+  scrub: (seconds: number, phase: 'start' | 'move' | 'end') => void
   rollRipple: boolean
   still: StillDuration
   /** The default transition durations, which a dropped transition's preview spans. */
@@ -86,12 +88,17 @@ type Gesture = {
    * undo step: every level it sends is one `effects.setParam` merged under `merge`.
    */
   volume?: { clip: number; key: number | null; from: number; around: Array<{ ticks: number; value: number }>; axis: 'value' | 'time' | null; token: LiveToken; keyTime: number | null }
+  /** The playhead's line pressed on empty track space: the press and the drag scrub it, as the ruler does. */
+  playhead?: boolean
   /** A fade handle pressed: the clip, its end, its track's kind, the fade there (if any), and the length the drag gives (frames). */
   fade?: { clip: number; edge: 'in' | 'out'; kind: 'video' | 'audio'; existing: { id: number; duration: number } | null; frames: number }
 }
 
 /** Where a clip is drawn on the tracks: its track and clip (seconds), its body's left (content x), top (panel y), width and height. */
 type Body = { track: FilmTrack; clip: FilmClip; left: number; top: number; width: number; height: number }
+
+/** How near the playhead's line a press on empty track space grabs it (points). */
+const PLAYHEAD_GRAB = 4
 
 /** The Selection and Pen tools take the Volume line and the fade handles (upstream `grab_at`). */
 const takesBand = (tool: string) => tool === 'Selection' || tool === 'Pen'
@@ -128,15 +135,15 @@ function cursorFor(tool: string, grab: ReturnType<typeof hitTest>) {
  * the cursor and hover feedback, the clip menu, a double-click into a nested sequence, and drops
  * from the Project panel or the Source monitor.
  */
-export function useGestures({ film, session, store, tool, invoke, rollRipple, still, transitionDurations, items, geometry, root, doc, previewClips = null }: Options) {
+export function useGestures({ film, session, store, tool, invoke, scrub, rollRipple, still, transitionDurations, items, geometry, root, doc, previewClips = null }: Options) {
   const { store: uiStore } = useUi()
   // A replacement project can reuse both this Worker and the same sequence/clip IDs.
   const projectEpoch = (doc as { info?: { inspected?: { project?: { epoch?: number } } } } | null)?.info?.inspected?.project?.epoch
   const epoch = useRef(0)
   const dragView = useMemo(createDragView, [])
   const scene = useMemo(() => (film ? sceneOf(film, session, rollRipple) : null), [film, session, rollRipple])
-  const latest = useRef({ scene, tool, invoke, film, still, items, previewClips, transitionDurations })
-  latest.current = { scene, tool, invoke, film, still, items, previewClips, transitionDurations }
+  const latest = useRef({ scene, tool, invoke, film, still, items, previewClips, transitionDurations, scrub })
+  latest.current = { scene, tool, invoke, film, still, items, previewClips, transitionDurations, scrub }
   const gesture = useRef<Gesture | null>(null)
   // Commands go out one after another, in the order the gesture made them.
   const queue = useRef<Promise<unknown>>(Promise.resolve())
@@ -209,6 +216,32 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
   )
 
   /**
+   * Whether a press at (`x`, `y`) grabs the playhead's line: on a track, on empty space (a clip,
+   * a transition or an edge there keeps its press), within `PLAYHEAD_GRAB` of the line.
+   */
+  const onPlayheadLine = useCallback(
+    (x: number, y: number, grab: ReturnType<typeof hitTest>) => {
+      const { scene, previewClips } = latest.current
+      if (!scene || previewClips || grab.kind !== 'empty') return false
+      const layout = layoutNow()
+      if (!layout.rows.some((row) => row.top <= y && y < row.top + row.height)) return false
+      return Math.abs(x - xOf(scene, layout, scene.playhead)) <= PLAYHEAD_GRAB
+    },
+    [layoutNow],
+  )
+  const markPlayhead = useCallback(
+    (state: 'hover' | 'dragging', on: boolean) => {
+      const line = root.current?.querySelector('.film-tl-playhead')
+      if (line) line.toggleAttribute(`data-${state}`, on)
+    },
+    [root],
+  )
+  const timeOfX = useCallback((x: number) => {
+    const layout = layoutNow()
+    return Math.max(0, layout.scroll + x / layout.pps)
+  }, [layoutNow])
+
+  /**
    * What the Selection or Pen tool takes at a point of a clip: a fade handle (at a free clip end's
    * top corner), a keyframe of an audio clip's Volume line, or its line (away from the trim zones),
    * as upstream's `grab_at` puts the Volume line before the clip; or null.
@@ -279,8 +312,14 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
     if (current?.frame) cancelAnimationFrame(current.frame)
     if (current?.timer) clearTimeout(current.timer)
     if (current && root.current?.hasPointerCapture(current.pointer)) root.current.releasePointerCapture(current.pointer)
+    // A drag of the playhead's line ends its scrub where the pointer is, however it ends.
+    if (current?.playhead) {
+      root.current?.querySelector('.film-tl-playhead')?.removeAttribute('data-dragging')
+      const layout = layoutNow()
+      latest.current.scrub(Math.max(0, layout.scroll + current.x / layout.pps), 'end')
+    }
     dragView.clear()
-  }, [dragView, root])
+  }, [dragView, layoutNow, root])
   useEffect(() => () => finish(), [finish])
   // A press's modifiers follow the keys while it lasts, so a hold that turns into a drag with no
   // pointer move acts with the keys held then (upstream reads them on the frame the drag starts).
@@ -329,6 +368,7 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
   const clearHover = useCallback(() => {
     hovered.current = null
     if (root.current) root.current.style.cursor = ''
+    root.current?.querySelector('.film-tl-playhead')?.removeAttribute('data-hover')
     if (!gesture.current) dragView.set({ razor: null, brackets: [], snapX: null, volume: null, fade: null })
   }, [dragView, root])
 
@@ -370,6 +410,10 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
           brackets.push({ x: xOf(scene, layout, t), top: row.top, height: row.height, out: mark.out, ripple: grab.trim === 'ripple' })
         }
       }
+      // The playhead's line on empty track space.
+      const onLine = onPlayheadLine(x, y, grab)
+      markPlayhead('hover', onLine)
+      if (onLine) element.style.cursor = 'ew-resize'
       // The Volume line and the fade handles come before the clip (upstream `grab_at`).
       const band = bandGrabAt(x, y, grab.kind === 'clip' && grab.edge == null)
       let volume = null
@@ -384,7 +428,7 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       }
       dragView.set({ razor, brackets, snapX, volume, fade })
     },
-    [bandGrabAt, clearHover, dragView, layoutNow, root],
+    [bandGrabAt, clearHover, dragView, layoutNow, markPlayhead, onPlayheadLine, root],
   )
   // Another tool: what a press would grab changes under a pointer that stays put (upstream redraws it every frame).
   useEffect(() => {
@@ -583,6 +627,16 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       event.currentTarget.setPointerCapture(event.pointerId)
       const current: Gesture = { pointer: event.pointerId, pressed: { x, y, grab: hitTest(scene, layoutNow(), x, y, tool, mods) }, mods, started: false, drag: null, x, y, frame: 0, timer: null }
       const grab = current.pressed.grab
+      // The playhead's line on empty track space: scrubbed from the press, as the ruler does.
+      if (onPlayheadLine(x, y, grab)) {
+        current.playhead = true
+        current.started = true
+        gesture.current = current
+        hovered.current = null
+        markPlayhead('dragging', true)
+        latest.current.scrub(timeOfX(x), 'start')
+        return
+      }
       const band = grab.kind === 'transition' ? null : bandGrabAt(x, y, grab.kind === 'clip' && grab.edge == null)
       // The Selection tool on a transition: a click selects it, a drag of an end resizes it, of its middle moves it.
       if (tool === 'Selection' && grab.kind === 'transition') {
@@ -616,7 +670,7 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       hovered.current = null
       dragView.set({ razor: null, brackets: [], snapX: null })
     },
-    [bandGrabAt, dragView, layoutNow, placeOf, startDrag, transitionGrabAt],
+    [bandGrabAt, dragView, layoutNow, markPlayhead, onPlayheadLine, placeOf, startDrag, timeOfX, transitionGrabAt],
   )
 
   const onPointerMove = useCallback(
@@ -636,12 +690,13 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
         if (isDrag(x - current.pressed.x, y - current.pressed.y)) startDrag(current)
         return
       }
-      if (current.fade) updateFade(current)
+      if (current.playhead) latest.current.scrub(timeOfX(x), 'move')
+      else if (current.fade) updateFade(current)
       else if (current.volume) updateVolume(current)
       else if (current.transition) updateTransition(current)
       else update()
     },
-    [clearHover, hover, placeOf, root, startDrag, update, updateFade, updateTransition, updateVolume],
+    [clearHover, hover, placeOf, root, startDrag, timeOfX, update, updateFade, updateTransition, updateVolume],
   )
 
   const onPointerLeave = useCallback(() => {
@@ -670,6 +725,11 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       if (!current || event.pointerId !== current.pointer) return
       const { scene, tool } = latest.current
       const { x, y } = placeOf(event)
+      if (current.playhead) {
+        current.x = x
+        finish()
+        return
+      }
       if (current.fade && current.started) {
         const { clip, edge, kind, existing, frames } = current.fade
         finish()
@@ -722,7 +782,7 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       }
       finish()
     },
-    [bodyOf, commitTransition, finish, layoutNow, placeOf, selectTransition, send, store],
+    [bodyOf, commitTransition, finish, layoutNow, placeOf, selectTransition, send, store, timeOfX],
   )
 
   // The clip menu (upstream's `context_menu` on the tracks): a right-click selects an unselected clip first.

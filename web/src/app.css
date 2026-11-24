@@ -1514,19 +1514,16 @@
   background: var(--kit-primary);
 }
 
-/* The line's grip: 9 px wide over the tracks, the line drawn thicker while hovered or dragged. */
+/* Where the line is grabbed (on empty track space, by the gestures): the line drawn thicker while hovered or dragged. */
 .film-tl-playhead-grip {
   position: absolute;
   top: 40px;
   bottom: 0;
   left: -4px;
   width: 9px;
-  cursor: ew-resize;
-  pointer-events: auto;
 }
 
-.film-tl-playhead-grip:hover ~ .film-tl-playhead-line,
-.film-tl-playhead:has(.film-tl-playhead-grip:hover) .film-tl-playhead-line,
+.film-tl-playhead[data-hover] .film-tl-playhead-line,
 .film-tl-playhead[data-dragging] .film-tl-playhead-line {
   left: -1px;
   width: 3px;
