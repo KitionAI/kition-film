@@ -1,0 +1,29 @@
+format: 1
+id: film.editor.effects-panel/reorder
+feature: film.editor.effects-panel
+intent: >-
+  A person reorders a clip's effects by hand, in WebKit (Kition Desktop's engine on macOS): with
+  Gaussian Blur and then Invert on the clip, Invert's header in Effect Controls dragged above
+  Gaussian Blur's shows a line where it will land and on release puts Invert first, the fixed
+  effects (Motion, Opacity, Time Remapping) keeping their places, as one undo step that one undo
+  takes back; on the first standard effect the menu's Move Effect Up is disabled (it does not pass
+  the fixed effects) and Move Effect Down (下移效果) moves it down, Move Effect Up back. Before this
+  the order an effect was applied in could not change. The whole script also runs the Effects panel
+  and transition steps.
+layer: gate
+source:
+  kind: probe
+  from: web/tests/effects.mjs webkit (plan "Film usable by hand", phase 3 engine gaps)
+  license: Apache-2.0
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/effects.mjs, webkit]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [webkit]
+timeout_s: 180
+since: "2026-11-24"

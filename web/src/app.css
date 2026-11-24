@@ -4258,6 +4258,21 @@ button.film-project-tab {
   background: repeating-linear-gradient(-45deg, color-mix(in srgb, var(--kit-surface) 70%, transparent) 0 2px, rgba(0, 0, 0, 0.35) 2px 4px);
 }
 
+/* Effect Controls: a standard effect's header dragged to another place, and the line where it would land. */
+.film-ec-body[data-reordering] {
+  cursor: grabbing;
+}
+
+.film-ec-reorder-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  margin-top: -1px;
+  background: var(--kit-text);
+  pointer-events: none;
+}
+
 /* Effect Controls: the effect a person selected (its header), which Delete removes; and a drop of an effect. */
 .film-ec-effect[data-selected] .film-ec-left {
   background: color-mix(in srgb, var(--kit-primary) 28%, transparent);

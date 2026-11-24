@@ -207,6 +207,9 @@ const EFFECTS_UNREGISTERED: readonly KitUiItem[] = [
   { id: 'control:effects.enabled', label: 'Toggle Effect' },
   { id: 'control:effects.reset', label: 'Reset Effect' },
   { id: 'control:effects.value', label: 'Value' },
+  // An effect's menu: move it up or down among the standard effects (effects.move; upstream has no such row).
+  { id: 'control:effects.effect.moveUp', label: 'Move Effect Up' },
+  { id: 'control:effects.effect.moveDown', label: 'Move Effect Down' },
   { id: 'control:properties.section', label: 'Section' },
   // The Text section's alignment and style buttons (upstream `graphics.prop.align.<n>`, `graphics.prop.faux_bold|faux_italic`).
   { id: 'control:properties.text.align', label: 'Alignment' },

@@ -508,13 +508,13 @@ features:
     cases: [regressions/issue-shift-delete-ripple, regressions/issue-dead-ends]
     since: "2026-11-24"
   - id: film.editor.effects-panel
-    title: "The Effects panel: effects, transitions and presets as a searchable folder tree; double-click applies to the selected clips, a drag to a clip in the Timeline or to the clip Effect Controls shows; an applied effect's parameters change in Effect Controls, where its selected header and Delete remove it"
+    title: "The Effects panel: effects, transitions and presets as a searchable folder tree; double-click applies to the selected clips, a drag to a clip in the Timeline or to the clip Effect Controls shows; an applied effect's parameters change in Effect Controls, where its selected header and Delete remove it, and a drag of its header or its menu's Move Effect Up / Down reorders the standard effects (effects.move, one undo step)"
     dimension: [function]
     priority: P0
     status: partial
-    paths: [web/src/panels/EffectsPanel.tsx, web/src/panels/effectsTree.ts, web/src/timeline/effectDrag.ts, web/src/panels/EffectControls.tsx, web/src/session/localSelection.ts, web/tests/effects.mjs]
-    gap: "Color Presets (they wait for the Color panel), importing presets and saving a preset; effects cannot be reordered on a clip (the engine has no command for it)."
-    cases: [film.editor.effects-panel/by-hand]
+    paths: [web/src/panels/EffectsPanel.tsx, web/src/panels/effectsTree.ts, web/src/timeline/effectDrag.ts, web/src/panels/EffectControls.tsx, web/src/panels/effectOrder.ts, web/src/session/localSelection.ts, web/tests/effects.mjs]
+    gap: "Color Presets (they wait for the Color panel), importing presets and saving a preset."
+    cases: [film.editor.effects-panel/by-hand, film.editor.effects-panel/reorder]
     since: "2026-11-24"
   - id: film.timeline.transitions
     title: "Transitions by hand on the Timeline: drag one from the Effects panel onto a cut (left of it ends there, on it centres, right of it starts there, named on the preview), click to select, drag an end to change its length with snapping and a live preview (a centred one on both sides, one moved off centre on that side only), drag its middle to move it over its cut, double-click or its menu for Set Transition Duration with its alignment, Delete, Backspace or its menu's Clear Transition to remove it; each one undo step"

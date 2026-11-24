@@ -162,6 +162,50 @@ try {
   await undo()
   assert.ok(await until(async () => !(await effectsOf(10)).includes('gaussian_blur')), 'undo takes it back')
 
+  // Two standard effects swap places by dragging one's header over the other, one undo step; its
+  // menu moves it up and down among the standard effects only (the fixed ones keep theirs).
+  await kit.getByTestId('film-clip-10').click()
+  await frame.evaluate(() => window.filmPreview.run('effects.apply', { clips: [10], effect: 'gaussian_blur' }))
+  await frame.evaluate(() => window.filmPreview.run('effects.apply', { clips: [10], effect: 'invert' }))
+  const standard = async () => (await effectsOf(10)).filter((effect) => ['gaussian_blur', 'invert'].includes(effect))
+  assert.ok(await until(async () => (await standard()).join() === 'gaussian_blur,invert'), `Gaussian Blur then Invert: ${await effectsOf(10)}`)
+  await kit.getByTestId('film-workspace-tab-effectControls').click()
+  await kit.getByTestId('film-ec-effect-invert').waitFor({ timeout: 10_000 })
+  const fixedBefore = (await effectsOf(10)).filter((effect) => !['gaussian_blur', 'invert'].includes(effect))
+  // Both folded, so their headers are on screen together.
+  for (const effect of ['gaussian_blur', 'invert']) {
+    await kit.getByTestId(`film-ec-effect-${effect}-fold`).click()
+    await until(async () => (await kit.getByTestId(`film-ec-effect-${effect}-fold`).getAttribute('aria-expanded')) === 'false', 20)
+  }
+  await kit.getByTestId('film-ec-effect-invert').scrollIntoViewIfNeeded()
+  const orderSteps = await undoSteps()
+  const invertName = await kit.getByTestId('film-ec-effect-invert').locator('.film-ec-effect-name').boundingBox()
+  const blurHeader = await kit.getByTestId('film-ec-effect-gaussian_blur').boundingBox()
+  let line = false
+  await drag(center(invertName), { x: center(invertName).x, y: blurHeader.y + 3 }, async () => {
+    line = (await kit.getByTestId('film-ec-reorder-line').count()) === 1
+  })
+  assert.ok(line, 'a line shows where the dragged effect would land')
+  assert.ok(await until(async () => (await standard()).join() === 'invert,gaussian_blur'), `the drag puts Invert first: ${await effectsOf(10)} (${await message()})`)
+  assert.deepEqual((await effectsOf(10)).filter((effect) => !['gaussian_blur', 'invert'].includes(effect)), fixedBefore, 'the fixed effects keep their places')
+  assert.equal(await undoSteps(), orderSteps + 1, 'the move is one undo step')
+  await undo()
+  assert.ok(await until(async () => (await standard()).join() === 'gaussian_blur,invert'), 'one undo puts it back')
+  await kit.getByTestId('film-ec-effect-gaussian_blur').locator('.film-ec-effect-name').click({ button: 'right' })
+  assert.equal(await kit.getByTestId('film-ec-menu-move-up').isDisabled(), true, 'the first standard effect cannot move up past the fixed ones')
+  assert.equal(await kit.getByTestId('film-ec-menu-move-down').textContent(), zh('Move Effect Down'), 'its menu says Move Effect Down in Chinese')
+  await kit.getByTestId('film-ec-menu-move-down').click()
+  assert.ok(await until(async () => (await standard()).join() === 'invert,gaussian_blur'), `Move Effect Down: ${await effectsOf(10)}`)
+  await kit.getByTestId('film-ec-effect-gaussian_blur').locator('.film-ec-effect-name').click({ button: 'right' })
+  await kit.getByTestId('film-ec-menu-move-up').click()
+  assert.ok(await until(async () => (await standard()).join() === 'gaussian_blur,invert'), `Move Effect Up: ${await effectsOf(10)}`)
+  for (const effect of ['gaussian_blur', 'invert']) await kit.getByTestId(`film-ec-effect-${effect}-fold`).click()
+  for (const effect of ['invert', 'gaussian_blur']) {
+    const index = (await clipOf(10)).effects.findIndex((each) => each.effect === effect)
+    await frame.evaluate((at) => window.filmPreview.run('effects.remove', { clip: 10, index: at }), index)
+  }
+  assert.ok(await until(async () => (await standard()).length === 0), 'the two effects removed again')
+
   // Cut the clip in two with the Razor (C), back to Selection (V).
   await kit.getByTestId('film-clip-10').click()
   await page.keyboard.press('Home')

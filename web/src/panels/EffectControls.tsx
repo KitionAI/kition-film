@@ -9,6 +9,7 @@ import { Placeholder } from './Placeholder'
 import { localSelection, useLocalSelection } from '../session/localSelection'
 import { carriesEffect, effectDrag, endEffectDrag } from '../timeline/effectDrag'
 import { fitsTrack, isTransition } from './effectsTree'
+import { dropIndex, neighbourIndex, type OrderRow } from './effectOrder'
 import { keyframeMoveTarget, laneRuler, numberSpec, paramText, selectedClip, stepOf, timelineTimeOf, useClipEffects, useParamEdit, type ClipEffect, type ClipTimes, type EffectParam, type ParamTarget } from './effects'
 
 const ChevronDown = TesseraIcons.ChevronDownIcon
@@ -237,6 +238,9 @@ function ParamValue({ param, target, edit, invoke, phrase, testId }: { param: Ef
 
 type MenuTarget = { kind: 'keyframe'; at: ContextMenuPoint; clip: number; effect: number; param: string; time: number } | { kind: 'effect'; at: ContextMenuPoint; clip: number; effect: number; intrinsic: boolean }
 
+/** A standard effect's header dragged to a new place (`effects.move`): where it was pressed, and where it would land. */
+type Reorder = { pointerId: number; clip: number; from: number; y: number; started: boolean; to: number | null; lineY: number | null }
+
 type RowProps = {
   clip: number
   effect: ClipEffect
@@ -376,18 +380,23 @@ type EffectHeaderProps = {
   onFold: (key: string) => void
   onSelect: (clip: number, index: number) => void
   onMenu: (target: MenuTarget) => void
+  /** A press on a standard effect's header, which a drag turns into a move of it. */
+  onReorder: (clip: number, index: number, event: ReactPointerEvent<HTMLDivElement>) => void
   invoke: Invoke
   phrase: Phrases
 }
 
 /**
  * An effect's row (upstream `show`): only the arrow folds it; a click elsewhere on it but the fx
- * switch and the reset selects it (Delete then removes it); a right-click opens its menu.
+ * switch and the reset selects it (Delete then removes it); a right-click opens its menu; a
+ * standard effect's header dragged up or down moves it among the standard effects.
  */
-const EffectHeader = memo(function EffectHeader({ clip, index, id, name, enabled, intrinsic, open, selected, foldKey, onFold, onSelect, onMenu, invoke, phrase }: EffectHeaderProps) {
+const EffectHeader = memo(function EffectHeader({ clip, index, id, name, enabled, intrinsic, open, selected, foldKey, onFold, onSelect, onMenu, onReorder, invoke, phrase }: EffectHeaderProps) {
   return (
     <div
       className="film-ec-row film-ec-effect"
+      data-effect-index={index}
+      data-intrinsic={intrinsic || undefined}
       data-selected={selected || undefined}
       aria-selected={selected}
       onContextMenu={(event) => {
@@ -400,6 +409,10 @@ const EffectHeader = memo(function EffectHeader({ clip, index, id, name, enabled
       <div
         className="film-ec-left"
         data-kit-ui-id="control:effects.effect"
+        onPointerDown={(event) => {
+          if (event.button !== 0 || intrinsic || (event.target as HTMLElement).closest('.film-ec-fold, .film-ec-fx, .film-ec-reset')) return
+          onReorder(clip, index, event)
+        }}
         onClick={(event) => {
           const target = event.target as HTMLElement
           if (target.closest('.film-ec-fold')) onFold(foldKey)
@@ -487,6 +500,56 @@ export function EffectControls({ film, doc, revision, playback, invoke, seekTick
   const onMenu = useCallback((target: MenuTarget) => setMenu(target), [])
   const selectedEffect = useLocalSelection((selection) => selection.effect)
   const onSelect = useCallback((clip: number, index: number) => localSelection.set({ effect: { clip, index } }), [])
+  // A standard effect's header dragged to another place among the standard effects: one effects.move, one undo step.
+  const [reorder, setReorder] = useState<Reorder | null>(null)
+  const list = useRef<HTMLDivElement>(null)
+  const orderRows = useCallback((): OrderRow[] => {
+    const root = list.current
+    if (!root) return []
+    const top = root.getBoundingClientRect().top
+    return [...root.querySelectorAll<HTMLElement>('.film-ec-effect[data-effect-index]')].map((row) => {
+      const box = row.getBoundingClientRect()
+      return { index: Number(row.dataset.effectIndex), intrinsic: row.dataset.intrinsic != null, top: box.top - top, height: box.height }
+    })
+  }, [])
+  const moveEffect = useCallback(
+    async (clip: number, from: number, to: number) => {
+      await invoke('effects.move', { clip, index: from, to })
+      localSelection.set({ effect: { clip, index: to } })
+    },
+    [invoke],
+  )
+  const onReorder = useCallback((clip: number, index: number, event: ReactPointerEvent<HTMLDivElement>) => {
+    setReorder({ pointerId: event.pointerId, clip, from: index, y: event.clientY, started: false, to: null, lineY: null })
+  }, [])
+  useEffect(() => {
+    if (!reorder) return
+    const place = (event: PointerEvent) => {
+      const top = list.current?.getBoundingClientRect().top ?? 0
+      return dropIndex(orderRows(), reorder.from, event.clientY - top)
+    }
+    const onMove = (event: PointerEvent) => {
+      if (event.pointerId !== reorder.pointerId) return
+      if (!reorder.started && Math.abs(event.clientY - reorder.y) < 4) return
+      const landing = place(event)
+      setReorder((current) => (current ? { ...current, started: true, to: landing?.to ?? null, lineY: landing?.lineY ?? null } : current))
+    }
+    const onUp = (event: PointerEvent) => {
+      if (event.pointerId !== reorder.pointerId) return
+      const landing = reorder.started ? place(event) : null
+      setReorder(null)
+      if (landing?.to != null) void moveEffect(reorder.clip, reorder.from, landing.to)
+    }
+    const onCancel = () => setReorder(null)
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onCancel)
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onCancel)
+    }
+  }, [reorder, orderRows, moveEffect])
   const [dropping, setDropping] = useState(false)
   // Another clip shown: the effect selected on the one before is let go, so Delete never removes it unseen.
   const shownClip = chosen?.clip.id ?? null
@@ -542,13 +605,18 @@ export function EffectControls({ film, doc, revision, playback, invoke, seekTick
       const key = `${effects.clip}:${effect.index}`
       const open = !collapsed.has(key)
       const selected = selectedEffect?.clip === effects.clip && selectedEffect.index === effect.index && !effect.intrinsic
-      rows.push(<EffectHeader key={`fx-${effects.clip}-${effect.index}`} clip={effects.clip} index={effect.index} id={effect.id} name={effect.name} enabled={effect.enabled} intrinsic={effect.intrinsic} open={open} selected={selected} onFold={fold} onSelect={onSelect} foldKey={key} onMenu={onMenu} invoke={invoke} phrase={phrase} />)
+      rows.push(<EffectHeader key={`fx-${effects.clip}-${effect.index}`} clip={effects.clip} index={effect.index} id={effect.id} name={effect.name} enabled={effect.enabled} intrinsic={effect.intrinsic} open={open} selected={selected} onFold={fold} onSelect={onSelect} foldKey={key} onMenu={onMenu} onReorder={onReorder} invoke={invoke} phrase={phrase} />)
       if (!open) continue
       for (const param of effect.params) {
         rows.push(<ParamRow key={`p-${effects.clip}-${effect.index}-${param.id}`} clip={effects.clip} effect={effect} param={param} mediaTime={effects.mediaTime} times={times} fps={fps} edit={edit} invoke={invoke} phrase={phrase} onMenu={onMenu} />)
       }
     }
   }
+
+  // The effect menu's Move Effect Up / Down: the standard effect next to it, if any.
+  const order: OrderRow[] = effects?.effects.map((effect) => ({ index: effect.index, intrinsic: effect.intrinsic })) ?? []
+  const up = menu?.kind === 'effect' ? neighbourIndex(order, menu.effect, -1) : null
+  const down = menu?.kind === 'effect' ? neighbourIndex(order, menu.effect, 1) : null
 
   return (
     <div
@@ -617,9 +685,10 @@ export function EffectControls({ film, doc, revision, playback, invoke, seekTick
           </div>
         </div>
       </div>
-      <div className="film-ec-body">
+      <div className="film-ec-body" ref={list} data-reordering={reorder?.started || undefined}>
         <div className="film-ec-heading">{phrase(chosen.kind === 'video' ? 'Video' : 'Audio')}</div>
         {rows}
+        {reorder?.started && reorder.lineY != null ? <div className="film-ec-reorder-line" style={{ top: reorder.lineY + (list.current?.scrollTop ?? 0) }} data-testid="film-ec-reorder-line" /> : null}
       </div>
       {onClip ? (
         <div className="film-ec-playhead" style={{ ['--ph' as string]: playheadAt }} data-kit-ui-id="control:effects.playhead" data-testid="film-ec-playhead">
@@ -651,6 +720,12 @@ export function EffectControls({ film, doc, revision, playback, invoke, seekTick
               {/* Save Preset… opens upstream's preset dialog, which comes with the Effects panel (wave 2). */}
               <MenuItem label={phrase('Save Preset…')} disabled uiId="control:effects.effect.savePreset" testId="film-ec-menu-save-preset" onSelect={() => undefined} />
               {menu.intrinsic ? null : <MenuItem label={phrase('Clear')} uiId="control:effects.effect.clear" testId="film-ec-menu-remove" onSelect={() => void invoke('effects.remove', { clip: menu.clip, index: menu.effect })} />}
+              {menu.intrinsic ? null : (
+                <>
+                  <MenuItem label={phrase('Move Effect Up')} disabled={up == null} uiId="control:effects.effect.moveUp" testId="film-ec-menu-move-up" onSelect={() => (up != null ? void moveEffect(menu.clip, menu.effect, up) : undefined)} />
+                  <MenuItem label={phrase('Move Effect Down')} disabled={down == null} uiId="control:effects.effect.moveDown" testId="film-ec-menu-move-down" onSelect={() => (down != null ? void moveEffect(menu.clip, menu.effect, down) : undefined)} />
+                </>
+              )}
             </>
           )}
         </ContextMenu>
