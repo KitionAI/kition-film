@@ -152,6 +152,7 @@ try {
   let tip = null
   await drag(at, { x: at.x, y: at.y - 8 }, async () => {
     tip = await kit.getByTestId('film-timeline-tip').textContent().catch(() => null)
+    await shot('timeline-3-volume-drag')
   })
   assert.ok(tip && /^\+\d+\.\d\d dB$/.test(tip), `the level shows next to the pointer while dragging: ${tip}`)
   assert.ok(await until(async () => (await volumeOf()).value > 1), `dragging the line up raises the level: ${(await volumeOf()).value} (${await message()})`)
@@ -234,6 +235,7 @@ try {
   await drag(from, { x: from.x + 60, y: from.y }, async () => {
     ramp = (await kit.getByTestId('film-timeline-fade-ramp').count()) === 1
     tip = await kit.getByTestId('film-timeline-tip').textContent().catch(() => null)
+    await shot('timeline-5-fade-drag')
   })
   assert.ok(ramp, 'the ramp shows while dragging')
   assert.ok(tip && /^\d\d:\d\d:\d\d[:;]\d\d$/.test(tip), `the fade's length shows next to the pointer: ${tip}`)
@@ -283,6 +285,7 @@ try {
     await kit.getByTestId('film-ruler-menu').waitFor({ timeout: 5000 })
   }
   await rulerMenu(0.2)
+  await shot('timeline-6-ruler-menu')
   assert.equal((await kit.getByTestId('film-ruler-menu-mark-in').textContent()).trim(), zh('Mark In'), 'the ruler menu reads 标记入点')
   assert.equal((await kit.getByTestId('film-ruler-menu-add-marker').textContent()).trim(), zh('Add Marker'))
   steps = await undoSteps()
@@ -381,6 +384,7 @@ try {
   await frame.evaluate(() => window.filmPreview.run('edit.clear', {}))
   assert.ok(await until(async () => (await v1()).items.length === 1), 'the first half is cleared: a gap')
   await laneMenu('Video 1', 0.25)
+  await shot('timeline-8-lane-menu')
   steps = await undoSteps()
   await kit.getByTestId('film-lane-menu-close-gap').click()
   assert.ok(await until(async () => (await v1()).items[0].start === 0), `Close Gap moves the clip after it back (${await message()})`)
@@ -403,7 +407,7 @@ try {
   assert.ok(await until(async () => (await v1()).items.length === 2), `Paste puts a copy there (${await message()})`)
   assert.ok(near((await v1()).items[0].start / frameTicks, frameAt(0.1)), `at the time right-clicked: ${(await v1()).items[0].start / frameTicks} for ${frameAt(0.1)}`)
   assert.equal(await undoSteps(), steps + 1, 'one undo step')
-  await shot('timeline-8-menus')
+  await shot('timeline-9-pasted')
 
   assert.deepEqual(errors, [], 'no page errors')
   console.log(`timeline ${which}: ok`)
