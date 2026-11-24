@@ -1,0 +1,28 @@
+format: 1
+id: film.monitor.picture-by-hand/two-parameter-drags
+feature: film.monitor.picture-by-hand
+intent: >-
+  On the Program picture, in WebKit (Kition Desktop's engine on macOS), the drags that change two
+  Motion parameters are live and one undo step: the anchor point dragged changes Anchor Point while
+  it is held, and one undo puts both Anchor Point and Position back; with Uniform Scale off a corner
+  handle dragged sideways widens the clip while it is held (Scale Width more than Scale Height),
+  and one undo puts both back. Before, these drags showed only an outline and landed on release as
+  two undo steps, because effects.setParam merged one parameter's changes only. The whole script
+  also runs the other picture steps.
+layer: gate
+source:
+  kind: probe
+  from: web/tests/picture.mjs webkit (plan "Film usable by hand", phase 3 engine gaps, item 6)
+  license: Apache-2.0
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/picture.mjs, webkit]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [webkit]
+timeout_s: 240
+since: "2026-11-24"

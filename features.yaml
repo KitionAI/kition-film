@@ -526,13 +526,13 @@ features:
     cases: [film.timeline.transitions/by-hand, film.timeline.transitions/move-align-clear]
     since: "2026-11-24"
   - id: film.monitor.picture-by-hand
-    title: "On the Program picture by hand: a click selects the top-most video clip there; the selected clip's Motion box moves, scales, rotates and moves its anchor point, live and one undo step per drag, Escape undoing it, at any magnification and resolution; a Chinese title typed with the Type tool draws real glyphs, and the Properties panel styles it (font, size, fill, alignment, faux bold and italic)"
+    title: "On the Program picture by hand: a click selects the top-most video clip there; the selected clip's Motion box moves, scales (also non-uniformly, Uniform Scale off), rotates and moves its anchor point, live and one undo step per drag (effects.setParam merged by the drag's key), Escape undoing it, at any magnification and resolution; a Chinese title typed with the Type tool draws real glyphs, and the Properties panel styles it (font, size, fill, alignment, faux bold and italic)"
     dimension: [function]
     priority: P0
     status: partial
     paths: [web/src/monitors/clipTransform.ts, web/src/monitors/useProgramGraphics.tsx, web/src/panels/PropertiesPanel.tsx, web/src/engine.ts, web/scripts/build-engine.sh, web/tests/picture.mjs]
-    gap: "A drag that changes two Motion parameters (the anchor point; a corner with Uniform Scale off) shows its outline and is sent on release as two undo steps: effects.setParam merges only one parameter's changes. The box assumes Scale to Frame Size is off and, for a clip whose item is not media (a nested sequence, a subclip), the sequence's frame size: the engine gives the page neither. Graphics and adjustment layers have no Motion box (a graphic's layers keep their own handles). The box does not follow the picture during playback. No Crop handles."
-    cases: [film.monitor.picture-by-hand/by-hand]
+    gap: "The box assumes Scale to Frame Size is off and, for a clip whose item is not media (a nested sequence, a subclip), the sequence's frame size: the engine gives the page neither. Graphics and adjustment layers have no Motion box (a graphic's layers keep their own handles). The box does not follow the picture during playback. No Crop handles."
+    cases: [film.monitor.picture-by-hand/by-hand, film.monitor.picture-by-hand/two-parameter-drags]
     since: "2026-11-24"
   - id: film.monitor.scrub
     title: "Scrubbing the program playhead by hand (the ruler, the timecode, the Program monitor's scrub bar): the timecode and the playhead line follow the pointer at once; pictures land while the pointer moves, approximate (the nearest frame decoded on the way) when the frame is far from a keyframe and asked for again until exact while the pointer rests; the release shows the exact frame; a drag renders at the playback resolution"

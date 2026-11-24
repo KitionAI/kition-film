@@ -119,23 +119,27 @@ type LayerDrag = { kind: 'move' | 'handle' | 'anchor'; n: number; view: LayerVie
 /**
  * A drag of a video clip's Motion box (upstream `transform_handles.rs`'s `Drag`), in canvas
  * pixels: what it holds and the box then (`drag`), the clip's frame it was placed from, the Motion
- * values the pointer gives now (`changes`) and a move's snap lines. A drag that changes one
- * parameter (a move, a rotation, a uniform or one-sided scale) sends its values to the engine as
- * the pointer moves, at most one per animation frame and none while one is in flight, merged into
- * one undo step (`effects.setParam`'s `merge`, the first with `begin`), so the picture follows
- * live; one that changes two (the anchor point, a corner with Uniform Scale off) is shown as its
- * outline and sent on release, because the engine merges only the changes of one parameter.
+ * values the pointer gives now (`changes`) and a move's snap lines. A drag sends its values to the
+ * engine as the pointer moves, at most one per animation frame and none while one is in flight,
+ * all merged into one undo step by the drag's own key (`effects.setParam`'s `merge` with a name,
+ * the first call with `begin`), so the picture follows live, also for a drag that changes two
+ * parameters (the anchor point: Anchor Point and Position; a corner with Uniform Scale off: Scale
+ * Height and Width).
  */
+/** Counts Motion box drags, so each has its own merge key. */
+let boxDrags = 0
+
 type ClipBoxDrag = {
   drag: BoxDrag
   frame: ClipFrame
   changes: Array<[string, unknown]>
   lines: readonly SnapLine[]
-  live: boolean
+  /** The drag's merge key: every value it sends goes into one undo step. */
+  key: string
   /** The pointer went past 2 points: from then on the values are sent (a press that stays is a click). */
   moved: boolean
-  /** The parameters sent so far (the first of each begins the step); whether any was applied. */
-  begun: Set<string>
+  /** Whether a value was sent yet (the first begins the step); whether any was applied. */
+  begun: boolean
   sent: boolean
   /** The values waiting for the next frame, the send in flight, and the frame asked for. */
   wanted: Array<[string, unknown]> | null
@@ -503,14 +507,14 @@ export function useProgramGraphics(options: Options) {
     }
   }, [doc, boxTool, selectionKey, revision, playhead, readClips, draw])
 
-  /** The run that sends a Motion box drag's values: each `effects.setParam` merged into the drag's step, the first of each parameter with `begin`; `final` (the release) refreshes the whole editor once. */
+  /** The run that sends a Motion box drag's values: each `effects.setParam` merged into the drag's step by its key, the first with `begin`; `final` (the release) refreshes the whole editor once. */
   const sendBox = useCallback(async (drag: ClipBoxDrag, changes: ReadonlyArray<[string, unknown]>, final: boolean) => {
     const open = latest.current.doc
     if (!open) return
     for (const [param, value] of changes) {
       const before = open.info.revision
-      const params = { clip: drag.frame.clip, effect: 'motion', param, value, merge: true, begin: !drag.begun.has(param) }
-      drag.begun.add(param)
+      const params = { clip: drag.frame.clip, effect: 'motion', param, value, merge: drag.key, begin: !drag.begun }
+      drag.begun = true
       try {
         await latest.current.invoke('effects.setParam', params, final ? undefined : { refresh: 'repaint' })
       } catch {
@@ -943,7 +947,7 @@ export function useProgramGraphics(options: Options) {
         drag.changes = boxChanges(drag.drag, at, moved)
         drag.lines = lines
         if (!isLayerClick(drag.drag.start, at)) drag.moved = true
-        if (drag.live && drag.moved && !drag.over) pumpBox(drag)
+        if (drag.moved && !drag.over) pumpBox(drag)
       }
       /** Takes this press's outline off the overlay, unless a newer press has put its own there. */
       const clearOutline = () => {
@@ -1028,16 +1032,15 @@ export function useProgramGraphics(options: Options) {
           latest.current.errorStatus?.('command `effects.setParam` is not available right now: track is locked')
           return
         }
-        // The engine merges one parameter's changes into one step: a drag that changes two sends them on release.
-        const twoParams = grab.kind === 'anchor' || (grab.kind === 'handle' && !pl.uniform && grab.n < 4)
-        box = { drag: beginBoxDrag(pl, grab, press), frame, changes: [], lines: [], live: !twoParams, moved: false, begun: new Set(), sent: false, wanted: null, busy: null, frameId: 0, over: false, sync: null }
+        boxDrags += 1
+        box = { drag: beginBoxDrag(pl, grab, press), frame, changes: [], lines: [], key: `motion-box-${boxDrags}`, moved: false, begun: false, sent: false, wanted: null, busy: null, frameId: 0, over: false, sync: null }
         boxDrag.current = box
         followBox(box, lastCanvas, lastFree)
         draw()
       }
       /**
-       * The release of a Motion box drag: its last values, merged into the drag's one step (a
-       * two-parameter drag's are sent now), and the editor refreshed once. A press that never went
+       * The release of a Motion box drag: its last values, merged into the drag's one step, and
+       * the editor refreshed once. A press that never went
        * past 2 points sends nothing.
        */
       const finishBox = async (drag: ClipBoxDrag, at: Point, freely: boolean) => {

@@ -229,6 +229,44 @@ try {
   }
   assert.ok(await until(async () => JSON.stringify((await motion(10)).position) === JSON.stringify(before.position)), 'undone')
 
+  // Drags that change two Motion parameters are live and one undo step too (effects.setParam merged
+  // by the drag's key): the anchor point (Anchor Point and Position), and a corner with Uniform
+  // Scale off (Scale Height and Scale Width).
+  box = await settledBox()
+  let steps4 = await undoSteps()
+  let liveAnchor = false
+  await drag(box.anchor, { x: box.anchor.x + 30, y: box.anchor.y + 15 }, async () => {
+    liveAnchor = await until(async () => (await motion(10)).anchor[0] > 80 + 15, 20)
+  })
+  assert.ok(liveAnchor, 'the anchor point changes while it is held')
+  assert.ok(await until(async () => (await undoSteps()) === steps4 + 1), `the anchor point's drag is one undo step: ${await undoSteps()} after ${steps4}`)
+  await undo()
+  assert.ok(await until(async () => JSON.stringify((await motion(10)).anchor) === JSON.stringify(before.anchor) && JSON.stringify((await motion(10)).position) === JSON.stringify(before.position)), 'one undo puts the anchor point and the position back')
+  const scaleWidth = async () => {
+    const effects = await frame.evaluate(() => window.filmPreview.run('sequence.inspect', {}))
+    const sequenceNow = typeof effects === 'string' ? JSON.parse(effects) : effects
+    const clip = sequenceNow.video.flatMap((track) => track.items).find((item) => item.clip === 10)
+    const params = clip.effects.find((effect) => effect.effect === 'motion').params
+    return { height: params.scale.value, width: params.scale_width.value }
+  }
+  await frame.evaluate(() => window.filmPreview.run('effects.setParam', { clip: 10, effect: 'motion', param: 'uniform_scale', value: false }))
+  assert.ok(await until(async () => (await scaleWidth()).width != null), 'Uniform Scale off')
+  box = await settledBox()
+  steps4 = await undoSteps()
+  const widthFrom = await scaleWidth()
+  let liveCorner = false
+  await drag(box.handles[2], { x: box.handles[2].x + 60, y: box.handles[2].y + 10 }, async () => {
+    liveCorner = await until(async () => (await scaleWidth()).width > widthFrom.width + 10, 20)
+  })
+  assert.ok(liveCorner, `the width grows while the corner is held: ${JSON.stringify(await scaleWidth())}`)
+  assert.ok(await until(async () => (await undoSteps()) === steps4 + 1), `the corner's drag is one undo step: ${await undoSteps()} after ${steps4}`)
+  const stretched = await scaleWidth()
+  assert.ok(stretched.width - widthFrom.width > stretched.height - widthFrom.height + 5, `wider more than taller: ${JSON.stringify(widthFrom)} → ${JSON.stringify(stretched)}`)
+  await undo()
+  assert.ok(await until(async () => JSON.stringify(await scaleWidth()) === JSON.stringify(widthFrom)), 'one undo puts both scales back')
+  await undo()
+  assert.ok(await until(async () => (await settledBox()) != null), 'Uniform Scale on again')
+
   /** A move drag of the selected clip from inside its box by (dx, dy): the box must follow the pointer, the picture change, and the drag be one undo step; then it is undone. */
   const moveFollows = async (label, dx, dy) => {
     const at = await settledBox()
