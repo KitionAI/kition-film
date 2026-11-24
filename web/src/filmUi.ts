@@ -48,7 +48,6 @@ const TIMELINE: readonly KitUiItem[] = [
   { id: 'control:timeline.toggle.nest', label: 'Insert and overwrite sequences as nests or individual clips' },
   { id: 'control:timeline.toggle.snap', label: 'Snap in Timeline (S)' },
   { id: 'control:timeline.toggle.linked', label: 'Linked Selection' },
-  { id: 'control:timeline.toggle.captions', label: 'Caption track options' },
   { id: 'control:timeline.toggle.marker', label: 'Add Marker (M)' },
   { id: 'control:timeline.toggle.settings', label: 'Timeline Display Settings' },
   { id: 'control:timeline.settings.showVideoThumbnails', label: 'Show Video Thumbnails' },
@@ -121,7 +120,6 @@ export const MONITOR_ALIASES: Readonly<Record<string, readonly string[]>> = {
   'control:transport.overwrite': ['source.transport.source.overwrite'],
   'control:transport.lift': ['program.transport.sequence.lift'],
   'control:transport.extract': ['program.transport.sequence.extract'],
-  'control:transport.exportFrame': ['program.transport.exportFrame', 'source.transport.exportFrame'],
   'control:transport.toggleProxies': ['program.transport.media.toggleProxies', 'source.transport.media.toggleProxies'],
   'control:transport.buttonEditor': ['program.transport.buttonEditor', 'source.transport.buttonEditor'],
   // The rulers and guides (`monitor_view.rs` `rulers`, `guides`): one id each for both monitors.
@@ -234,7 +232,6 @@ const MONITOR_LABELS: Readonly<Record<string, string>> = {
   'control:transport.overwrite': 'Overwrite (.)',
   'control:transport.lift': 'Lift (;)',
   'control:transport.extract': "Extract (')",
-  'control:transport.exportFrame': 'Export Frame',
   'control:transport.toggleProxies': 'Toggle Proxies',
   'control:transport.buttonEditor': 'Button Editor',
   'control:monitor.ruler.top': 'top ruler',

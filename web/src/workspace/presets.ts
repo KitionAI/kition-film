@@ -1,6 +1,7 @@
 // Imports carry `.ts` and the JSON its import attribute so `node --test` loads this module as it is.
 import upstream from '../../parity/film-upstream.json' with { type: 'json' }
 import { activate, openNear, restoreBeside, validateTree, visiblePanels, type WorkspaceNode } from '@kition/sdk/editor/workspaceTree'
+import { hiddenPanelReason, hiddenWorkspaceReason } from '../menus/hidden.ts'
 
 /** Upstream's `PanelKind::ALL` as lowerCamel ids, in its order. */
 export const FILM_PANEL_IDS: ReadonlySet<string> = new Set(upstream.panels.map((panel) => panel.id))
@@ -13,6 +14,20 @@ export const FILM_PANEL_IDS: ReadonlySet<string> = new Set(upstream.panels.map((
  */
 export const FILM_WORKSPACES: Readonly<Record<string, WorkspaceNode>> = Object.fromEntries(
   upstream.workspaces.map((workspace) => [workspace.name, validateTree(workspace.layout, FILM_PANEL_IDS) as WorkspaceNode]),
+)
+
+/** The panels the editor draws: upstream's without those it leaves out (`menus/hidden.ts` `hiddenPanelReason`). */
+export const WEB_PANEL_IDS: ReadonlySet<string> = new Set([...FILM_PANEL_IDS].filter((panel) => hiddenPanelReason(panel) == null))
+
+/**
+ * The built-in workspaces the editor offers: upstream's (`FILM_WORKSPACES`) without those whose
+ * panels it does not draw (`hiddenWorkspaceReason`), each tree without the panels it leaves out
+ * (a frame left with no tab goes, and its split with it).
+ */
+export const WEB_WORKSPACES: Readonly<Record<string, WorkspaceNode>> = Object.fromEntries(
+  Object.entries(FILM_WORKSPACES)
+    .filter(([name]) => hiddenWorkspaceReason(name) == null)
+    .map(([name, tree]) => [name, validateTree(tree, WEB_PANEL_IDS) as WorkspaceNode]),
 )
 
 /** The workspace opened first, and after deleting the user workspace in use (`workspaces.rs` `delete`). */

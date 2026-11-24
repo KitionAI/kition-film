@@ -81,7 +81,7 @@ import { giveKeysBack } from './workspace/editorFocus'
 import { firstSizeReports, watchFloatingBoxes } from './workspace/floatingBoxes'
 import { createProjectRoute, type ProjectRouteDeps } from './panels/projectRoute'
 import { createThumbnails, frameCanvas, releaseCanvas } from './timeline/thumbnails'
-import { FALLBACK_WORKSPACE, FILM_PANEL_IDS, FILM_WORKSPACES, showPanel } from './workspace/presets'
+import { FALLBACK_WORKSPACE, WEB_PANEL_IDS, WEB_WORKSPACES, showPanel } from './workspace/presets'
 import { filmPanels, type PanelParts } from './workspace/panels'
 import { focusPanelSearch } from './workspace/focusSearch'
 import { createWorkspaceRoute } from './workspace/route'
@@ -934,7 +934,7 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
   const countFrame = useCallback(() => stats.frame(), [stats])
   // The workspace (upstream's `ui.dock` and `WorkspacePrefs`): the live frame tree of the one mode
   // this editor has, and the named workspaces in the kit store, shared by every Film page.
-  const workspaces = useWorkspaces('film', { mode: 'edit', builtins: FILM_WORKSPACES, fallback: FALLBACK_WORKSPACE, known: FILM_PANEL_IDS })
+  const workspaces = useWorkspaces('film', { mode: 'edit', builtins: WEB_WORKSPACES, fallback: FALLBACK_WORKSPACE, known: WEB_PANEL_IDS })
   const workspacesNow = useRef(workspaces)
   workspacesNow.current = workspaces
   const treeNow = useRef(workspaces.tree)

@@ -6,6 +6,7 @@ import { chromium, webkit } from 'playwright'
 import { createServer } from 'vite'
 import { checkUiIds } from '@kition/sdk/dev-host/check-ui-ids'
 import { CATALOGS } from '../src/strings.ts'
+import { WEB_WORKSPACES } from '../src/workspace/presets.ts'
 import { readCatalog } from '../parity/i18n.mjs'
 
 const which = process.argv[2] ?? 'chromium'
@@ -5879,14 +5880,16 @@ try {
   await kit2.locator('.kui-ws-frame').first().waitFor({ timeout: 10000 })
   await page.bringToFront()
   const wrong = []
-  for (const { name, layout } of manifest.workspaces) {
+  // The built-in workspaces the editor offers (presets.ts WEB_WORKSPACES): upstream's trees without the
+  // panels it does not draw, and without the workspaces made of those only (Color, Audio, Captions and Graphics).
+  for (const [name, layout] of Object.entries(WEB_WORKSPACES)) {
     await switchWorkspace(kit, name)
     const want = activeTabs(layout)
     const shown = await until(async () => JSON.stringify(await frames()) === JSON.stringify(want), 30)
     const label = await kit.getByTestId('film-header-workspaces').textContent()
     if (!shown || label.trim() !== zh(name).toUpperCase()) wrong.push(`${name}: ${JSON.stringify(await frames())} under ${label}`)
   }
-  step('every built-in workspace switches, and its frames are the manifest tree', wrong.length === 0, wrong.slice(0, 2).join('; '))
+  step('every offered built-in workspace switches, and its frames are the manifest tree without the panels the editor does not draw', wrong.length === 0, wrong.slice(0, 2).join('; '))
   // Upstream's Effects layout lists Effect Controls twice; the editor keeps the first only.
   await switchWorkspace(kit, 'Effects')
   const errorsBefore = consoleErrors.length
@@ -5898,7 +5901,7 @@ try {
   const keyWarnings = consoleErrors.slice(errorsBefore).filter((text) => /same key|unique "key"/.test(text))
   step('Effects, then Window ▸ Effect Controls: one frame, one tab, no React key warning', effectFrames === 1 && effectTabs === 1 && keyWarnings.length === 0, JSON.stringify({ effectFrames, effectTabs, keyWarnings: keyWarnings.slice(0, 1) }))
   await switchWorkspace(kit, 'Editing')
-  await until(async () => (await frames()).length === activeTabs(manifest.workspaces[0].layout).length)
+  await until(async () => (await frames()).length === activeTabs(WEB_WORKSPACES.Editing).length)
   const editingFrames = await frames()
   await kit.getByTestId('film-menu-Window').click()
   await kit.getByTestId('film-control-window.panel.EffectControls').click()
@@ -5943,7 +5946,7 @@ try {
   // Upstream sorts the names as they are and draws each through its catalog (`crate::i18n::t`), a person's own too.
   const actions = ['Reset to Saved Layout', 'Save Changes to this Workspace', 'Save as New Workspace…', 'Edit Workspaces…'].map(zh)
   const names = rows.filter((row) => !actions.includes(row))
-  const sorted = [...manifest.workspaces.map((workspace) => workspace.name), 'Cut'].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase())).map(zh)
+  const sorted = [...Object.keys(WEB_WORKSPACES), 'Cut'].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase())).map(zh)
   step('Save as New Workspace "Cut" lists it in Window ▸ Workspaces, sorted', JSON.stringify(names) === JSON.stringify(sorted) && (await kit.getByTestId('film-header-workspaces').textContent()).trim() === zh('Cut').toUpperCase(), JSON.stringify(names))
   // The other page sees "Cut" too, and keeps its own live layout and workspace.
   await page2.bringToFront()

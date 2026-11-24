@@ -3,6 +3,7 @@ import upstream from '../../parity/film-upstream.json' with { type: 'json' }
 import type { WorkspaceNode } from '@kition/sdk/editor/workspaceTree'
 import { cyclePanel, panelFromName, showPanel, toggleMaximized } from './presets.ts'
 import { focusedPanel } from '../panels/projectModel.ts'
+import { hiddenPanelReason } from '../menus/hidden.ts'
 
 type Params = Record<string, unknown>
 
@@ -127,6 +128,8 @@ export function createWorkspaceRoute(deps: WorkspaceRouteDeps) {
       const name = id.slice(PANEL.length)
       const panel = panelFromName(name)
       if (!panel) throw new Error(`unknown panel \`${name}\``)
+      // A panel the editor does not draw is never opened (its Window row is hidden too).
+      check(hiddenPanelReason(panel))
       show(panel)
       return null
     }

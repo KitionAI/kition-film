@@ -199,3 +199,17 @@ test("Help ▸ Keyboard Shortcuts and the menus leave out the keys Kition and th
   const menus = withLiveShortcuts(FILM_MENUS, rows, reserved)
   assert.ok(!menus.some((row) => row.shortcut && reserved(row.shortcut)), JSON.stringify(menus.filter((row) => row.shortcut && reserved(row.shortcut)).map((row) => row.command)))
 })
+
+test('no drawn row opens a panel the editor does not draw, a Preferences page, an interchange export, or a workspace of such panels', () => {
+  const commands = drawn.map((row) => row.command.replace(/^kit:/, ''))
+  const panels = commands.filter((command) => command.startsWith('window.panel.'))
+  assert.deepEqual(panels, ['Project', 'Info', 'Markers', 'History', 'Source', 'EffectControls', 'Program', 'Timeline', 'Tools', 'AudioMeters', 'Properties'].map((kind) => `window.panel.${kind}`))
+  assert.deepEqual(commands.filter((command) => command.startsWith('app.settings.')), [])
+  for (const command of ['file.exportEdl', 'file.exportAle', 'file.exportOtio', 'file.exportFcp7Xml', 'file.exportFcpxml', 'file.exportAaf', 'file.exportOmf', 'mode.export', 'graphics.newFromFile', 'graphics.template.install', 'file.replaceFonts', 'clip.remix.enable', 'view.display.multicam', 'multicam.toggleView', 'help.systemCompatibilityReport', 'edit.editOriginal', 'clip.generateAudioWaveform']) {
+    assert.equal(commands.includes(command), false, command)
+    assert.ok(hiddenReason(command), command)
+  }
+  for (const slug of ['color', 'audio', 'captionsandgraphics']) assert.equal(commands.includes(`window.workspace.${slug}`), false, slug)
+  // What a person still uses stays: Export Media, Close Gap, Multi-Camera's rows (a scenario flattens through the menu).
+  for (const command of ['file.exportMedia', 'sequence.closeGap', 'clip.multicamFlatten', 'window.workspace.editing', 'window.workspace.effects']) assert.ok(commands.includes(command), command)
+})

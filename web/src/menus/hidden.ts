@@ -1,4 +1,6 @@
+// Imports carry `.ts` and the JSON its import attribute so `node --test` loads this module as it is.
 import type { MenuRow } from '@kition/sdk/editor'
+import upstream from '../../parity/film-upstream.json' with { type: 'json' }
 
 const HOST_FILE = 'The host opens, saves, and closes documents.'
 const HOST_OPENS = 'Opens another project; the host opens documents.'
@@ -6,6 +8,11 @@ const LOCAL_FILES = 'Needs the local file system.'
 const FORMER_SITE = "Links to upstream's former website."
 const PREVIEWS = 'Renders previews into a local preview folder.'
 const CREATE_PROXIES = 'Writes proxy files into a local folder next to the media, which the web engine cannot write.'
+const NOT_DRAWN = 'The Preferences window is not drawn yet; its page said only "Not available in this editor yet".'
+const INTERCHANGE = 'Writes an interchange file at a path no dialog asks for; interchange export is not in scope before the launch (agents run it with a path).'
+const REMIX = 'Remix is not in scope before the launch; it refused on most music ("no beat found").'
+const MULTICAM = 'Multi-Camera display is not drawn yet.'
+const PANEL_LATER = 'The editor does not draw this panel yet; its tab said only "Not available in this editor yet".'
 
 /**
  * Commands a browser editor never shows or binds, with the reason each is hidden (rule 2 of the
@@ -68,11 +75,86 @@ const HIDDEN_PREFIXES: ReadonlyArray<readonly [string, string]> = [
   ['mediaCache.', 'Manages the media cache in a local folder.'],
   ['view.theme.', 'The host owns the appearance.'],
   ['app.language.', 'The host owns the language.'],
+  // The Preferences window's pages are not drawn yet: each row only said "Not available in this editor yet".
+  ['app.settings.', NOT_DRAWN],
 ]
+
+/**
+ * Phase 1 of the plan "Film usable by hand" (no dead ends): what a person met that only said "Not
+ * available in this editor yet", failed at once for want of a parameter no dialog asks for, or did
+ * nothing on the web. The engine keeps every command (agents still run them, with their
+ * parameters); only the menus, keys, and panels a person sees leave them out.
+ */
+const DEAD_ENDS: Readonly<Record<string, string>> = {
+  // Interchange formats write a file at a path no dialog asks for (not in scope before the launch).
+  'file.exportEdl': INTERCHANGE,
+  'file.exportAle': INTERCHANGE,
+  'file.exportOtio': INTERCHANGE,
+  'file.exportFcp7Xml': INTERCHANGE,
+  'file.exportFcpxml': INTERCHANGE,
+  'file.exportAaf': INTERCHANGE,
+  'file.exportOmf': INTERCHANGE,
+  // Export mode (File ▸ Export ▸ Export, Cmd+M) is not drawn; Export Media and the app bar's Export MP4 export.
+  'mode.export': 'Export mode is not drawn yet; File ▸ Export ▸ Media and Export MP4 export the sequence.',
+  'graphics.newFromFile': 'Places a picture file at a path no dialog asks for; File ▸ Import brings pictures into the project.',
+  'graphics.template.install': 'Installs a Motion Graphics template from a path no dialog asks for; templates are not in scope before the launch.',
+  'file.replaceFonts': 'Needs the font to replace, which no dialog asks for; not in scope before the launch.',
+  'clip.remix.enable': REMIX,
+  'clip.remix.properties': REMIX,
+  'clip.remix.revert': REMIX,
+  'view.display.multicam': MULTICAM,
+  'multicam.toggleView': MULTICAM,
+  'help.systemCompatibilityReport': 'The System Compatibility Report is not drawn.',
+  'edit.editOriginal': 'Opens the media in another application, which a browser editor cannot start.',
+  'clip.generateAudioWaveform': 'The web editor draws waveforms by itself: there is nothing to generate.',
+}
+
+/** Upstream's panels the editor does not draw (Window ▸ <panel> and every workspace leave them out), with why. */
+const HIDDEN_PANELS: Readonly<Record<string, string>> = {
+  mediaBrowser: 'Browses local folders; File ▸ Import picks media through the host.',
+  libraries: 'Libraries are not built.',
+  effects: PANEL_LATER,
+  audioClipMixer: PANEL_LATER,
+  metadata: PANEL_LATER,
+  audioTrackMixer: PANEL_LATER,
+  color: PANEL_LATER,
+  scopes: PANEL_LATER,
+  graphicsTemplates: PANEL_LATER,
+  audioMixing: PANEL_LATER,
+  text: PANEL_LATER,
+  events: PANEL_LATER,
+  progress: PANEL_LATER,
+  referenceMonitor: PANEL_LATER,
+  timecode: PANEL_LATER,
+}
+
+/** Built-in workspaces left out: every panel they are for is one the editor does not draw. */
+const HIDDEN_WORKSPACES: Readonly<Record<string, string>> = {
+  Color: 'Its panels (Color, Scopes) are not drawn; without them it is Assembly.',
+  Audio: 'Its panels (the audio mixers) are not drawn; without them it is Assembly.',
+  'Captions and Graphics': 'Its panels (Text, Graphics Templates) are not drawn; without them it is Editing.',
+}
+
+/** `window.panel.<Kind>` (upstream's Window rows) and `window.workspace.<slug>` of what is hidden, with the reason. */
+const HIDDEN_WINDOW_ROWS: Readonly<Record<string, string>> = Object.fromEntries([
+  ...upstream.panels.filter((panel) => HIDDEN_PANELS[panel.id]).map((panel) => [`window.panel.${panel.kind}`, HIDDEN_PANELS[panel.id]]),
+  ...Object.entries(HIDDEN_WORKSPACES).map(([name, reason]) => [`window.workspace.${name.toLowerCase().replaceAll(' ', '')}`, reason]),
+])
+
+/** Why the editor does not draw the panel `panel` (a lowerCamel id), or null when it draws it. */
+export function hiddenPanelReason(panel: string): string | null {
+  return HIDDEN_PANELS[panel] ?? null
+}
+
+/** Why the built-in workspace `name` is left out, or null when it is offered. */
+export function hiddenWorkspaceReason(name: string): string | null {
+  return HIDDEN_WORKSPACES[name] ?? null
+}
 
 /** Why a browser editor hides `command`, or null when it shows it. */
 export function hiddenReason(command: string): string | null {
-  if (HIDDEN[command]) return HIDDEN[command]
+  const reason = HIDDEN[command] ?? DEAD_ENDS[command] ?? HIDDEN_WINDOW_ROWS[command]
+  if (reason) return reason
   return HIDDEN_PREFIXES.find(([prefix]) => command.startsWith(prefix))?.[1] ?? null
 }
 

@@ -127,7 +127,8 @@ export function Monitor(props: MonitorProps) {
   const [draft, setDraft] = useState<Span | null>(null)
   const span = monitorSpan(which, marks, rate, draft)
   const params = { monitor: which }
-  const rows = which === 'source' ? SOURCE_TRANSPORT : PROGRAM_TRANSPORT
+  // Export Frame is not drawn: its dialog (file.exportFrame) is not built, and a button that is always grey is a dead end.
+  const rows = (which === 'source' ? SOURCE_TRANSPORT : PROGRAM_TRANSPORT).filter((entry) => entry.key !== 'exportFrame')
   const press = (entry: TransportEntry) => {
     const action = transportAction(which, entry.key)
     if ('disabled' in action) return
@@ -140,8 +141,6 @@ export function Monitor(props: MonitorProps) {
     icon: transportIcon(entry.icon, playing),
     large: entry.icon === 'play',
     pressed: entry.icon === 'play' ? playing : entry.key === 'media.toggleProxies' ? proxies : undefined,
-    // Export Frame opens upstream's frame export dialog, which comes in wave 3.
-    disabled: entry.key === 'exportFrame',
     uiId: entry.uiId,
     onPress: () => press(entry),
   }))
@@ -212,8 +211,7 @@ export function Monitor(props: MonitorProps) {
           ) : (
             <>
               <MenuSeparator />
-              {/* Upstream's checkbox shows and hides the scopes (`app.ui.show_scopes`); here it opens the panel, which Task 30 builds. */}
-              <Row uiId="control:window.panel.Scopes" label={phrase('Scopes')} testId={`${testId}-settings-scopes`} onSelect={() => void invoke('window.panel.Scopes', {})} />
+              {/* Upstream's Scopes checkbox is not drawn: the Scopes panel is not built (`menus/hidden.ts`). */}
               <Row uiId="control:monitor.loop" label={phrase('Loop')} checked={looping} testId={`${testId}-settings-loop`} onSelect={() => void invoke('playback.loop', params)} />
             </>
           )}

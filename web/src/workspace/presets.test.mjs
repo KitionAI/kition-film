@@ -107,3 +107,18 @@ test('toggleMaximized: off when on; else maximizes the panel and shows and focus
   assert.equal(off.focused, null)
   assert.equal(off.tree, on.tree)
 })
+
+test('the offered workspaces leave out the panels the editor does not draw, and the workspaces made of them only', async () => {
+  const { WEB_WORKSPACES, WEB_PANEL_IDS } = await import('./presets.ts')
+  // The panels the editor draws (App.tsx PARTS and the Timeline): no placeholder is offered.
+  const drawn = ['project', 'info', 'markers', 'history', 'source', 'effectControls', 'program', 'timeline', 'tools', 'audioMeters', 'properties']
+  assert.deepEqual([...WEB_PANEL_IDS].sort(), [...drawn].sort())
+  assert.deepEqual(Object.keys(WEB_WORKSPACES), ['Editing', 'Assembly', 'Effects', 'Learning', 'Review', 'All Panels'])
+  for (const [name, tree] of Object.entries(WEB_WORKSPACES)) {
+    assert.ok(panelsOf(tree).every((panel) => WEB_PANEL_IDS.has(panel)), `${name} holds only drawn panels`)
+    // Each keeps every drawn panel upstream's layout had, in its frames.
+    const kept = panelsOf(FILM_WORKSPACES[name]).filter((panel) => WEB_PANEL_IDS.has(panel))
+    assert.deepEqual(panelsOf(tree), kept, name)
+  }
+  assert.deepEqual(panelsOf(WEB_WORKSPACES.Editing), ['source', 'effectControls', 'program', 'properties', 'project', 'info', 'markers', 'history', 'tools', 'timeline', 'audioMeters'])
+})

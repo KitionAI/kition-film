@@ -71,36 +71,43 @@
     "wave": 3
   },
   "menu:File/Export/file.exportEdl": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "Writes an interchange file at a path no dialog asks for; interchange export is not in scope before the launch (agents run it with a path)."
   },
   "menu:File/Export/file.exportSelectionProject": {
     "status": "todo",
     "wave": 3
   },
   "menu:File/Export/file.exportAle": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "Writes an interchange file at a path no dialog asks for; interchange export is not in scope before the launch (agents run it with a path)."
   },
   "menu:File/Export/file.exportOtio": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "Writes an interchange file at a path no dialog asks for; interchange export is not in scope before the launch (agents run it with a path)."
   },
   "menu:File/Export/file.exportFcp7Xml": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "Writes an interchange file at a path no dialog asks for; interchange export is not in scope before the launch (agents run it with a path)."
   },
   "menu:File/Export/file.exportFcpxml": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "Writes an interchange file at a path no dialog asks for; interchange export is not in scope before the launch (agents run it with a path)."
   },
   "menu:File/Export/file.exportAaf": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "Writes an interchange file at a path no dialog asks for; interchange export is not in scope before the launch (agents run it with a path)."
   },
   "menu:File/Export/file.exportOmf": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "Writes an interchange file at a path no dialog asks for; interchange export is not in scope before the launch (agents run it with a path)."
   },
   "menu:File/file.open": {
     "status": "hidden",
@@ -321,8 +328,9 @@
     "wave": 1
   },
   "menu:Edit/edit.editOriginal": {
-    "status": "done",
-    "wave": 1
+    "status": "hidden",
+    "wave": 1,
+    "reason": "Opens the media in another application, which a browser editor cannot start."
   },
   "menu:Clip/clip.rename": {
     "status": "done",
@@ -748,8 +756,9 @@
     "note": "Opens upstream's Update Metadata (menu_dialogs.rs; dialogs/menu.ts), its own confirmation (rule 6): \"Write the metadata of the selected clip(s) (n) to XMP files next to their media?\" (n the larger of the Project and timeline selections) and that XMP files other applications wrote are left unchanged; OK runs clip.updateMetadata {} for the selection, as upstream. It writes outside the project (PREVIEW_EXTERNAL), so it never runs on the scratch session: its preview is a summary (kind summary) listing each clip whose XMP file OK writes (upstream's targets: the Project selection, else the timeline's clips' items)."
   },
   "menu:Clip/clip.generateAudioWaveform": {
-    "status": "done",
-    "wave": 1
+    "status": "hidden",
+    "wave": 1,
+    "reason": "The web editor draws waveforms by itself: there is nothing to generate."
   },
   "menu:Clip/clip.automateToSequence": {
     "status": "done",
@@ -831,8 +840,9 @@
     "wave": 1
   },
   "menu:Graphics and Titles/New Layer/graphics.newFromFile": {
-    "status": "todo",
-    "wave": 2
+    "status": "hidden",
+    "wave": 2,
+    "reason": "Places a picture file at a path no dialog asks for; File ▸ Import brings pictures into the project."
   },
   "menu:Graphics and Titles/Align to Video Frame/graphics.alignFrame.left": {
     "status": "done",
@@ -972,9 +982,9 @@
     "wave": 3
   },
   "menu:Graphics and Titles/graphics.template.install": {
-    "status": "todo",
+    "status": "hidden",
     "wave": 3,
-    "reason": "Motion Graphics templates are wave 3 (the design puts graphics templates there)."
+    "reason": "Installs a Motion Graphics template from a path no dialog asks for; templates are not in scope before the launch."
   },
   "menu:Graphics and Titles/graphics.upgradeCaption": {
     "status": "done",
@@ -985,8 +995,9 @@
     "wave": 1
   },
   "menu:Graphics and Titles/file.replaceFonts": {
-    "status": "todo",
-    "wave": 2
+    "status": "hidden",
+    "wave": 2,
+    "reason": "Needs the font to replace, which no dialog asks for; not in scope before the launch."
   },
   "menu:File/media.linkMedia": {
     "status": "done",
@@ -1099,16 +1110,19 @@
     "wave": 3
   },
   "menu:Clip/Remix/clip.remix.enable": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "Remix is not in scope before the launch; it refused on most music (\"no beat found\")."
   },
   "menu:Clip/Remix/clip.remix.properties": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "Remix is not in scope before the launch; it refused on most music (\"no beat found\")."
   },
   "menu:Clip/Remix/clip.remix.revert": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "Remix is not in scope before the launch; it refused on most music (\"no beat found\")."
   },
   "menu:Edit/Language/app.language.english": {
     "status": "hidden",
@@ -1212,9 +1226,9 @@
     "note": "View ▸ Display Mode ▸ Blue (monitor_view.rs route, set_display, checked): the monitor's display mode, UI state per monitor (monitors/monitorView.ts, displayModes.ts; rule 5). It acts on params.monitor, else on the focused monitor (Program by default). Its check mark is the forced monitor's mode for the waveform modes and Comparison, else the focused monitor's (Task 21)."
   },
   "menu:View/Display Mode/view.display.multicam": {
-    "status": "todo",
+    "status": "hidden",
     "wave": 3,
-    "reason": "The Multi-Camera display mode comes with Multi-Camera, in wave 3."
+    "reason": "Multi-Camera display is not drawn yet."
   },
   "menu:View/Display Mode/view.display.audioWaveform": {
     "status": "done",
@@ -1353,8 +1367,9 @@
     "note": "The Timeline's view (UI state, on by default and not kept, as upstream's extras): logarithmic bars from -48 dB, else linear; the row is checked while on"
   },
   "menu:View/multicam.toggleView": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "Multi-Camera display is not drawn yet."
   },
   "menu:View/Appearance/view.theme.dark": {
     "status": "hidden",
@@ -1380,16 +1395,19 @@
     "wave": 1
   },
   "menu:Window/Workspaces/window.workspace.audio": {
-    "status": "done",
-    "wave": 1
+    "status": "hidden",
+    "wave": 1,
+    "reason": "Its panels (the audio mixers) are not drawn; without them it is Assembly."
   },
   "menu:Window/Workspaces/window.workspace.captionsandgraphics": {
-    "status": "done",
-    "wave": 1
+    "status": "hidden",
+    "wave": 1,
+    "reason": "Its panels (Text, Graphics Templates) are not drawn; without them it is Editing."
   },
   "menu:Window/Workspaces/window.workspace.color": {
-    "status": "done",
-    "wave": 1
+    "status": "hidden",
+    "wave": 1,
+    "reason": "Its panels (Color, Scopes) are not drawn; without them it is Assembly."
   },
   "menu:Window/Workspaces/window.workspace.editing": {
     "status": "done",
@@ -1424,8 +1442,9 @@
     "wave": 1
   },
   "menu:File/Export/mode.export": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "Export mode is not drawn yet; File ▸ Export ▸ Media and Export MP4 export the sequence."
   },
   "menu:Help/help.discord": {
     "status": "hidden",
@@ -1462,8 +1481,9 @@
     "reason": "Shows log files in the operating system file manager."
   },
   "menu:Help/help.systemCompatibilityReport": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "The System Compatibility Report is not drawn."
   },
   "menu:Help/app.about": {
     "status": "hidden",
@@ -1483,68 +1503,84 @@
     ]
   },
   "menu:Edit/Preferences/app.settings.general": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "The Preferences window is not drawn yet; its page said only \"Not available in this editor yet\"."
   },
   "menu:Edit/Preferences/app.settings.appearance": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "The Preferences window is not drawn yet; its page said only \"Not available in this editor yet\"."
   },
   "menu:Edit/Preferences/app.settings.audio": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "The Preferences window is not drawn yet; its page said only \"Not available in this editor yet\"."
   },
   "menu:Edit/Preferences/app.settings.audioHardware": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "The Preferences window is not drawn yet; its page said only \"Not available in this editor yet\"."
   },
   "menu:Edit/Preferences/app.settings.autoSave": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "The Preferences window is not drawn yet; its page said only \"Not available in this editor yet\"."
   },
   "menu:Edit/Preferences/app.settings.color": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "The Preferences window is not drawn yet; its page said only \"Not available in this editor yet\"."
   },
   "menu:Edit/Preferences/app.settings.graphics": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "The Preferences window is not drawn yet; its page said only \"Not available in this editor yet\"."
   },
   "menu:Edit/Preferences/app.settings.labels": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "The Preferences window is not drawn yet; its page said only \"Not available in this editor yet\"."
   },
   "menu:Edit/Preferences/app.settings.media": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "The Preferences window is not drawn yet; its page said only \"Not available in this editor yet\"."
   },
   "menu:Edit/Preferences/app.settings.mediaAnalysis": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "The Preferences window is not drawn yet; its page said only \"Not available in this editor yet\"."
   },
   "menu:Edit/Preferences/app.settings.mediaCache": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "The Preferences window is not drawn yet; its page said only \"Not available in this editor yet\"."
   },
   "menu:Edit/Preferences/app.settings.memory": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "The Preferences window is not drawn yet; its page said only \"Not available in this editor yet\"."
   },
   "menu:Edit/Preferences/app.settings.playback": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "The Preferences window is not drawn yet; its page said only \"Not available in this editor yet\"."
   },
   "menu:Edit/Preferences/app.settings.plugins": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "The Preferences window is not drawn yet; its page said only \"Not available in this editor yet\"."
   },
   "menu:Edit/Preferences/app.settings.timeline": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "The Preferences window is not drawn yet; its page said only \"Not available in this editor yet\"."
   },
   "menu:Edit/Preferences/app.settings.trim": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "The Preferences window is not drawn yet; its page said only \"Not available in this editor yet\"."
   },
   "menu:Window/projectPanel.newPanel": {
     "status": "done",
@@ -1562,20 +1598,23 @@
     "wave": 1
   },
   "menu:Window/window.panel.MediaBrowser": {
-    "status": "done",
-    "wave": 1
+    "status": "hidden",
+    "wave": 1,
+    "reason": "Browses local folders; File ▸ Import picks media through the host."
   },
   "menu:Window/window.panel.Libraries": {
-    "status": "done",
-    "wave": 1
+    "status": "hidden",
+    "wave": 1,
+    "reason": "Libraries are not built."
   },
   "menu:Window/window.panel.Info": {
     "status": "done",
     "wave": 1
   },
   "menu:Window/window.panel.Effects": {
-    "status": "done",
-    "wave": 1
+    "status": "hidden",
+    "wave": 1,
+    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
   },
   "menu:Window/window.panel.Markers": {
     "status": "done",
@@ -1594,12 +1633,14 @@
     "wave": 1
   },
   "menu:Window/window.panel.AudioClipMixer": {
-    "status": "done",
-    "wave": 1
+    "status": "hidden",
+    "wave": 1,
+    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
   },
   "menu:Window/window.panel.Metadata": {
-    "status": "done",
-    "wave": 1
+    "status": "hidden",
+    "wave": 1,
+    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
   },
   "menu:Window/window.panel.Program": {
     "status": "done",
@@ -1618,48 +1659,58 @@
     "wave": 1
   },
   "menu:Window/window.panel.AudioTrackMixer": {
-    "status": "done",
-    "wave": 1
+    "status": "hidden",
+    "wave": 1,
+    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
   },
   "menu:Window/window.panel.Color": {
-    "status": "done",
-    "wave": 1
+    "status": "hidden",
+    "wave": 1,
+    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
   },
   "menu:Window/window.panel.Scopes": {
-    "status": "done",
-    "wave": 1
+    "status": "hidden",
+    "wave": 1,
+    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
   },
   "menu:Window/window.panel.GraphicsTemplates": {
-    "status": "done",
-    "wave": 1
+    "status": "hidden",
+    "wave": 1,
+    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
   },
   "menu:Window/window.panel.AudioMixing": {
-    "status": "done",
-    "wave": 1
+    "status": "hidden",
+    "wave": 1,
+    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
   },
   "menu:Window/window.panel.Properties": {
     "status": "done",
     "wave": 1
   },
   "menu:Window/window.panel.Text": {
-    "status": "done",
-    "wave": 1
+    "status": "hidden",
+    "wave": 1,
+    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
   },
   "menu:Window/window.panel.Events": {
-    "status": "done",
-    "wave": 1
+    "status": "hidden",
+    "wave": 1,
+    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
   },
   "menu:Window/window.panel.Progress": {
-    "status": "done",
-    "wave": 1
+    "status": "hidden",
+    "wave": 1,
+    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
   },
   "menu:Window/window.panel.ReferenceMonitor": {
-    "status": "done",
-    "wave": 1
+    "status": "hidden",
+    "wave": 1,
+    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
   },
   "menu:Window/window.panel.Timecode": {
-    "status": "done",
-    "wave": 1
+    "status": "hidden",
+    "wave": 1,
+    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
   },
   "key:source.playback.toggle": {
     "status": "done",
@@ -2681,12 +2732,14 @@
     ]
   },
   "panel:mediaBrowser": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "Browses local folders; File ▸ Import picks media through the host."
   },
   "panel:libraries": {
-    "status": "done",
+    "status": "hidden",
     "wave": 1,
+    "reason": "Libraries are not built.",
     "note": "upstream draws a placeholder"
   },
   "panel:info": {
@@ -2695,8 +2748,9 @@
     "note": "Dropped from wave 2: Info's UI line (UI frame rate and frames queued). The web editor renders on demand and keeps no frame queue, and the status bar already shows the playback fps."
   },
   "panel:effects": {
-    "status": "todo",
-    "wave": 2
+    "status": "hidden",
+    "wave": 2,
+    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
   },
   "panel:markers": {
     "status": "done",
@@ -2746,12 +2800,14 @@
     ]
   },
   "panel:audioClipMixer": {
-    "status": "todo",
-    "wave": 2
+    "status": "hidden",
+    "wave": 2,
+    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
   },
   "panel:metadata": {
-    "status": "todo",
-    "wave": 2
+    "status": "hidden",
+    "wave": 2,
+    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
   },
   "panel:program": {
     "status": "done",
@@ -2809,24 +2865,29 @@
     ]
   },
   "panel:audioTrackMixer": {
-    "status": "todo",
-    "wave": 2
+    "status": "hidden",
+    "wave": 2,
+    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
   },
   "panel:color": {
-    "status": "todo",
-    "wave": 2
+    "status": "hidden",
+    "wave": 2,
+    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
   },
   "panel:scopes": {
-    "status": "todo",
-    "wave": 2
+    "status": "hidden",
+    "wave": 2,
+    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
   },
   "panel:graphicsTemplates": {
-    "status": "todo",
-    "wave": 2
+    "status": "hidden",
+    "wave": 2,
+    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
   },
   "panel:audioMixing": {
-    "status": "todo",
-    "wave": 2
+    "status": "hidden",
+    "wave": 2,
+    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
   },
   "panel:properties": {
     "status": "done",
@@ -2840,24 +2901,29 @@
     ]
   },
   "panel:text": {
-    "status": "todo",
-    "wave": 2
+    "status": "hidden",
+    "wave": 2,
+    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
   },
   "panel:events": {
-    "status": "todo",
-    "wave": 2
+    "status": "hidden",
+    "wave": 2,
+    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
   },
   "panel:progress": {
-    "status": "todo",
-    "wave": 2
+    "status": "hidden",
+    "wave": 2,
+    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
   },
   "panel:referenceMonitor": {
-    "status": "todo",
-    "wave": 3
+    "status": "hidden",
+    "wave": 3,
+    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
   },
   "panel:timecode": {
-    "status": "todo",
-    "wave": 2
+    "status": "hidden",
+    "wave": 2,
+    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
   },
   "workspace:editing": {
     "status": "done",
@@ -2868,8 +2934,9 @@
     "wave": 1
   },
   "workspace:color": {
-    "status": "done",
-    "wave": 1
+    "status": "hidden",
+    "wave": 1,
+    "reason": "Its panels (Color, Scopes) are not drawn; without them it is Assembly."
   },
   "workspace:effects": {
     "status": "done",
@@ -2877,12 +2944,14 @@
     "note": "upstream bug dropped: its Effects layout lists Effect Controls in two frames; only the first can show it (activate stops there), so the second tab is removed (validateTree)"
   },
   "workspace:audio": {
-    "status": "done",
-    "wave": 1
+    "status": "hidden",
+    "wave": 1,
+    "reason": "Its panels (the audio mixers) are not drawn; without them it is Assembly."
   },
   "workspace:captionsandgraphics": {
-    "status": "done",
-    "wave": 1
+    "status": "hidden",
+    "wave": 1,
+    "reason": "Its panels (Text, Graphics Templates) are not drawn; without them it is Editing."
   },
   "workspace:learning": {
     "status": "done",
@@ -7310,8 +7379,9 @@
     "wave": 1
   },
   "element:timeline.toggle.captions": {
-    "status": "done",
+    "status": "hidden",
     "wave": 1,
+    "reason": "Not drawn: upstream draws Caption track options with no action, and caption tracks are not built.",
     "note": "drawn as upstream draws it: no action yet (caption tracks are wave 2)"
   },
   "element:timeline.toggle.marker": {
@@ -7583,8 +7653,9 @@
     "wave": 1
   },
   "element:source.transport.exportFrame": {
-    "status": "todo",
+    "status": "hidden",
     "wave": 3,
+    "reason": "Not drawn: Export Frame's dialog (file.exportFrame) is not built, and a button that is always grey is a dead end.",
     "note": "Drawn disabled in the transport row: Export Frame opens upstream's frame export dialog (file.exportFrame), a wave-3 module"
   },
   "element:source.transport.media.toggleProxies": {
@@ -7638,8 +7709,9 @@
     "wave": 1
   },
   "element:program.transport.exportFrame": {
-    "status": "todo",
+    "status": "hidden",
     "wave": 3,
+    "reason": "Not drawn: Export Frame's dialog (file.exportFrame) is not built, and a button that is always grey is a dead end.",
     "note": "Drawn disabled in the transport row: Export Frame opens upstream's frame export dialog (file.exportFrame), a wave-3 module"
   },
   "element:program.transport.media.toggleProxies": {

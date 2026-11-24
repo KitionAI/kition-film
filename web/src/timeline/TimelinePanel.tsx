@@ -44,7 +44,6 @@ import type { PreviewCovers } from '../dialogs/preview'
 import type { PreviewKind } from '../dialogs/registry'
 
 const Bookmark = TesseraIcons.BookmarkIcon
-const Captions = TesseraIcons.CaptionsIcon
 const Link = TesseraIcons.LinkIcon
 const Magnet = TesseraIcons.MagnetIcon
 const SquareStack = TesseraIcons.SquareStackIcon
@@ -788,10 +787,7 @@ export function TimelinePanel(props: TimelinePanelProps) {
           <ToolbarButton id="control:timeline.toggle.linked" label={phrase('Linked Selection')} on={session?.linkedSelection ?? true} onPress={() => run('sequence.linkedSelection', {})} testId="film-timeline-linked">
             <Link size={14} aria-hidden="true" />
           </ToolbarButton>
-          {/* Upstream draws Caption track options without an action yet. */}
-          <ToolbarButton id="control:timeline.toggle.captions" label={phrase('Caption track options')} testId="film-timeline-captions">
-            <Captions size={14} aria-hidden="true" />
-          </ToolbarButton>
+          {/* Upstream's Caption track options is not drawn: it has no action (caption tracks are not built). */}
           <ToolbarButton id="control:timeline.toggle.marker" label={phrase('Add Marker (M)')} onPress={() => run('markers.add', {})} testId="film-timeline-marker">
             <Bookmark size={14} aria-hidden="true" />
           </ToolbarButton>

@@ -11,8 +11,12 @@
 export const SCOPE = {
   items: { 9: 6, 10: 0, 11: 45, 12: 39, 13: 47, 14: 52, 15: 33, 16: 24, 17: 30, 18: 19, 19: 19, 20: 3, 21: 27, 22: 28, 23: 3, 24: 0, 25: 30, 26: 17, 27: 2, 28: 10, 29: 9, 30: 17, 31: 18, 32: 47, 33: 49, 34: 14, 35: 2, 36: 41, 37: 19, 38: 1 },
   followUps: { 12: 1, 14: 1, 15: 1, 16: 1, 18: 3, 19: 2, 20: 1, 21: 5, 22: 2, 23: 1, 24: 2, 25: 1, 26: 2, 27: 1, 29: 1, 30: 1, 34: 1, 35: 2, 38: 16, 39: 2, 41: 1 },
-  /** Task 1's moves: wave-2 items set to wave 3, items hidden, follow-ups moved to wave 3, and follow-ups dropped with a note. */
-  movedItems: 51,
+  /**
+   * Task 1's moves: wave-2 items set to wave 3, items hidden, follow-ups moved to wave 3, and follow-ups dropped with a note.
+   * 51 moved by Task 1; 2 of them (Install Motion Graphics Template… and View ▸ Display Mode ▸ Multi-Camera) were
+   * hidden later with their own reason (`menus/hidden.ts`, the plan "Film usable by hand", phase 1).
+   */
+  movedItems: 49,
   hiddenItems: 25,
   movedFollowUps: 2,
   droppedFollowUps: 1,

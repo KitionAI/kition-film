@@ -287,7 +287,8 @@ const STATES = [
     },
   })),
   // Built-in workspaces besides Editing (the editor as it opens), and the header's workspace menu.
-  ...['Assembly', 'Color'].map((workspace) => ({
+  // Color is not offered (its panels are not drawn: src/menus/hidden.ts).
+  ...['Assembly', 'Effects'].map((workspace) => ({
     name: `workspace-${workspace.toLowerCase()}`,
     show: async (page, kit) => {
       await kit.getByTestId('film-header-workspaces').click()
