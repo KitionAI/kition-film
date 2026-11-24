@@ -138,9 +138,7 @@ export function EffectsPanel({ open, query, invoke, phrase }: EffectsPanelProps)
               }}
             >
               <span className="film-fx-chevron" />
-              <span className="film-fx-icon" data-transition={transition || undefined} data-preset={row.kind === 'preset' || undefined} aria-hidden="true">
-                {transition ? null : 'fx'}
-              </span>
+              <span className="film-fx-icon" data-transition={transition || undefined} data-preset={row.kind === 'preset' || undefined} aria-hidden="true" />
               <span className="film-fx-name">{phrase(name)}</span>
             </div>
           )

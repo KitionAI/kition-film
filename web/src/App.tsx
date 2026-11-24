@@ -1116,15 +1116,16 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
         run: async (id, params, options) => {
           moves.current += 1
           // Delete in Effect Controls removes the effect selected there (upstream `keys.rs`'s
-          // `selected_effect`); in the Timeline, a selected transition cannot be removed on its own
-          // (the engine has no such command), so Delete says so instead of acting on nothing.
-          if ((id === 'edit.clear' || id === 'edit.rippleDelete') && Object.keys(params).length === 0) {
+          // `selected_effect`; there the key's binding is the panel-less `project.delete`); in the
+          // Timeline, a selected transition cannot be removed on its own (the engine has no such
+          // command), so Delete says so instead of acting on nothing.
+          if ((id === 'edit.clear' || id === 'edit.rippleDelete' || id === 'project.delete') && Object.keys(params).length === 0) {
             const chosen = localSelection.get()
             if (focusedNow.current === 'effectControls' && chosen.effect) {
               localSelection.set({ effect: null })
               return await session.run('effects.remove', { clip: chosen.effect.clip, index: chosen.effect.index }, null, options)
             }
-            if (focusedNow.current === 'timeline' && chosen.transition != null && (stateNow.current?.selection.length ?? 0) === 0) throw new Error(t('transition.cannotDelete'))
+            if (id !== 'project.delete' && focusedNow.current === 'timeline' && chosen.transition != null && (stateNow.current?.selection.length ?? 0) === 0) throw new Error(t('transition.cannotDelete'))
           }
           // Sequence ▸ Close Gap names no track: the gap the playhead is in (`closeGapTrack`), or why not.
           if (id === 'sequence.closeGap' && params.track === undefined) {

@@ -4152,6 +4152,11 @@ button.film-project-tab {
   text-align: center;
 }
 
+/* An effect's box says "fx" (drawn, so it is not part of the row's name). */
+.film-fx-icon:not([data-transition])::before {
+  content: 'fx';
+}
+
 .film-fx-icon[data-transition] {
   background: linear-gradient(to top right, transparent calc(50% - 0.5px), var(--kit-text-muted) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px));
 }

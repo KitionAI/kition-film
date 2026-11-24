@@ -507,3 +507,21 @@ features:
     gap: "Hidden, not built: the 15 panels, the Preferences pages, interchange export, Export mode, Remix, Multi-Camera display (the plan \"Film usable by hand\" puts them after the launch); the engine keeps their commands for agents."
     cases: [regressions/issue-shift-delete-ripple, regressions/issue-dead-ends]
     since: "2026-11-24"
+  - id: film.editor.effects-panel
+    title: "The Effects panel: effects, transitions and presets as a searchable folder tree; double-click applies to the selected clips, a drag to a clip in the Timeline or to the clip Effect Controls shows; an applied effect's parameters change in Effect Controls, where its selected header and Delete remove it"
+    dimension: [function]
+    priority: P0
+    status: partial
+    paths: [web/src/panels/EffectsPanel.tsx, web/src/panels/effectsTree.ts, web/src/timeline/effectDrag.ts, web/src/panels/EffectControls.tsx, web/src/session/localSelection.ts, web/tests/effects.mjs]
+    gap: "Color Presets (they wait for the Color panel), importing presets and saving a preset; effects cannot be reordered on a clip (the engine has no command for it)."
+    cases: [film.editor.effects-panel/by-hand]
+    since: "2026-11-24"
+  - id: film.timeline.transitions
+    title: "Transitions by hand on the Timeline: drag one from the Effects panel onto a cut (the engine's alignment shown), click to select, drag an end to change its length with snapping and a live preview, double-click or its menu for Set Transition Duration; each one undo step"
+    dimension: [function]
+    priority: P0
+    status: partial
+    paths: [web/src/timeline/transitions.ts, web/src/timeline/useGestures.ts, web/src/timeline/TransitionControls.tsx, web/src/timeline/TimelinePanel.tsx, web/tests/effects.mjs]
+    gap: "The engine has no command that removes one transition, moves it along its cut, or places it Start or End at a cut between two clips: Delete says so (Undo takes back the step that added it), a drag of its middle does nothing, and a drop always centres it on a cut between clips. A new length re-applies the transition (history reads \"Apply …\"). Effect Controls does not show a transition's settings."
+    cases: [film.timeline.transitions/by-hand]
+    since: "2026-11-24"

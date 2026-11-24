@@ -1,0 +1,30 @@
+format: 1
+id: film.editor.effects-panel/by-hand
+feature: film.editor.effects-panel
+intent: >-
+  A person applies an effect by hand, in Chromium: Window lists Effects and the Editing workspace
+  has its tab (it only said "Not available in this editor yet" before phase 1 hid it); its top
+  folders read in Chinese in upstream's order, a click opens and closes a folder, and the search
+  finds Gaussian Blur by its Chinese name and Cross Dissolve by its English one; a double-click
+  applies Gaussian Blur to the selected clip and a drag onto the clip applies it there (the clip
+  outlined while it hovers), each one undo step; in Effect Controls scrubbing Blurriness raises it
+  and changes the Program picture as one undo step; the effect's header selected, Delete removes
+  it, and its menu's Clear does too; an effect dropped on Effect Controls goes on the clip it shows;
+  a transition's menu in the panel makes it the default transition.
+layer: gate
+source:
+  kind: probe
+  from: web/tests/effects.mjs chromium (plan "Film usable by hand", phase 3)
+  license: Apache-2.0
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/effects.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 180
+since: "2026-11-24"
