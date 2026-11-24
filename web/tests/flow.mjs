@@ -917,8 +917,13 @@ try {
       const redLabel = await kit.getByTestId('film-program-mode').textContent({ timeout: 2000 }).catch(() => null)
       step('Program ▸ Red shows a grey picture: the colour bars\' red channel, labelled Red', channelShown && composite.coloured > 20 && red.lit > 20 && red.coloured === 0 && redLabel === zh('Red'), JSON.stringify({ composite, red, redLabel }))
       // Playing in Red: the channel picture follows the clock from reduced copies, the canvas is not painted, and the dropped-frame dot shows.
-      const channelFrom = { requests: await requests(), ticks: await kit.getByTestId('film-program-channel').getAttribute('data-ticks') }
+      // The click that focuses the Program monitor selects the clip under it (phase 5): its render
+      // lands before the playback this step measures, so the step counts from after it.
+      const selectedBefore = JSON.stringify((await details()).sequence.selection)
+      const paintsBefore = await paints()
       await kit.getByTestId('film-program').click()
+      if (await until(async () => JSON.stringify((await details()).sequence.selection) !== selectedBefore, 20)) await until(async () => (await paints()) > paintsBefore, 40)
+      const channelFrom = { requests: await requests(), ticks: await kit.getByTestId('film-program-channel').getAttribute('data-ticks') }
       await kit.locator('.kui-app').focus()
       await page.keyboard.press(' ')
       const dotShown = await until(async () => (await kit.getByTestId('film-program-dropped').count()) === 1, 30)
