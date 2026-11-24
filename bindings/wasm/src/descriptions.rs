@@ -280,6 +280,9 @@ pub fn description(id: &str) -> &'static str {
         }
         "effects.remove" => "Removes the effect at `index` (0-based, as sequence.inspect lists a clip's effects; fixed effects can't be removed) from `clip`.",
         "effects.reset" => "Resets every parameter of the effect at `index` of `clip` to its defaults.",
+        "effects.move" => {
+            "Moves the standard effect at `index` of `clip` to index `to` (0-based, as sequence.inspect lists a clip's effects), changing the order it renders in; fixed effects (Motion, Opacity, Volume…) and graphic layers keep their places."
+        }
         "effects.setDefaultTransition" => {
             "Sets the default video or audio transition used by sequence.applyVideoTransition/applyAudioTransition and default-transition commands."
         }
@@ -288,7 +291,7 @@ pub fn description(id: &str) -> &'static str {
         }
         "effects.setKeyframe" => "Changes the keyframe at `mediaTime`: its `value` and bezier in/out influence (0–1). `mask` targets a mask's parameter.",
         "effects.setParam" => {
-            "Sets `param` of `clip`'s `effect` (\"motion\", \"opacity\", a name or index) to `value`. With a `time` (sequence ticks; or `frame`, `seconds`, `timecode`) it sets a keyframe there, turning animation on if the parameter was static; without one it keys the playhead when the parameter is animated, else sets the static value. `param` is a parameter id or label, and a choice takes its option's name (any case) or index. `mask` targets a mask's parameter (a mask `path` in frame pixels). Motion's `scale_width` needs `uniform_scale` false (it is refused while Uniform Scale is on)."
+            "Sets `param` of `clip`'s `effect` (\"motion\", \"opacity\", a name or index) to `value`. With a `time` (sequence ticks; or `frame`, `seconds`, `timecode`) it sets a keyframe there, turning animation on if the parameter was static; without one it keys the playhead when the parameter is animated, else sets the static value. `param` is a parameter id or label, and a choice takes its option's name (any case) or index. `mask` targets a mask's parameter (a mask `path` in frame pixels). Motion's `scale_width` needs `uniform_scale` false (it is refused while Uniform Scale is on). `merge: true` makes a drag of this parameter one undo step; `merge` with a name makes every call with that name on the clip one undo step (a drag that changes several parameters); `begin` starts a new step."
         }
         "effects.toggleAnimation" => {
             "Turns keyframe animation of an effect parameter on (a keyframe at `time`, sequence ticks or `frame`/`seconds`, default the playhead) or off (removes its keyframes, keeping the value at that time)."
@@ -909,10 +912,10 @@ pub fn description(id: &str) -> &'static str {
             "Adds `video`, `audio` and `submix` tracks, each after a given track (`videoAfter` \"first\", \"V2\" or an index), with `audioType` and `submixType` channel layouts."
         }
         "sequence.applyAudioTransition" => {
-            "Applies an audio transition (`effect`, default the default audio transition, `frames` long) at the edit nearest the playhead on targeted tracks, or at `clip`'s edge."
+            "Applies an audio transition (`effect`, default the default audio transition, `frames` long) at the edit nearest the playhead on targeted tracks, or at `clip`'s `edge`; between two clips `align` puts it centred on the cut (default), starting or ending there. Its length is kept inside the clips it joins."
         }
         "sequence.applyVideoTransition" => {
-            "Applies a video transition (`effect` e.g. cross_dissolve, `frames` long, default from preferences) at the edit nearest the playhead on targeted tracks, or at `clip`'s `edge`; `params` and `reverse` set it up."
+            "Applies a video transition (`effect` e.g. cross_dissolve, `frames` long, default from preferences) at the edit nearest the playhead on targeted tracks, or at `clip`'s `edge`; between two clips `align` puts it centred on the cut (default), starting or ending there; `params` and `reverse` set it up. Its length is kept inside the clips it joins."
         }
         "sequence.close" => "Closes the timeline tab of sequence `item` (default the active one); the sequence stays in the project.",
         "sequence.closeGap" => "Closes the gap on `track` at `time` (default playhead) by moving the clips after it earlier (ripple delete of the gap).",
@@ -960,7 +963,10 @@ pub fn description(id: &str) -> &'static str {
         "sequence.selectionFollowsPlayhead" => {
             "Sets whether the clips under the playhead on targeted tracks are selected automatically as it moves (`on`, toggles when omitted)."
         }
-        "sequence.setTransition" => "Changes an applied `transition` by id: effect `params`, `reverse`, or `reset` to defaults.",
+        "sequence.setTransition" => {
+            "Changes an applied `transition` by id: effect `params`, `reverse`, `reset` to defaults, and where it sits: `duration` (ticks) or `frames` resizes it as its alignment says, `align` (center, start, end) puts it on its cut, `start` (ticks) moves it, with `duration` one end. It stays over its cut and inside the clips it joins. `merge` makes a drag's calls one undo step (`begin` starts a new one). Answers its `start`, `duration` and `align`."
+        }
+        "sequence.removeTransition" => "Removes the applied `transitions` (ids) in one undo step; the clips stay.",
         "sequence.settings" => {
             "Changes the active sequence's settings: frame size, `fps`, name, sample rate, audio mix layout, drop-frame timecode, render quality and color working space; a new frame size or rate renames the preset (`WxH fps`)."
         }

@@ -953,3 +953,150 @@ fn settings_preset_follows_and_scale_width_needs_uniform_scale_off() {
     assert!(img.get(img.w / 2, img.h / 2)[0] > 0.9);
     assert!(img.get(img.w / 8, img.h / 2)[0] < 0.05, "{:?}", img.get(img.w / 8, img.h / 2));
 }
+
+/// A transition by hand (the Timeline, Effect Controls): applied with an alignment, moved over its
+/// cut, resized from either end or by its alignment, and cleared, each one undo step; a drag's
+/// steps share one with `merge`; hostile spans are refused and change nothing.
+#[test]
+fn transitions_align_move_resize_and_clear() {
+    use kition_film_project::TransitionAlign;
+    let mut s = demo();
+    let rate = s.sequence_rate();
+    let f = |n: i64| rate.tick_of(n).0;
+    let q = s.active_sequence().unwrap();
+    let (a, b) = (q.video_tracks[0].items[1].clone(), q.video_tracks[0].items[2].clone());
+    assert_eq!(a.end(), b.start, "the demo's clips 1 and 2 meet");
+    let cut = b.start;
+    let span = |s: &Session, id: u64| {
+        let t = s.active_sequence().unwrap().video_tracks[0].transitions.iter().find(|t| t.id.0 == id).cloned();
+        t.map(|t| (t.start.0, t.duration.0, t.align))
+    };
+    // applied Start at Cut and End at Cut
+    let id = s.execute("sequence.applyVideoTransition", json!({"clip": b.id.0, "edge": "in", "frames": 10, "align": "start"})).unwrap()["transition"]
+        .as_u64()
+        .unwrap();
+    assert_eq!(span(&s, id), Some((cut.0, f(10), TransitionAlign::StartAtCut)));
+    let id = s.execute("sequence.applyVideoTransition", json!({"clip": b.id.0, "edge": "in", "frames": 10, "align": "end"})).unwrap()["transition"]
+        .as_u64()
+        .unwrap();
+    assert_eq!(span(&s, id), Some((cut.0 - f(10), f(10), TransitionAlign::EndAtCut)));
+    assert!(s.execute("sequence.applyVideoTransition", json!({"clip": b.id.0, "edge": "in", "align": "middle"})).is_err());
+    // a duration longer than the clips is clamped to them
+    let id = s.execute("sequence.applyVideoTransition", json!({"clip": b.id.0, "edge": "in", "frames": 100_000})).unwrap()["transition"].as_u64().unwrap();
+    let room = (cut - a.start).min(b.end() - cut).0 * 2;
+    assert_eq!(span(&s, id).unwrap().1, room);
+    let id = s.execute("sequence.applyVideoTransition", json!({"clip": b.id.0, "edge": "in", "frames": 20})).unwrap()["transition"].as_u64().unwrap();
+    assert_eq!(span(&s, id), Some((cut.0 - f(10), f(20), TransitionAlign::CenterAtCut)));
+    let inspected = s.execute("sequence.inspect", json!({})).unwrap();
+    let js = inspected["video"][0]["transitions"].as_array().unwrap().iter().find(|t| t["id"] == id).unwrap().clone();
+    assert_eq!(js["align"], "center");
+    // moved over the cut (its body dragged), one undo step for the whole drag
+    let undo = s.history.undo.len();
+    for (i, d) in [2, 4, 6].into_iter().enumerate() {
+        let r = s.execute("sequence.setTransition", json!({"transition": id, "start": cut.0 - f(10) + f(d), "merge": true, "begin": i == 0})).unwrap();
+        assert_eq!(r["start"], cut.0 - f(10) + f(d));
+    }
+    assert_eq!(s.history.undo.len(), undo + 1, "a drag is one undo step");
+    assert_eq!(span(&s, id), Some((cut.0 - f(4), f(20), TransitionAlign::CenterAtCut)));
+    // its end dragged: start and duration together
+    let r = s.execute("sequence.setTransition", json!({"transition": id, "start": cut.0 - f(4), "duration": f(30)})).unwrap();
+    assert_eq!((r["start"].as_i64(), r["duration"].as_i64(), r["align"].as_str()), (Some(cut.0 - f(4)), Some(f(30)), Some("custom")));
+    // re-aligned, and resized by its alignment
+    s.execute("sequence.setTransition", json!({"transition": id, "align": "start"})).unwrap();
+    assert_eq!(span(&s, id), Some((cut.0, f(30), TransitionAlign::StartAtCut)));
+    s.execute("sequence.setTransition", json!({"transition": id, "frames": 12})).unwrap();
+    assert_eq!(span(&s, id), Some((cut.0, f(12), TransitionAlign::StartAtCut)), "Start at Cut keeps its start");
+    // refused: off the cut, past the clips, both start and align, no frames, hostile numbers
+    let before = s.active_sequence().unwrap().clone();
+    for bad in [
+        json!({"transition": id, "start": cut.0 + f(1)}),
+        json!({"transition": id, "start": a.start.0 - f(1)}),
+        json!({"transition": id, "duration": (b.end() - a.start).0 + 1}),
+        json!({"transition": id, "frames": 0}),
+        json!({"transition": id, "frames": 3, "duration": f(3)}),
+        json!({"transition": id, "start": cut.0, "align": "end"}),
+        json!({"transition": id, "align": "custom"}),
+        json!({"transition": id, "start": i64::MAX, "duration": i64::MAX}),
+        json!({"transition": id, "start": i64::MIN}),
+        json!({"transition": id, "frames": i64::MIN}),
+        json!({"transition": u64::MAX, "frames": 3}),
+    ] {
+        assert!(s.execute("sequence.setTransition", bad.clone()).is_err(), "{bad}");
+        assert_eq!(s.active_sequence().unwrap(), &before, "{bad}");
+    }
+    // cleared, one undo step; again is an error
+    let undo = s.history.undo.len();
+    assert_eq!(s.execute("sequence.removeTransition", json!({"transitions": [id]})).unwrap()["removed"], 1);
+    assert_eq!(span(&s, id), None);
+    assert_eq!(s.history.undo.len(), undo + 1);
+    assert!(s.execute("sequence.removeTransition", json!({"transitions": [id]})).is_err());
+    for bad in [json!({}), json!({"transitions": []}), json!({"transitions": "x"}), json!({"transitions": [-1]})] {
+        assert!(s.execute("sequence.removeTransition", bad.clone()).is_err(), "{bad}");
+    }
+    s.undo();
+    assert!(span(&s, id).is_some(), "undo brings it back");
+    // a locked track refuses
+    s.edit_sequence("lock", |q, _, _| {
+        q.video_tracks[0].locked = true;
+        Ok(())
+    })
+    .unwrap();
+    assert!(s.execute("sequence.removeTransition", json!({"transitions": [id]})).is_err());
+    assert!(s.execute("sequence.setTransition", json!({"transition": id, "frames": 4})).is_err());
+}
+
+/// `effects.move` reorders a clip's standard effects (Effect Controls' drag), one undo step;
+/// fixed effects keep their places.
+#[test]
+fn effects_move_reorders_standard_effects() {
+    let mut s = demo();
+    let c = s.active_sequence().unwrap().video_tracks[0].items[1].id.0;
+    s.execute("effects.apply", json!({"clips": [c], "effect": "Gaussian Blur"})).unwrap();
+    s.execute("effects.apply", json!({"clips": [c], "effect": "Invert"})).unwrap();
+    let names = |s: &Session| -> Vec<String> {
+        s.active_sequence().unwrap().find_item(kition_film_project::ClipId(c)).unwrap().1.effects.iter().map(|e| e.effect.clone()).collect()
+    };
+    let before = names(&s);
+    assert_eq!(&before[..2], ["gaussian_blur", "invert"]);
+    let undo = s.history.undo.len();
+    s.execute("effects.move", json!({"clip": c, "index": 1, "to": 0})).unwrap();
+    assert_eq!(&names(&s)[..2], ["invert", "gaussian_blur"]);
+    assert_eq!(names(&s)[2..], before[2..], "the fixed effects stay");
+    assert_eq!(s.history.undo.len(), undo + 1);
+    s.undo();
+    assert_eq!(names(&s), before);
+    let motion = before.iter().position(|e| e == "motion").unwrap() as u64;
+    for bad in [
+        json!({"clip": c, "index": 0, "to": motion}),
+        json!({"clip": c, "index": motion, "to": 0}),
+        json!({"clip": c, "index": 0, "to": 0}),
+        json!({"clip": c, "index": 0, "to": 99}),
+        json!({"clip": c, "index": u64::MAX, "to": 0}),
+        json!({"clip": c, "index": 0}),
+        json!({"clip": u64::MAX, "index": 0, "to": 1}),
+    ] {
+        assert!(s.execute("effects.move", bad.clone()).is_err(), "{bad}");
+        assert_eq!(names(&s), before, "{bad}");
+    }
+}
+
+/// A drag that changes two parameters (the Program monitor's edge handles: Scale Height and
+/// Width; the anchor point: Anchor Point and Position) is one undo step with a shared `merge` key.
+#[test]
+fn set_param_merge_key_joins_parameters() {
+    let mut s = demo();
+    let c = s.active_sequence().unwrap().video_tracks[0].items[1].id.0;
+    let undo = s.history.undo.len();
+    for (i, v) in [10.0, 20.0, 30.0].into_iter().enumerate() {
+        s.execute("effects.setParam", json!({"clip": c, "param": "position", "value": [v, v], "merge": "anchor", "begin": i == 0})).unwrap();
+        s.execute("effects.setParam", json!({"clip": c, "param": "anchor", "value": [v, v], "merge": "anchor"})).unwrap();
+    }
+    assert_eq!(s.history.undo.len(), undo + 1, "one undo step for both parameters");
+    // a new drag (`begin`) is a new step
+    s.execute("effects.setParam", json!({"clip": c, "param": "position", "value": [1.0, 1.0], "merge": "anchor", "begin": true})).unwrap();
+    assert_eq!(s.history.undo.len(), undo + 2);
+    // a boolean merge still merges one parameter only
+    s.execute("effects.setParam", json!({"clip": c, "param": "scale", "value": 50.0, "merge": true, "begin": true})).unwrap();
+    s.execute("effects.setParam", json!({"clip": c, "param": "rotation", "value": 5.0, "merge": true})).unwrap();
+    assert_eq!(s.history.undo.len(), undo + 4);
+}

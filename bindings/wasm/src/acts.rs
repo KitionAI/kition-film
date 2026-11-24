@@ -208,7 +208,7 @@ fn object_type(id: &str, name: &str) -> Option<&'static str> {
         "strip" if id.starts_with("mixer.") => "Track",
         "target" if matches!(id, "mixer.addSend" | "mixer.setSend") => "Track",
         "output" if id == "mixer.setStrip" => "Track",
-        "transition" => "Transition",
+        "transition" | "transitions" => "Transition",
         _ => return None,
     })
 }

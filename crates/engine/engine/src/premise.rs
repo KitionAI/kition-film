@@ -542,8 +542,12 @@ impl Session {
                     out.push(Premise::content(item, &["sequence.settings.settings.frame_rate"]));
                 }
             }
-            "sequence.setTransition" if !given(params, "params") && params.get("reset").and_then(Value::as_bool) != Some(true) => {
-                // Only `reverse` is written; the transition's place and its clips are not read.
+            "sequence.setTransition"
+                if !["params", "start", "duration", "frames", "align"].iter().any(|key| given(params, key))
+                    && params.get("reset").and_then(Value::as_bool) != Some(true) =>
+            {
+                // Only `reverse` is written; the transition's place and its clips are not read (a
+                // new place or length reads the clips it joins: no premise is stated then).
                 if let Some(transition) = whole(params, "transition") {
                     out.push(Premise::content(transition, &["reverse"]));
                 }
