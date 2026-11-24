@@ -747,6 +747,11 @@
   white-space: nowrap;
 }
 
+/* With an In or Out mark the number is the marked range's length: drawn in the marks' colour so it does not read as the whole duration. */
+.film-monitor-duration[data-marked] {
+  color: var(--kit-primary);
+}
+
 /* The scrub bar (upstream `mini_timeline`). */
 .film-monitor-bar {
   position: relative;

@@ -1,0 +1,27 @@
+format: 1
+id: regressions/issue-shift-delete-ripple
+feature: film.editor.no-dead-ends
+intent: >-
+  Shift+Delete (the key Edit ▸ Ripple Delete shows) and Shift+Backspace (the Mac keyboard's
+  shift-delete) with a clip selected and the Timeline focused ripple-delete: the clip goes and the
+  clips after it close the gap. Before, the key router took the Timeline's Delete binding (Clear)
+  with an extra Shift ahead of the application-wide Shift+Delete, so both keys only cleared and
+  left the gap (phase 0 walkthrough, 2026-11-23). Also checked in WebKit, with a real pointer and
+  keyboard, together with the rest of the editor's dead ends (regressions/issue-dead-ends).
+layer: gate
+source:
+  kind: probe
+  from: web/tests/deadends.mjs chromium (plan "Film usable by hand", phase 1)
+  license: Apache-2.0
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/deadends.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 120
+since: "2026-11-24"

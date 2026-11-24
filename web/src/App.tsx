@@ -55,6 +55,8 @@ import { GuideDialogs, type GuideDialogState } from './monitors/guideDialogs'
 import { ProgramMonitor } from './monitors/ProgramMonitor'
 import { createProxiesRead, useProxies, useSourceView, type ProxiesRead } from './monitors/useMonitorReads'
 import { createInvoke, type InvokeOptions } from './session/invoke'
+import { personMessage } from './session/errors'
+import { closeGapTrack } from './timeline/closeGap'
 import { createPreviewGate, type PreviewGate } from './session/previewGate'
 import { applyEvents, type EngineEvent } from './session/events'
 import { resolveKey } from './session/keys'
@@ -141,13 +143,14 @@ function etaText(seconds: number) {
  * a 120 px progress bar, and Cancel. `verb` is upstream's: a render's label, else Exporting (the
  * document's own jobs, Scene Edit Detection's, say it too, as upstream's do).
  */
-function StatusJob({ progress, verb, onCancel, phrase }: { progress: ExportProgress; verb?: string; onCancel: () => void; phrase: Phrases }) {
+function StatusJob({ progress, verb, subject, onCancel, phrase }: { progress: ExportProgress; verb?: string; subject?: string | null; onCancel: () => void; phrase: Phrases }) {
   const fraction = Math.min(1, Math.max(0, progress.fraction))
   const left = progress.secondsLeft != null ? phrase(' · {time} left').replace('{time}', etaText(progress.secondsLeft)) : ''
   const percent = `${Math.round(fraction * 100)}%`
   return (
     <span className="film-status-job" data-testid="film-exporting">
-      <span className="film-status-job-text">{`${verb ?? phrase('Exporting')}… ${percent}${left}`}</span>
+      {/* `subject`: what is exported (the sequence's name), so the person knows which sequence the file will hold. */}
+      <span className="film-status-job-text">{`${verb ?? phrase('Exporting')}… ${percent}${left}${subject ? ` · ${subject}` : ''}`}</span>
       <span className="film-status-job-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(fraction * 100)} aria-label={`${percent}${left}`} data-kit-ui-id="control:status.job.progress" data-testid="film-exporting-progress">
         <span style={{ width: `${fraction * 100}%` }} />
       </span>
@@ -731,8 +734,9 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
   const [message, setMessage] = useState<StatusMessage | null>(null)
   // The same text again keeps its first time (upstream `status_seen`): only a new text starts the 8 seconds over.
   const status = useCallback((text: string) => setMessage((shown) => nextStatus(shown, phrase(text), performance.now())), [phrase])
-  // Engine and error text (a refusal, a failed command): translated when the catalog has it, never noted as a missing label.
-  const errorStatus = useCallback((text: string) => setMessage((shown) => nextStatus(shown, quietPhrase(text), performance.now())), [quietPhrase])
+  // Engine and error text (a refusal, a failed command), in the person's words (`personMessage`: never a
+  // command id, the engine's reasons translated when the catalog has them), never noted as a missing label.
+  const errorStatus = useCallback((text: string) => setMessage((shown) => nextStatus(shown, personMessage(text, t, quietPhrase), performance.now())), [quietPhrase, t])
   prefsError.current = errorStatus
   const report = useCallback((title: string, error: unknown) => errorStatus(error instanceof Error ? error.message : String(error ?? '') || title), [errorStatus])
   const kitEditor = useKitEditorState(session, host, t, 'film', phrase, undefined, { report })
@@ -767,6 +771,8 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
   const moves = useRef(0)
   const seek = useCallback((seconds: number) => ((moves.current += 1), runQuietly('playhead.set', { seconds: Math.max(0, seconds) }).catch(() => undefined)), [runQuietly])
   const [progress, setProgress] = useState<ExportProgress | null>(null)
+  // The name of the sequence an export in progress writes, which the status bar shows with its progress.
+  const [exporting, setExporting] = useState<string | null>(null)
   const abort = useRef<AbortController | null>(null)
   const canPick = host.init.capabilities.includes('pick-file')
   /** The project's folder, which picked files are named relative to (as File ▸ Import names them). */
@@ -1100,6 +1106,13 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
       createInvoke({
         run: async (id, params, options) => {
           moves.current += 1
+          // Sequence ▸ Close Gap names no track: the gap the playhead is in (`closeGapTrack`), or why not.
+          if (id === 'sequence.closeGap' && params.track === undefined) {
+            const film = stateNow.current
+            const track = film ? closeGapTrack(film.tracks, film.playhead, film.frame) : null
+            if (track == null) throw new Error(t('closeGap.noGap'))
+            params = { ...params, track }
+          }
           try {
             return await session.run(id, params, null, options)
           } finally {
@@ -1331,15 +1344,18 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
     if (!session.doc || abort.current) return
     const controller = new AbortController()
     abort.current = controller
+    const sequence = stateNow.current?.name ?? ''
+    setExporting(sequence || null)
     setProgress({ fraction: 0, secondsLeft: null })
     try {
       const written = await exportMovie(session.doc, host, setProgress, controller.signal)
-      status(t('exported', { name: written.split('/').pop() ?? written }))
+      status(t('exported', { sequence, name: written.split('/').pop() ?? written }))
     } catch (error) {
       if (!controller.signal.aborted) errorStatus(`${t('exportFailed')}: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
       abort.current = null
       setProgress(null)
+      setExporting(null)
     }
   }
   useEffect(() => () => abort.current?.abort(), [])
@@ -1550,7 +1566,7 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
           statusEnd={
             <>
               {progress ? (
-                <StatusJob progress={progress} onCancel={() => abort.current?.abort()} phrase={phrase} />
+                <StatusJob progress={progress} subject={exporting} onCancel={() => abort.current?.abort()} phrase={phrase} />
               ) : job ? (
                 <StatusJob progress={{ fraction: jobStatus(job, phrase).fraction, secondsLeft: job.etaSeconds }} verb={jobStatus(job, phrase).verb} onCancel={() => cancelJob(job.id)} phrase={phrase} />
               ) : null}

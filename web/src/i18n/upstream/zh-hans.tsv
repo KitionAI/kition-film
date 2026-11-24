@@ -1661,3 +1661,30 @@
 	{total} items	{total} 个项目
 	Orange	橙色
 	Cyan	青色
+	nothing selected	没有选中任何片段
+	no clips selected	没有选中片段
+	no edit points selected	没有选中编辑点
+	no edit point at the playhead on targeted tracks	目标轨道上播放指示器处没有编辑点
+	no edit point on the targeted tracks	目标轨道上没有编辑点
+	no sequence is open	没有打开的序列
+	no active sequence	没有打开的序列
+	track is locked	轨道已锁定：请先在轨道头上解锁
+	nothing to undo	没有可撤消的操作
+	nothing to redo	没有可重做的操作
+	clipboard is empty	剪贴板是空的
+	mark an In or Out point first	请先标记入点或出点
+	select an item in the Project panel	请先在“项目”面板中选择一项
+	no clip in the Source monitor	源监视器中没有剪辑
+	not enough media (handles) for this trim	媒体余量不够，不能这样修剪
+	edit would make a clip shorter than one frame	这样会让片段短于一帧
+	nothing to do	没有需要做的
+	select a clip	请先选择一个剪辑
+	select clips	请先选择剪辑
+	select a clip with audio	请先选择带音频的剪辑
+	select nested sequence or multi-camera clips	请先选择嵌套序列或多机位剪辑
+	select multi-camera clips to flatten	请先选择要拼合的多机位剪辑
+	the clip's media is offline	剪辑的媒体已脱机
+	the media is offline	媒体已脱机
+	select an item or bin to rename	请先在“项目”面板中选择要重命名的项目或素材箱
+	Open a Source clip first	请先在源监视器中打开一个剪辑
+	In to Out duration	入点到出点的时长

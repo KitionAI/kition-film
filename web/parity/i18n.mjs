@@ -260,6 +260,7 @@ export const LABEL_TABLES = [
   { file: 'dialogs/menu.ts', name: 'MARKER_COLORS' },
   { file: 'dialogs/project.ts', name: 'VIEW_LABELS' },
   { file: 'panels/projectModel.ts', name: 'FONT_SIZES' },
+  { file: 'session/errors.ts', name: 'ENGINE_REASONS', fields: ['reason'] },
 ]
 
 /** The text of the declaration `const <name> =` in `text`: up to the end of its value (balanced brackets, or its line). */

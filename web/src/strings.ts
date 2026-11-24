@@ -5,7 +5,7 @@ const enUS: Catalog = {
   "noSequence": "This project has no sequence yet.",
   "playbackFps": "{fps} fps",
   "exportMovie": "Export MP4",
-  "exported": "Exported {name}",
+  "exported": "Exported {sequence} to {name}",
   "exportFailed": "Could not export the movie",
   "summary": "{width} × {height} px, {fps} fps, {video} video and {audio} audio tracks",
   "stats.open": "Open {ms} ms",
@@ -98,13 +98,19 @@ const enUS: Catalog = {
   "horizontalScroll": "Horizontal scroll",
   "home.newSequence": "New Sequence",
   "home.exportMedia": "Export Media",
+  "error.notNow": "Not available right now: {reason}",
+  "error.cannot": "Could not do that: {reason}",
+  "error.editRefused": "The edit was not made: {reason}",
+  "error.syncLock": "This edit would put {track} out of sync: its sync lock is on and a clip is in the way. Turn off sync lock on the {track} track header (or lock that track), then try again.",
+  "error.mediaOffline": "Media offline: {path}",
+  "closeGap.noGap": "Close Gap: put the playhead in a gap between two clips on an unlocked track first",
 }
 
 const zhCN: Catalog = {
   "noSequence": "这个项目还没有序列。",
   "playbackFps": "{fps} 帧/秒",
   "exportMovie": "导出 MP4",
-  "exported": "已导出 {name}",
+  "exported": "已将 {sequence} 导出为 {name}",
   "exportFailed": "无法导出视频",
   "summary": "{width} × {height} 像素，{fps} 帧/秒，{video} 条视频轨，{audio} 条音频轨",
   "stats.open": "打开 {ms} 毫秒",
@@ -197,6 +203,12 @@ const zhCN: Catalog = {
   "horizontalScroll": "横向滚动",
   "home.newSequence": "新建序列",
   "home.exportMedia": "导出媒体",
+  "error.notNow": "现在不能这样做：{reason}",
+  "error.cannot": "无法完成：{reason}",
+  "error.editRefused": "没有完成这次编辑：{reason}",
+  "error.syncLock": "这次编辑会让 {track} 失去同步：它开着同步锁定，而且有片段挡在那里。请在 {track} 的轨道头上关闭同步锁定（或锁定这条轨道）后再试。",
+  "error.mediaOffline": "媒体脱机：{path}",
+  "closeGap.noGap": "封闭间隙：请先把播放指示器放到未锁定轨道上两个片段之间的空隙里",
 }
 
 export const CATALOGS: Record<string, Catalog> = { 'en-US': enUS, 'zh-CN': zhCN }

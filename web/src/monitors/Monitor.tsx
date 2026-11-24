@@ -216,7 +216,8 @@ export function Monitor(props: MonitorProps) {
             </>
           )}
         </MenuButton>
-        <span className="film-monitor-duration" data-testid={`${testId}-duration`}>
+        {/* With an In or Out mark the number is the marked range's length, not the whole duration: it says so. */}
+        <span className="film-monitor-duration" title={span.hasIn || span.hasOut ? phrase('In to Out duration') : phrase('Duration')} aria-label={span.hasIn || span.hasOut ? phrase('In to Out duration') : phrase('Duration')} data-marked={span.hasIn || span.hasOut ? 'true' : undefined} data-testid={`${testId}-duration`}>
           {formatTimecode(shownDuration(span) / TICKS_PER_SECOND, fps, dropFrame)}
         </span>
       </div>

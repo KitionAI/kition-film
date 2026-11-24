@@ -278,3 +278,22 @@ test('every engine-routed wave-1 key command runs in a fixture project: it chang
   assert.ok(ran > 60, `${ran} engine commands`)
   assert.deepEqual(wrong, [])
 })
+
+test('Shift+Delete and Shift+Backspace ripple-delete in the Timeline; Delete and Backspace there clear', () => {
+  // The engine's own bindings (`shortcuts.list` of the Kition Film Default set).
+  const rows = [
+    { id: 'edit.clear', shortcuts: [{ keys: 'Backspace', panel: null }, { keys: 'Delete', panel: 'Timeline' }, { keys: 'Backspace', panel: 'Properties' }] },
+    { id: 'edit.rippleDelete', shortcuts: [{ keys: 'Shift+Delete', panel: null }] },
+    { id: 'project.delete', shortcuts: [{ keys: 'Delete', panel: null }, { keys: 'Backspace', panel: 'Project' }] },
+  ]
+  for (const table of [keyTable(rows, manifest, true), keyTable(rows, manifest, false)]) {
+    for (const panel of ['timeline', 'program', 'source']) {
+      assert.equal(resolveKey(press('Delete', { shiftKey: true }, 'Delete'), panel, table), 'edit.rippleDelete', `Shift+Delete in ${panel}`)
+      assert.equal(resolveKey(press('Backspace', { shiftKey: true }, 'Backspace'), panel, table), 'edit.rippleDelete', `Shift+Backspace in ${panel}`)
+    }
+    assert.equal(resolveKey(press('Delete', {}, 'Delete'), 'timeline', table), 'edit.clear')
+    assert.equal(resolveKey(press('Backspace', {}, 'Backspace'), 'timeline', table), 'edit.clear')
+    // A chord the set binds on Backspace keeps it: Backspace in the Project panel deletes items.
+    assert.equal(resolveKey(press('Backspace', {}, 'Backspace'), 'project', table), 'project.delete')
+  }
+})

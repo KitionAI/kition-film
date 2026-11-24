@@ -498,3 +498,12 @@ features:
     gap: "The margin is 32 screen pixels on every side."
     cases: [regressions/issue-scroll-past-frame]
     since: "2026-11-22"
+  - id: film.editor.no-dead-ends
+    title: "The editor shows a person only what works: panels it draws, menu rows and buttons that act; a refusal says why in the person's language, never with a command id; Shift+Delete ripple-deletes; Close Gap closes the gap at the playhead"
+    dimension: [function]
+    priority: P0
+    status: has
+    paths: [web/src/menus/hidden.ts, web/src/workspace/presets.ts, web/src/workspace/panels.ts, web/src/session/errors.ts, web/src/session/keys.ts, web/src/timeline/closeGap.ts, web/src/monitors/Monitor.tsx, web/tests/deadends.mjs]
+    gap: "Hidden, not built: the 15 panels, the Preferences pages, interchange export, Export mode, Remix, Multi-Camera display (the plan \"Film usable by hand\" puts them after the launch); the engine keeps their commands for agents."
+    cases: [regressions/issue-shift-delete-ripple, regressions/issue-dead-ends]
+    since: "2026-11-24"

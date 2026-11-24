@@ -161,7 +161,14 @@ export function keyTable(shortcuts: readonly ShortcutRow[], manifest: KeyManifes
     if (chord && !isReserved(item.keys)) bindings.push({ chord, command: item.command, panel: item.panel == null ? null : (panelIds.get(item.panel) ?? item.panel) })
   }
   const shifted = bindings.filter((binding) => binding.chord.shift && SHIFTED[binding.chord.key]).map((binding) => ({ ...binding, chord: { ...binding.chord, key: SHIFTED[binding.chord.key] } }))
-  const all = [...bindings, ...shifted]
+  // A Mac keyboard has no forward-delete key: a Delete binding also answers Backspace (the key
+  // labelled "delete") where that chord is free in its panel, so Shift+Backspace ripple-deletes.
+  const taken = (chord: Chord, panel: string | null) => bindings.some((other) => other.panel === panel && sameChord(other.chord, chord))
+  const backspace = bindings
+    .filter((binding) => binding.chord.key === 'Delete')
+    .map((binding) => ({ ...binding, chord: { ...binding.chord, key: 'Backspace' } }))
+    .filter((binding) => !taken(binding.chord, binding.panel))
+  const all = [...bindings, ...shifted, ...backspace]
   // Array.prototype.sort is stable: equal weights keep the shortcut set's order.
   all.sort((a, b) => weight(b.chord) - weight(a.chord))
   return { mac, bindings: all }
@@ -186,7 +193,11 @@ export function resolveKey(event: KeyPress, focusedNow: string, table: KeyTable,
   const appWide = table.bindings.filter((binding) => binding.panel == null)
   // A binding whose command no part of the editor serves yet (a later wave's panel command) gives
   // way to the next match, so the key still runs what it ran before (Backspace in the Text panel).
-  const hit = [...inPanel, ...appWide].find((binding) => binding.chord.key === key && matches(held, binding.chord) && (isHiddenCommand(binding.command) || serves(binding.command)))
+  const candidates = [...inPanel, ...appWide].filter((binding) => binding.chord.key === key && matches(held, binding.chord) && (isHiddenCommand(binding.command) || serves(binding.command)))
+  // A binding with exactly the Shift and Alt held wins over one that only allows them, the
+  // panel's first: Shift+Delete in the Timeline is Ripple Delete (application-wide), not the
+  // Timeline's Delete (Clear) with an extra Shift.
+  const hit = candidates.find((binding) => binding.chord.shift === held.shift && binding.chord.alt === held.alt) ?? candidates[0]
   if (!hit || isHiddenCommand(hit.command)) return null
   if (focused === 'project' && (hit.command === 'edit.selectAll' || hit.command === 'edit.deselectAll')) return hit.command.replace('edit.', 'project.')
   return hit.command
