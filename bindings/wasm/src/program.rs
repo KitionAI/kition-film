@@ -50,7 +50,7 @@ impl Motion {
 
 /// How long a scrub's picture decodes towards the wanted frame before it takes the nearest one
 /// decoded on the way: short enough for about ten pictures a second while the pointer moves.
-pub(crate) const SCRUB_BUDGET: Duration = Duration::from_millis(45);
+pub(crate) const SCRUB_BUDGET: Duration = Duration::from_millis(25);
 
 /// Frames shown more than this before the wanted one are late on the way to it (a decoder seeking
 /// from a keyframe skips their non-reference pictures, which leaves the wanted frame exactly as

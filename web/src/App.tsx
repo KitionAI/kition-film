@@ -1005,6 +1005,8 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
       createScrub({
         seek: (seconds) => ((moves.current += 1), runQuietly('playhead.set', { seconds: Math.max(0, seconds) }, NO_DAMAGE)),
         paint: () => canvas.current?.retryRender() ?? Promise.resolve(false),
+        motion: (motion) => docNow.current?.invoke('setProgramMotion', motion) ?? Promise.resolve(),
+        exact: async () => (await docNow.current?.invoke('programFrameExact')) !== false,
         show: (seconds) => playback.showProgramScrub(seconds),
         dragging: (on) => {
           media.setScrubbing(on)
@@ -1346,6 +1348,8 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
         }
       },
       inspect: () => previewContext.preview.inspect(),
+      // Whether the Program monitor's last picture was exact (a scrub's may be approximate): tests/scrub.mjs.
+      programExact: async () => (await docNow.current?.invoke('programFrameExact')) !== false,
       // What the open preview changed, read from the engine whatever its kinds (a picture-only
       // preview reads no diff of its own): the flow checks a frame hold or a field option by it.
       diff: async () => {

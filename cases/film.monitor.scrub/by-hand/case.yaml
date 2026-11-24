@@ -1,0 +1,27 @@
+format: 1
+id: film.monitor.scrub/by-hand
+feature: film.monitor.scrub
+intent: >-
+  A person scrubs a long-GOP H.264 video (one keyframe in 30 s, B-frames, 1280x720, made with
+  ffmpeg at run time) on the Timeline's ruler with a real pointer, in Chromium: during a 3 s held
+  drag back from 27 s to 3 s the timecode follows the pointer and pictures land on the Program
+  monitor (before, it showed 3 timecodes and 1 picture); after the
+  release the picture becomes exact and is the same picture a plain seek to that frame shows; a
+  click on the ruler moves the timecode at once and a picture follows.
+layer: gate
+source:
+  kind: probe
+  from: web/tests/scrub.mjs chromium (plan "Film usable by hand", phase 2)
+  license: Apache-2.0
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/scrub.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 240
+since: "2026-11-24"
