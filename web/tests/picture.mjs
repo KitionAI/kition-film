@@ -379,7 +379,7 @@ try {
   // Alignment and Faux Bold, Faux Italic.
   await kit.getByTestId('film-props-text-align-1').click()
   assert.ok(await until(async () => (await textParams()).align === 1), 'Center Align Text')
-  assert.equal(await kit.getByTestId('film-props-text-align-1').getAttribute('aria-pressed'), 'true')
+  assert.ok(await until(async () => (await kit.getByTestId('film-props-text-align-1').getAttribute('aria-pressed')) === 'true'), 'the Center button shows pressed')
   await kit.getByTestId('film-props-text-faux_bold').click()
   await kit.getByTestId('film-props-text-faux_italic').click()
   assert.ok(await until(async () => (await textParams()).faux_bold === true && (await textParams()).faux_italic === true), 'Faux Bold and Faux Italic on')
