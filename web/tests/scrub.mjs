@@ -20,8 +20,11 @@ import { join } from 'node:path'
 import { createHash } from 'node:crypto'
 import { chromium, webkit } from 'playwright'
 import { createServer } from 'vite'
+import oracles from './scenarios/oracles.mjs'
 
 const which = process.argv[2] ?? 'chromium'
+// On CI with no ffmpeg on the PATH, the scenarios' pinned static build (fetched and checked once).
+await oracles()
 const ffmpeg = process.env.KITION_FILM_FFMPEG ?? 'ffmpeg'
 const dir = mkdtempSync(join(tmpdir(), 'film-scrub-'))
 const movie = join(dir, 'long-gop.mp4')
