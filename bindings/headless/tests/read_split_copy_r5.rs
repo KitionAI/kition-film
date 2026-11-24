@@ -40,7 +40,7 @@ fn split_source() -> (Vec<u8>, u64, u64, ClipId, ClipId) {
     // the destination's frame grid, unlike the flattened clip-copy branch.
     destination_sequence.settings.frame_rate = source_rate;
     destination_sequence.mark_in = Some(time);
-    (kition_film_format::encode_with_view(&loaded.project, loaded.view.as_ref(), true), destination, source, outside, copied)
+    (kition_film_format::encode(&loaded.project, true), destination, source, outside, copied)
 }
 
 #[test]
@@ -74,7 +74,7 @@ fn equal_channel_split_marks_still_replace_the_ordinary_source_range() {
             item.split.audio_in = split.audio_in;
             item.split.video_out = split.audio_out;
             item.split.audio_out = split.audio_out;
-            let bytes = kition_film_format::encode_with_view(&loaded.project, loaded.view.as_ref(), true);
+            let bytes = kition_film_format::encode(&loaded.project, true);
             let mut doc = FilmDocument::open(FILE, &bytes).unwrap();
             doc.execute("source.open", json!({"item":source.0})).unwrap();
             doc.execute("sequence.nestSequences", json!({"on":false})).unwrap();

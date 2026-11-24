@@ -77,7 +77,7 @@ fn seed(row: &str) -> Vec<u8> {
     if !matches!(row, "point-automate" | "range-lift" | "range-extract") {
         loaded.project.sequence_mut(ItemId(id)).unwrap().video_tracks.swap(0, 1);
     }
-    kition_film_format::encode_with_view(&loaded.project, loaded.view.as_ref(), false)
+    kition_film_format::encode(&loaded.project, false)
 }
 
 fn change(f: &Fixture, sequence: u64, kind: &str) {
@@ -466,7 +466,7 @@ async fn caption_range_and_stored_marks_matrix() {
                 let seq = loaded.project.sequence_mut(ItemId(7)).unwrap();
                 seq.caption_tracks[0].captions[1].start.0 = SECOND * 9 / 2;
                 seq.caption_tracks[0].captions[1].duration.0 = SECOND / 4;
-                bytes = kition_film_format::encode_with_view(&loaded.project, loaded.view.as_ref(), false);
+                bytes = kition_film_format::encode(&loaded.project, false);
             }
             let f = Fixture::from_bytes(&bytes, Default::default());
             let (q, basis) = f.inspect().await;
@@ -737,7 +737,7 @@ async fn mixer_name_time_matrix() {
         seq.audio_tracks[1].id.0 = 900_001;
         // This synthetic track uses the shared id space; keep the file valid.
         loaded.project.next_id = loaded.project.next_id.max(900_002);
-        let bytes = kition_film_format::encode_with_view(&loaded.project, loaded.view.as_ref(), false);
+        let bytes = kition_film_format::encode(&loaded.project, false);
         let f = Fixture::from_bytes(&bytes, Default::default());
         let (_, basis) = f.inspect().await;
         if AFTER.contains(&kind) {
@@ -818,7 +818,7 @@ fn after_seed(row: &str) -> Vec<u8> {
     empty.items.clear();
     empty.transitions.clear();
     seq.video_tracks.push(empty);
-    kition_film_format::encode_with_view(&loaded.project, loaded.view.as_ref(), false)
+    kition_film_format::encode(&loaded.project, false)
 }
 
 fn change_after(f: &Fixture, sequence: u64, kind: &str) {

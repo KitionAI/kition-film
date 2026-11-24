@@ -144,7 +144,7 @@ fn mask_parameter_mapping_compares_source_kinds_and_motion_fallbacks() {
                 if fitting || motion != "resolved" {
                     expected.premises.push(size(sequence));
                 }
-                let doc = FilmDocument::open("Edit.kfilm", &kition_film_format::encode_with_view(&loaded.project, loaded.view.as_ref(), true)).unwrap();
+                let doc = FilmDocument::open("Edit.kfilm", &kition_film_format::encode(&loaded.project, true)).unwrap();
                 let params = json!({"clip":clip,"effect":"opacity","param":"path","mask":0});
                 assert_eq!(normalized(doc.under("effects.setParam", &params).unwrap().unwrap()), normalized(expected), "{kind}/{fitting}/{motion}");
             }

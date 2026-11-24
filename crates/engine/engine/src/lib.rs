@@ -984,7 +984,8 @@ impl Session {
         commands::find(id).is_some_and(|c| (c.enabled)(self).is_ok())
     }
 
-    /// What is open, to store beside the project when it is saved.
+    /// What is open (the sequence tabs, how each sequence is shown): the person's view state,
+    /// which the host keeps apart from the file (Kit UI protocol 7n), never the project's content.
     pub fn project_view(&self) -> kition_film_project::ProjectView {
         let is_seq = |id: &ItemId| self.project.sequence(*id).is_some();
         kition_film_project::ProjectView {
@@ -995,7 +996,16 @@ impl Session {
         }
     }
 
-    /// Open what was open when the project was saved. Nothing in `view` is trusted: ids that are
+    /// Opens the first sequence when none is open, as a file opens (it keeps no view).
+    pub fn open_first_sequence(&mut self) {
+        if self.state.active_sequence.is_none() {
+            let first = self.project.sequences().next().map(|item| item.id);
+            self.state.active_sequence = first;
+            self.state.open_sequences = first.into_iter().collect();
+        }
+    }
+
+    /// Open what the person's view state had open. Nothing in `view` is trusted: ids that are
     /// not sequences of this project are dropped (also a second mention of the same sequence),
     /// and numbers are brought into range. A view without any open sequence leaves the project
     /// on its first sequence: a project saved by a session that never showed one (a script, the

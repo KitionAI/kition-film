@@ -106,14 +106,17 @@ export function editState(sequence) {
   return { video: sequence.video, audio: sequence.audio, markers: sequence.markers, duration: sequence.duration }
 }
 
-/** Serve original test media through the real worker's HTTP lent-file reader, including ranges.
- * The dev host's in-memory picker list alone does not serve its static /sample/ URLs. */
+/** Serve original test media through the real worker's HTTP lent-file reader, including ranges,
+ * at the dev host's lent workspace (`devHost.lendRoot`), and answer the reads the engine made. */
 export async function lendMedia(film, path, input) {
   const bytes = Buffer.from(input)
   const reads = []
-  const url = new URL(`sample/${path.split('/').map(encodeURIComponent).join('/')}`, film.page.url()).href
+  const root = await film.page.evaluate(() => window.devHost.lendRoot)
+  const url = new URL(path.split('/').map(encodeURIComponent).join('/'), root).href
   await film.page.context().route(url, async route => {
     const request = route.request()
+    // The dev host's own mirror of the workspace (PUT, DELETE) goes on to its server.
+    if (request.method() !== 'GET' && request.method() !== 'HEAD') return route.fallback()
     const range = request.headers().range
     reads.push({ method: request.method(), range: range ?? null })
     const headers = { 'content-type': 'video/mp4', 'accept-ranges': 'bytes' }

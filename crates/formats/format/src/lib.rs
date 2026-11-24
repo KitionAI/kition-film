@@ -14,13 +14,17 @@
 //!   either the old file or the new one, never a torn mix.
 //! - **Auto-save naming/rotation** lives in [`autosave`] (`<name>-YYYY-MM-DD_HH-MM-SS.kfilm` in an
 //!   `Auto-Save` folder next to the project, oldest pruned beyond the version limit).
+//! - **Content only.** The file holds the project and nothing of one person's view of it (the open
+//!   sequence tabs, the Timeline's zoom and scroll): that is the person's view state, which the
+//!   host keeps apart from the file (Kit UI protocol 7n). Two sessions that open the same file and
+//!   save it without an edit write the same bytes.
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
 pub mod atomic;
 pub mod autosave;
 
-use kition_film_project::{Project, ProjectView};
+use kition_film_project::Project;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -50,9 +54,6 @@ pub struct Loaded {
     pub schema_version: u32,
     /// The `generator` string of the writer, if recorded.
     pub generator: Option<String>,
-    /// What was open when the file was saved (sequence tabs and how each was shown), when the
-    /// file records it and it can be read.
-    pub view: Option<ProjectView>,
 }
 
 /// Writer identification stored in the envelope.
@@ -66,8 +67,6 @@ struct EnvelopeOut<'a> {
     schema_version: u32,
     generator: String,
     project: &'a Project,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    view: Option<&'a ProjectView>,
 }
 
 #[derive(Deserialize)]
@@ -75,16 +74,11 @@ struct EnvelopeIn {
     #[serde(default)]
     generator: Option<String>,
     project: Project,
-    /// Kept as JSON until the project itself has loaded: a view that cannot be read is dropped,
-    /// it never stops a project from opening.
-    #[serde(default)]
-    view: Option<Value>,
 }
 
 impl EnvelopeIn {
     fn loaded(self, schema_version: u32) -> Loaded {
-        let view = self.view.and_then(|v| serde_json::from_value(v).ok());
-        Loaded { project: self.project, schema_version, generator: self.generator, view }
+        Loaded { project: self.project, schema_version, generator: self.generator }
     }
 }
 
@@ -100,14 +94,7 @@ struct Probe {
 /// Serialize a project. `pretty` = indented (human-diffable), compact otherwise (what project
 /// files and recovery snapshots are written as).
 pub fn encode(project: &Project, pretty: bool) -> Vec<u8> {
-    encode_with_view(project, None, pretty)
-}
-
-/// [`encode`], with what is open in the editor (`view`) stored beside the project. The view is
-/// outside the schema's promises: builds that do not know it ignore it, and it is dropped rather
-/// than migrated when it cannot be read.
-pub fn encode_with_view(project: &Project, view: Option<&ProjectView>, pretty: bool) -> Vec<u8> {
-    let env = EnvelopeOut { format: FORMAT_ID, schema_version: SCHEMA_VERSION, generator: generator(), project, view };
+    let env = EnvelopeOut { format: FORMAT_ID, schema_version: SCHEMA_VERSION, generator: generator(), project };
     let r = if pretty { serde_json::to_vec_pretty(&env) } else { serde_json::to_vec(&env) };
     // Serializing plain data (string keys, finite numbers or null) cannot fail.
     r.unwrap_or_default()
@@ -246,36 +233,22 @@ mod tests {
         }
     }
 
-    /// What is open is stored beside the project. A file without it, or with one that cannot be
-    /// read, opens all the same.
+    /// The file holds the project only: nothing of what is open in an editor (the person's view
+    /// state, kept by the host), so saving the same project always writes the same bytes.
     #[test]
-    fn the_view_is_kept_beside_the_project_and_never_stops_a_file_from_opening() {
-        use kition_film_project::{ItemId, SequenceSettings, SequenceView};
+    fn the_file_holds_the_project_and_no_view() {
+        use kition_film_project::SequenceSettings;
         let mut p = Project::new("Tabs");
-        let seq = p.new_sequence("Sequence 01", SequenceSettings::default(), 1, 1, None);
-        let view = ProjectView {
-            sequences_as_clips: false,
-            open_sequences: vec![seq],
-            active_sequence: Some(seq),
-            sequences: [(seq, SequenceView { pps: 80.0, scroll: 1.5, v_scroll: 0.0, a_scroll: 4.0, video_track_h: 60.0, audio_track_h: 56.0 })].into(),
-        };
+        p.new_sequence("Sequence 01", SequenceSettings::default(), 1, 1, None);
         for pretty in [true, false] {
-            let l = decode(&encode_with_view(&p, Some(&view), pretty)).unwrap();
-            assert_eq!((l.view.as_ref(), &l.project), (Some(&view), &p));
-            assert_eq!(decode(&encode(&p, pretty)).unwrap().view, None);
+            let bytes = encode(&p, pretty);
+            let doc: Value = serde_json::from_slice(&bytes).unwrap();
+            let mut keys: Vec<&str> = doc.as_object().unwrap().keys().map(String::as_str).collect();
+            keys.sort_unstable();
+            assert_eq!(keys, ["format", "generator", "project", "schema_version"], "the envelope's fields");
+            assert_eq!(decode(&bytes).unwrap().project, p);
+            assert_eq!(encode(&decode(&bytes).unwrap().project, pretty), bytes, "read and written again: the same bytes");
         }
-        // the project is the same bytes with or without a view beside it
-        let mut doc: Value = serde_json::from_slice(&encode_with_view(&p, Some(&view), false)).unwrap();
-        assert_eq!(doc["project"], serde_json::from_slice::<Value>(&encode(&p, false)).unwrap()["project"]);
-        // a view that is not one: dropped, the project loads
-        for junk in [serde_json::json!(7), serde_json::json!({"open_sequences": {"a": 1}}), serde_json::json!({"sequences": [1]}), Value::Null] {
-            doc["view"] = junk;
-            let l = decode(&serde_json::to_vec(&doc).unwrap()).unwrap();
-            assert_eq!((l.view, &l.project), (None, &p));
-        }
-        // unknown ids are not this crate's business (the editor checks them against the project)
-        doc["view"] = serde_json::json!({"open_sequences": [424242]});
-        assert_eq!(decode(&serde_json::to_vec(&doc).unwrap()).unwrap().view.unwrap().open_sequences, [ItemId(424242)]);
     }
 
     /// A clip with unresolved "auto" points (NaN) is written with `null` coordinates. Such a file

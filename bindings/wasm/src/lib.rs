@@ -48,6 +48,7 @@ mod rests_transcript;
 mod rests_trim;
 mod sound;
 pub mod text;
+mod view_state;
 
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicUsize, Ordering};
@@ -953,8 +954,8 @@ impl KitDocument for FilmDocument {
     }
 
     fn save(&self, _name: Option<&str>) -> Result<Vec<u8>, String> {
-        let view = self.session.project_view();
-        Ok(kition_film_format::encode_with_view(&self.session.project, Some(&view), false))
+        // The project only: the person's view is their view state (`view_state.rs`).
+        Ok(kition_film_format::encode(&self.session.project, false))
     }
 
     fn mark_saved(&mut self) {
@@ -1315,6 +1316,20 @@ pub mod web {
         #[wasm_bindgen(js_name = loadPrefs)]
         pub fn load_prefs(&mut self, json: &str, expected: f64) -> Result<String, JsError> {
             self.0.load_prefs(json, expected as u64).map(|answer| answer.to_string()).map_err(error)
+        }
+
+        /// The person's view of the project as JSON, for the host's view state (see
+        /// [`FilmDocument::view_state`]).
+        #[wasm_bindgen(js_name = viewState)]
+        pub fn view_state(&self) -> String {
+            self.0.view_state().to_string()
+        }
+
+        /// Puts back a view state [`Self::view_state`] answered; answers whether it did (see
+        /// [`FilmDocument::restore_view`]).
+        #[wasm_bindgen(js_name = restoreView)]
+        pub fn restore_view(&mut self, json: &str) -> bool {
+            serde_json::from_str(json).is_ok_and(|state| self.0.restore_view(&state))
         }
 
         /// The graphic layers in the Program monitor's picture at the playhead, and where new

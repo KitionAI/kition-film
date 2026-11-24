@@ -1,11 +1,13 @@
 import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
+import { devHostWorkspace } from '@kition/sdk/dev-host/vite'
 
 // The kit package is served from wherever a host puts it, so every asset path is relative.
 export default defineConfig({
   base: './',
-  plugins: [react()],
+  // devHostWorkspace serves the dev host's lent workspace (the media the sample links) to the engine's ranged reads.
+  plugins: [react(), devHostWorkspace()],
   resolve: {
     // One React for the page, also when KITION_LINK=1 links the kition-sdk and Tessera checkouts.
     dedupe: ['react', 'react-dom'],

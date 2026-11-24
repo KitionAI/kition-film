@@ -9,6 +9,7 @@ import { sourceCommandsOf, targetedRun } from './target.ts'
 import { createJobPump, type JobAnswer, type RunningJob } from './jobPump.ts'
 import { createPrefsSync, type PrefsSync } from './prefsSync.ts'
 import { PREFS_PAGE, kitPrefsStore } from './prefsStore.ts'
+import type { FilmViewStateKeeper } from './viewState.ts'
 
 type Session = {
   doc: KitEngine | null
@@ -102,7 +103,7 @@ async function query<T>(doc: KitEngine, id: string, params: Record<string, unkno
  * key table (`shortcuts.list` plus upstream's UI keys, without Kition's reserved keys and the
  * host's `hostShortcuts`, which reach the host).
  */
-export function useFilmSession<S extends Session>(session: S, hostShortcuts: readonly string[] = NO_SHORTCUTS, onEvents?: (events: EngineEvent[]) => void, gate?: { readonly current: PreviewGate | null }, onError?: { readonly current: (message: string) => void }) {
+export function useFilmSession<S extends Session>(session: S, hostShortcuts: readonly string[] = NO_SHORTCUTS, onEvents?: (events: EngineEvent[]) => void, gate?: { readonly current: PreviewGate | null }, onError?: { readonly current: (message: string) => void }, view?: FilmViewStateKeeper) {
   const onEventsNow = useRef(onEvents)
   onEventsNow.current = onEvents
   const [focused, setFocusedState] = useState('timeline')
@@ -120,6 +121,8 @@ export function useFilmSession<S extends Session>(session: S, hostShortcuts: rea
   const onErrorNow = useRef(onError)
   onErrorNow.current = onError
   const prefsLoaded = useRef<() => void>(() => undefined)
+  const viewNow = useRef(view)
+  viewNow.current = view
   useEffect(() => {
     if (!opened) {
       setPrefsReady(null)
@@ -138,9 +141,11 @@ export function useFilmSession<S extends Session>(session: S, hostShortcuts: rea
     })
     prefs.current = sync
     let live = true
+    // Then the person's view state (`viewState.ts`), as the preference "Restore open sequences" allows.
     void sync
       .open()
       .catch((error: unknown) => onErrorNow.current?.current(`Could not load the preferences: ${error instanceof Error ? error.message : String(error)}`))
+      .then(() => (live ? viewNow.current?.restore(opened) : undefined))
       .finally(() => {
         if (live) setPrefsReady(opened)
       })
@@ -288,6 +293,10 @@ export function useFilmSession<S extends Session>(session: S, hostShortcuts: rea
   useEffect(() => {
     if (doc) void readers.keys()
   }, [doc, readers, reserved])
+  // What is open moved (a tab, the nest toggle): the view state the next save keeps follows it.
+  useEffect(() => {
+    if (doc && filmState) void viewNow.current?.follow(doc)
+  }, [doc, filmState])
   // A refresh the editor's own commands did not make (the agent's `ai/run`, a collaborator's
   // changes) drains the engine's events and reads the session state again, as a command may
   // change it without a new revision (the agent's `project.select`): the editor's own commands

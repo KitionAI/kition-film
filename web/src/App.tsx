@@ -60,6 +60,7 @@ import { applyEvents, type EngineEvent } from './session/events'
 import { resolveKey } from './session/keys'
 import { STATUS_MS, nextStatus, statusLeft, type StatusMessage } from './session/status'
 import { useFilmSession, type FilmLabels, type FilmSessionState } from './session/useFilmSession'
+import { createFilmViewState, type FilmViewStateKeeper } from './session/viewState'
 import { usePlayback, type Playback } from './session/playback'
 import { targetsSource } from './session/target'
 import { createStatsStore, useStats, type StatsStore } from './stats'
@@ -111,10 +112,14 @@ function StatsReadout({ stats, openMs, playing, t }: { stats: StatsStore; openMs
 }
 
 /**
- * The Film engine paints nothing that neither its revision nor `inspect()` shows (a playhead is in
- * `inspect()`), so an agent step that moves neither (`project.select`) need not repaint the Program.
+ * The session's options. The Film engine paints nothing that neither its revision nor `inspect()`
+ * shows (a playhead is in `inspect()`), so an agent step that moves neither (`project.select`) need
+ * not repaint the Program. A stored replica opens whatever the file's stamp (`replicaMergesFile`,
+ * Kit UI protocol UI-R1): the engine records a file changed outside Kition onto the replica as one
+ * `import` change (`openWithReplica`), so the project keeps its identity and history. The person's
+ * view is kept by the host after each save (`viewState`, see `session/viewState.ts`).
  */
-const SESSION_OPTIONS = { agentSkipsUnchangedPaint: true } as const
+const sessionOptions = (view: FilmViewStateKeeper) => ({ agentSkipsUnchangedPaint: true, replicaMergesFile: true, viewState: view.option }) as const
 
 /** How long a status message shows; the flow test shortens it in development builds (`window.filmStatusMs`). */
 /** The `file` group's queries a dialog may read through `ask` (Properties'): they read media and write nothing. */
@@ -716,7 +721,9 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
   const previewGate = useRef<PreviewGate | null>(null)
   // What the preferences' sync could not do (a load that failed after its tries), in the status bar.
   const prefsError = useRef<(message: string) => void>(() => undefined)
-  const { session, focused, setFocused, focusedNow, filmState, labels, keys, shortcuts, isReserved, job, cancelJob, projectView, checkPrefs } = useFilmSession(useKitSession(host, manifest, describe, SESSION_OPTIONS), host.init.shortcuts, onEngineEvents, previewGate, prefsError)
+  const viewState = useMemo(() => createFilmViewState(host), [host])
+  const options = useMemo(() => sessionOptions(viewState), [viewState])
+  const { session, focused, setFocused, focusedNow, filmState, labels, keys, shortcuts, isReserved, job, cancelJob, projectView, checkPrefs } = useFilmSession(useKitSession(host, manifest, describe, options), host.init.shortcuts, onEngineEvents, previewGate, prefsError, viewState)
   // The status bar's message (upstream's `app.ui.status`): why the last command failed, or what
   // an export did. As upstream, it clears after 8 seconds or when the status bar is clicked;
   // kit-editor's failures (menus, dialogs, panels) come here too. Only the engine's own toasts

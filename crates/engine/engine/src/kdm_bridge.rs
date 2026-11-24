@@ -228,9 +228,9 @@ impl Session {
     /// Opens another replica's snapshot (or a full change export) as this session's project: a
     /// fresh KDM identity, with the project the replica holds and a clean history (undo starts
     /// empty; the replica's own undo/redo is rebuilt fresh from a snapshot too, so there is
-    /// nothing stale to undo into). [`Session::state`] resets to its usual defaults: a loaded
-    /// `.kfilm`'s own view (open sequences, timeline zoom…) is restored separately with
-    /// [`Session::restore_project_view`] (see [`Session::open_with_replica`]).
+    /// nothing stale to undo into). [`Session::state`] resets to its usual defaults: the person's
+    /// view (open sequences, timeline zoom…) is their view state, which the editor restores
+    /// separately with [`Session::restore_project_view`].
     pub fn open_snapshot(&mut self, bytes: &[u8]) -> Result<()> {
         let kdm = FilmSession::open_snapshot(bytes, self.peer_blobs.clone()).map_err(kdm_error)?;
         let project = view_of(&kdm, self.project.next_id);
@@ -252,8 +252,9 @@ impl Session {
         Ok(())
     }
 
-    /// [`Session::open_snapshot`], with a `.kfilm`'s own view (open sequences, timeline zoom…)
-    /// restored from `kition_film_bytes`. For a host that keeps a document's KDM replica apart from its
+    /// [`Session::open_snapshot`] for the `.kfilm` `kition_film_bytes`, opened on its first
+    /// sequence (a file keeps no view; the editor restores the person's view state after). For a
+    /// host that keeps a document's KDM replica apart from its
     /// saved project file (the kit container Task 3's SDK class reads). The host vouches
     /// that the two were saved together, but the file is what the person saved: when the replica
     /// does not hold the file's content (compared id-blind, [`FilmSession::holds`]) the file
@@ -268,9 +269,7 @@ impl Session {
         self.open_snapshot(snapshot)?;
         let kdm = self.kdm.as_mut().ok_or_else(no_replica)?;
         if kdm.holds(&loaded.project).map_err(kdm_error)? {
-            if let Some(view) = loaded.view {
-                self.restore_project_view(translate_view(&loaded.project, &self.project, view));
-            }
+            self.open_first_sequence();
             return Ok(());
         }
         kdm.replace(&Origin::system("import"), &loaded.project).map_err(kdm_error)?;
@@ -278,10 +277,7 @@ impl Session {
         self.project = project.clone();
         self.synced = project;
         self.fix_state();
-        if let Some(view) = loaded.view {
-            // The project is the file's own, ids and all: its view needs no translation.
-            self.restore_project_view(view);
-        }
+        self.open_first_sequence();
         self.revision += 1;
         self.saved_revision = self.revision;
         self.events.push(Event::ProjectChanged { revision: self.revision });
@@ -492,25 +488,6 @@ fn view_of(kdm: &FilmSession, floor: u64) -> Arc<Project> {
     let mut project = kdm.project().clone();
     project.next_id = project.next_id.max(floor);
     Arc::new(project)
-}
-
-/// Carries `view` (decoded straight from `loaded`'s own `.kfilm` bytes, so its ids are the
-/// *saving* session's own) onto `replicated` (just [`Session::open_snapshot`]'ed from the same
-/// content, under a fresh KDM identity: `open_snapshot` never reuses a saving session's ids, it
-/// mints its own from scratch). `loaded` and `replicated` hold the same sequences, created in the
-/// same order on both sides (each mints ids in creation order), so the Nth sequence of one is the
-/// Nth of the other: translate `view`'s sequence ids through that correspondence. A mismatched
-/// count (a replica and an `.kfilm` the host wrongly paired) translates only as many as line up;
-/// [`Session::restore_project_view`] already drops anything the result still does not name.
-fn translate_view(loaded: &Project, replicated: &Project, view: kition_film_project::ProjectView) -> kition_film_project::ProjectView {
-    let translate: std::collections::HashMap<kition_film_project::ItemId, kition_film_project::ItemId> =
-        loaded.sequences().map(|item| item.id).zip(replicated.sequences().map(|item| item.id)).collect();
-    kition_film_project::ProjectView {
-        sequences_as_clips: view.sequences_as_clips,
-        open_sequences: view.open_sequences.iter().filter_map(|id| translate.get(id).copied()).collect(),
-        active_sequence: view.active_sequence.and_then(|id| translate.get(&id).copied()),
-        sequences: view.sequences.into_iter().filter_map(|(id, v)| translate.get(&id).map(|new| (*new, v))).collect(),
-    }
 }
 
 /// The undo scope `origin`'s steps join (KitModel 1.1 M12a): the agents' for an agent, else the

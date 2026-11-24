@@ -1,6 +1,6 @@
 //! `document.identity` and `document.fork` (Kit Process Protocol section 5.6, KitModel M7a)
 //! through the real `kition-film` process: a `.kfilm` is the project as JSON (the envelope
-//! `kition_film_format::encode_with_view` writes) and embeds no replica; the kit makes one under a
+//! `kition_film_format::encode` writes) and embeds no replica; the kit makes one under a
 //! new id each time it opens a file (`FilmModel::import`). So a file carries no identity, and a
 //! fork is the same bytes with no id, written to a new file only.
 

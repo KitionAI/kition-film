@@ -614,7 +614,7 @@ fn submix_routing_projection_holds_relative_eligibility_instead_of_absolute_indi
         let q = project.sequence_mut(kition_film_engine::project::ItemId(sequence)).unwrap();
         let original = q.submix_tracks.clone();
         q.submix_tracks = order.iter().map(|i| original[*i].clone()).collect();
-        let doc = FilmDocument::open("Edit.kfilm", &kition_film_format::encode_with_view(&project, loaded.view.as_ref(), false)).unwrap();
+        let doc = FilmDocument::open("Edit.kfilm", &kition_film_format::encode(&project, false)).unwrap();
         let values = doc.derived(&[json!(sequence)], &["mixerRoutes".into()]).unwrap();
         let facts = values.iter().find(|values| values.id == sequence).and_then(|values| values.values.get("mixerRoutes")).cloned().unwrap_or_default();
         for (from, source) in ids.iter().enumerate() {
@@ -649,7 +649,7 @@ fn submix_routing_projection_holds_relative_eligibility_instead_of_absolute_indi
         );
         large.sequence_mut(kition_film_engine::project::ItemId(sequence)).unwrap().submix_tracks.push(track);
     }
-    let doc = FilmDocument::open("Edit.kfilm", &kition_film_format::encode_with_view(&large, loaded.view.as_ref(), false)).unwrap();
+    let doc = FilmDocument::open("Edit.kfilm", &kition_film_format::encode(&large, false)).unwrap();
     let values = doc.derived(&[json!(sequence)], &["mixerRoutes".into()]).unwrap();
     assert!(values.iter().find(|values| values.id == sequence).unwrap().values["mixerRoutes"].is_null());
     let held = doc.under("mixer.addSend", &json!({"strip":ids[0],"target":ids[2]})).unwrap().unwrap();

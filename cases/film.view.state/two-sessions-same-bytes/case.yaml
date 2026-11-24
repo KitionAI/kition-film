@@ -1,0 +1,22 @@
+format: 1
+id: film.view.state/two-sessions-same-bytes
+feature: film.view.state
+intent: >-
+  A .kfilm holds the project only: two sessions open the same file of two sequences, one of them
+  opens the other sequence, turns the nest toggle off and zooms its Timeline, and both save without
+  an edit: both write the bytes of the file they opened, and no view state is in them. What a
+  session shows is its view state (viewState), which the editor keeps with the host (Kit UI
+  protocol 7n) and puts back when the file opens (restoreView) without an edit.
+layer: gate
+source:
+  kind: synthetic
+  from: bindings/wasm/tests/view_state.rs (two_sessions_that_open_the_same_file_and_save_without_editing_write_byte_identical_files), bindings/wasm/src/view_state.rs, crates/formats/format/src/lib.rs (the_file_holds_the_project_and_no_view)
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: kition-film-kit, test: view_state, filter: two_sessions_that_open_the_same_file_and_save_without_editing_write_byte_identical_files }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-24"

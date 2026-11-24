@@ -60,7 +60,7 @@ pub fn rewrite(file: &Path, change: impl FnOnce(&mut kition_film_project::Projec
     let at = std::fs::metadata(file).unwrap().modified().unwrap();
     let mut loaded = kition_film_format::decode(&std::fs::read(file).unwrap()).unwrap();
     change(&mut loaded.project);
-    std::fs::write(file, kition_film_format::encode_with_view(&loaded.project, loaded.view.as_ref(), true)).unwrap();
+    std::fs::write(file, kition_film_format::encode(&loaded.project, true)).unwrap();
     backdate(file, at);
 }
 

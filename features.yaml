@@ -115,6 +115,14 @@ features:
     paths: [bindings/headless/src/main.rs, kit.json]
     cases: [film.platform.document-identity/no-replica]
     since: "2026-11-20"
+  - id: film.view.state
+    title: "The person's view (the open sequence tabs, the active one, the nest toggle, each sequence's zoom and scroll) is their view state, kept by the host (Kit UI protocol 7n, capability view-state), never in the .kfilm: two sessions that open the same file and save without an edit write the same bytes"
+    dimension: [platform, data-safety]
+    priority: P1
+    status: has
+    paths: [crates/formats/format/src/lib.rs, bindings/wasm/src/view_state.rs, bindings/wasm/tests/view_state.rs, web/src/session/viewState.ts, web/src/main.tsx]
+    cases: [film.view.state/two-sessions-same-bytes]
+    since: "2026-11-24"
   - id: film.sequence.add-edit
     title: "Cut linked clips at a time (Add Edit); the cut survives undo, redo, saving and reopening"
     dimension: [function, data-safety]

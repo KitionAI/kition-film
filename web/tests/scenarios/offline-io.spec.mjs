@@ -11,7 +11,7 @@ test('F35 a genuinely missing lent media file opens offline; restoring and relin
     missingReads += 1
     return route.fulfill({ status: 404, headers: { 'content-length': '0' }, body: '' })
   }
-  const url = new URL('sample/clips/bars.mp4', page.url()).href
+  const url = new URL('clips/bars.mp4', await page.evaluate(() => window.devHost.lendRoot)).href
   await page.context().route(url, missing)
   await film.saveReopen()
   await expect.poll(async () => (await film.command('media.status', { item }))[0].status).toBe('missing')

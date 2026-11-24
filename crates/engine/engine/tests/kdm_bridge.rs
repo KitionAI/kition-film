@@ -486,7 +486,7 @@ fn a_file_newer_than_its_stored_replica_wins_on_open() {
     let snapshot = a.snapshot().unwrap();
     let doc = a.kdm().unwrap().replica().doc_id();
     a.execute("timeline.setTrack", json!({"track": "V3", "name": "Newer"})).unwrap();
-    let file = kition_film_format::encode_with_view(&a.project, Some(&a.project_view()), false);
+    let file = kition_film_format::encode(&a.project, false);
 
     let mut b = Session::default();
     b.open_with_replica(&file, &snapshot).unwrap();
@@ -497,7 +497,7 @@ fn a_file_newer_than_its_stored_replica_wins_on_open() {
     assert!(!b.is_dirty(), "the project is the file's");
     let kdm = b.kdm().unwrap();
     assert!(!kdm.can_undo_in(UndoScope::Person) && !kdm.can_undo_in(UndoScope::Agent) && !b.history.can_undo(), "opening is not an undo step");
-    assert!(b.state.active_sequence.is_some(), "the file's view opened its sequence");
+    assert!(b.state.active_sequence.is_some(), "the project opens on its first sequence");
 
     let mut c = Session::default();
     c.open_snapshot(&snapshot).unwrap();

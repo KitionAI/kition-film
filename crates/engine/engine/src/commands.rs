@@ -3995,9 +3995,9 @@ fn write_project(s: &mut Session, path: &str, adopt: bool) -> Result<Value> {
         // project wholesale with the replica's own (unrenamed) reconstruction and lose it.
         s.flush_kdm();
     }
-    // what is open (sequence tabs, how each is shown) goes into the file beside the project
-    let view = s.project_view();
-    let bytes = kition_film_format::encode_with_view(&s.project, Some(&view), false);
+    // the project only: what is open (sequence tabs, how each is shown) is the person's view
+    // state, never the file's
+    let bytes = kition_film_format::encode(&s.project, false);
     s.services.write_file(path, &bytes).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
     if adopt {
         s.path = Some(path.to_string());
@@ -4042,11 +4042,9 @@ fn open_project(s: &mut Session, path: &str) -> Result<Value> {
     let bytes = s.services.read_file(path).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
     let loaded = kition_film_format::decode(&bytes).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
     let version = loaded.schema_version;
+    // a file keeps no view: the project opens on its first sequence
     install_project(s, loaded.project, Some(path.to_string()), true)?;
-    if let Some(view) = loaded.view.filter(|_| s.prefs.timeline.restore_open_sequences) {
-        s.restore_project_view(view);
-    }
-    // the frontend shows the project's active sequence (with its own view, when one was restored)
+    // the frontend shows the project's active sequence
     if let Some(seq) = s.state.active_sequence {
         s.events.push(crate::Event::OpenSequence(seq));
     }

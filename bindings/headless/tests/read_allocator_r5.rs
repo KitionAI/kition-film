@@ -12,7 +12,7 @@ fn a_corrupt_id_counter_cannot_overwrite_an_existing_source() {
     let source = loaded.project.sequences().find_map(|item| item.as_sequence()).unwrap().video_tracks[0].items[0].item;
     let old_name = loaded.project.item(source).unwrap().name.clone();
     loaded.project.next_id = source.0;
-    let bytes = kition_film_format::encode_with_view(&loaded.project, loaded.view.as_ref(), true);
+    let bytes = kition_film_format::encode(&loaded.project, true);
     let Ok(mut doc) = FilmDocument::open(FILE, &bytes) else { return };
     let result = doc.execute("file.newColorMatte", json!({"name":"Injected over the old source","color":"#000000","seconds":1}));
     let after: serde_json::Value = serde_json::from_slice(&doc.save(None).unwrap()).unwrap();
@@ -26,7 +26,7 @@ fn an_exhausted_saved_id_counter_is_an_error_instead_of_a_panic_or_invalid_id() 
     for counter in [u64::MAX - 1, u64::MAX] {
         let mut loaded = kition_film_format::decode(&project(1)).unwrap();
         loaded.project.next_id = counter;
-        let bytes = kition_film_format::encode_with_view(&loaded.project, loaded.view.as_ref(), true);
+        let bytes = kition_film_format::encode(&loaded.project, true);
         let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             let Ok(mut doc) = FilmDocument::open(FILE, &bytes) else { return true };
             doc.execute("file.newColorMatte", json!({"name":"Invalid id","color":"#000000","seconds":1})).is_err()
@@ -57,7 +57,7 @@ fn stored_inline_ids_are_reserved_before_editing_without_changing_the_decoded_co
 fn exhausting_the_exact_numeric_counter_does_not_create_an_unreadable_saved_project() {
     let mut loaded = kition_film_format::decode(&project(1)).unwrap();
     loaded.project.next_id = (1u64 << 53) - 1;
-    let bytes = kition_film_format::encode_with_view(&loaded.project, loaded.view.as_ref(), true);
+    let bytes = kition_film_format::encode(&loaded.project, true);
     let mut doc = FilmDocument::open(FILE, &bytes).unwrap();
     let result = doc.execute("file.newColorMatte", json!({"name":"Out of ids","color":"#000000","seconds":1}));
     let saved = kition_film_format::decode(&doc.save(None).unwrap());

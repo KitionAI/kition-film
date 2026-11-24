@@ -36,7 +36,7 @@ fn clip_of(placed: &Value) -> Option<u64> {
 fn edited(doc: &FilmDocument, edit: impl FnOnce(&mut Project)) -> Result<Vec<u8>, String> {
     let mut loaded = kition_film_format::decode(&doc.save(None)?).map_err(|error| error.to_string())?;
     edit(&mut loaded.project);
-    Ok(kition_film_format::encode_with_view(&loaded.project, loaded.view.as_ref(), false))
+    Ok(kition_film_format::encode(&loaded.project, false))
 }
 
 fn fixtures() -> Result<Vec<(&'static str, Vec<u8>)>, String> {

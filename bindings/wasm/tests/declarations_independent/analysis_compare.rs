@@ -150,7 +150,7 @@ fn analyses_compare_item_routes_clip_owners_neighbours_replan_modes_and_linked_s
                 },
             );
         }
-        let mut doc = FilmDocument::open("Edit.kfilm", &kition_film_format::encode_with_view(&project, loaded.view.as_ref(), true)).unwrap();
+        let mut doc = FilmDocument::open("Edit.kfilm", &kition_film_format::encode(&project, true)).unwrap();
         for selected in [vec![], vec![clips[0]], vec![clips[1]], clips.clone()] {
             doc.execute("timeline.select", json!({"clips":selected,"linked":false})).unwrap();
             for &(command, path) in PATHS {

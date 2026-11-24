@@ -73,7 +73,7 @@ fn mask_paths_compare_target_effect_mask_defaults_geometry_and_animation() {
                         }
                     }
                 }
-                doc = FilmDocument::open("Edit.kfilm", &kition_film_format::encode_with_view(&loaded.project, loaded.view.as_ref(), true)).unwrap();
+                doc = FilmDocument::open("Edit.kfilm", &kition_film_format::encode(&loaded.project, true)).unwrap();
             }
             let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
             let owner = doc.inspect().unwrap()["sequence"]["video"][0]["id"].as_u64().unwrap();

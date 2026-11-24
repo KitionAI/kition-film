@@ -147,7 +147,7 @@ fn fixture(explicit: bool) -> (FilmDocument, u64, u64, Vec<u64>) {
         let mut map = q.cameras();
         map.cameras[2].enabled = false;
         q.multicam = Some(map);
-        doc = FilmDocument::open("Edit.kfilm", &kition_film_format::encode_with_view(&loaded.project, loaded.view.as_ref(), true)).unwrap();
+        doc = FilmDocument::open("Edit.kfilm", &kition_film_format::encode(&loaded.project, true)).unwrap();
     }
     (doc, sequence, source, clips)
 }

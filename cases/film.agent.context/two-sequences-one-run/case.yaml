@@ -2,9 +2,10 @@ format: 1
 id: film.agent.context/two-sequences-one-run
 feature: film.agent.context
 intent: >-
-  The project has two sequences, Main (open) and Other. The agent cuts V1 at 3.5 s in Main and at
-  1 s in Other in one film_run, naming each step's time (`at.time`, seconds) instead of moving the
-  playhead first, and opening Other inside the run; each cut lands in its own sequence at its own
+  The project has two sequences, Main and Other (a file keeps no open tabs, so neither is open:
+  the project opens on its first sequence). The agent cuts V1 at 3.5 s in Main and at 1 s in Other
+  in one film_run, naming each step's time (`at.time`, seconds) instead of moving the playhead
+  first, and opening each sequence inside the run; each cut lands in its own sequence at its own
   time.
 layer: eval
 source:
@@ -36,6 +37,7 @@ solution:
     args:
       path: edit.kfilm
       steps:
+        - { command: sequence.open, params: { item: 23 } }
         - { command: timeline.razor, at: { time: 3.5 }, params: { track: V1 } }
         - { command: sequence.open, params: { item: 14 } }
         - { command: timeline.razor, at: { time: 1 }, params: { track: V1 } }

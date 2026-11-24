@@ -24,7 +24,7 @@ fn large_link_and_through_memberships_have_bounded_profile_payloads() {
         clips.push(clip);
     }
     p.sequence_mut(sequence).unwrap().video_tracks[0].items = clips;
-    let bytes = kition_film_format::encode_with_view(&p, None, true);
+    let bytes = kition_film_format::encode(&p, true);
     let doc = FilmDocument::open(FILE, &bytes).unwrap();
     let profile = doc.derived(&[], &[]).unwrap();
     let bytes = serde_json::to_vec(&profile).unwrap().len();

@@ -10,8 +10,7 @@ writing them is `crates/formats/format` (`kition-film-format`); the engine's `fi
   "format": "kition-film.project",
   "schema_version": 1,
   "generator": "Kition Film 0.1.0",
-  "project": { "name": "…", "settings": { … }, "root": { … }, "items": { … }, "next_id": 48 },
-  "view": { "open_sequences": [21, 50], "active_sequence": 50, "sequences": { "21": { "pps": 40.0, "scroll": 0.0, … } } }
+  "project": { "name": "…", "settings": { … }, "root": { … }, "items": { … }, "next_id": 48 }
 }
 ```
 
@@ -20,14 +19,16 @@ writing them is `crates/formats/format` (`kition-film-format`); the engine's `fi
 - `project` is the serialized `kition_film_project::Project` (bins, media clips, sequences, tracks,
   clips, effects, keyframes, markers). Media is referenced by path, never embedded.
 - Files are written compact (no indentation). A 2,000-clip project is about 1.4 MB.
-- `view` (optional) is what was open when the project was saved: the Timeline's sequence tabs in
-  order, the active one, and each sequence's zoom, scroll and track heights
-  (`kition_film_project::ProjectView`). It is beside the project, not in it: it is not part of the
-  edit, never an undo step, and changing it does not mark the project as changed. Opening a
-  project restores it when the Timeline preference "Restore open sequences when opening projects"
-  is on. It is outside the project: ids that are not sequences and
-  numbers out of range are dropped or clamped, and a `view` that cannot be read is ignored (the
-  project opens on its first sequence, as it does without one or with no open sequence in it).
+- The file holds the project only. What one person has open (the Timeline's sequence tabs in
+  order, the active one, the nest toggle, and each sequence's zoom, scroll and track heights,
+  `kition_film_project::ProjectView`) is their view state, which the host keeps apart from the
+  file (Kit UI protocol 7n, capability `view-state`): the editor asks the engine for it
+  (`viewState`) and the host keeps it after each save, and gives it back when the project opens
+  (`restoreView`, when the Timeline preference "Restore open sequences when opening projects" is
+  on; ids that are not sequences and numbers out of range are dropped or clamped, a value that
+  cannot be read is ignored). Without the capability it is not kept between sessions. A file
+  opens on its first sequence. So two sessions that open the same file and save it without an
+  edit write the same bytes.
 - A coordinate of an effect's point parameter may be `null`. Point parameters use NaN for "auto"
   (the frame centre, or the source centre for `anchor`), and JSON writes NaN as `null`; it reads back
   as "auto". Placing a clip resolves these points at once. An interchange import resolves them
