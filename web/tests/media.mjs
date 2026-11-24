@@ -105,14 +105,28 @@ try {
   const put = (path, bytes) => page.evaluate(([p, b]) => window.devHost.files.set(p, { bytes: new Uint8Array(b).buffer, version: 1 }), [path, Array.from(bytes)])
   const undoSteps = async () => (await frame.evaluate(() => window.filmPreview.history()))?.undo?.length ?? 0
 
-  // ---- C3: the Export dialog. In and Out on the sample sequence (frames 12 and 30) by keys.
-  await kit.locator('.kui-app').focus()
-  await page.keyboard.press('Home')
-  for (let i = 0; i < 12; i += 1) await page.keyboard.press('ArrowRight')
-  await page.keyboard.press('i')
-  for (let i = 0; i < 18; i += 1) await page.keyboard.press('ArrowRight')
-  await page.keyboard.press('o')
-  assert.ok(await until(async () => (await sequence()).in != null && (await sequence()).out != null), 'In and Out are marked')
+  // ---- C3: the Export dialog. In and Out on the sample sequence (frames 12 and 30) by keys, each
+  // key waited for by the engine's state (a key pressed while a step's seek is on its way may be
+  // dropped, as in the flow test's steps).
+  const settings = (await sequence()).settings
+  const frameTicks = (254_016_000_000 * settings.frame_rate.den) / settings.frame_rate.num
+  const frameNow = async () => Math.round((await sequence()).playhead / frameTicks)
+  const press = async (key, check, what) => {
+    await kit.locator('.kui-app').focus()
+    await page.keyboard.press(key)
+    assert.ok(await until(check), `${what}: ${JSON.stringify({ frame: await frameNow(), in: (await sequence()).in, out: (await sequence()).out })}`)
+  }
+  await press('Home', async () => (await frameNow()) === 0, 'Home puts the playhead at the start')
+  const stepTo = async (frame) => {
+    while ((await frameNow()) < frame) {
+      const from = await frameNow()
+      await press('ArrowRight', async () => (await frameNow()) === from + 1, `Right steps one frame from ${from}`)
+    }
+  }
+  await stepTo(12)
+  await press('i', async () => (await sequence()).in === (await sequence()).playhead, 'I marks In at the playhead (frame 12)')
+  await stepTo(30)
+  await press('o', async () => (await sequence()).out === (await sequence()).playhead && (await sequence()).in != null, 'O marks Out at the playhead (frame 30), In kept')
   const marked = await sequence()
   const fps = marked.settings.frame_rate.num / marked.settings.frame_rate.den
   // The Out mark includes its frame.
