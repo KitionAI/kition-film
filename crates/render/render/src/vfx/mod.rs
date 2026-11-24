@@ -92,7 +92,9 @@ pub fn is_temporal(id: &str) -> bool {
 impl FxEnv for ItemEnv<'_> {
     fn frame(&self, dt: f64, upto: &EffectInstance) -> Option<Image> {
         let t2 = self.t + Tick::from_seconds_f64(dt);
-        let base = crate::base_layer(self.project, self.seq, self.item, t2, self.opts, self.sources, self.want)?;
+        // Other frames feed analyses that are cached (Auto Reframe, Warp Stabilizer): exact only,
+        // never a scrub's approximate frame.
+        let base = kition_film_media::cancel::with_exact(|| crate::base_layer(self.project, self.seq, self.item, t2, self.opts, self.sources, self.want))?;
         let mut img = resize(base, self.layer_size.0, self.layer_size.1);
         let src = crate::source_size(self.project, self.item.item).unwrap_or((1, 1));
         let cx = FxCtx {
@@ -117,7 +119,9 @@ impl FxEnv for ItemEnv<'_> {
     }
     fn source_frame(&self, dt: f64, scale: f32) -> Option<Image> {
         let t2 = self.t + Tick::from_seconds_f64(dt);
-        crate::base_layer(self.project, self.seq, self.item, t2, self.opts, self.sources, scale.clamp(1.0 / 64.0, 1.0))
+        kition_film_media::cancel::with_exact(|| {
+            crate::base_layer(self.project, self.seq, self.item, t2, self.opts, self.sources, scale.clamp(1.0 / 64.0, 1.0))
+        })
     }
     fn track(&self, index: usize) -> Option<Image> {
         if index >= self.seq.video_tracks.len() {

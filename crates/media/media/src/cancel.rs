@@ -14,6 +14,12 @@
 //! shortcuts that only change pictures nothing references (H.264: no deblocking of non-reference
 //! pictures). Never set for exports, renders or a frame shown while paused.
 //!
+//! [`with_approximate`] marks a monitor's picture during a scrub (opt-in, per request): a source
+//! whose exact frame is not ready within a decoding budget may answer the nearest earlier frame it
+//! decoded on the way, and says so ([`note_approximate`]); the monitor asks again until the frame
+//! is exact. Never set for exports, renders, thumbnails, previews or a frame shown at rest;
+//! [`with_exact`] turns it off inside (an effect reading other frames for an analysis it caches).
+//!
 //! [`with_background`] marks work nobody waits on interactively (thumbnails of the Project panel,
 //! the Media Browser and the timeline): sources should not keep expensive state, such as a
 //! frame-threaded 4K decoder, for it once it is done.
@@ -21,6 +27,7 @@
 use std::cell::{Cell, RefCell};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
 
 use kition_film_time::Tick;
 
@@ -29,6 +36,57 @@ thread_local! {
     static CATCH_UP: Cell<Option<Tick>> = const { Cell::new(None) };
     static DRAFT: Cell<bool> = const { Cell::new(false) };
     static BACKGROUND: Cell<bool> = const { Cell::new(false) };
+    static APPROXIMATE: Cell<Option<Duration>> = const { Cell::new(None) };
+    static APPROXIMATED: Cell<bool> = const { Cell::new(false) };
+}
+
+/// Run `f` accepting approximate frames (a monitor's picture during a scrub): a source may spend
+/// about `budget` decoding towards a frame it does not have, then answer the nearest earlier
+/// frame it decoded on the way ([`note_approximate`]) and keep its decoder where it stopped, so
+/// the next request for the same frame goes on from there. Answers `f`'s result and whether any
+/// source answered approximately. The previous hints are restored however `f` ends.
+pub fn with_approximate<R>(budget: Duration, f: impl FnOnce() -> R) -> (R, bool) {
+    struct Restore(Option<Duration>, bool);
+    impl Drop for Restore {
+        fn drop(&mut self) {
+            APPROXIMATE.with(|c| c.set(self.0));
+            APPROXIMATED.with(|c| c.set(self.1));
+        }
+    }
+    let restore = Restore(APPROXIMATE.with(|c| c.replace(Some(budget))), APPROXIMATED.with(|c| c.replace(false)));
+    let r = f();
+    let approximated = APPROXIMATED.with(Cell::get);
+    // An outer approximate request learns of this one's approximations too.
+    let outer = restore.1 || approximated;
+    drop(restore);
+    APPROXIMATED.with(|c| c.set(outer));
+    (r, approximated)
+}
+
+/// Run `f` with exact frames only, whatever the caller accepts (restoring the hint after): work
+/// whose result outlives the request, such as an analysis an effect caches, never sees an
+/// approximate frame.
+pub fn with_exact<R>(f: impl FnOnce() -> R) -> R {
+    struct Restore(Option<Duration>);
+    impl Drop for Restore {
+        fn drop(&mut self) {
+            APPROXIMATE.with(|c| c.set(self.0));
+        }
+    }
+    let _restore = Restore(APPROXIMATE.with(|c| c.replace(None)));
+    f()
+}
+
+/// The decoding budget of the work running on this thread when it accepts approximate frames
+/// (None, the default: only exact frames).
+pub fn approximate() -> Option<Duration> {
+    APPROXIMATE.with(Cell::get)
+}
+
+/// A source answered the request running on this thread with an approximate frame (see
+/// [`with_approximate`]). Nothing outside [`with_approximate`] reads it.
+pub fn note_approximate() {
+    APPROXIMATED.with(|c| c.set(true));
 }
 
 /// Run `f` as background work when `on` (restoring the previous hint after): a thumbnail, not a
@@ -139,6 +197,32 @@ mod tests {
         let r = std::panic::catch_unwind(|| with_background(true, || panic!("boom")));
         assert!(r.is_err());
         assert!(!background());
+    }
+
+    #[test]
+    fn approximate_is_off_by_default_scoped_and_reported() {
+        assert_eq!(approximate(), None);
+        let budget = Duration::from_millis(40);
+        let ((), approximated) = with_approximate(budget, || {
+            assert_eq!(approximate(), Some(budget));
+            with_exact(|| assert_eq!(approximate(), None));
+            assert_eq!(approximate(), Some(budget));
+        });
+        assert!(!approximated, "nothing answered approximately");
+        let ((), approximated) = with_approximate(budget, note_approximate);
+        assert!(approximated);
+        assert_eq!(approximate(), None);
+        // A note outside any approximate request reports nothing to the next one.
+        note_approximate();
+        let ((), approximated) = with_approximate(budget, || ());
+        assert!(!approximated);
+    }
+
+    #[test]
+    fn a_panic_inside_approximate_work_restores_exact_frames() {
+        let r = std::panic::catch_unwind(|| with_approximate(Duration::from_millis(1), || panic!("boom")));
+        assert!(r.is_err());
+        assert_eq!(approximate(), None);
     }
 
     #[test]

@@ -19,6 +19,8 @@ pub fn decode_json() -> Value {
         "samplesDecoded": g.decoded,
         "samplesSkipped": g.skipped,
         "draftFrames": g.draft,
+        // requests a scrub's budget answered with the nearest earlier decoded frame
+        "approximateFrames": g.approximate,
         "h264Threads": kition_film_codecs::video::h264_threads(),
         "evicted": g.evicted,
         // sources that hold a decoder right now (idle ones give theirs up beyond a cap)

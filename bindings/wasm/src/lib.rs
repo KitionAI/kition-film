@@ -20,6 +20,7 @@ mod params;
 mod picture;
 mod prefs;
 mod preview;
+mod program;
 mod render;
 mod rests_audio;
 mod rests_clip_fields;
@@ -71,6 +72,8 @@ struct KitServices {
     /// The open command preview's scratch session ([`crate::preview`]), kept here for the same
     /// reason: every way of making a [`FilmDocument`] starts without one.
     preview: Mutex<Option<Session>>,
+    /// The Program monitor's motion and last picture ([`crate::program`]).
+    program: program::ProgramState,
     /// How much of the session's journal [`FilmDocument::settle`] has looked through for a
     /// command that replaced the document.
     journal_seen: AtomicUsize,
@@ -88,6 +91,7 @@ impl Default for KitServices {
             memory: Mutex::default(),
             render_scale: AtomicU32::new(1.0f32.to_bits()),
             preview: Mutex::default(),
+            program: program::ProgramState::default(),
             journal_seen: AtomicUsize::new(0),
             loudness: Mutex::default(),
             levels: Mutex::default(),
@@ -197,14 +201,6 @@ impl FilmDocument {
 
     fn settings(&self) -> Option<(u32, u32)> {
         self.session.active_sequence().map(|sequence| (sequence.settings.width, sequence.settings.height))
-    }
-
-    /// The program frame at the playhead, opaque over black as a monitor shows it, at the render
-    /// scale ([`FilmDocument::set_render_scale`]; full size by default).
-    fn frame(&self) -> Result<(Vec<u8>, u32, u32), String> {
-        let image = self.session.try_render_program_at(self.services.render_scale(), self.session.playhead()).map_err(|error| error.to_string())?;
-        let (w, h) = (u32::try_from(image.w).map_err(|_| "frame too wide")?, u32::try_from(image.h).map_err(|_| "frame too tall")?);
-        Ok((image.over_black_rgba8(), w, h))
     }
 
     /// The longest audio one call mixes, in seconds.
@@ -384,7 +380,7 @@ impl KitDocument for FilmDocument {
     fn render(&self, x: f64, y: f64, scale: f64, width: u32, height: u32) -> Result<Vec<u8>, String> {
         let (rgba, w, h) = self.frame()?;
         let k = f64::from(w) / f64::from(self.width().max(1));
-        Ok(raster::render(Frame { rgba: &rgba, width: w, height: h }, x * k, y * k, scale / k, width, height))
+        Ok(raster::render(Frame { rgba: &rgba[..], width: w, height: h }, x * k, y * k, scale / k, width, height))
     }
 
     fn render_area(&self, x0: i32, y0: i32, x1: i32, y1: i32, width: u32, height: u32) -> Result<Vec<u8>, String> {
@@ -392,7 +388,7 @@ impl KitDocument for FilmDocument {
         let (kx, ky) = (f64::from(w) / f64::from(self.width().max(1)), f64::from(h) / f64::from(self.height().max(1)));
         let at = |v: i32, k: f64, round: fn(f64) -> f64| round(f64::from(v) * k) as i32;
         let (x0, y0, x1, y1) = (at(x0, kx, f64::floor), at(y0, ky, f64::floor), at(x1, kx, f64::ceil), at(y1, ky, f64::ceil));
-        Ok(raster::render_area(Frame { rgba: &rgba, width: w, height: h }, x0, y0, x1, y1, width, height))
+        Ok(raster::render_area(Frame { rgba: &rgba[..], width: w, height: h }, x0, y0, x1, y1, width, height))
     }
 
     fn execute(&mut self, command: &str, params: Value) -> Result<Value, String> {
@@ -403,7 +399,14 @@ impl KitDocument for FilmDocument {
         if command == render::RENDER {
             return render::render(&self.session, &params);
         }
-        let result = self.session.execute(command, params).map_err(command_failure)?;
+        let revision = self.session.revision;
+        let result = self.session.execute(command, params);
+        // An edit puts the Program monitor back at rest: a scrub's approximate pictures never
+        // outlive the scrub, whatever the editor does.
+        if self.session.revision != revision {
+            self.services.program.settle();
+        }
+        let result = result.map_err(command_failure)?;
         self.settle();
         Ok(result)
     }
@@ -1136,6 +1139,7 @@ kition_kit::export_kit_document!(FilmDocument as "FilmDocument");
 /// headless calls it at start (KHP A29: it reads only its workspace's files, through its host).
 pub fn no_system_fonts() {
     kition_film_text::fonts::set_system_fonts(false);
+    program::FONTS.fetch_add(1, Ordering::Relaxed);
 }
 
 /// Adds a font file's faces for text the bundled faces do not cover, such as Chinese titles and
@@ -1143,7 +1147,9 @@ pub fn no_system_fonts() {
 /// burned-in captions then resolve the family by name and fall back to these faces. Returns the
 /// faces added.
 pub fn add_font(bytes: &[u8]) -> usize {
-    kition_film_text::fonts::add_font_data(bytes.to_vec()).len()
+    let added = kition_film_text::fonts::add_font_data(bytes.to_vec()).len();
+    program::FONTS.fetch_add(1, Ordering::Relaxed);
+    added
 }
 
 /// Film's own additions to the exported class: the sequence's audio, and exported files.
@@ -1276,6 +1282,19 @@ pub mod web {
         #[wasm_bindgen(js_name = setRenderScale)]
         pub fn set_render_scale(&self, scale: f32) -> Result<(), JsError> {
             self.0.set_render_scale(scale).map_err(error)
+        }
+
+        /// How the Program monitor moves: `still`, `play` or `scrub` (see
+        /// [`FilmDocument::set_program_motion`]).
+        #[wasm_bindgen(js_name = setProgramMotion)]
+        pub fn set_program_motion(&self, motion: &str) -> Result<(), JsError> {
+            self.0.set_program_motion(motion).map_err(error)
+        }
+
+        /// Whether the last Program picture was exact (see [`FilmDocument::program_frame_exact`]).
+        #[wasm_bindgen(js_name = programFrameExact)]
+        pub fn program_frame_exact(&self) -> bool {
+            self.0.program_frame_exact()
         }
 
         /// Clip `clip`'s effects with their parameter schemas, typed values, and keyframes, as

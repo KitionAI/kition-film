@@ -39,6 +39,9 @@ pub struct GopStats {
     /// Pictures decoders output (hardware and software; [`crate::hw::hw_stats`] counts the
     /// hardware ones).
     pub frames: u64,
+    /// Requests answered with an approximate frame (a scrub,
+    /// [`kition_film_media::cancel::with_approximate`]).
+    pub approximate: u64,
 }
 
 impl GopStats {
@@ -63,6 +66,7 @@ static DECODE_NS: AtomicU64 = AtomicU64::new(0);
 static SKIPPED: AtomicU64 = AtomicU64::new(0);
 static DRAFT: AtomicU64 = AtomicU64::new(0);
 static FRAMES: AtomicU64 = AtomicU64::new(0);
+static APPROXIMATE: AtomicU64 = AtomicU64::new(0);
 
 /// Count pictures a decoder call output.
 fn count_frames<T>(out: &[T]) {
@@ -89,6 +93,7 @@ pub fn gop_stats() -> GopStats {
         skipped: SKIPPED.load(Ordering::Relaxed),
         draft: DRAFT.load(Ordering::Relaxed),
         frames: FRAMES.load(Ordering::Relaxed),
+        approximate: APPROXIMATE.load(Ordering::Relaxed),
     }
 }
 
@@ -105,6 +110,7 @@ impl std::ops::Sub for GopStats {
             skipped: self.skipped - o.skipped,
             draft: self.draft - o.draft,
             frames: self.frames - o.frames,
+            approximate: self.approximate - o.approximate,
         }
     }
 }
@@ -182,6 +188,15 @@ impl State {
     /// The nearest usable frame at or before `pts` (robust to decoder pts quirks).
     fn at_or_before(&self, pts: i64, draft_ok: bool) -> Option<Arc<VideoFrame>> {
         self.cached(pts, draft_ok).or_else(|| self.frames.range(..=pts).rev().find(|(p, _)| draft_ok || !self.drafts.contains(p)).map(|(_, f)| f)).cloned()
+    }
+
+    /// The nearest usable frame from `floor` to `pts` (an approximate answer: never a frame
+    /// shown before the wanted frame's sync sample, so never another scene's).
+    fn between(&self, floor: i64, pts: i64, draft_ok: bool) -> Option<Arc<VideoFrame>> {
+        if floor > pts {
+            return None;
+        }
+        self.frames.range(floor..=pts).rev().find(|(p, _)| draft_ok || !self.drafts.contains(p)).map(|(_, f)| f.clone())
     }
 }
 
@@ -719,6 +734,9 @@ impl GopCache {
         }
         let limit = (i.max(st.next) + 64).min(n);
         let late = late_before.unwrap_or(i64::MIN).min(want_pts);
+        // A scrub accepts the nearest earlier frame of the wanted frame's GOP once its budget of
+        // decoding has passed (`cancel::with_approximate`; off by default, when nothing changes).
+        let approximate = kition_film_media::cancel::approximate().map(|budget| (Instant::now() + budget, s.pts(key)));
         let Some(decoder) = st.decoder.as_mut() else {
             return Err(CodecError::Decode("no video decoder".into()));
         };
@@ -744,6 +762,16 @@ impl GopCache {
             self.store_output(&mut st, out);
             if st.cached(want_pts, draft).is_some() {
                 break;
+            }
+            if let Some((deadline, floor)) = approximate
+                && Instant::now() >= deadline
+                && let Some(f) = st.between(floor, want_pts, draft)
+            {
+                // The decoder stays where it is (`next`, `out_max`), as for a cancelled request:
+                // asking for the same frame again decodes on towards it.
+                APPROXIMATE.fetch_add(1, Ordering::Relaxed);
+                kition_film_media::cancel::note_approximate();
+                return Ok(f);
             }
         }
         if st.cached(want_pts, draft).is_none() {
@@ -1213,6 +1241,46 @@ mod tests {
         let s2 = samples(300, 250, 3, false);
         let c2 = GopCache::new(None);
         assert!((0..12).all(|i| !is_draft(&c2.frame(&s2, i * 1000).expect("frame"))));
+    }
+
+    #[test]
+    fn an_approximate_request_answers_the_nearest_frame_of_its_gop_and_decodes_on_when_asked_again() {
+        use kition_film_media::cancel::{with_approximate, with_exact};
+        let none = std::time::Duration::ZERO;
+        let s = samples(300, 100, 2, false);
+        let c = GopCache::new(None);
+        let before = gop_stats().approximate;
+        // No time to decode: the first picture of frame 50's GOP comes back, approximately (the
+        // decoder outputs two samples late, so it took three decodes).
+        let (f, approximated) = with_approximate(none, || c.frame(&s, 50_000));
+        assert!(approximated);
+        assert_eq!(index_of(&f.expect("frame")), 0);
+        assert_eq!(s.decodes.load(Ordering::Relaxed), 3);
+        // Asked again, the decoder goes on from where it stopped (no restart).
+        let (f, approximated) = with_approximate(none, || c.frame(&s, 50_000));
+        assert!(approximated);
+        assert_eq!(index_of(&f.expect("frame")), 1);
+        assert_eq!(s.resets.load(Ordering::Relaxed), 1);
+        assert_eq!(gop_stats().approximate - before, 2);
+        // The exact request (the scrub has ended) carries on to the frame itself.
+        let f = c.frame(&s, 50_000).expect("frame");
+        assert_eq!(index_of(&f), 50);
+        assert_eq!(s.resets.load(Ordering::Relaxed), 1, "the approximate requests' decoding was not lost");
+        // A cached frame is exact whatever the request accepts.
+        let (f, approximated) = with_approximate(none, || c.frame(&s, 20_000));
+        assert!(!approximated);
+        assert_eq!(index_of(&f.expect("frame")), 20);
+        // Another GOP: never a frame from before its sync sample (frame 50 is cached, 150 wanted).
+        let (f, approximated) = with_approximate(none, || c.frame(&s, 150_000));
+        assert!(approximated);
+        assert_eq!(index_of(&f.expect("frame")), 100);
+        // Exact inside an approximate request (an effect's analysis), and with time enough.
+        let (f, approximated) = with_approximate(none, || with_exact(|| c.frame(&s, 160_000)));
+        assert!(!approximated);
+        assert_eq!(index_of(&f.expect("frame")), 160);
+        let (f, approximated) = with_approximate(std::time::Duration::from_secs(60), || c.frame(&s, 170_000));
+        assert!(!approximated);
+        assert_eq!(index_of(&f.expect("frame")), 170);
     }
 
     #[test]

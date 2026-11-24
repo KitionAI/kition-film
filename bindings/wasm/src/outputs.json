@@ -1617,6 +1617,9 @@
    "decode": {
     "additionalProperties": true,
     "properties": {
+     "approximateFrames": {
+      "type": "integer"
+     },
      "cacheBudgetMB": {
       "type": "number"
      },
