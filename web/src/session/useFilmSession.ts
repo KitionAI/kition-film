@@ -190,6 +190,8 @@ export function useFilmSession<S extends Session>(session: S, hostShortcuts: rea
         const open = docNow.current
         if (!open) return
         const raw = await query<RawState>(open, 'state.inspect')
+        // What is open (the person's view state) follows every read, before a save queued behind it.
+        if (docNow.current === open) viewNow.current?.take(raw)
         const next = sessionState(raw)
         const text = JSON.stringify(next)
         // Unchanged state keeps its object, so nothing redraws.
@@ -293,10 +295,7 @@ export function useFilmSession<S extends Session>(session: S, hostShortcuts: rea
   useEffect(() => {
     if (doc) void readers.keys()
   }, [doc, readers, reserved])
-  // What is open moved (a tab, the nest toggle): the view state the next save keeps follows it.
-  useEffect(() => {
-    if (doc && filmState) void viewNow.current?.follow(doc)
-  }, [doc, filmState])
+
   // A refresh the editor's own commands did not make (the agent's `ai/run`, a collaborator's
   // changes) drains the engine's events and reads the session state again, as a command may
   // change it without a new revision (the agent's `project.select`): the editor's own commands
@@ -358,9 +357,6 @@ export function useFilmSession<S extends Session>(session: S, hostShortcuts: rea
         // a drag asks on its first step and once it has rested.
         prefsAfter(command, (params ?? {}) as Record<string, unknown>)
         if (!skipsStateRead(command)) {
-          // What is open may have changed: the view state the next save keeps follows it now,
-          // before anything queued behind it in the engine (a save) runs.
-          if (docNow.current) void viewNow.current?.follow(docNow.current)
           void readers.events()
           // A command may have started a background job (Scene Edit Detection's Analyze).
           jobs.kick()
