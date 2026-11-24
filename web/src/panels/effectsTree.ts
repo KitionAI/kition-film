@@ -152,3 +152,21 @@ export function allFolderKeys(defs: readonly EffectDef[]): string[] {
 export function fitsTrack(kind: EffectKind, track: 'video' | 'audio') {
   return (kind === 'Video' || kind === 'VideoTransition') === (track === 'video')
 }
+
+/**
+ * The parameter names and choice options Effect Controls draws for the engine's effects, from
+ * `effects.list` with `detail` (each effect's `paramInfo`).
+ */
+export function paramLabels(answer: unknown): Set<string> {
+  const labels = new Set<string>()
+  const list = Array.isArray(answer) ? answer : []
+  for (const each of list) {
+    const info = (each as { paramInfo?: unknown }).paramInfo
+    if (!Array.isArray(info)) continue
+    for (const param of info as Array<{ label?: unknown; options?: unknown }>) {
+      if (typeof param.label === 'string') labels.add(param.label)
+      if (Array.isArray(param.options)) for (const option of param.options) if (typeof option === 'string') labels.add(option)
+    }
+  }
+  return labels
+}

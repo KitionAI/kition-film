@@ -116,9 +116,11 @@ const engine = existsSync(new URL('kition_film_kit_bg.wasm', engineDir))
       sdk.initSync({ module: readFileSync(new URL('kition_film_kit_bg.wasm', engineDir)) })
       const doc = sdk.FilmDocument.create('Untitled', 1920, 1080)
       const commands = new Map(JSON.parse(doc.commands()).map((command) => [command.id, command]))
-      // The Effects panel draws the engine's effect, folder, and preset names through phrase().
-      const { effectDefsOf, effectLabels, presetsOf } = await import(new URL('../src/panels/effectsTree.ts', import.meta.url).href)
-      commands.effectLabels = effectLabels(effectDefsOf(JSON.parse(doc.execute('effects.list', '{}'))), presetsOf(JSON.parse(doc.execute('presets.list', '{}'))))
+      // The Effects panel draws the engine's effect, folder, and preset names through phrase(), and
+      // Effect Controls draws their parameter names and choice options (`effects.list` with `detail`).
+      const { effectDefsOf, effectLabels, paramLabels, presetsOf } = await import(new URL('../src/panels/effectsTree.ts', import.meta.url).href)
+      const listed = effectLabels(effectDefsOf(JSON.parse(doc.execute('effects.list', '{}'))), presetsOf(JSON.parse(doc.execute('presets.list', '{}'))))
+      commands.effectLabels = new Set([...listed, ...paramLabels(JSON.parse(doc.execute('effects.list', JSON.stringify({ detail: true }))))])
       return commands
     })()
   : null

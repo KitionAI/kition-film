@@ -2026,3 +2026,819 @@
 	Slide (Legacy)	滑动（旧版）
 	Split (Legacy)	拆分（旧版）
 	Whip (Legacy)	急摇（旧版）
+# Effect Controls: the engine's effect parameter names and choice options (effects.list with detail),
+# which an applied effect shows (phase 3). Units, abbreviations and font names stay as they are.
+	Bypass	旁路
+	Brightness	亮度
+	Contrast	对比度
+	Map Black To	将黑色映射到
+	Map White To	将白色映射到
+	Amount to Tint	着色量
+	Shadow Red Balance	阴影红色平衡
+	Shadow Green Balance	阴影绿色平衡
+	Shadow Blue Balance	阴影蓝色平衡
+	Midtone Red Balance	中间调红色平衡
+	Midtone Green Balance	中间调绿色平衡
+	Midtone Blue Balance	中间调蓝色平衡
+	Highlight Red Balance	高光红色平衡
+	Highlight Green Balance	高光绿色平衡
+	Highlight Blue Balance	高光蓝色平衡
+	Preserve Luminosity	保持发光度
+	Amount to Decolor	脱色量
+	Color To Leave	要保留的颜色
+	Tolerance	容差
+	Edge Softness	边缘柔和度
+	From	源颜色
+	Hue Tolerance	色相容差
+	Softness	柔和度
+	Basic Correction	基本校正
+	Input LUT	输入 LUT
+	Temperature	色温
+	Exposure	曝光
+	Highlights	高光
+	Shadows	阴影
+	Whites	白色
+	Blacks	黑色
+	HDR White	HDR 白色
+	HDR Specular	HDR 镜面高光
+	Creative	创意
+	Look	外观
+	Teal & Orange	青橙
+	Warm Film	暖调胶片
+	Cool Blue	冷蓝
+	Bleach Bypass	漂白旁路
+	Faded Matte	褪色哑光
+	Monochrome	单色
+	Golden Hour	黄金时刻
+	Night	夜晚
+	Look LUT	外观 LUT
+	Intensity	强度
+	Faded Film	淡化胶片
+	Vibrance	自然饱和度
+	Shadow Tint	阴影色彩
+	Highlight Tint	高光色彩
+	Curves	曲线
+	Luma Curve	亮度曲线
+	Red Curve	红色曲线
+	Green Curve	绿色曲线
+	Blue Curve	蓝色曲线
+	Hue vs Sat	色相与饱和度
+	Hue vs Hue	色相与色相
+	Hue vs Luma	色相与亮度
+	Luma vs Sat	亮度与饱和度
+	Sat vs Sat	饱和度与饱和度
+	HDR Range	HDR 范围
+	Color Wheels & Match	色轮和匹配
+	Shadows Lightness	阴影明度
+	Midtones	中间调
+	Midtones Lightness	中间调明度
+	Highlights Lightness	高光明度
+	Enable HSL Secondary	启用 HSL 辅助
+	Hue Center	色相中心
+	Hue Range	色相范围
+	Saturation Min	饱和度最小值
+	Luma Min	亮度最小值
+	Luma Max	亮度最大值
+	Soften	柔化
+	Show Mask	显示蒙版
+	Off	关
+	Color/Gray	彩色/灰色
+	Color/Black	彩色/黑色
+	White/Black	白色/黑色
+	Denoise	降噪
+	Blur	模糊
+	Hue Shift	色相偏移
+	Midpoint	中点
+	Roundness	圆度
+	Feather	羽化
+	Blurriness	模糊度
+	Blur Dimensions	模糊尺寸
+	Horizontal and Vertical	水平和垂直
+	Repeat Edge Pixels	重复边缘像素
+	Direction	方向
+	Blur Length	模糊长度
+	Sharpen Amount	锐化量
+	Radius	半径
+	Threshold	阈值
+	Percent Blur	模糊百分比
+	Similarity	相似性
+	Reverse	反向
+	Gamma	Gamma
+	Channel	通道
+	RGB	RGB
+	Blend With Original	与原始图像混合
+	(RGB) Input Black Level	(RGB) 输入黑色阶
+	(RGB) Input White Level	(RGB) 输入白色阶
+	(RGB) Output Black Level	(RGB) 输出黑色阶
+	(RGB) Output White Level	(RGB) 输出白色阶
+	(RGB) Gamma	(RGB) Gamma
+	Black Input Level	黑色输入色阶
+	White Input Level	白色输入色阶
+	Horizontal Blocks	水平块
+	Vertical Blocks	垂直块
+	Sharp Colors	锐化颜色
+	Relief	起伏
+	Count	计数
+	Strobe Color	闪光颜色
+	Strobe Duration (secs)	闪光持续时间（秒）
+	Strobe Period (secs)	闪光周期（秒）
+	Amount of Noise	杂色数量
+	Use Color Noise	使用彩色杂色
+	Clipping	剪切
+	Grain Size	颗粒大小
+	Scale Height	缩放高度
+	Skew	偏斜
+	Skew Axis	偏斜轴
+	Shutter Angle	快门角度
+	Reflection Center	反射中心
+	Reflection Angle	反射角度
+	Shift Center To	将中心移位到
+	Curvature	曲率
+	Vertical Decentering	垂直偏心
+	Horizontal Decentering	水平偏心
+	Angle	角度
+	Twirl Radius	旋转扭曲半径
+	Twirl Center	旋转扭曲中心
+	Wave Height	波形高度
+	Wave Width	波形宽度
+	Wave Speed	波形速度
+	Pinning	固定
+	All Edges	全部边缘
+	Left Edge	左边缘
+	Top Edge	上边缘
+	Right Edge	右边缘
+	Bottom Edge	下边缘
+	Horizontal Edges	水平边缘
+	Vertical Edges	垂直边缘
+	Swivel	旋转
+	Tilt	倾斜
+	Distance to Image	与图像的距离
+	Distance	距离
+	Shadow Only	仅阴影
+	Edge Thickness	边缘厚度
+	Light Angle	光照角度
+	Light Color	光照颜色
+	Light Intensity	光照强度
+	Key Color	键控颜色
+	Output	输出
+	Alpha Channel	Alpha 通道
+	Color Channel	颜色通道
+	Setting	设置
+	Relaxed	宽松
+	Aggressive	强效
+	Transparency	透明度
+	Highlight	高光保留
+	Pedestal	基底
+	Choke	阻塞
+	Spill	溢出抑制
+	Mid Point	中点
+	Desaturate	去饱和
+	Range	范围
+	Luma	明亮度
+	Luminance	明亮度
+	Matte	遮罩
+	Video 1	视频 1
+	Video 2	视频 2
+	Video 3	视频 3
+	Video 4	视频 4
+	Video 5	视频 5
+	Video 6	视频 6
+	Video 7	视频 7
+	Video 8	视频 8
+	Composite Using	合成方式
+	Matte Alpha	遮罩 Alpha
+	Matte Luma	遮罩亮度
+	Color Tolerance	颜色容差
+	Edge Thin	边缘变薄
+	Cutoff	截止
+	Color 1	颜色 1
+	Color 2	颜色 2
+	Color 3	颜色 3
+	Color 4	颜色 4
+	Blend	混合
+	Start of Ramp	渐变起点
+	Start Color	起始颜色
+	End of Ramp	渐变终点
+	End Color	结束颜色
+	Ramp Shape	渐变形状
+	Linear Ramp	线性渐变
+	Radial Ramp	径向渐变
+	Width	宽度
+	Border	边框
+	Flare Center	光晕中心
+	Flare Brightness	光晕亮度
+	Lens Type	镜头类型
+	50-300mm Zoom	50-300mm 变焦
+	35mm Prime	35mm 定焦
+	105mm Prime	105mm 定焦
+	Anamorphic	变形宽银幕
+	Flare Color	光晕颜色
+	Size	大小
+	Ghosts	鬼影
+	Inter	Inter
+	JetBrains Mono	JetBrains Mono
+	Gain	增益
+	Left - Left	左 - 左
+	Left - Right	左 - 右
+	Invert Left	反转左声道
+	Right - Left	右 - 左
+	Right - Right	右 - 右
+	Invert Right	反转右声道
+	Frequency	频率
+	Maximum Reduction	最大降低量
+	Auto Gate	自动门限
+	Attack	启动
+	Release	释放
+	Compressor	压缩器
+	Ratio	比率
+	Auto Makeup	自动补偿
+	Makeup	补偿增益
+	Expander	扩展器
+	Limiter	限幅器
+	Soft Clip	软削波
+	Output Gain	输出增益
+	Maximum Amplitude	最大振幅
+	Input Boost	输入提升
+	Look-Ahead Time	预读时间
+	Release Time	释放时间
+	Low	低
+	Mid	中
+	High	高
+	Solo	独奏
+	Limiter Threshold	限幅器阈值
+	Limiter Release	限幅器释放
+	Link Channels	链接声道
+	Tape	磁带
+	Tape/Tube	磁带/电子管
+	Analog	模拟
+	Dry Out	干声输出
+	Wet Out	湿声输出
+	Feedback	反馈
+	Trash	破坏
+	Spread	扩散
+	Delay 1	延迟 1
+	Feedback 1	反馈 1
+	Level 1	电平 1
+	Delay 2	延迟 2
+	Feedback 2	反馈 2
+	Level 2	电平 2
+	Delay 3	延迟 3
+	Feedback 3	反馈 3
+	Level 3	电平 3
+	Delay 4	延迟 4
+	Feedback 4	反馈 4
+	Level 4	电平 4
+	Q	Q
+	Boost	提升
+	Interpolation	插值
+	Smooth	平滑
+	31.5 Hz	31.5 Hz
+	63 Hz	63 Hz
+	125 Hz	125 Hz
+	250 Hz	250 Hz
+	500 Hz	500 Hz
+	1 kHz	1 kHz
+	2 kHz	2 kHz
+	4 kHz	4 kHz
+	8 kHz	8 kHz
+	16 kHz	16 kHz
+	Master Gain	主增益
+	44 Hz	44 Hz
+	88 Hz	88 Hz
+	177 Hz	177 Hz
+	355 Hz	355 Hz
+	710 Hz	710 Hz
+	1.4 kHz	1.4 kHz
+	2.8 kHz	2.8 kHz
+	5.6 kHz	5.6 kHz
+	11.2 kHz	11.2 kHz
+	22.4 kHz	22.4 kHz
+	25 Hz	25 Hz
+	40 Hz	40 Hz
+	50 Hz	50 Hz
+	80 Hz	80 Hz
+	100 Hz	100 Hz
+	160 Hz	160 Hz
+	200 Hz	200 Hz
+	315 Hz	315 Hz
+	400 Hz	400 Hz
+	630 Hz	630 Hz
+	800 Hz	800 Hz
+	1.25 kHz	1.25 kHz
+	1.6 kHz	1.6 kHz
+	2.5 kHz	2.5 kHz
+	3.15 kHz	3.15 kHz
+	5 kHz	5 kHz
+	6.3 kHz	6.3 kHz
+	10 kHz	10 kHz
+	12.5 kHz	12.5 kHz
+	20 kHz	20 kHz
+	On	开
+	Notch Width	陷波宽度
+	Narrow	窄
+	Very Narrow	很窄
+	Super Narrow	超窄
+	Slope	斜率
+	12 dB/oct	12 dB/oct
+	24 dB/oct	24 dB/oct
+	36 dB/oct	36 dB/oct
+	48 dB/oct	48 dB/oct
+	Bessel	贝塞尔
+	Butterworth	巴特沃斯
+	Chebyshev	切比雪夫
+	Elliptical	椭圆
+	Low Pass	低通
+	High Pass	高通
+	Band Pass	带通
+	Band Stop	带阻
+	Order	阶数
+	High Cutoff	高频截止
+	Passband Ripple	通带纹波
+	Stopband Attenuation	阻带衰减
+	Chorus	合唱
+	Transience	瞬态
+	Initial Delay	初始延迟
+	Final Delay	最终延迟
+	Stereo Phasing	立体声相位
+	Modulation Rate	调制速率
+	Inverted	反相
+	Special Effects	特殊效果
+	Sinusoidal	正弦
+	Stages	级数
+	Depth	深度
+	Phase Difference	相位差
+	Upper Frequency	上限频率
+	Complexity	复杂度
+	60 Hz	60 Hz
+	Number of Harmonics	谐波数
+	Decay Time (RT60)	衰减时间 (RT60)
+	Voice	人声
+	Low Tone	低音调
+	High Tone	高音调
+	Impulse	脉冲
+	Small Room	小房间
+	Medium Room	中等房间
+	Large Hall	大厅
+	Cathedral	大教堂
+	Plate	板式
+	Ambience	环境
+	Vocal Booth	人声录音间
+	Room Size	房间大小
+	Damping LF	低频阻尼
+	Damping HF	高频阻尼
+	Pre-Delay	预延迟
+	Decay	衰减
+	High Frequency Damping	高频阻尼
+	Dry	干声
+	Wet	湿声
+	Center Input	中置输入
+	Damping	阻尼
+	Early Reflections	早期反射
+	Low Frequency Cut	低频切除
+	High Frequency Cut	高频切除
+	Speaker Angle	扬声器角度
+	Head Size	头部大小
+	Drive	驱动
+	Curve	曲线形状
+	Hard Clip	硬削波
+	Tube	电子管
+	Foldback	折返
+	Asymmetry	不对称
+	Tone	音色
+	Distortion Type	失真类型
+	Soft	软
+	Hard	硬
+	Fuzz	法兹
+	Amplifier	放大器
+	Clean Combo	清音组合音箱
+	British Stack	英式堆叠音箱
+	Tweed	Tweed 音箱
+	Modern High Gain	现代高增益
+	Filter	滤波器
+	Filter Frequency	滤波器频率
+	Filter Resonance	滤波器共振
+	Target Loudness	目标响度
+	Low Shelf Gain	低架增益
+	Peak Frequency	峰值频率
+	Peak Gain	峰值增益
+	High Shelf Gain	高架增益
+	Reverb Amount	混响量
+	Exciter Amount	激励量
+	Exciter Mode	激励模式
+	Retro	复古
+	Widener	声场拓宽
+	Loudness Maximizer	响度最大化
+	Male	男声
+	Female	女声
+	Music	音乐
+	Center Channel Pan	中置声道声像
+	Stereo Expand	立体声扩展
+	Semi-tones	半音
+	Cents	音分
+	Light Type	灯光类型
+	Directional	平行光
+	Omni	全向光
+	Major Radius	主半径
+	Minor Radius	次半径
+	Focus	焦点
+	Ambience Light Color	环境光颜色
+	Ambience Intensity	环境光强度
+	Surface Gloss	表面光泽
+	Surface Material	表面材质
+	Bump Height	凹凸高度
+	White Is High	白色为高
+	Blur Amount	模糊量
+	Iris Shape	光圈形状
+	Triangle	三角形
+	Square	正方形
+	Pentagon	五边形
+	Hexagon	六边形
+	Octagon	八边形
+	Iris Rotation	光圈旋转
+	Highlight Brightness	高光亮度
+	Highlight Threshold	高光阈值
+	Red Blurriness	红色模糊度
+	Green Blurriness	绿色模糊度
+	Blue Blurriness	蓝色模糊度
+	Alpha Blurriness	Alpha 模糊度
+	Blur Layer	模糊图层
+	Maximum Blur	最大模糊
+	Stretch Map to Fit	伸缩映射以适合
+	Invert Blur	反转模糊
+	Focus Shape	焦点形状
+	Radial	径向
+	Focus Point	焦点位置
+	Focus Size	焦点大小
+	Show Focus Area	显示焦点区域
+	Red Slope	红色斜率
+	Red Offset	红色偏移
+	Red Power	红色幂
+	Green Slope	绿色斜率
+	Green Offset	绿色偏移
+	Green Power	绿色幂
+	Blue Slope	蓝色斜率
+	Blue Offset	蓝色偏移
+	Blue Power	蓝色幂
+	Clip Level	剪切电平
+	100 IRE	100 IRE
+	101 IRE	101 IRE
+	102 IRE	102 IRE
+	103 IRE	103 IRE
+	104 IRE	104 IRE
+	105 IRE	105 IRE
+	106 IRE	106 IRE
+	107 IRE	107 IRE
+	108 IRE	108 IRE
+	109 IRE	109 IRE
+	Compression Before Clipping	剪切前压缩
+	3%	3%
+	5%	5%
+	10%	10%
+	20%	20%
+	Reduce Axis	缩减轴
+	Chroma	色度
+	Luma and Chroma	亮度和色度
+	Smart Limit	智能限制
+	Gamut Warning	色域警告
+	Gamut Warning Color	色域警告颜色
+	Upper Left	左上
+	Upper Right	右上
+	Lower Left	左下
+	Lower Right	右下
+	Blending Mode	混合模式
+	Add	相加
+	Center of Sphere	球面中心
+	Displacement	置换
+	Turbulent	湍流
+	Bulge	凸出
+	Twist	扭转
+	Turbulent Smoother	湍流较平滑
+	Bulge Smoother	凸出较平滑
+	Twist Smoother	扭转较平滑
+	Vertical Displacement	垂直置换
+	Horizontal Displacement	水平置换
+	Cross Displacement	交叉置换
+	Offset (Turbulence)	偏移（湍流）
+	Evolution	演化
+	Cycle Evolution	循环演化
+	Cycle (in Revolutions)	循环（圈数）
+	Random Seed	随机种子
+	Pin All	全部固定
+	Pin Horizontal	水平固定
+	Pin Vertical	垂直固定
+	Antialiasing for Best Quality	最佳品质抗锯齿
+	Result	结果
+	Smooth Motion	平滑运动
+	No Motion	无运动
+	Smoothness	平滑度
+	Method	方法
+	Position, Scale, Rotation	位置、缩放、旋转
+	Subspace Warp	子空间变形
+	Preserve Scale	保持缩放
+	Framing	取景
+	Stabilize Only	仅稳定
+	Stabilize, Crop	稳定、裁切
+	Stabilize, Crop, Auto-scale	稳定、裁切、自动缩放
+	Stabilize, Synthesize Edges	稳定、合成边缘
+	Maximum Scale	最大缩放
+	Action-Safe Margin	动作安全边距
+	Additional Scale	附加缩放
+	Detailed Analysis	详细分析
+	Crop Less <-> Smooth More	较少裁切 <-> 较多平滑
+	Gradient Start	渐变开始
+	Gradient End	渐变结束
+	Gradient Shape	渐变样式
+	Reflected	反射
+	Diamond	菱形
+	Gradient Scatter	渐变散布
+	Red-Red	红-红
+	Red-Green	红-绿
+	Red-Blue	红-蓝
+	Red-Const	红-常量
+	Green-Red	绿-红
+	Green-Green	绿-绿
+	Green-Blue	绿-蓝
+	Green-Const	绿-常量
+	Blue-Red	蓝-红
+	Blue-Green	蓝-绿
+	Blue-Blue	蓝-蓝
+	Blue-Const	蓝-常量
+	Solid Colors	纯色
+	Target Color	目标颜色
+	Replace Color	替换颜色
+	Border Width	边框宽度
+	Border Color	边框颜色
+	Ignore Alpha	忽略 Alpha
+	Invert Alpha	反转 Alpha
+	Mask Only	仅蒙版
+	White	白
+	Black	黑
+	Custom Color	自定义颜色
+	Remove Fringe	去除边缘杂色
+	Echoes	回声
+	Glow Color	发光颜色
+	Edge Threshold	边缘阈值
+	Edge Width	边缘宽度
+	Glow Radius	发光半径
+	Glow Only	仅发光
+	Rays	光线数
+	2	2
+	4	4
+	6	6
+	8	8
+	Length	长度
+	Colorize	着色
+	Source Point	源点
+	Ray Length	光线长度
+	Ray Color	光线颜色
+	Rays Only	仅光线
+	Use Glow Color	使用发光颜色
+	Fade	淡化
+	Stroke Angle	描边角度
+	Brush Size	画笔大小
+	Stroke Length	描边长度
+	Stroke Density	描边浓度
+	Stroke Randomness	描边随机性
+	Paint Surface	绘画表面
+	Paint On Original Image	在原始图像上绘画
+	Paint On Transparent	在透明背景上绘画
+	Paint On White	在白色上绘画
+	Paint On Black	在黑色上绘画
+	Edge Type	边缘类型
+	Roughen	粗糙化
+	Roughen Color	粗糙化颜色
+	Spiky	尖刺
+	Rusty	生锈
+	Rusty Color	生锈颜色
+	Photocopy	影印
+	Photocopy Color	影印颜色
+	Edge Color	边缘颜色
+	Edge Sharpness	边缘锐度
+	Fractal Influence	分形影响
+	Stretch Width or Height	伸缩宽度或高度
+	X Rotation	X 轴旋转
+	Y Rotation	Y 轴旋转
+	Z Rotation	Z 轴旋转
+	Z Position	Z 位置
+	Hide Back Face	隐藏背面
+	Motion Preset	运动预设
+	Slower Motion	较慢运动
+	Faster Motion	较快运动
+	Reframe Offset	重构偏移
+	Reframe Zoom	重构变焦
+	Target Aspect	目标长宽比
+	Vertical 9:16	竖屏 9:16
+	Square 1:1	方形 1:1
+	Vertical 4:5	竖屏 4:5
+	Horizontal 16:9	横屏 16:9
+	Position Amount	位置幅度
+	Rotation Amount	旋转幅度
+	Zoom Amount	变焦幅度
+	Motion Blur	运动模糊
+	Scale From	起始缩放
+	Scale To	结束缩放
+	Easing	缓动
+	Ease In and Out	缓入缓出
+	Offset From	起始偏移
+	Offset To	结束偏移
+	Uniform Spacing	均匀间距
+	Corner Radius	圆角半径
+	Fill Background	填充背景
+	Scale Amount	缩放幅度
+	Dimensions	维度
+	Horizontal Alignment	水平对齐
+	Vertical Alignment	垂直对齐
+	Horizontal Margin	水平边距
+	Vertical Margin	垂直边距
+	Conversion Type	转换类型
+	Log to Linear	对数到线性
+	Linear to Log	线性到对数
+	Log to Log	对数到对数
+	10 Bit Black Point	10 位黑场
+	Internal Black Point	内部黑场
+	10 Bit White Point	10 位白场
+	Internal White Point	内部白场
+	Highlight Rolloff	高光滚降
+	Columns	列数
+	Rows	行数
+	Gap	间隙
+	Mirror Alternate	交替镜像
+	Outside	外部
+	Inside	内部
+	Stroke Only	仅描边
+	Sequence Timecode	序列时间码
+	Media Timecode	媒体时间码
+	Frame Count	帧计数
+	Sequence Name	序列名称
+	Bottom Center	底部居中
+	Bottom Left	底部靠左
+	Bottom Right	底部靠右
+	Top Center	顶部居中
+	Top Left	顶部靠左
+	Top Right	顶部靠右
+	Text Color	文本颜色
+	Prefix	前缀
+	Echo Time (seconds)	回声时间（秒）
+	Number Of Echoes	回声数量
+	Starting Intensity	起始强度
+	Echo Operator	回声运算符
+	Maximum	最大值
+	Minimum	最小值
+	Composite In Back	在后面合成
+	Composite In Front	在前面合成
+	Start Point	起始点
+	End Point	结束点
+	Segments	分段
+	Amplitude	振幅
+	Detail Level	细节级别
+	Detail Amplitude	细节振幅
+	Branching	分支
+	Core Width	核心宽度
+	Outside Color	外部颜色
+	Inside Color	内部颜色
+	Bubbles	气泡
+	Crystals	晶体
+	Plates	板块
+	Static Plates	静态板块
+	Crystallize	晶格化
+	Pillow	枕状
+	Mixed Crystals	混合晶体
+	Tubular	管状
+	Overflow	溢出
+	Soft Clamp	柔和限制
+	Wrap Back	反绕
+	Disperse	分散
+	Anchor	锚点
+	Height	高度
+	Square (Width Only)	正方形（仅宽度）
+	Thickness	厚度
+	Composite on Original	与原始图像合成
+	Fill Point	填充点
+	Fill Selector	填充选择器
+	Color & Alpha	颜色和 Alpha
+	Straight Color	直接颜色
+	Invert Fill	反转填充
+	Behind	背后
+	Brush Position	画笔位置
+	Brush Hardness	画笔硬度
+	Brush Opacity	画笔不透明度
+	Stroke Length (secs)	描边长度（秒）
+	Brush Spacing (secs)	画笔间距（秒）
+	Paint Style	绘画样式
+	On Original Image	在原始图像上
+	On Transparent	在透明背景上
+	Reveal Original Image	显示原始图像
+	Use End Color	使用结束颜色
+	Transition Completion	过渡完成
+	Block Width	块宽度
+	Block Height	块高度
+	Soft Edges (Best Quality)	柔化边缘（最佳品质）
+	Transition Softness	过渡柔和度
+	Gradient Layer	渐变图层
+	Gradient Placement	渐变放置
+	Tile Gradient	平铺渐变
+	Center Gradient	居中渐变
+	Stretch Gradient to Fit	伸缩渐变以适合
+	Invert Gradient	反转渐变
+	Wipe Angle	擦除角度
+	Frame Layout	帧布局
+	Stereoscopic - Over/Under	立体 - 上下
+	Stereoscopic - Side by Side	立体 - 左右
+	Chromatic Aberration (Red)	色差（红色）
+	Chromatic Aberration (Green)	色差（绿色）
+	Chromatic Aberration (Blue)	色差（蓝色）
+	Center Point (Longitude)	中心点（经度）
+	Center Point (Latitude)	中心点（纬度）
+	Falloff	衰减范围
+	Inverse Falloff	反向衰减范围
+	Point 1 Color	点 1 颜色
+	Point 1 Longitude	点 1 经度
+	Point 1 Latitude	点 1 纬度
+	Point 2 Color	点 2 颜色
+	Point 2 Longitude	点 2 经度
+	Point 2 Latitude	点 2 纬度
+	Point 3 Color	点 3 颜色
+	Point 3 Longitude	点 3 经度
+	Point 3 Latitude	点 3 纬度
+	Noise Level	杂色级别
+	Noise Type	杂色类型
+	Fast	快速
+	Slow	慢速
+	Show Only Noise	仅显示杂色
+	Master Amplitude	主振幅
+	Distortion Complexity	扭曲复杂度
+	Distortion Rate	扭曲速率
+	Color Distortion	颜色扭曲
+	Scan Lines	扫描线
+	Fractal Type	分形类型
+	Basic	基本
+	Turbulent Smooth	平滑湍流
+	Turbulent Sharp	锐利湍流
+	Luminance Threshold	明亮度阈值
+	Glow Brightness	发光亮度
+	Glow Saturation	发光饱和度
+	Use Tint Color	使用色调颜色
+	Tint Color	色调颜色
+	Scale (Degrees)	缩放（度）
+	Target Field of View	目标视野
+	Tilt (X Axis)	倾斜（X 轴）
+	Pan (Y Axis)	平移（Y 轴）
+	Roll (Z Axis)	滚动（Z 轴）
+	Stretch to Fit Frame	伸缩以适合帧
+	From North	从北
+	From East	从东
+	From South	从南
+	From West	从西
+	Blocks	块数
+	Overshoot	过冲
+	Spin Direction	旋转方向
+	Clockwise	顺时针
+	Counter-clockwise	逆时针
+	Bounce	弹跳
+	Burn Color	灼烧颜色
+	Luma Source	亮度源
+	Outgoing	前一剪辑
+	Incoming	后一剪辑
+	Maximum Block Size	最大块大小
+	Dissolve Blocks	溶解块
+	Shake	抖动
+	Flickers	闪烁次数
+	Shard Size	碎片大小
+	Refraction	折射
+	Line Thickness	线条粗细
+	Anti-aliasing Quality	抗锯齿品质
+	Medium	中等
+	Block Size	块大小
+	Zoom Strength	变焦强度
+	Iris Radius	光圈半径
+	Phosphor Color	荧光颜色
+	Blur Angle	模糊角度
+	Stripes	条纹数
+	Strength	力度
+	Gap Color	间隙颜色
+	Orientation	朝向
+	Scale Match	缩放匹配
+	Star	星形
+	Heart	心形
+	Shape Size	形状大小
+	Random	随机
+	Left to Right	从左到右
+	Center Out	从中心向外
+	Cursor	光标
+	Frame Width	画框宽度
+	Frame Color	画框颜色
+	Slats	叶片数
+	Corner	角
+	Curl Radius	卷曲半径
+	Slices	切片数
+	Wavelength	波长
+	Start Angle	起始角度
+	Neon Color	霓虹颜色
+	Glow Width	发光宽度
+	Panels	面板数
+	Plateaus	平台数
+	Points	点数
+	Inner Radius	内半径
+	Path	路径
+	Polygon Sides	多边形边数
+	Path Points	路径点

@@ -4180,20 +4180,24 @@ button.film-project-tab {
 .film-tl-effect-drop {
   position: absolute;
   box-sizing: border-box;
-  border: 2px solid var(--kit-primary);
+  border: 2px dashed var(--kit-surface);
   border-radius: 3px;
+  outline: 1px solid var(--kit-text);
+  background: color-mix(in srgb, var(--kit-surface) 18%, transparent);
   pointer-events: none;
 }
 
 .film-tl-effect-drop[data-transition] {
-  background: color-mix(in srgb, var(--kit-primary) 35%, transparent);
+  border-style: solid;
+  background: color-mix(in srgb, var(--kit-surface) 45%, transparent);
 }
 
 .film-tl-effect-drop-cut {
   position: absolute;
   width: 3px;
   margin-left: -1.5px;
-  background: var(--kit-primary);
+  background: var(--kit-surface);
+  outline: 1px solid var(--kit-text);
   pointer-events: none;
 }
 
@@ -4202,7 +4206,7 @@ button.film-project-tab {
   padding: 0 4px;
   border-radius: 2px;
   background: var(--kit-surface);
-  color: var(--kit-primary);
+  color: var(--kit-text);
   font-size: 11px;
   line-height: 15px;
   white-space: nowrap;
@@ -4212,8 +4216,9 @@ button.film-project-tab {
 
 /* A selected transition (upstream fills it with the selection colour and outlines it). */
 .film-tl-transition[data-selected] {
-  border: 2px solid var(--kit-primary);
-  background: repeating-linear-gradient(-45deg, color-mix(in srgb, var(--kit-primary) 55%, transparent) 0 1px, rgba(0, 0, 0, 0.35) 1px 4px);
+  border: 2px solid var(--kit-surface);
+  outline: 1px solid var(--kit-text);
+  background: repeating-linear-gradient(-45deg, color-mix(in srgb, var(--kit-surface) 70%, transparent) 0 2px, rgba(0, 0, 0, 0.35) 2px 4px);
 }
 
 /* Effect Controls: the effect a person selected (its header), which Delete removes; and a drop of an effect. */
