@@ -1,2 +1,8 @@
 [alias]
 xtask = "run --quiet --package xtask --"
+
+# The WebAssembly engine uses 128-bit SIMD (every browser Kition supports runs it: Chromium 91+,
+# Safari 16.4+, Firefox 89+): the decoders' and the compositor's loops vectorize. Integer and
+# IEEE float lanes give the same results as the scalar code.
+[target.wasm32-unknown-unknown]
+rustflags = ["-C", "target-feature=+simd128"]
