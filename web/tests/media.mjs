@@ -19,6 +19,7 @@ import { chromium, webkit } from 'playwright'
 import { createServer } from 'vite'
 
 const which = process.argv[2] ?? 'chromium'
+// FILM_MEDIA_SHOTS names a folder for the help document's screenshots (no assertion changes).
 const shots = process.env.FILM_MEDIA_SHOTS ?? null
 const server = await createServer({ configFile: new URL('../vite.config.ts', import.meta.url).pathname, server: { port: 0, host: '127.0.0.1', hmr: false }, logLevel: 'error' })
 await server.listen()
@@ -35,7 +36,8 @@ const until = async (check, ms = 10_000) => {
   return false
 }
 const shot = async (name, clip) => {
-  if (shots) await page.screenshot({ path: `${shots}/${name}.png`, ...(clip ? { clip } : {}) })
+  // The editor's frame (or `clip`), without the dev host's bar.
+  if (shots) await page.screenshot({ path: `${shots}/${name}.png`, clip: clip ?? (await page.locator('#kit').boundingBox()) })
 }
 const bars = readFileSync(new URL('../public/sample/clips/bars.mp4', import.meta.url))
 
@@ -129,7 +131,7 @@ try {
   await kit.getByTestId('film-export-rate').selectOption('25')
   await kit.getByTestId('film-export-quality').selectOption('small')
   assert.match(await kit.getByTestId('film-export-summary').textContent(), /640 × 360，25 帧\/秒/, 'the summary shows what will be written')
-  await shot('export-dialog', null)
+  await shot('media-1-export-dialog', null)
   const moviesBefore = (await files()).filter((name) => name.endsWith('.mp4'))
   await kit.getByTestId('film-export-start').click()
   let sawProgress = null
@@ -145,7 +147,7 @@ try {
   assert.deepEqual([movie.width, movie.height], [640, 360], `the movie has the chosen size: ${JSON.stringify(movie)}`)
   const wanted = inOutSeconds * 25
   assert.ok(Math.abs(movie.frames - wanted) <= 1.5 && movie.frames < (marked.duration / 254_016_000_000) * 25 - 10, `the movie holds In to Out at 25 fps: ${movie.frames} frames for ${wanted.toFixed(1)} (the sequence plays ${(marked.duration / 254_016_000_000 * fps).toFixed(0)} frames at ${fps.toFixed(3)})`)
-  await shot('export-done', null)
+  await shot('media-3-export-done', null)
 
   // Cancel stops the job: no second file.
   await kit.getByTestId('film-export-range').selectOption('entire')
@@ -153,7 +155,7 @@ try {
   await kit.getByTestId('film-export-quality').selectOption('high')
   await kit.getByTestId('film-export-start').click()
   assert.ok(await until(async () => (await kit.getByTestId('film-export-progress').count()) === 1, 10_000), 'the second export runs')
-  await shot('export-progress', null)
+  await shot('media-2-export-progress', null)
   assert.equal(await kit.getByTestId('film-export-sequence').isDisabled(), true, 'its choices wait while it runs')
   await kit.getByTestId('film-export-cancel').click()
   assert.ok(await until(async () => (await kit.getByTestId('film-export-result').getAttribute('data-result')) === 'cancelled', 20_000), 'Cancel stops it')
@@ -199,7 +201,7 @@ try {
   await chooser.waitFor({ timeout: 5000 })
   assert.match(await chooser.textContent(), /可多选/, 'the host\'s chooser takes several files')
   for (const path of ['clips/two.mp4', 'clips/tone.wav', 'clips/broken.mp4']) await chooser.locator(`button[data-path="${path}"]`).click()
-  await shot('import-chooser', null)
+  await shot('media-4-import-chooser', null)
   await chooser.locator('button[data-action="ok"]').click()
   assert.ok(await until(async () => (await projectNames()).length === namesBefore.length + 2, 20_000), `two of the three come in: ${JSON.stringify(await projectNames())}`)
   const names = await projectNames()
@@ -244,7 +246,7 @@ try {
   ])
   assert.equal(await kit.getByTestId('film-project').getAttribute('data-files-over'), 'true', 'files dragged over the Project panel outline it')
   assert.equal(await kit.getByTestId('film-project-files-over').textContent(), '把文件拖到这里导入')
-  await shot('import-drop-project', null)
+  await shot('media-5-drop-project', null)
   await projectDrop.target.dispatchEvent('drop', projectDrop.init)
   assert.ok(await until(async () => (await projectNames()).includes('dropped.mp4') && (await projectNames()).includes('dropped.wav'), 20_000), `the dropped media come in: ${JSON.stringify(await projectNames())}`)
   assert.ok((await files()).includes('films/dropped.mp4') && (await files()).includes('films/dropped.wav'), 'written beside the project')
@@ -266,6 +268,7 @@ try {
   const v2Before = (await sequence()).video[1].items.length
   const timelineDrop = await dropOn('film-timeline', at, [{ name: 'on-timeline.mp4', type: 'video/mp4', bytes: bars }])
   assert.equal(await kit.getByTestId('film-timeline-drop').count(), 1, 'the Timeline shows where it will land')
+  await shot('media-6-drop-timeline', null)
   await timelineDrop.target.dispatchEvent('drop', timelineDrop.init)
   assert.ok(await until(async () => (await sequence()).video[1].items.length === v2Before + 1, 20_000), 'the dropped file is placed on V2')
   const placed = (await sequence()).video[1].items.at(-1)

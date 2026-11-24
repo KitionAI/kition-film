@@ -117,22 +117,26 @@ function Strip({ strip, invoke, feed, playing, phrase }: { strip: MixerStrip; in
   const shownPan = dragPan ?? strip.pan
   const id = strip.ref
   const label = strip.kind === 'mix' ? phrase('Mix') : `${strip.ref} ${strip.name}`
+  // A fader drag in progress (a ref: a quick click's release comes before React draws its press).
+  const dragging = useRef(false)
   const faderDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) return
     event.preventDefault()
     event.currentTarget.setPointerCapture(event.pointerId)
+    dragging.current = true
     const db = dbAt(event)
     setDragDb(db)
     touch('volume', db)
   }
   const faderMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (dragDb == null || !event.currentTarget.hasPointerCapture(event.pointerId)) return
+    if (!dragging.current) return
     const db = dbAt(event)
     setDragDb(db)
     touch('volume', db)
   }
   const faderUp = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (dragDb == null) return
+    if (!dragging.current) return
+    dragging.current = false
     event.currentTarget.releasePointerCapture?.(event.pointerId)
     release('volume')
     // The level shown stays the dragged one until the engine's next read has it.

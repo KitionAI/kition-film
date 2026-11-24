@@ -96,7 +96,8 @@ try {
   assert.ok(await until(async () => (await strip('A1')).volumeDb <= -95), `at the bottom the track is silent: ${(await strip('A1')).volumeDb}`)
   assert.equal(await kit.getByTestId('film-mixer-level-A1').textContent(), '-∞')
   await kit.getByTestId('film-mixer-fader-A1').dblclick()
-  assert.ok(await until(async () => Math.abs((await strip('A1')).volumeDb) < 0.01), 'a double-click puts it back at 0 dB')
+  assert.ok(await until(async () => Math.abs((await strip('A1')).volumeDb) < 0.01 && Math.abs((await strip('A1')).at.volumeDb) < 0.01), `a double-click puts it back at 0 dB, and that is what plays: ${JSON.stringify((await strip('A1')).at)}`)
+  assert.ok(await until(async () => (await kit.getByTestId('film-mixer-level-A1').textContent()) === '0.0'), `and the strip shows it: ${await kit.getByTestId('film-mixer-level-A1').textContent()}`)
 
   // The pan: a click three quarters along pans right, one undo step.
   const pan = await kit.getByTestId('film-mixer-pan-A1').boundingBox()
