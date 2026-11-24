@@ -6,12 +6,24 @@ import type { InvokeOptions } from '../session/invoke'
 import { TICKS_PER_SECOND, type FilmInfo } from '../film'
 import type { FilmLabels } from '../session/useFilmSession'
 import { Placeholder } from './Placeholder'
-import { Hot, KeyframeNav, collapsedOf, type Invoke } from './EffectControls'
-import { readClipEffects, selectedClip, useClipEffects, useParamEdit, type ClipEffects, type ClipTimes, type EffectParam } from './effects'
+import { Choice } from '@kition/sdk/editor'
+import { ColorValue, Hot, KeyframeNav, collapsedOf, type Invoke } from './EffectControls'
+import { readClipEffects, selectedClip, useClipEffects, useParamEdit, type ClipEffect, type ClipEffects, type ClipTimes, type EffectParam } from './effects'
 
 const ChevronDown = TesseraIcons.ChevronDownIcon
 const ChevronRight = TesseraIcons.ChevronRightIcon
 const RotateCcw = TesseraIcons.RotateCcwIcon
+/** The Text section's alignment buttons (upstream `properties.rs`: Left, Center, Right Align Text, Justify; `align` 0–3) and style toggles (Faux Bold, Faux Italic). */
+const ALIGNS = [
+  { label: 'Left Align Text', Icon: TesseraIcons.TextAlignStartIcon },
+  { label: 'Center Align Text', Icon: TesseraIcons.TextAlignCenterIcon },
+  { label: 'Right Align Text', Icon: TesseraIcons.TextAlignEndIcon },
+  { label: 'Justify', Icon: TesseraIcons.TextAlignJustifyIcon },
+] as const
+const STYLES = [
+  { param: 'faux_bold', label: 'Faux Bold', Icon: TesseraIcons.BoldIcon },
+  { param: 'faux_italic', label: 'Faux Italic', Icon: TesseraIcons.ItalicIcon },
+] as const
 
 type Row = { label: string; effect: string; param: string; decimals: number; unit: string; speed: number; range: readonly [number, number]; nav: boolean }
 
@@ -43,6 +55,46 @@ export type PropertiesPanelProps = {
   labels: FilmLabels | null
   invoke: Invoke
   phrase: Phrases
+  /** The selected graphic's selected layers (the session state's `graphic_layers`): the Text section styles the first of them that is text. */
+  graphicLayers?: readonly number[]
+}
+
+/**
+ * A graphic clip's text layer the Text section styles (its effect on the clip): the selected layer
+ * when it is text, else the clip's first text layer. Layers are the clip's `graphic_text` and
+ * `graphic_shape` effects in their order (the engine's `layer_indices`).
+ */
+export function textLayerOf(effects: ClipEffects, chosen: readonly number[]): ClipEffect | null {
+  const layers = effects.effects.filter((effect) => effect.id === 'graphic_text' || effect.id === 'graphic_shape').sort((a, b) => a.index - b.index)
+  const texts = layers.map((effect, layer) => ({ effect, layer })).filter((each) => each.effect.id === 'graphic_text')
+  return (texts.find((each) => chosen.includes(each.layer)) ?? texts[0])?.effect ?? null
+}
+
+/** The font families the engine has (`fonts.list`), read once per document. */
+const fontLists = new WeakMap<object, Promise<string[]>>()
+function useFontFamilies(doc: KitEngine | null, invoke: Invoke, wanted: boolean): string[] {
+  const [families, setFamilies] = useState<string[]>([])
+  useEffect(() => {
+    if (!doc || !wanted) return undefined
+    let list = fontLists.get(doc)
+    if (!list) {
+      list = Promise.resolve(invoke('fonts.list', {}))
+        .then((answer) => {
+          const rows = typeof answer === 'string' ? (JSON.parse(answer) as unknown) : answer
+          return Array.isArray(rows) ? rows.map((row) => (row as { family?: unknown })?.family).filter((family): family is string => typeof family === 'string') : []
+        })
+        .catch(() => [])
+      fontLists.set(doc, list)
+    }
+    let open = true
+    void list.then((names) => {
+      if (open) setFamilies(names)
+    })
+    return () => {
+      open = false
+    }
+  }, [doc, invoke, wanted])
+  return families
 }
 
 /**
@@ -52,7 +104,7 @@ export type PropertiesPanelProps = {
  * its reset, each animatable row with its keyframe navigator, and the clip's speed. Its values
  * share Effect Controls' edits: a drag is one history step.
  */
-export function PropertiesPanel({ film, doc, revision, playback, labels, invoke, phrase }: PropertiesPanelProps) {
+export function PropertiesPanel({ film, doc, revision, playback, labels, invoke, phrase, graphicLayers = [] }: PropertiesPanelProps) {
   const chosen = selectedClip(film.tracks, film.selection)
   const playheadTicks = Math.round(useProgramTime(playback, film.playhead) * TICKS_PER_SECOND)
   const clipId = chosen?.clip.id ?? null
@@ -106,6 +158,8 @@ export function PropertiesPanel({ film, doc, revision, playback, labels, invoke,
     [doc, invoke],
   )
   ensureNow.current = ensure
+  const textLayer = effects && chosen?.kind === 'video' ? textLayerOf(effects, graphicLayers) : null
+  const families = useFontFamilies(doc, invoke, textLayer != null)
   if (!chosen) return <Placeholder text={phrase('Select a clip to see its properties')} panel="properties" />
   const clip = chosen.clip
   const swatch = labels?.colors[clip.label.toLowerCase()]?.color ?? 'transparent'
@@ -172,6 +226,7 @@ export function PropertiesPanel({ film, doc, revision, playback, labels, invoke,
       {chosen.kind === 'video' ? (
         <>
           {section('Transform', resetOf('motion'), () => rows(TRANSFORM))}
+          {textLayer ? section('Text', null, () => <TextStyle clip={clip.id} layer={textLayer} families={families} edit={edit} phrase={phrase} />) : null}
           {section('Crop', resetOf('crop'), () => rows(CROP))}
         </>
       ) : (
@@ -259,5 +314,82 @@ function samePropRow(before: PropRowProps, after: PropRowProps) {
     before.invoke === after.invoke &&
     before.phrase === after.phrase &&
     (before.param === after.param || JSON.stringify(before.param) === JSON.stringify(after.param))
+  )
+}
+
+type TextStyleProps = {
+  clip: number
+  layer: ClipEffect
+  families: readonly string[]
+  edit: (target: { clip: number; effect: number; param: string }, value: unknown, final: boolean) => void
+  phrase: Phrases
+}
+
+/**
+ * The Text section for a graphic's text layer (upstream `graphics/properties.rs`'s Text rows):
+ * Font (the engine's families), Font Size, Fill colour, Alignment, and Faux Bold and Italic. Each
+ * is the layer's own parameter, set through Effect Controls' edit (`effects.setParam` on the
+ * layer's effect): a size scrub or a colour drag is one history step, a click another.
+ */
+function TextStyle({ clip, layer, families, edit, phrase }: TextStyleProps) {
+  const value = (id: string) => layer.params.find((param) => param.id === id)?.value
+  const target = (param: string) => ({ clip, effect: layer.index, param })
+  const set = (param: string, next: unknown, final: boolean) => edit(target(param), next, final)
+  const font = typeof value('font') === 'string' ? (value('font') as string) : ''
+  const size = typeof value('size') === 'number' ? (value('size') as number) : 0
+  const fill = typeof value('fill_color') === 'string' ? (value('fill_color') as string) : '#ffffff'
+  const align = typeof value('align') === 'number' ? (value('align') as number) : 0
+  // The layer's font is offered even when the engine does not have it (a project from elsewhere).
+  const choices = [...new Set([...families, ...(font ? [font] : [])])].map((family) => [family, family] as const)
+  const testId = 'film-props-text'
+  return (
+    <>
+      <div className="film-props-row" data-testid={`${testId}-font-row`}>
+        <span className="film-props-label">{phrase('Font')}</span>
+        <span className="film-props-value">
+          <Choice quiet label={phrase('Font')} value={font} choices={choices} onChange={(next) => set('font', next, true)} testId={`${testId}-font`} />
+        </span>
+        <span className="film-kf-nav" />
+      </div>
+      <div className="film-props-row" data-testid={`${testId}-size-row`}>
+        <span className="film-props-label">{phrase('Font Size')}</span>
+        <span className="film-props-value">
+          <Hot label={phrase('Font Size')} value={size} min={1} max={2000} decimals={0} speed={0.5} unit="" onChange={(next, final) => set('size', next, final)} testId={`${testId}-size`} />
+        </span>
+        <span className="film-kf-nav" />
+      </div>
+      <div className="film-props-row" data-testid={`${testId}-fill-row`}>
+        <span className="film-props-label">{phrase('Fill')}</span>
+        <span className="film-props-value">
+          <ColorValue value={fill} label={phrase('Fill')} onChange={(hex, final) => set('fill_color', hex, final)} testId={`${testId}-fill`} />
+        </span>
+        <span className="film-kf-nav" />
+      </div>
+      <div className="film-props-row" data-testid={`${testId}-align-row`}>
+        <span className="film-props-label">{phrase('Alignment')}</span>
+        <span className="film-props-value film-props-buttons">
+          {ALIGNS.map(({ label, Icon }, index) => (
+            <button key={label} type="button" className="film-props-toggle" aria-pressed={align === index} aria-label={phrase(label)} title={phrase(label)} data-kit-ui-id="control:properties.text.align" data-testid={`${testId}-align-${index}`} onClick={() => set('align', index, true)}>
+              <Icon size={13} aria-hidden="true" />
+            </button>
+          ))}
+        </span>
+        <span className="film-kf-nav" />
+      </div>
+      <div className="film-props-row" data-testid={`${testId}-style-row`}>
+        <span className="film-props-label">{phrase('Style')}</span>
+        <span className="film-props-value film-props-buttons">
+          {STYLES.map(({ param, label, Icon }) => {
+            const on = value(param) === true
+            return (
+              <button key={param} type="button" className="film-props-toggle" aria-pressed={on} aria-label={phrase(label)} title={phrase(label)} data-kit-ui-id="control:properties.text.style" data-testid={`${testId}-${param}`} onClick={() => set(param, !on, true)}>
+                <Icon size={13} aria-hidden="true" />
+              </button>
+            )
+          })}
+        </span>
+        <span className="film-kf-nav" />
+      </div>
+    </>
   )
 }

@@ -631,7 +631,7 @@ function EffectsPart() {
 function PropertiesPart() {
   const live = useLive()
   if (!live.state) return <Placeholder text={live.phrase('Select a clip to see its properties')} panel="properties" />
-  return <PropertiesPanel film={live.state} doc={live.doc} revision={live.revision} playback={live.playback} labels={live.labels} invoke={live.invoke} phrase={live.phrase} />
+  return <PropertiesPanel film={live.state} doc={live.doc} revision={live.revision} playback={live.playback} labels={live.labels} invoke={live.invoke} phrase={live.phrase} graphicLayers={live.filmState?.graphicLayers ?? NO_LAYERS} />
 }
 
 /** The Tools panel: upstream's 8 groups in one column. */

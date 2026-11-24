@@ -2842,3 +2842,7 @@
 	Path	路径
 	Polygon Sides	多边形边数
 	Path Points	路径点
+	Left Align Text	左对齐文本
+	Center Align Text	居中对齐文本
+	Right Align Text	右对齐文本
+	Style	样式

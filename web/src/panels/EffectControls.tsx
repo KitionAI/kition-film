@@ -115,7 +115,7 @@ export function Hot({ label, value, min, max, decimals, speed, unit, onChange, t
 }
 
 /** A colour parameter: its swatch, which opens kit-editor's colour picker below it (upstream `color_edit_button_rgba`, opaque). */
-function ColorValue({ value, label, onChange, testId }: { value: string; label: string; onChange: (hex: string, final: boolean) => void; testId: string }) {
+export function ColorValue({ value, label, onChange, testId }: { value: string; label: string; onChange: (hex: string, final: boolean) => void; testId: string }) {
   const [open, setOpen] = useState(false)
   const box = useRef<HTMLSpanElement>(null)
   const rgb: RGB = parseHex(value.slice(0, 7)) ?? [0, 0, 0]

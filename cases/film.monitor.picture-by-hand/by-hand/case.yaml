@@ -1,0 +1,32 @@
+format: 1
+id: film.monitor.picture-by-hand/by-hand
+feature: film.monitor.picture-by-hand
+intent: >-
+  A person works on the Program picture by hand, in Chromium: a click on a clip's picture selects
+  it and draws its Motion box (eight handles, the anchor point); a drag inside moves it while the
+  picture and Effect Controls follow, a corner and a side handle scale it, just outside a corner
+  rotates it, each one undo step that one undo takes back; Escape during a drag puts the clip back
+  with no step left; the anchor point moves without moving the picture; at 200% scrolled and at
+  1/2 resolution the box follows the pointer; with a clip on V2 a click selects the top-most clip
+  under the pointer and a drag on another clip selects and moves it; a locked track's clip refuses
+  in Chinese; Cmd+Right nudges; a drag on keyframed Position adds a keyframe at the playhead. A
+  title typed with the Type tool in Chinese is its text and draws real glyphs; the Properties panel
+  sets its font, size (a scrub, one step), alignment, faux bold and italic and fill; the Selection
+  tool moves it, scales it with a handle, and a double-click edits it again.
+layer: gate
+source:
+  kind: probe
+  from: web/tests/picture.mjs chromium (plan "Film usable by hand", phase 5)
+  license: Apache-2.0
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/picture.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 240
+since: "2026-11-24"

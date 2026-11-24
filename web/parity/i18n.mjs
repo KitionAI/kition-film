@@ -265,6 +265,8 @@ export const LABEL_TABLES = [
   { file: 'panels/projectModel.ts', name: 'FONT_SIZES' },
   { file: 'session/errors.ts', name: 'ENGINE_REASONS', fields: ['reason'] },
   { file: 'timeline/transitions.ts', name: 'ALIGNMENT_LABELS' },
+  { file: 'panels/PropertiesPanel.tsx', name: 'ALIGNS', fields: ['label'] },
+  { file: 'panels/PropertiesPanel.tsx', name: 'STYLES', fields: ['label'] },
 ]
 
 /** The text of the declaration `const <name> =` in `text`: up to the end of its value (balanced brackets, or its line). */

@@ -2995,6 +2995,35 @@ button.film-project-tab {
   overflow: hidden;
 }
 
+/* The Text section's alignment and style buttons: pressed ones in the accent. */
+.film-props-buttons {
+  gap: 2px;
+}
+
+.film-props-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--kit-radius-control);
+  background: none;
+  color: var(--kit-text-muted);
+  cursor: pointer;
+}
+
+.film-props-toggle:hover {
+  color: var(--kit-text);
+  background: var(--kit-primary-soft);
+}
+
+.film-props-toggle[aria-pressed='true'] {
+  color: var(--kit-text);
+  border-color: var(--kit-primary);
+}
+
 .film-props-speed {
   display: inline-block;
   margin-top: 12px;

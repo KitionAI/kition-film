@@ -126,7 +126,6 @@ try {
   let box = await clipBox()
   assert.equal(box.handles.length, 8, 'eight handles')
   assert.ok(box.anchor, 'and its anchor point')
-  console.log(JSON.stringify(box))
 
   // A drag inside the box moves the clip, live, one undo step.
   const before = await motion(10)
@@ -320,6 +319,112 @@ try {
   const keyedBox = await settledBox()
   await drag(inBox(keyedBox), { x: inBox(keyedBox).x - 40, y: inBox(keyedBox).y + 20 })
   assert.ok(await until(async () => (await motion(upper)).keyframes === 2), `a drag at frame 20 adds a keyframe there: ${(await motion(upper)).keyframes}`)
+
+  // ---- a title: typed with the Type tool, in Chinese
+  await page.keyboard.press('Escape')
+  const tools = kit.locator('.kui-tool-slot > button[data-kit-ui-id="tool:Type"]')
+  await tools.click()
+  const before3 = new Set((await sequence()).video.flatMap((track) => track.items.map((item) => item.clip)))
+  await page.mouse.click(programBox.x + programBox.width * 0.3, programBox.y + programBox.height * 0.2)
+  await page.keyboard.type('中文标题 Hi')
+  const title = async () => (await sequence()).video.flatMap((track) => track.items).find((item) => !before3.has(item.clip)) ?? null
+  const layerOf = async (clip) => (await person('graphics.list', { clip }))?.layers?.[0] ?? null
+  assert.ok(await until(async () => (await title()) != null && (await layerOf((await title()).clip))?.text === '中文标题 Hi'), `the typed Chinese is the title's text: ${JSON.stringify(await layerOf((await title())?.clip))}`)
+  const titleClip = (await title()).clip
+  await page.keyboard.press('Escape')
+  assert.ok(await until(async () => (await kit.getByTestId('film-program-text-edit').count()) === 0), 'Escape ends the edit')
+  // Chinese draws real glyphs: two different characters draw differently (a missing glyph draws the same box for both).
+  const drawn = async (text) => {
+    await person('graphics.setText', { clip: titleClip, layer: 0, text })
+    await page.waitForTimeout(400)
+    let sum = await picture()
+    await until(async () => {
+      const again = await picture()
+      const same = again === sum
+      sum = again
+      return same
+    }, 20)
+    return sum
+  }
+  const one = await drawn('标')
+  const other = await drawn('题')
+  assert.notEqual(one, other, '标 and 题 draw differently: the engine has a CJK face')
+  await drawn('中文标题 Hi')
+  await shot('picture-title')
+
+  // The Properties panel styles the selected text layer: font, size, fill, alignment, bold and italic.
+  await page.keyboard.press('v')
+  await kit.getByTestId('film-menu-Window').click()
+  await kit.locator('[role="menu"] [data-kit-ui-id="control:window.panel.Properties"]').click()
+  await kit.getByTestId('film-properties').waitFor({ timeout: 10_000 })
+  await person('timeline.select', { clips: [titleClip] })
+  await kit.getByTestId('film-props-text-size').waitFor({ timeout: 10_000 })
+  const textParams = async () => {
+    const effect = (await clipOf(titleClip))?.effects.find((each) => each.effect === 'graphic_text')
+    return Object.fromEntries(Object.entries(effect?.params ?? {}).map(([key, param]) => [key, param.value]))
+  }
+  const style0 = await textParams()
+  // Font: the engine's families.
+  const fontField = kit.getByTestId('film-props-text-font')
+  const offered = await fontField.locator('option').allTextContents()
+  assert.ok(['Inter', 'Noto Serif', 'Droid Sans Fallback'].every((family) => offered.includes(family)), `the engine's families are offered: ${offered}`)
+  await fontField.selectOption('Noto Serif')
+  assert.ok(await until(async () => (await textParams()).font === 'Noto Serif'), `the font is Noto Serif: ${(await textParams()).font}`)
+  // Size: a scrub, one undo step.
+  const sizeSteps = await undoSteps()
+  const sizeBox = await kit.getByTestId('film-props-text-size').boundingBox()
+  await drag({ x: sizeBox.x + sizeBox.width / 2, y: sizeBox.y + sizeBox.height / 2 }, { x: sizeBox.x + sizeBox.width / 2 + 60, y: sizeBox.y + sizeBox.height / 2 })
+  assert.ok(await until(async () => (await textParams()).size > style0.size + 10), `a scrub raises the size: ${style0.size} → ${(await textParams()).size}`)
+  assert.ok(await until(async () => (await undoSteps()) === sizeSteps + 1), `the scrub is one undo step: ${await undoSteps()} after ${sizeSteps}`)
+  // Alignment and Faux Bold, Faux Italic.
+  await kit.getByTestId('film-props-text-align-1').click()
+  assert.ok(await until(async () => (await textParams()).align === 1), 'Center Align Text')
+  assert.equal(await kit.getByTestId('film-props-text-align-1').getAttribute('aria-pressed'), 'true')
+  await kit.getByTestId('film-props-text-faux_bold').click()
+  await kit.getByTestId('film-props-text-faux_italic').click()
+  assert.ok(await until(async () => (await textParams()).faux_bold === true && (await textParams()).faux_italic === true), 'Faux Bold and Faux Italic on')
+  // Fill: the swatch opens the colour picker; a click in it changes the colour.
+  await kit.getByTestId('film-props-text-fill').click()
+  const picker = kit.getByTestId('film-props-text-fill-picker')
+  await picker.waitFor({ timeout: 5000 })
+  const pickerBox = await picker.boundingBox()
+  await page.mouse.click(pickerBox.x + pickerBox.width * 0.8, pickerBox.y + pickerBox.height * 0.2)
+  assert.ok(await until(async () => (await textParams()).fill_color !== style0.fill_color), `the fill colour changes: ${style0.fill_color} → ${(await textParams()).fill_color}`)
+  await page.keyboard.press('Escape')
+  await shot('picture-title-styled')
+
+  // The Selection tool moves the title, scales it with a handle, and a double-click edits it again.
+  const textLayerAt = async () => (await layerOf(titleClip))?.position
+  const layerBox = async () =>
+    frame.evaluate(() => {
+      const svg = document.querySelector('[data-testid="film-program-graphics"]')
+      const box = svg?.querySelector('[data-kit-ui-id="control:program.layer"]')
+      if (!svg || !box) return null
+      const at = svg.getBoundingClientRect()
+      return box.getAttribute('points').split(' ').map((pair) => pair.split(',').map(Number)).map(([x, y]) => ({ x: at.x + x, y: at.y + y }))
+    }).then((quad) => quad && quad.map((p) => ({ x: p.x + iframe.x, y: p.y + iframe.y })))
+  const titleMiddle = async () => {
+    const list = await layerOf(titleClip)
+    const view = ((await kit.getByTestId('film-program').getAttribute('data-view')) ?? '').split(' ').map(Number)
+    const region = await kit.locator('[data-testid="film-program"] canvas').first().boundingBox()
+    const [x, y] = [(list.quad[0][0] + list.quad[2][0]) / 2, (list.quad[0][1] + list.quad[2][1]) / 2]
+    return { x: region.x + (x - view[1]) * view[0], y: region.y + (y - view[2]) * view[0] }
+  }
+  let titleAt = await titleMiddle()
+  await page.mouse.click(titleAt.x, titleAt.y)
+  assert.ok(await until(async () => (await layerBox()) != null), 'a click on the title selects its layer: its box shows')
+  const fromAt = await textLayerAt()
+  await drag(titleAt, { x: titleAt.x + 40, y: titleAt.y + 30 })
+  assert.ok(await until(async () => (await textLayerAt())[0] > fromAt[0] + 20), `the title moved: ${JSON.stringify(await textLayerAt())}`)
+  const quad = await layerBox()
+  const scaleFrom = (await layerOf(titleClip)).scale
+  await drag(quad[2], { x: quad[2].x + 30, y: quad[2].y + 30 })
+  assert.ok(await until(async () => (await layerOf(titleClip)).scale > scaleFrom), `a handle scales the title: ${scaleFrom} → ${(await layerOf(titleClip)).scale}`)
+  titleAt = await titleMiddle()
+  await page.mouse.dblclick(titleAt.x, titleAt.y)
+  assert.ok(await until(async () => (await kit.getByTestId('film-program-text-edit').count()) === 1), 'a double-click edits the text again')
+  assert.equal(await kit.getByTestId('film-program-text-edit').inputValue(), '中文标题 Hi', 'with its text')
+  await page.keyboard.press('Escape')
 
   assert.deepEqual(errors, [], 'no page errors')
   console.log(`picture ${which}: ok`)
