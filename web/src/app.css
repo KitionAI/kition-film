@@ -429,6 +429,14 @@
   stroke-width: 1;
 }
 
+/* A video clip's Motion box (upstream `transform_handles.rs` `draw`): its box and anchor point in the accent. */
+.film-clip-box,
+.film-clip-anchor {
+  fill: none;
+  stroke: var(--kit-primary);
+  stroke-width: 1;
+}
+
 /* A layer drag's live outline and anchor point, in white as upstream draws them. */
 .film-gfx-live {
   stroke: #fff;

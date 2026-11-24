@@ -274,6 +274,10 @@ const MONITOR: readonly KitUiItem[] = [
   // Each handle names itself as upstream: "resize handle" on paragraph text, "scale handle" otherwise.
   { id: 'control:program.layer.handle', label: 'Layer handle' },
   { id: 'control:program.layer.anchor', label: 'anchor point' },
+  // The selected video clip's Motion box, its eight handles, and its anchor point (upstream `transform_handles.rs`, `program.transform.box|handle.<n>|anchor`).
+  { id: 'control:program.transform.box', label: 'Motion' },
+  { id: 'control:program.transform.handle', label: 'scale handle' },
+  { id: 'control:program.transform.anchor', label: 'anchor point' },
   // The Comparison View's reference frame and its bar (`compare_bar`), and the Source waveform (`waveform`).
   { id: 'control:program.compare.reference', label: 'reference frame' },
   { id: 'control:program.compare.prev', label: 'Reference: previous frame' },

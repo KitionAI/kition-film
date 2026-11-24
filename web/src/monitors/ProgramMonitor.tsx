@@ -30,7 +30,7 @@ type Props = {
   looping: boolean
   proxies: boolean
   phrase: Phrases
-  invoke: (id: string, params?: Record<string, unknown>) => unknown
+  invoke: (id: string, params?: Record<string, unknown>, options?: { refresh?: 'all' | 'repaint' | 'none' }) => unknown
   /** Moves the program playhead (`playhead.set`, ticks) and refreshes the editor. */
   seekTicks: (ticks: number) => Promise<unknown>
   /** Repaints the program canvas without a document change (a new render scale), leaving the playhead at `ticks`. */
@@ -48,6 +48,8 @@ type Props = {
   /** Why an edit would be refused now (a dialog's preview), or null: a layer drag is refused at its start, said in the status bar. */
   editRefusal: (id: string) => string | null
   status: (text: string) => void
+  /** An engine-style refusal in the person's words (a Motion box drag on a locked track). */
+  errorStatus: (text: string) => void
   /** Where the monitor puts the keys its graphics tools take (the Pen's Enter and Escape), which the editor asks first. */
   graphicsKeys: MutableRefObject<((event: KeyboardEvent<HTMLElement>) => boolean) | null>
   /** Begin Text Editing for a Graphic Layer, set while the monitor is shown. */
@@ -206,7 +208,7 @@ export function ProgramMonitor(props: Props) {
   const snapView = useCallback(() => latest.current.monitor, [])
 
   // ---- the graphics tools and the Hand on the picture (upstream `graphics.rs` `monitor_overlay`, `monitor_view.rs` `pan_input`)
-  const graphics = useProgramGraphics({ doc, revision: props.revision, playhead: film.playhead, width: film.width, height: film.height, tool: props.tool, selection: film.selection, graphicLayers: props.graphicLayers, clock, phrase, invoke, textNotShown: props.textNotShown, snapping: snapView, editRefusal: props.editRefusal, status: props.status, layerChanged: props.layerChanged })
+  const graphics = useProgramGraphics({ doc, revision: props.revision, playhead: film.playhead, width: film.width, height: film.height, tool: props.tool, selection: film.selection, graphicLayers: props.graphicLayers, clock, phrase, invoke, textNotShown: props.textNotShown, snapping: snapView, editRefusal: props.editRefusal, status: props.status, errorStatus: props.errorStatus, layerChanged: props.layerChanged })
   const { graphicsKeys } = props
   useEffect(() => {
     graphicsKeys.current = graphics.keyDown

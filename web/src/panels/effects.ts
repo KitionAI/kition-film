@@ -262,8 +262,8 @@ export function createPressTracker(ended: () => void) {
   }
 }
 
-/** Moves with each drag value sent (repainted only): the panels shown read the effects again. */
-const dragTicks = (() => {
+/** Moves with each drag value sent (repainted only): the panels shown read the effects again (the Program monitor's Motion box drags bump it too). */
+export const dragTicks = (() => {
   let tick = 0
   const listeners = new Set<() => void>()
   return {

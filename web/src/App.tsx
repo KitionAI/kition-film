@@ -269,6 +269,7 @@ function ProgramPanel() {
       graphicLayers={live.filmState?.graphicLayers ?? NO_LAYERS}
       editRefusal={live.editRefusal}
       status={live.status}
+      errorStatus={live.errorStatus}
       onView={(_, next) => {
         if (!next) return
         stats.rendered(next)

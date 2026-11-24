@@ -22,17 +22,37 @@ import {
   type GraphicLayers,
   type Point,
 } from './graphicsTools'
-import { snapPoint, type SnapLine, type SnapView } from './guideModel'
+import { snapMove, snapPoint, type SnapLine, type SnapView } from './guideModel'
+import {
+  beginBoxDrag,
+  boxChanges,
+  clipUnder,
+  draggedPlacement,
+  followRotation,
+  grabAt,
+  grabCursor,
+  motionOf,
+  pictureClips,
+  placementOf,
+  sizeOfVideoLine,
+  type BoxDrag,
+  type ClipFrame,
+  type Grab,
+  type Placement,
+} from './clipTransform'
+import { dragTicks } from '../panels/effects'
 import {
   ANCHOR_ID,
   HANDLE_ID,
   LAYER_ID,
   anchorProps,
   anchorScreen,
+  boundsOf,
   crosshair,
   dragProps,
   dragQuad,
   handleDrag,
+  handlePoints,
   handleViews,
   interruptLayerDrag,
   isLayerClick,
@@ -63,7 +83,9 @@ type Options = {
   /** The program clock: while it plays, the selected layers' boxes follow the picture (a read per frame at most). */
   clock: { subscribe: (listener: () => void) => () => void }
   phrase: Phrases
-  invoke: (id: string, params?: Record<string, unknown>) => unknown
+  invoke: (id: string, params?: Record<string, unknown>, options?: { refresh?: 'all' | 'repaint' | 'none' }) => unknown
+  /** An engine-style refusal for the status bar in the person's words (`errorStatus`): a Motion box drag on a locked track. */
+  errorStatus?: (text: string) => void
   /** What Begin Text Editing says when the text layer is not in the picture. */
   textNotShown: string
   /** The Program monitor's Snap in Program Monitor and guides: the shape and text box drags and the layer moves snap through `snap_move` (Cmd moves freely). */
@@ -93,6 +115,45 @@ type Preview = { kind: 'shape' | 'textBox'; ellipse: boolean; start: Point; end:
  * pointer is, and a move's snapped offset with its snap lines. Nothing is sent until the release.
  */
 type LayerDrag = { kind: 'move' | 'handle' | 'anchor'; n: number; view: LayerView; start: Point; cur: Point; off: Point; lines: readonly SnapLine[]; sync: (() => void) | null }
+
+/**
+ * A drag of a video clip's Motion box (upstream `transform_handles.rs`'s `Drag`), in canvas
+ * pixels: what it holds and the box then (`drag`), the clip's frame it was placed from, the Motion
+ * values the pointer gives now (`changes`) and a move's snap lines. A drag that changes one
+ * parameter (a move, a rotation, a uniform or one-sided scale) sends its values to the engine as
+ * the pointer moves, at most one per animation frame and none while one is in flight, merged into
+ * one undo step (`effects.setParam`'s `merge`, the first with `begin`), so the picture follows
+ * live; one that changes two (the anchor point, a corner with Uniform Scale off) is shown as its
+ * outline and sent on release, because the engine merges only the changes of one parameter.
+ */
+type ClipBoxDrag = {
+  drag: BoxDrag
+  frame: ClipFrame
+  changes: Array<[string, unknown]>
+  lines: readonly SnapLine[]
+  live: boolean
+  /** The pointer went past 2 points: from then on the values are sent (a press that stays is a click). */
+  moved: boolean
+  /** The parameters sent so far (the first of each begins the step); whether any was applied. */
+  begun: Set<string>
+  sent: boolean
+  /** The values waiting for the next frame, the send in flight, and the frame asked for. */
+  wanted: Array<[string, unknown]> | null
+  busy: Promise<void> | null
+  frameId: number
+  /** Released or dropped: nothing more is sent by the pointer. */
+  over: boolean
+  sync: (() => void) | null
+}
+
+/** What the clip boxes were read from: the clips in the picture (front-most first), the ones on locked tracks, and the selected one. */
+type ClipBoxes = { frames: ClipFrame[]; locked: ReadonlySet<number>; selected: number | null }
+const NO_CLIPS: ClipBoxes = { frames: [], locked: new Set(), selected: null }
+
+/** The Kit UI ids of a video clip's Motion box (upstream `program.transform.box`, `.handle.<n>`, `.anchor`). */
+export const CLIP_BOX_ID = 'control:program.transform.box'
+export const CLIP_HANDLE_ID = 'control:program.transform.handle'
+export const CLIP_ANCHOR_ID = 'control:program.transform.anchor'
 
 /** One press on the canvas to its release (kit-editor's gesture, which its index does not export). */
 type KitGesture = Exclude<ReturnType<KitTool['begin']>, void>
@@ -166,6 +227,10 @@ export function useProgramGraphics(options: Options) {
   const hover = useRef<Point | null>(null)
   const preview = useRef<Preview | null>(null)
   const layerDrag = useRef<LayerDrag | null>(null)
+  /** The video clips in the picture and their Motion (`clipTransform.ts`), and a Motion box drag in progress. */
+  const clipBoxes = useRef<ClipBoxes>(NO_CLIPS)
+  const boxDrag = useRef<ClipBoxDrag | null>(null)
+  const [clipSelected, setClipSelected] = useState(false)
   /** While a Type box drag is held: it has no cancel, so Escape pressed during it changes nothing. */
   const typeBoxHeld = useRef<(() => boolean) | null>(null)
   // A Type box drag ends on its release whatever happens (as upstream's): Escape pressed during it
@@ -245,6 +310,48 @@ export function useProgramGraphics(options: Options) {
           }
         }
       }
+      // The selected video clip's Motion box with the Selection tool (upstream `transform_handles.rs`
+      // `draw`): its box in the accent, eight handles, and the anchor point; during a drag, where
+      // the drag's values put it (they reach the picture as it moves).
+      let clipBox: number | null = null
+      let clipHandles = 0
+      const boxing = boxDrag.current
+      // The drag's last pointer sample, followed once per animation frame.
+      if (boxing?.sync) {
+        boxing.sync()
+        boxing.sync = null
+      }
+      if (latest.current.tool === 'Selection') {
+        const size = { width: latest.current.width, height: latest.current.height }
+        const chosen = boxing ? boxing.frame : clipBoxes.current.frames.find((each) => each.clip === clipBoxes.current.selected)
+        const pl = boxing ? draggedPlacement(boxing.frame, size, shown, boxing.changes) : chosen ? placementOf(chosen, size, shown) : null
+        if (pl) {
+          clipBox = pl.clip
+          make('polygon', { class: boxing ? 'film-clip-box film-gfx-live' : 'film-clip-box', points: pointsOf(pl.quad), 'data-clip': pl.clip, 'data-kit-ui-id': CLIP_BOX_ID })
+          handlePoints(pl.quad).forEach((at, n) => {
+            const half = n < 4 ? 2.5 : 2
+            const mark = make('rect', { class: n < 4 ? 'film-gfx-handle' : 'film-gfx-handle film-gfx-edge', x: at.x - half, y: at.y - half, width: half * 2, height: half * 2, 'data-handle': n, 'data-clip': pl.clip, 'data-kit-ui-id': CLIP_HANDLE_ID })
+            mark.setAttribute('aria-label', latest.current.phrase('scale handle'))
+            clipHandles += 1
+          })
+          const at = pl.anchorAt
+          append({
+            name: 'g',
+            className: 'film-clip-anchor',
+            attributes: { 'data-kit-ui-id': CLIP_ANCHOR_ID, 'data-clip': pl.clip, 'aria-label': 'anchor point' },
+            children: [
+              { name: 'circle', className: '', attributes: { cx: at.x, cy: at.y, r: 7 } },
+              { name: 'line', className: '', attributes: { x1: at.x - 7, x2: at.x + 7, y1: at.y, y2: at.y } },
+              { name: 'line', className: '', attributes: { x1: at.x, x2: at.x, y1: at.y - 7, y2: at.y + 7 } },
+            ],
+          })
+        }
+        if (boxing) snapLines(boxing.lines, shown)
+      }
+      element.setAttribute('data-clip-box', clipBox == null ? '' : String(clipBox))
+      element.setAttribute('data-clip-handles', String(clipHandles))
+      if (boxing) element.setAttribute('data-clip-drag', boxing.drag.grab.kind)
+      else element.removeAttribute('data-clip-drag')
       // A layer drag's live outline, in white (upstream draws it over the box): nothing is sent until the release.
       const moving = layerDrag.current
       // The drag's last pointer sample, followed (and snapped) once per animation frame.
@@ -252,6 +359,7 @@ export function useProgramGraphics(options: Options) {
         moving.sync()
         moving.sync = null
       }
+
       if (moving) {
         if (moving.kind === 'move') {
           make('polygon', { class: 'film-gfx-outline film-gfx-live', points: pointsOf(moving.view.quad.map((point) => ({ x: point.x + moving.off.x, y: point.y + moving.off.y }))) })
@@ -340,6 +448,135 @@ export function useProgramGraphics(options: Options) {
     asked.current += 1
     return read()
   }, [read])
+
+  // ---- the video clips in the picture (`clipTransform.ts`): their Motion at the playhead and their source's size
+  /** Each item's frame size (`itemInfo`'s video line) per document; null when the engine gives none (the sequence's size stands in). */
+  const sizes = useRef(new WeakMap<KitEngine, Map<number, { width: number; height: number } | null>>())
+  /** What the clip boxes were last read at. */
+  const clipsAt = useRef<ReadAt | null>(null)
+  const readClips = useMemo(
+    () =>
+      oneInFlight(async () => {
+        const open = latest.current.doc
+        if (!open) return
+        const context = interactionEpoch.current
+        const at = readAtOf(latest.current)
+        const listed = pictureClips(open.info.inspected as Parameters<typeof pictureClips>[0])
+        let known = sizes.current.get(open)
+        if (!known) {
+          known = new Map()
+          sizes.current.set(open, known)
+        }
+        const frames: ClipFrame[] = []
+        for (const each of listed) {
+          if (!known.has(each.item)) {
+            const info = await open.invoke<string>('itemInfo', each.item).then(
+              (text) => JSON.parse(String(text)) as { video?: unknown },
+              () => null,
+            )
+            known.set(each.item, sizeOfVideoLine(info?.video))
+          }
+          const effects = await open.invoke<string>('clipEffects', each.clip).then(
+            (text) => JSON.parse(String(text)) as { effects?: Array<{ id?: string; enabled?: boolean; params?: unknown }> },
+            () => null,
+          )
+          const motion = motionOf(effects?.effects?.find((effect) => effect.id === 'motion'))
+          if (motion) frames.push({ clip: each.clip, size: known.get(each.item) ?? { width: latest.current.width, height: latest.current.height }, motion })
+        }
+        if (latest.current.doc !== open || interactionEpoch.current !== context) return
+        clipBoxes.current = { frames, locked: new Set(listed.filter((each) => each.locked).map((each) => each.clip)), selected: listed.find((each) => each.selected)?.clip ?? null }
+        clipsAt.current = at
+        setClipSelected(clipBoxes.current.selected != null)
+        draw()
+      }),
+    [draw],
+  )
+  // The selected clip's box shows with the Selection tool: read again as the document, the playhead, or the selection moves.
+  const boxTool = tool === 'Selection'
+  useEffect(() => {
+    if (!doc) return
+    if (boxTool && selectionKey !== '') void readClips()
+    else if (clipBoxes.current.selected != null) {
+      clipBoxes.current = { ...clipBoxes.current, selected: null }
+      setClipSelected(false)
+      draw()
+    }
+  }, [doc, boxTool, selectionKey, revision, playhead, readClips, draw])
+
+  /** The run that sends a Motion box drag's values: each `effects.setParam` merged into the drag's step, the first of each parameter with `begin`; `final` (the release) refreshes the whole editor once. */
+  const sendBox = useCallback(async (drag: ClipBoxDrag, changes: ReadonlyArray<[string, unknown]>, final: boolean) => {
+    const open = latest.current.doc
+    if (!open) return
+    for (const [param, value] of changes) {
+      const before = open.info.revision
+      const params = { clip: drag.frame.clip, effect: 'motion', param, value, merge: true, begin: !drag.begun.has(param) }
+      drag.begun.add(param)
+      try {
+        await latest.current.invoke('effects.setParam', params, final ? undefined : { refresh: 'repaint' })
+      } catch {
+        // The status bar says why (invoke's own report).
+      }
+      if (open.info.revision !== before) drag.sent = true
+    }
+    // Effect Controls and Properties read the values again.
+    if (!final) dragTicks.bump()
+  }, [])
+  /** A live drag's latest values go at the next animation frame, none while one is in flight. */
+  const pumpBox = useCallback(
+    (drag: ClipBoxDrag) => {
+      drag.wanted = drag.changes
+      if (drag.frameId || drag.busy) return
+      drag.frameId = requestAnimationFrame(() => {
+        drag.frameId = 0
+        const pump = async () => {
+          while (drag.wanted && !drag.over) {
+            const next = drag.wanted
+            drag.wanted = null
+            await sendBox(drag, next, false)
+          }
+        }
+        drag.busy = pump().finally(() => {
+          drag.busy = null
+        })
+      })
+    },
+    [sendBox],
+  )
+  /** Takes a Motion box drag off the overlay, unless another has begun. */
+  const clearBox = useCallback(
+    (drag: ClipBoxDrag) => {
+      if (boxDrag.current !== drag) return
+      boxDrag.current = null
+      draw()
+    },
+    [draw],
+  )
+  /** Stops a Motion box drag's sending: no more values go, and the one in flight finishes. */
+  const stopBox = (drag: ClipBoxDrag) => {
+    drag.over = true
+    drag.sync = null
+    drag.wanted = null
+    if (drag.frameId) cancelAnimationFrame(drag.frameId)
+    drag.frameId = 0
+    return drag.busy ?? Promise.resolve()
+  }
+  /** Drops a Motion box drag (Escape, a lost capture or focus): what it already applied is undone, as one step, so the clip is where it was. */
+  const cancelBox = useCallback(
+    (drag: ClipBoxDrag) => {
+      if (drag.over) return
+      const busy = stopBox(drag)
+      void (async () => {
+        await busy
+        try {
+          if (drag.sent) await latest.current.invoke('edit.undo', {})
+        } finally {
+          await readClips()
+          clearBox(drag)
+        }
+      })()
+    },
+    [clearBox, readClips],
+  )
   // Kept live only while something shows them or needs them as the document changes: an edit, a
   // Pen path, or a selected graphic's boxes; a press reads them anyway. A new selection is read
   // once with a graphics tool, to find out whether it holds a graphic.
@@ -389,6 +626,14 @@ export function useProgramGraphics(options: Options) {
   }, [tool, draw, setPen])
 
   const run = useCallback(async (id: string, params: Record<string, unknown>) => answerOf(await latest.current.invoke(id, params)), [])
+  /** Selects a clip whose picture was clicked, as the Timeline would (its linked audio with it), unless it is selected already (upstream `monitor_overlay`'s double-click). */
+  const selectClip = useCallback(
+    (clip: number) => {
+      if (latest.current.selection.includes(clip)) return
+      void run('timeline.select', { clips: [clip] })
+    },
+    [run],
+  )
   /** The editor, which has the keyboard when no field does (the shell's key router listens there). */
   const focusEditor = useCallback(() => {
     field.current?.parentElement?.closest<HTMLElement>('[tabindex]')?.focus({ preventScroll: true })
@@ -527,9 +772,10 @@ export function useProgramGraphics(options: Options) {
     typedEarly.current.clear()
     preview.current = null
     layerDrag.current = null
+    if (boxDrag.current) cancelBox(boxDrag.current)
     setPen([])
     draw()
-  }), [ui.store, draw, endEdit, setPen])
+  }), [ui.store, draw, endEdit, setPen, cancelBox])
 
   // A path or text field belongs to the project and sequence where it began, including
   // replacements that reuse this Worker. Clear before a key can commit it to the next one.
@@ -543,6 +789,10 @@ export function useProgramGraphics(options: Options) {
     setPen([])
     preview.current = null
     layerDrag.current = null
+    if (boxDrag.current) stopBox(boxDrag.current)
+    boxDrag.current = null
+    clipBoxes.current = NO_CLIPS
+    setClipSelected(false)
     hover.current = null
     draw()
   }, [doc, projectEpoch, activeSequence, draw, setPen])
@@ -581,9 +831,15 @@ export function useProgramGraphics(options: Options) {
           if (layer) {
             endEdit()
             void run('graphics.selectLayer', { clip: layer.clip, layers: [layer.layer] })
-          } else if (editingNow.current) endEdit()
+            return
+          }
+          if (editingNow.current) endEdit()
           // A click on empty picture drops the selected layers, the clip staying selected.
           else if (shown.selected && shown.selected.layers.length > 0) void run('graphics.selectLayer', { clip: shown.selected.clip, layers: [], keepSelection: true })
+          // A click on a video clip's picture selects it: the top-most at the playhead under the pointer.
+          const shownView = view.current
+          const under = shownView ? clipUnder(clipBoxes.current.frames, { width: latest.current.width, height: latest.current.height }, shownView, canvas) : null
+          if (under) selectClip(under.clip)
           return
         }
         case 'Pen': {
@@ -598,7 +854,7 @@ export function useProgramGraphics(options: Options) {
         default:
       }
     },
-    [adopt, draw, endEdit, finishPen, newText, run, setPen, startEdit],
+    [adopt, draw, endEdit, finishPen, newText, run, selectClip, setPen, startEdit],
   )
 
   /** The picture in canvas pixels, for `snap_move` (`pic`). */
@@ -620,8 +876,8 @@ export function useProgramGraphics(options: Options) {
       const pressed = performance.now()
       const origin: Point = { x: start.x, y: start.y }
       const press: Point = { x: start.canvasX, y: start.canvasY }
-      // The layers as the document is now: what the press decides goes by them.
-      const ready = readNow()
+      // The layers (and with the Selection tool the video clips' boxes) as the document is now: what the press decides goes by them.
+      const ready = current === 'Selection' ? Promise.all([readNow(), readClips()]).then(() => undefined) : readNow()
       const pressDoc = latest.current.doc
       const pressInspection = pressDoc?.info.inspected
       const pressEpoch = interactionEpoch.current
@@ -634,6 +890,8 @@ export function useProgramGraphics(options: Options) {
       let lastFree = start.meta
       /** The layer drag this press became (upstream's Move, Handle, or Anchor). */
       let layer: LayerDrag | null = null
+      /** The Motion box drag this press became (upstream `transform_handles.rs`: Move, Handle, Rotate, or Anchor). */
+      let box: ClipBoxDrag | null = null
       /** Escape, a lost capture, a pointercancel, or a lost window focus dropped the drag: nothing is sent. */
       let cancelled = false
       let released = false
@@ -665,6 +923,28 @@ export function useProgramGraphics(options: Options) {
         drag.off = moved.off
         drag.lines = moved.lines
       }
+      /**
+       * A Motion box drag follows the pointer (`cur`): a rotation adds up its turn, a move snaps
+       * through `snap_move` unless Cmd or Ctrl is held now, and once the pointer has gone past 2
+       * points a live drag's values go to the engine.
+       */
+      const followBox = (drag: ClipBoxDrag, at: Point, freely: boolean) => {
+        followRotation(drag.drag, at)
+        let moved = { x: at.x - drag.drag.start.x, y: at.y - drag.drag.start.y }
+        let lines: SnapLine[] = []
+        const shown = view.current
+        const snap = latest.current.snapping?.()
+        if (drag.drag.grab.kind === 'move' && shown && snap && !freely) {
+          const { width, height } = latest.current
+          const snappedOff = snapMove(snap, pictureRect(shown), { width, height }, boundsOf(drag.drag.from.quad), moved)
+          moved = snappedOff.off
+          lines = snappedOff.lines
+        }
+        drag.changes = boxChanges(drag.drag, at, moved)
+        drag.lines = lines
+        if (!isLayerClick(drag.drag.start, at)) drag.moved = true
+        if (drag.live && drag.moved && !drag.over) pumpBox(drag)
+      }
       /** Takes this press's outline off the overlay, unless a newer press has put its own there. */
       const clearOutline = () => {
         if (layer != null && layerDrag.current === layer) {
@@ -675,14 +955,15 @@ export function useProgramGraphics(options: Options) {
       // ---- dropping a layer drag: its own listeners, beside kit-editor's gesture (which hears only pointercancel)
       const surface = canvasElement()
       const interrupt = (cause: 'escape' | 'lost') => {
-        const next = interruptLayerDrag({ dragging, decided: decidedOnce, released, cancelled, active: layer != null }, cause)
+        const next = interruptLayerDrag({ dragging, decided: decidedOnce, released, cancelled, active: layer != null || box != null }, cause)
         if (next.remember) interruptedEarly = true
         if (next.detach) detach()
         if (!next.drop) return false
-        // Only a layer drag has a cancel (the plan's rule for commit-on-release drags); a Type box
+        // Only a layer or Motion box drag has a cancel (the plan's rule for drags); a Type box
         // drag, as before and as upstream, has none: it ends on its release whatever happened.
         cancelled = true
         clearOutline()
+        if (box) cancelBox(box)
         return true
       }
       const onKey = (event: KeyboardEvent) => {
@@ -726,6 +1007,56 @@ export function useProgramGraphics(options: Options) {
         layerDrag.current = layer
         draw()
       }
+      /**
+       * Starts a Motion box drag of `frame`'s clip, whose box is `pl` (upstream's drag start),
+       * unless the document takes no edit now (a dialog's preview) or the clip's track is locked:
+       * then it says so and nothing moves.
+       */
+      const startBox = (frame: ClipFrame, pl: Placement, grab: Grab) => {
+        if (interruptedEarly || cancelled) {
+          cancelled = true
+          detach()
+          return
+        }
+        const refused = latest.current.editRefusal?.('effects.setParam')
+        if (refused) {
+          latest.current.status?.(refused)
+          return
+        }
+        if (clipBoxes.current.locked.has(frame.clip)) {
+          // The engine sets Motion on a locked track's clip; the editor refuses it as it refuses other edits there.
+          latest.current.errorStatus?.('command `effects.setParam` is not available right now: track is locked')
+          return
+        }
+        // The engine merges one parameter's changes into one step: a drag that changes two sends them on release.
+        const twoParams = grab.kind === 'anchor' || (grab.kind === 'handle' && !pl.uniform && grab.n < 4)
+        box = { drag: beginBoxDrag(pl, grab, press), frame, changes: [], lines: [], live: !twoParams, moved: false, begun: new Set(), sent: false, wanted: null, busy: null, frameId: 0, over: false, sync: null }
+        boxDrag.current = box
+        followBox(box, lastCanvas, lastFree)
+        draw()
+      }
+      /**
+       * The release of a Motion box drag: its last values, merged into the drag's one step (a
+       * two-parameter drag's are sent now), and the editor refreshed once. A press that never went
+       * past 2 points sends nothing.
+       */
+      const finishBox = async (drag: ClipBoxDrag, at: Point, freely: boolean) => {
+        drag.sync = null
+        const busy = stopBox(drag)
+        followBox(drag, at, freely)
+        draw()
+        await busy
+        if (!drag.moved || !pressCurrent()) {
+          clearBox(drag)
+          return
+        }
+        try {
+          await sendBox(drag, drag.changes, true)
+          await readClips()
+        } finally {
+          clearBox(drag)
+        }
+      }
       const beginDrag = () => {
         dragging = true
         if (current === 'Rectangle' || current === 'Ellipse') kind = 'shape'
@@ -749,13 +1080,32 @@ export function useProgramGraphics(options: Options) {
           typeBoxHeld.current = held
         }
         else if (current === 'Selection') {
-          // Upstream ends the edit, selects the layer if it is not, and moves it.
           const hit = layerAt(shown.layers, origin, zoom())
-          if (hit && grant.layer.usable) {
+          // The selected video clip's Motion box (upstream `transform_handles.rs` `grab_at`): its
+          // anchor point, handles, and rotate zone come before a layer under the pointer; inside
+          // it, a layer over the clip is the layer's.
+          const size = { width: latest.current.width, height: latest.current.height }
+          const boxes = clipBoxes.current
+          const chosen = boxes.frames.find((each) => each.clip === boxes.selected)
+          const pl = chosen && shownView ? placementOf(chosen, size, shownView) : null
+          const grab = pl ? grabAt(pl, press) : null
+          if (chosen && pl && grab && grab.kind !== 'move') startBox(chosen, pl, grab)
+          else if (hit && grant.layer.usable) {
+            // Upstream ends the edit, selects the layer if it is not, and moves it.
             endEdit()
             if (!(shown.selected?.clip === hit.clip && shown.selected.layers.includes(hit.layer))) void run('graphics.selectLayer', { clip: hit.clip, layers: [hit.layer] })
             const on = shownView ? layerView(hit, shownView) : null
             if (on) startLayer('move', on, -1)
+          } else if (chosen && pl && grab) startBox(chosen, pl, grab)
+          else if (!hit && shownView) {
+            // Another clip's picture: it is selected and moves with the drag.
+            const under = clipUnder(boxes.frames, size, shownView, press)
+            const placed = under ? placementOf(under, size, shownView) : null
+            if (under && placed) {
+              endEdit()
+              selectClip(under.clip)
+              startBox(under, placed, { kind: 'move' })
+            }
           }
         }
         showPreview()
@@ -826,6 +1176,10 @@ export function useProgramGraphics(options: Options) {
             const drag = layer
             drag.sync = () => follow(drag, lastCanvas, lastFree)
             draw()
+          } else if (box) {
+            const drag = box
+            drag.sync = () => followBox(drag, lastCanvas, lastFree)
+            draw()
           } else if (dragging) showPreview()
         },
         end: (pointer) => {
@@ -864,6 +1218,10 @@ export function useProgramGraphics(options: Options) {
               void finishLayer(layer, endCanvas, pointer.meta)
               return
             }
+            if (box) {
+              void finishBox(box, endCanvas, pointer.meta)
+              return
+            }
             if (!moved) return
             const target = layers.current.target
             const corner = snapped(end, pointer.meta).point
@@ -880,12 +1238,13 @@ export function useProgramGraphics(options: Options) {
           typeBoxHeld.current = null
           detach()
           clearOutline()
+          if (box) cancelBox(box)
           preview.current = null
           draw()
         },
       }
     },
-    [canvasElement, click, draw, endEdit, newText, openPending, pictureRect, readNow, run],
+    [canvasElement, cancelBox, clearBox, click, draw, endEdit, newText, openPending, pictureRect, pumpBox, readClips, readNow, run, selectClip, sendBox],
   )
 
   /**
@@ -893,25 +1252,34 @@ export function useProgramGraphics(options: Options) {
    * being typed into, Move over any layer. The layers are read again only when the document,
    * revision, or playhead moved since the last read.
    */
-  const hovered = useRef<Point | null>(null)
+  const hovered = useRef<{ at: Point; canvas: Point } | null>(null)
   const hoverCursor = useCallback(
-    (point: Point) => {
-      hovered.current = point
+    (point: Point, canvasAt: Point) => {
+      hovered.current = { at: point, canvas: canvasAt }
       const decide = () => {
-        const at = hovered.current
+        const now = hovered.current
         const element = canvasElement()
-        if (!at || !element || latest.current.tool !== 'Selection') return
+        if (!now || !element || latest.current.tool !== 'Selection' || boxDrag.current) return
+        const { at, canvas } = now
         const shown = layers.current.layers
         const edit = editingNow.current
         const overEdit = edit != null && edit.clip != null && shown.some((each) => each.clip === edit.clip && each.layer === edit.layer && hitsLayer(each, at, zoom()))
+        // The selected clip's Motion box: a resize cursor over a handle, a turning one in the rotate zone, Move inside.
+        const boxes = clipBoxes.current
+        const chosen = boxes.frames.find((each) => each.clip === boxes.selected)
+        const shownView = view.current
+        const pl = chosen && shownView ? placementOf(chosen, { width: latest.current.width, height: latest.current.height }, shownView) : null
+        const grab = pl ? grabAt(pl, canvas) : null
         // A layer the host does not let a press use shows no Move cursor.
-        const cursor = overEdit ? 'text' : granted.current.layer.usable && layerAt(shown, at, zoom()) ? 'move' : cursorOf('Selection', false)
+        const overLayer = granted.current.layer.usable && layerAt(shown, at, zoom())
+        const cursor = overEdit ? 'text' : pl && grab && grab.kind !== 'move' ? grabCursor(pl, grab) : overLayer ? 'move' : pl && grab ? grabCursor(pl, grab) : cursorOf('Selection', false)
         if (element.style.cursor !== cursor) element.style.cursor = cursor
       }
-      if (sameReadAt(readAt.current, latest.current)) decide()
-      else void readNow().then(decide)
+      const fresh = sameReadAt(readAt.current, latest.current) && (!clipSelected || sameReadAt(clipsAt.current, latest.current))
+      if (fresh) decide()
+      else void Promise.all([readNow(), clipSelected ? readClips() : undefined]).then(decide)
     },
-    [canvasElement, readNow],
+    [canvasElement, readNow, readClips, clipSelected],
   )
 
   const canvasTool = useMemo<KitTool>(
@@ -926,7 +1294,7 @@ export function useProgramGraphics(options: Options) {
         return undefined
       },
       hover: (pointer) => {
-        if (latest.current.tool === 'Selection') hoverCursor({ x: pointer.x, y: pointer.y })
+        if (latest.current.tool === 'Selection') hoverCursor({ x: pointer.x, y: pointer.y }, { x: pointer.canvasX, y: pointer.canvasY })
         if (latest.current.tool !== 'Pen' || pen.current.length === 0) return
         hover.current = { x: pointer.canvasX, y: pointer.canvasY }
         draw()
