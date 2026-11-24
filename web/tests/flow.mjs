@@ -1303,7 +1303,7 @@ try {
     await personRun([{ command: 'file.newBlackVideo', params: {} }])
     await until(async () => (await revision()) > foldFrom)
     const keptAfterRevision = (await binToggle.getAttribute('aria-expanded')) === 'true' && (await card.count()) === 1
-    await kit.getByTestId('film-workspace-tab-libraries').click()
+    await kit.getByTestId('film-workspace-tab-markers').click()
     const hidden = await until(async () => (await kit.getByTestId('film-project').count()) === 0, 20)
     await kit.getByTestId('film-workspace-tab-project').click()
     await kit.getByTestId('film-project').waitFor({ timeout: 5000 }).catch(() => undefined)
