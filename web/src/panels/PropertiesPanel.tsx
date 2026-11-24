@@ -347,7 +347,9 @@ function TextStyle({ clip, layer, families, edit, phrase }: TextStyleProps) {
       <div className="film-props-row" data-testid={`${testId}-font-row`}>
         <span className="film-props-label">{phrase('Font')}</span>
         <span className="film-props-value">
-          <Choice quiet label={phrase('Font')} value={font} choices={choices} onChange={(next) => set('font', next, true)} testId={`${testId}-font`} />
+          <span className="film-ec-choice" data-kit-ui-id="control:effects.value">
+            <Choice quiet label={phrase('Font')} value={font} choices={choices} onChange={(next) => set('font', next, true)} testId={`${testId}-font`} />
+          </span>
         </span>
         <span className="film-kf-nav" />
       </div>
