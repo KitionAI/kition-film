@@ -358,6 +358,9 @@ export function useFilmSession<S extends Session>(session: S, hostShortcuts: rea
         // a drag asks on its first step and once it has rested.
         prefsAfter(command, (params ?? {}) as Record<string, unknown>)
         if (!skipsStateRead(command)) {
+          // What is open may have changed: the view state the next save keeps follows it now,
+          // before anything queued behind it in the engine (a save) runs.
+          if (docNow.current) void viewNow.current?.follow(docNow.current)
           void readers.events()
           // A command may have started a background job (Scene Edit Detection's Analyze).
           jobs.kick()

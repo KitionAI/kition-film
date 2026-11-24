@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { test, expect } from './fixtures.mjs'
 
 // A project changed outside Kition keeps its replica (Kit UI protocol UI-R1, section 7;
@@ -5,6 +6,8 @@ import { test, expect } from './fixtures.mjs'
 // never the file's. Through the development host with a stored replica, checkpoints and view state.
 
 const PATH = 'films/Sample.kfilm'
+// The kit's schema, as Kition sends it with `ai/changes` (the engine does not describe its own).
+const SCHEMA = JSON.parse(readFileSync(new URL('../../../crates/kdm/kdm-model/model/schema.json', import.meta.url), 'utf8'))
 const version = page => page.evaluate(path => window.devHost.files.get(path).version, PATH)
 const bytes = page => page.evaluate(path => Array.from(new Uint8Array(window.devHost.files.get(path).bytes)), PATH)
 const text = list => Buffer.from(list).toString('utf8')
@@ -42,7 +45,7 @@ test('UI-R1 a .kfilm changed outside merges into the stored replica as one impor
 
   // The replica's lineage continued: its history holds the version before the change, and what
   // changed since is the outside rename (one import), not a replica started over.
-  const answer = await page.evaluate(since => window.devHost.connection().ai.changes(since), since)
+  const answer = await page.evaluate(([since, schema]) => window.devHost.connection().ai.changes(since, schema), [since, SCHEMA])
   expect(answer.changes, `the replica still holds the earlier version: ${JSON.stringify(answer).slice(0, 400)}`).not.toBeNull()
   expect(JSON.stringify(answer.changes)).toContain('Changed outside')
   expect(answer.changes.created ?? [], 'no object made anew').toEqual([])
@@ -59,8 +62,11 @@ test('7n the open sequence is the person\'s view state, kept by the host and put
   const first = (await film.command('state.inspect')).active_sequence
   const { sequence } = await film.command('file.newSequence', { name: 'Second' })
   expect(sequence).not.toBe(first)
+  // The editor keeps the view with the host as it changes, and again with each save.
+  const viewState = () => page.evaluate(path => window.devHost.history.viewState(path), PATH)
+  await expect.poll(async () => (await viewState()).state?.view?.active_sequence ?? null, { timeout: 15_000 }).toBe(sequence)
   await save(film, page)
-  const kept = await page.evaluate(path => window.devHost.history.viewState(path), PATH)
+  const kept = await viewState()
   expect(kept.state?.v, `the view state kept: ${JSON.stringify(kept)}`).toBe(1)
   expect(kept.state.view.active_sequence).toBe(sequence)
   expect(kept.state.view.open_sequences).toEqual([first, sequence])

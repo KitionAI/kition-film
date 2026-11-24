@@ -79,8 +79,12 @@ fn frames(doc: &mut FilmDocument) -> Vec<Vec<u8>> {
         .collect()
 }
 
+/// Saves and reopens as a host does: the file, and the person's view state (the open sequence,
+/// the tabs) the host keeps apart from it and gives back (Kit UI protocol 7n).
 fn reopen(doc: &FilmDocument) -> FilmDocument {
-    FilmDocument::open("Edit.kfilm", &doc.save(None).unwrap()).unwrap()
+    let mut reopened = FilmDocument::open("Edit.kfilm", &doc.save(None).unwrap()).unwrap();
+    assert!(reopened.restore_view(&doc.view_state()), "the view state is put back");
+    reopened
 }
 
 fn differences(path: &str, a: &Value, b: &Value, out: &mut Vec<String>) {

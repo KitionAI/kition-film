@@ -6,11 +6,17 @@ use kition_film_kit::FilmDocument;
 use kition_kit::KitDocument;
 use serde_json::json;
 
+/// The nest placement mode is the person's view state (Kit UI protocol 7n), not the file's: a
+/// reopened file has the default mode, and the view state the host kept puts the person's back.
 #[test]
-fn nest_placement_mode_survives_save_and_reopen() {
+fn nest_placement_mode_survives_save_and_reopen_through_the_view_state() {
     let mut doc = FilmDocument::open(FILE, &project(1)).unwrap();
     doc.execute("sequence.nestSequences", json!({"on":false})).unwrap();
-    let mut reopened = FilmDocument::open(FILE, &doc.save(None).unwrap()).unwrap();
+    let saved = doc.save(None).unwrap();
+    let mut plain = FilmDocument::open(FILE, &saved).unwrap();
+    assert_eq!(plain.execute("sequence.nestSequences", json!({})).unwrap()["nest"], false, "the file keeps no mode: nests, toggled off");
+    let mut reopened = FilmDocument::open(FILE, &saved).unwrap();
+    assert!(reopened.restore_view(&doc.view_state()));
     assert_eq!(reopened.execute("sequence.nestSequences", json!({})).unwrap()["nest"], true);
 }
 
@@ -105,10 +111,11 @@ async fn expanded_nests_hold_the_source_state_they_copy() {
         let inside = v1(&doc.inspect().unwrap()["sequence"])[0];
         doc.execute("sequence.open", json!({"item":outer})).unwrap();
         let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
-        f.ok("run", json!({"steps":[{"command":"sequence.nestSequences","params":{"on":!expand}}]})).await;
         let (_, basis) = f.inspect().await;
         f.colleague(&[("sequence.open", json!({"item":inner})), opacity(inside, 25.0), ("sequence.open", json!({"item":outer}))]);
-        let answer = f.call("run", json!({"basis":basis,"steps":[{"command":"timeline.place","params":{"item":inner,"track":"V2","seconds":6}}]})).await;
+        // The file keeps no placement mode (it is the person's view state): the run sets it.
+        let steps = json!([{"command":"sequence.nestSequences","params":{"on":!expand}},{"command":"sequence.open","params":{"item":outer}},{"command":"timeline.place","params":{"item":inner,"track":"V2","seconds":6}}]);
+        let answer = f.call("run", json!({"basis":basis,"steps":steps})).await;
         if expand {
             assert!(answer.is_err(), "expanded source content changed: {answer:?}");
         } else {
@@ -158,7 +165,9 @@ async fn multicam_flatten_holds_the_angle_it_copies() {
         let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
         let (_, basis) = f.inspect().await;
         f.colleague(&[("sequence.open", json!({"item":source})), opacity(inside, 25.0), ("sequence.open", json!({"item":program}))]);
-        let answer = f.call("run", json!({"basis":basis,"steps":[{"command":"clip.multicamFlatten","params":{"clips":[target]}}]})).await;
+        // The file keeps no open sequence (the person's view state): the run opens the program.
+        let steps = json!([{"command":"sequence.open","params":{"item":program}},{"command":"clip.multicamFlatten","params":{"clips":[target]}}]);
+        let answer = f.call("run", json!({"basis":basis,"steps":steps})).await;
         if dependent {
             assert!(answer.is_err(), "the copied camera changed: {answer:?}");
         } else {
