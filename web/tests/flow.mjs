@@ -6,7 +6,7 @@ import { chromium, webkit } from 'playwright'
 import { createServer } from 'vite'
 import { checkUiIds } from '@kition/sdk/dev-host/check-ui-ids'
 import { CATALOGS } from '../src/strings.ts'
-import { WEB_WORKSPACES } from '../src/workspace/presets.ts'
+import { WEB_PANEL_IDS, WEB_WORKSPACES } from '../src/workspace/presets.ts'
 import { readCatalog } from '../parity/i18n.mjs'
 
 const which = process.argv[2] ?? 'chromium'
@@ -6262,8 +6262,9 @@ try {
       await paintFrames()
       await checkIds()
     }
-    // The panels All Panels leaves out open from Window, near their neighbours (upstream `show_panel`).
-    for (const panel of manifest.panels.filter((each) => !each.compact && !tabs.includes(each.id))) {
+    // The panels All Panels leaves out open from Window, near their neighbours (upstream `show_panel`);
+    // the panels the editor does not draw have no Window row (presets.ts WEB_PANEL_IDS).
+    for (const panel of manifest.panels.filter((each) => WEB_PANEL_IDS.has(each.id) && !each.compact && !tabs.includes(each.id))) {
       await kit.getByTestId('film-menu-Window').click()
       await kit.locator(`[data-kit-ui-id="control:window.panel.${panel.kind}"]`).click()
       if (await until(async () => await tabActive(panel.id), 20)) shownPanels.push(panel.id)
@@ -6272,8 +6273,8 @@ try {
     }
     await page.keyboard.press('Alt+Shift+1')
     await until(async () => (await kit.getByTestId('film-header-workspaces').textContent()).trim() === zh('Editing').toUpperCase(), 20)
-    const everyPanel = manifest.panels.filter((panel) => !panel.compact).map((panel) => panel.id)
-    step('every panel is shown once, from All Panels or Window, its controls checked for declared ids', everyPanel.every((panel) => shownPanels.includes(panel)), JSON.stringify({ shown: shownPanels.length, missing: everyPanel.filter((panel) => !shownPanels.includes(panel)) }))
+    const everyPanel = manifest.panels.filter((panel) => WEB_PANEL_IDS.has(panel.id) && !panel.compact).map((panel) => panel.id)
+    step('every panel the editor draws is shown once, from All Panels or Window, its controls checked for declared ids', everyPanel.every((panel) => shownPanels.includes(panel)), JSON.stringify({ shown: shownPanels.length, missing: everyPanel.filter((panel) => !shownPanels.includes(panel)) }))
   }
   // The document replaced while a dialog previews (an agent's file.newProject; last, as it ends
   // this document): the preview ends and the dialog closes, since what it was drafted for is gone.
