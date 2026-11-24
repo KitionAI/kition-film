@@ -22,6 +22,7 @@ import {
   xOf,
   zoomAbout,
   zoomThumb,
+  wheelZoomFactor,
 } from './layout.ts'
 import { createLru, createMediaQueue } from './mediaQueue.ts'
 import { createThumbnails, thumbnailKey } from './thumbnails.ts'
@@ -421,4 +422,16 @@ test("a sequence poster keyed on its content stamp is asked once while the stamp
   await tick()
   assert.equal(engine.calls.length, 2)
   assert.deepEqual(thumbnails.show(at('42')), { image: 'first', fresh: false })
+})
+
+test('a wheel zooms proportionally: a pinch by exp(dy / 200), Option+wheel by 1 + dy / 100, at most 2× a step', () => {
+  // A pinch's small steps zoom a little each.
+  assert.ok(Math.abs(wheelZoomFactor(true, 10) - Math.exp(0.05)) < 1e-9)
+  assert.ok(Math.abs(wheelZoomFactor(true, -10) - Math.exp(-0.05)) < 1e-9)
+  // One 200-px mouse-wheel notch with Ctrl: 2×, not e² (7.4×).
+  assert.equal(wheelZoomFactor(true, 200), 2)
+  assert.equal(wheelZoomFactor(true, -200), 0.5)
+  assert.ok(Math.abs(wheelZoomFactor(false, 20) - 1.2) < 1e-9)
+  assert.equal(wheelZoomFactor(false, 400), 2)
+  assert.equal(wheelZoomFactor(true, Number.NaN), 1)
 })

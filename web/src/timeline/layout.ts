@@ -141,6 +141,17 @@ export function zoomAt(view: Pick<TimelineView, 'targetPps'>, factor: number, ti
   return { targetPps: clampPps(view.targetPps * factor), zoomAnchor: { time, x } }
 }
 
+/**
+ * The zoom factor of one wheel event (`dy`, CSS pixels, positive towards the content's right):
+ * a pinch (macOS sends it as Ctrl+wheel) by egui's `exp(dy / 200)`, the zoom upstream's pinch
+ * gets, and Option+wheel by upstream's `1 + dy · 0.01`; either at most 2× or ½× per event, so one
+ * mouse-wheel notch zooms 2× rather than several times.
+ */
+export function wheelZoomFactor(pinch: boolean, dy: number) {
+  const factor = pinch ? Math.exp(dy / 200) : 1 + dy * 0.01
+  return Number.isFinite(factor) ? Math.min(2, Math.max(0.5, factor)) : 1
+}
+
 /** `zoom_about`: zoom by `factor` keeping `anchor` (seconds) under the same x, or about the middle when it is off screen. */
 export function zoomAbout(view: TimelineView, factor: number, anchor: number, width: number): TimelineView {
   const old = view.targetPps

@@ -26,6 +26,7 @@ import {
   timeAt,
   trackRows,
   xOf,
+  wheelZoomFactor,
   zoomAt,
   zoomThumb,
   type TimelineView,
@@ -673,7 +674,7 @@ export function TimelinePanel(props: TimelinePanelProps) {
       event.preventDefault()
       const current = store.get()
       if (pinch || (event.altKey && dy !== 0)) {
-        const factor = pinch ? Math.exp(dy * 0.01) : Math.min(2, Math.max(0.5, 1 + dy * 0.01))
+        const factor = wheelZoomFactor(pinch, dy)
         const at = Math.max(0, Math.min(width, x))
         store.set(zoomAt(current, factor, timeAt(current, at), at))
         return
