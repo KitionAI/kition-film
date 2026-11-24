@@ -15,6 +15,9 @@ Third-party material
   Open Font License 1.1 (text below).
 - JetBrains Mono (assets/fonts/JetBrainsMono-Regular.ttf): Copyright 2020 The JetBrains Mono
   Project Authors, SIL Open Font License 1.1 (text below).
+- Droid Sans Fallback (web/public/fonts/DroidSansFallbackFull.ttf, copied from kition-fonts when the
+  engine is built, not kept in this repository): Copyright (c) 2005-2008 The Android Open Source
+  Project, Apache License 2.0 (its NOTICE ships beside it as DroidSansFallback-NOTICE.txt).
 - Loro (https://github.com/loro-dev/loro): Copyright (c) 2023 Zixuan Chen, MIT License.
 - MPL-2.0 crates used unmodified (source on crates.io): bitmaps, im, sized-chunks, symphonia,
   symphonia-bundle-flac, symphonia-bundle-mp3, symphonia-codec-aac, symphonia-codec-alac,

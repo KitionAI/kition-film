@@ -11,3 +11,15 @@ export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$repo/target}"
 cd "$repo"
 wasm-pack build bindings/wasm --target web --release --no-typescript --out-dir "$web/public/engine"
 rm -f "$web/public/engine/.gitignore" "$web/public/engine/package.json"
+# Chinese text in titles needs a CJK face the web build does not embed: the editor gives the
+# engine this one (from the kition-fonts checkout next to the repository, or KITION_FONTS_DIR)
+# before it opens a document (engine.ts `fonts`).
+fonts="${KITION_FONTS_DIR:-$repo/../kition-fonts}/fonts/droid-sans-fallback"
+rm -rf "$web/public/fonts"
+if [ -f "$fonts/DroidSansFallbackFull.ttf" ]; then
+  mkdir -p "$web/public/fonts"
+  cp "$fonts/DroidSansFallbackFull.ttf" "$web/public/fonts/"
+  cp "$fonts/NOTICE" "$web/public/fonts/DroidSansFallback-NOTICE.txt"
+else
+  echo "warning: no kition-fonts checkout at $fonts; Chinese text will show as boxes" >&2
+fi
