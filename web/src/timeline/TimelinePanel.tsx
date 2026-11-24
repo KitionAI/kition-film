@@ -4,6 +4,7 @@ import { MenuButton, MenuItem, MenuSeparator, TimecodeField, isMac, useUi, type 
 import { projectItems, type FilmClip, type FilmInfo, type FilmProjectItem, type FilmTrack } from '../film'
 import type { FilmLabels, FilmSessionState } from '../session/useFilmSession'
 import { useProgramTime, type Playback } from '../session/playback'
+import type { Scrub } from '../session/scrub'
 import { ClipView } from './ClipView'
 import { TrackHeader } from './TrackHeader'
 import { Ruler, useDevicePixelRatio, type RenderSpan } from './Ruler'
@@ -87,35 +88,12 @@ export type TimelinePanelProps = {
   invoke: (id: string, params?: Record<string, unknown>) => Promise<unknown>
   /** A read-only engine query, answered as parsed JSON. */
   query: (id: string, params?: Record<string, unknown>) => Promise<unknown>
-  /** Moves the program playhead (quietly, not an edit). */
-  seek: (seconds: number) => Promise<unknown>
+  /** Scrubs the program playhead (quietly, not an edit): the ruler and the timecode drive it. */
+  scrub: Scrub
   phrase: Phrases
   t: (key: string, values?: Record<string, string | number>) => string
   /** The open document: another one drops a gesture in progress. */
   doc: unknown
-}
-
-/** Sends only the latest value, one in flight: a scrub drops positions rather than queueing them. */
-function latestOnly(send: (value: number) => Promise<unknown>) {
-  let wanted: number | null = null
-  let running = false
-  return (value: number) => {
-    wanted = value
-    if (running) return
-    running = true
-    void (async () => {
-      while (wanted != null) {
-        const next = wanted
-        wanted = null
-        try {
-          await send(next)
-        } catch {
-          // The playhead stays where the engine left it.
-        }
-      }
-      running = false
-    })()
-  }
 }
 
 /** The source patching and targeting of the active sequence (`Session::targeting`: V1 and A1 patched and every track targeted until changed). */
@@ -161,12 +139,17 @@ function Playhead({ film, playback, store, width, autoScroll }: { film: FilmInfo
     const target = element.current
     if (!target) return
     const playing = playback.programTime()
+    // A scrub's position too, ahead of the engine's (it is held the same way once the scrub ends).
+    const ahead = playing ?? playback.programScrub()
     let seconds = resting.current
-    if (playing != null) {
-      held.current = { resting: resting.current, at: playing }
-      seconds = playing
+    if (ahead != null) {
+      held.current = { resting: resting.current, at: ahead }
+      seconds = ahead
     } else if (held.current && held.current.resting === resting.current) seconds = held.current.at
-    else held.current = null
+    else {
+      held.current = null
+      seconds = playback.restingProgram(resting.current)
+    }
     const view = store.get()
     const { width: shown, autoScroll: mode } = latest.current
     if (playing != null && view.follow && mode !== 'noScroll' && shown > 0) {
@@ -509,7 +492,7 @@ function EmptyTimeline({ film, invoke, phrase }: { film: FilmInfo | null; invoke
  * (`useGestures`, upstream `interact`): one engine command per gesture, its drag drawn locally.
  */
 export function TimelinePanel(props: TimelinePanelProps) {
-  const { film: documentFilm, session, labels, revision, playback, store, media, tool, invoke, query, seek, phrase, doc } = props
+  const { film: documentFilm, session, labels, revision, playback, store, media, tool, invoke, query, scrub: scrubber, phrase, doc } = props
   const view = useTimelineView(store)
   // A dialog's preview (Task 10): the Timeline draws its timeline, markers, and selection kinds
   // while it shows a sequence (the strip lists them otherwise), laid out from the preview's
@@ -624,26 +607,21 @@ export function TimelinePanel(props: TimelinePanelProps) {
     return stopNames
   }, [media, query, labels, hasSequence])
 
-  // The ruler and the timecode scrub the playhead, one seek in flight; nothing else asks the worker meanwhile.
-  const scrubTo = useMemo(() => latestOnly((seconds) => seek(seconds)), [seek])
+  // The ruler and the timecode scrub the playhead (`session/scrub.ts`): the timecode moves at once, the pictures follow.
   const scrub = useCallback(
     (seconds: number, phase: 'start' | 'move' | 'end') => {
-      if (phase === 'start') {
-        playback.stopProgram()
-        media.setScrubbing(true)
-      }
-      scrubTo(seconds)
-      if (phase === 'end') media.setScrubbing(false)
+      if (phase === 'start') playback.stopProgram()
+      scrubber[phase](seconds)
     },
-    [playback, media, scrubTo],
+    [playback, scrubber],
   )
   const typedSeek = useCallback(
     (seconds: number, final: boolean) => {
       playback.stopProgram()
-      media.setScrubbing(!final)
-      scrubTo(Math.max(0, seconds))
+      if (final) scrubber.end(seconds)
+      else scrubber.move(seconds)
     },
-    [playback, media, scrubTo],
+    [playback, scrubber],
   )
 
   const run = useCallback((command: string, params: Record<string, unknown>) => void invoke(command, params), [invoke])

@@ -526,3 +526,25 @@ test("time the page was hidden, or a gap over 250 ms between frames, is not coun
   playback.noteDropped()
   assert.equal(playback.programDropped(), 4, 'not counted while stopped')
 })
+
+test('a scrub shows its position ahead of the engine and holds the last one until the model has it', () => {
+  const { playback, view } = harness()
+  let told = 0
+  playback.subscribeProgramTime(() => (told += 1))
+  playback.showProgramScrub(2.01)
+  // Snapped to its frame (1/25 s), shown at once, the clock not playing.
+  assert.equal(playback.programScrub(), 2)
+  assert.equal(playback.programShown(), 2)
+  assert.equal(playback.programTime(), null)
+  assert.equal(playback.restingProgram(view.playhead), 2)
+  assert.equal(told, 1)
+  playback.showProgramScrub(2.02)
+  assert.equal(told, 1, 'the same frame tells nobody')
+  playback.showProgramScrub(null)
+  assert.equal(playback.programScrub(), null)
+  // The model still says 0: the scrub's end is shown until it moves.
+  assert.equal(playback.restingProgram(0), 2)
+  view.playhead = 2
+  assert.equal(playback.restingProgram(2), 2)
+  assert.equal(playback.restingProgram(3), 3)
+})

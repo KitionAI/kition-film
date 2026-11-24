@@ -64,6 +64,7 @@ import { STATUS_MS, nextStatus, statusLeft, type StatusMessage } from './session
 import { useFilmSession, type FilmLabels, type FilmSessionState } from './session/useFilmSession'
 import { createFilmViewState, type FilmViewStateKeeper } from './session/viewState'
 import { usePlayback, type Playback } from './session/playback'
+import { createScrub, type Scrub } from './session/scrub'
 import { targetsSource } from './session/target'
 import { createStatsStore, useStats, type StatsStore } from './stats'
 import { SourceMonitor } from './monitors/SourceMonitor'
@@ -198,7 +199,10 @@ type Live = {
   countFrame: () => void
   invoke: (id: string, params?: Record<string, unknown>, options?: InvokeOptions) => Promise<unknown>
   query: (id: string, params?: Record<string, unknown>) => Promise<unknown>
-  seek: (seconds: number) => Promise<unknown>
+  /** Scrubs the program playhead (the ruler, the timecode, the Program monitor's scrub bar). */
+  scrub: Scrub
+  /** A scrub drag is in progress: the Program monitor renders at its playback resolution. */
+  scrubbing: boolean
   labels: FilmLabels | null
   /** The engine's revision, which keys a sequence item's thumbnails and peaks. */
   revision: number | null
@@ -234,6 +238,8 @@ const LiveContext = createContext<Live | null>(null)
 const NO_LAYERS: readonly number[] = []
 const NO_NAMES: readonly string[] = []
 const NO_COMMANDS: ReadonlySet<string> = new Set()
+/** A refresh's damage that repaints nothing: the editor's model is brought up to date, a render in flight is kept. */
+const NO_DAMAGE = { x0: 0, y0: 0, x1: 0, y1: 0 }
 const useLive = () => useContext(LiveContext)!
 
 /** The Program panel (upstream `monitor.rs` with `Which::Program`), or upstream's "(no sequences)". */
@@ -255,11 +261,11 @@ function ProgramPanel() {
       proxies={proxies}
       phrase={live.phrase}
       invoke={live.invoke}
-      seekTicks={live.seekTicks}
+      scrub={live.scrub}
+      scrubbing={live.scrubbing}
       repaint={live.repaint}
       playheadMoves={live.playheadMoves}
       revision={live.revision}
-      setScrubbing={live.media.setScrubbing}
       onShowTransport={(show) => live.setShowTransport('program', show)}
       tool={live.tool}
       graphicsKeys={live.programKeys}
@@ -363,7 +369,7 @@ function TimelinePart() {
       tool={live.tool}
       invoke={live.invoke}
       query={live.query}
-      seek={live.seek}
+      scrub={live.scrub}
       phrase={live.phrase}
       t={live.t}
       doc={live.doc}
@@ -779,7 +785,6 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
   const runQuietly = session.run
   // Every playhead move the editor asks for (a command through `invoke`, a seek) counts here.
   const moves = useRef(0)
-  const seek = useCallback((seconds: number) => ((moves.current += 1), runQuietly('playhead.set', { seconds: Math.max(0, seconds) }).catch(() => undefined)), [runQuietly])
   const [progress, setProgress] = useState<ExportProgress | null>(null)
   // The name of the sequence an export in progress writes, which the status bar shows with its progress.
   const [exporting, setExporting] = useState<string | null>(null)
@@ -922,7 +927,7 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
   const dialogSerial = useRef(0)
   // The program playhead the dialogs' strips read, and its moves (playing, or resting).
   stateForClock.current = state
-  const playheadClock = useMemo(() => ({ get: () => playback.programTime() ?? stateForClock.current?.playhead ?? 0, subscribe: playback.subscribeProgramTime }), [playback])
+  const playheadClock = useMemo(() => ({ get: () => playback.programShown() ?? stateForClock.current?.playhead ?? 0, subscribe: playback.subscribeProgramTime }), [playback])
   const previewContext = usePreviewController(session.doc, session.info?.inspected ?? null)
   // The open dialog's own commands, which its OK runs even while its preview stays open (Find, Link Media).
   const byIdNow = useRef(editor.byId)
@@ -991,6 +996,23 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
   const clocksNow = useRef(clocks)
   clocksNow.current = clocks
   const media = useMemo(() => createTimelineMedia(() => docNow.current, () => clocksNow.current.program.playing || clocksNow.current.source.playing), [])
+  // A scrub of the program playhead (`session/scrub.ts`): the timecode moves at once, each seek's
+  // picture lands (a seek's refresh leaves the canvas's render in flight alone), and a drag renders
+  // at the playback resolution until it ends.
+  const [scrubbing, setScrubbing] = useState(false)
+  const scrub = useMemo(
+    () =>
+      createScrub({
+        seek: (seconds) => ((moves.current += 1), runQuietly('playhead.set', { seconds: Math.max(0, seconds) }, NO_DAMAGE)),
+        paint: () => canvas.current?.retryRender() ?? Promise.resolve(false),
+        show: (seconds) => playback.showProgramScrub(seconds),
+        dragging: (on) => {
+          media.setScrubbing(on)
+          setScrubbing(on)
+        },
+      }),
+    [runQuietly, playback, media],
+  )
   // The Project panel's icons and Preview Area: their own cache, asked through the Timeline's queue, so the engine worker serves one frame at a time.
   const projectThumbnails = useMemo<ProjectThumbnails>(
     () =>
@@ -1504,7 +1526,8 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
     countFrame,
     invoke,
     query,
-    seek,
+    scrub,
+    scrubbing,
     labels,
     revision: session.info?.revision ?? null,
     timelineView,

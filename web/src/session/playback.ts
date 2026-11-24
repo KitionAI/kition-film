@@ -208,6 +208,11 @@ export function createPlayback(deps: PlaybackDeps) {
   let programFrame: number | null = null
   /** Where a stop left the playhead, until the editor's inspect model shows it (see `programShown`). */
   let programRest: { at: number; stale: number | undefined } | null = null
+  /**
+   * Where a ruler or monitor scrub has the playhead (`showProgramScrub`), shown at once: the
+   * engine's seeks and the pictures follow at their own pace, never holding the timecode back.
+   */
+  let programScrub: number | null = null
   let programGeneration = 0
 
   /**
@@ -241,6 +246,7 @@ export function createPlayback(deps: PlaybackDeps) {
     const view = deps.program()
     if (!view) return
     const current = program.playing && programRun ? programPosition : restingProgram(view.playhead)
+    programScrub = null
     program = { ...program, playing: true, speed }
     if (options.stopAt !== undefined) programStopAt = options.stopAt
     programRun = null
@@ -289,6 +295,7 @@ export function createPlayback(deps: PlaybackDeps) {
 
   /** The program playhead the editor should show, given the one its inspect model has (`resting`). */
   function restingProgram(resting: number) {
+    if (programScrub != null) return programScrub
     // Once the model moves from what it said at the stop (it caught up, or the playhead was moved since), it is the truth again.
     if (programRest != null && resting !== programRest.stale) programRest = null
     return programRest?.at ?? resting
@@ -676,6 +683,27 @@ export function createPlayback(deps: PlaybackDeps) {
     },
     /** The program playhead while the clock plays (null otherwise): the transport and timeline follow it without a document refresh. */
     programTime: () => (program.playing && programRun ? programPosition : null),
+    /** The program playhead a scrub shows (`showProgramScrub`), null when none is in progress. */
+    programScrub: () => programScrub,
+    /** The program playhead to show ahead of the inspect model: the playing clock's, else a scrub's; null for neither. */
+    programShown: () => (program.playing && programRun ? programPosition : programScrub),
+    /**
+     * Shows `seconds` (snapped to its frame) as the program playhead while a scrub moves it, ahead
+     * of the engine; null ends the scrub, keeping its last position until the inspect model shows it.
+     */
+    showProgramScrub(seconds: number | null) {
+      if (seconds == null) {
+        if (programScrub == null) return
+        programRest = { at: programScrub, stale: deps.program()?.playhead }
+        programScrub = null
+      } else {
+        const frame = deps.program()?.frame ?? 0
+        const snapped = frame > 0 ? Math.floor(Math.max(0, seconds) / frame + 1e-6) * frame : Math.max(0, seconds)
+        if (snapped === programScrub) return
+        programScrub = snapped
+      }
+      tell(programListeners)
+    },
     /** Frames this play of the program dropped (upstream's `meter.counts().1`); its listeners are the program time's. */
     programDropped: () => meter.dropped,
     /** A frame of the playing program another reader of it skipped (the Program monitor's channel picture): counted, and told. */
@@ -745,10 +773,11 @@ export function useSourceTime(playback: Playback, resting: number) {
 }
 
 /**
- * The program playhead in seconds: the clock's while it plays, else the inspect model's
- * (`resting`), which a stop catches up with. Re-renders only its caller, every frame while playing.
+ * The program playhead in seconds: the clock's while it plays, a scrub's while one moves it, else
+ * the inspect model's (`resting`), which a stop catches up with. Re-renders only its caller, every
+ * frame while playing.
  */
 export function useProgramTime(playback: Playback, resting: number) {
-  const playing = useSyncExternalStore(playback.subscribeProgramTime, playback.programTime)
-  return playing ?? playback.restingProgram(resting)
+  const shown = useSyncExternalStore(playback.subscribeProgramTime, playback.programShown)
+  return shown ?? playback.restingProgram(resting)
 }

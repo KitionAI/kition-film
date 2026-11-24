@@ -3,6 +3,7 @@ import { KitDocumentCanvas, type KitCanvasHandle, type KitCanvasView, type KitEn
 import { TICKS_PER_SECOND, picturePanBounds, type FilmInfo } from '../film'
 import { CanvasScrollbars, createViewStore } from '../CanvasScrollbars'
 import type { Playback } from '../session/playback'
+import type { Scrub } from '../session/scrub'
 import { markerColor } from '../timeline/Ruler'
 import { Monitor, type MonitorClock } from './Monitor'
 import { RESOLUTIONS, effectiveRes, type MonitorView } from './monitorView'
@@ -10,7 +11,6 @@ import { rateOf, renderScaleOf, repaintTicks, sameAreas, setMarksParams } from '
 import { frameWidth } from './frameSize'
 import { CompareView } from './CompareView'
 import { DISPLAY_LABELS, channelPass, createLatestRead, isChannel, type ChannelMode } from './displayModes'
-import { animationFrameLatest } from './throttle'
 import { SafeMargins } from './SafeMargins'
 import { useProgramGraphics } from './useProgramGraphics'
 import { GuideLayer } from './Guides'
@@ -32,14 +32,16 @@ type Props = {
   phrase: Phrases
   invoke: (id: string, params?: Record<string, unknown>, options?: { refresh?: 'all' | 'repaint' | 'none' }) => unknown
   /** Moves the program playhead (`playhead.set`, ticks) and refreshes the editor. */
-  seekTicks: (ticks: number) => Promise<unknown>
+  /** Scrubs the program playhead (the scrub bar), as the timeline's ruler does. */
+  scrub: Scrub
+  /** A scrub drag is in progress: the picture renders at the playback resolution. */
+  scrubbing: boolean
   /** Repaints the program canvas without a document change (a new render scale), leaving the playhead at `ticks`. */
   repaint: (ticks: number) => Promise<unknown>
   /** Counts the playhead moves the editor asked for (see `repaintTicks`). */
   playheadMoves: () => number
   /** The engine's revision, which a range drag holds on. */
   revision: number | null
-  setScrubbing: (scrubbing: boolean) => void
   onShowTransport: (show: boolean) => void
   /** The tool (upstream's `app.ui.tool`): the picture's presses go by it (Task 17's graphics tools, the Hand on a magnified picture). */
   tool: string
@@ -110,19 +112,12 @@ export function ProgramMonitor(props: Props) {
   const clock = useMemo<MonitorClock>(() => ({ subscribe: playback.subscribeProgramTime, get: () => Math.round((playback.programTime() ?? playback.restingProgram(resting.current)) * tps) }), [playback, tps])
   const latest = useRef(props)
   latest.current = props
-  const send = useMemo(() => animationFrameLatest((ticks: number) => latest.current.seekTicks(ticks)), [])
-  useEffect(
-    () => () => {
-      send.cancel()
-      latest.current.setScrubbing(false)
-    },
-    [send],
-  )
+  // The scrub bar scrubs as the timeline's ruler does (`session/scrub.ts`).
   const onSeek = (ticks: number, final: boolean) => {
     playback.stopProgram()
-    props.setScrubbing(!final)
-    if (final) send.flush(ticks)
-    else send(ticks)
+    const seconds = ticks / Math.max(1, tps)
+    if (final) props.scrub.end(seconds)
+    else props.scrub.move(seconds)
   }
   const ticks = (seconds: number | null) => (seconds == null ? null : Math.round(seconds * tps))
   const marks = { start: 0, end: Math.round(film.duration * tps), markIn: ticks(film.in), markOut: ticks(film.out) }
@@ -132,10 +127,11 @@ export function ProgramMonitor(props: Props) {
   const applied = useRef<number | null>(null)
   const [shownScale, setShownScale] = useState<number | null>(null)
   const applyScale = useCallback(() => {
-    const { doc: engine, monitor: view, playing: now } = latest.current
+    const { doc: engine, monitor: view, playing: now, scrubbing } = latest.current
     if (!engine) return
     const zoom = canvasView.current?.zoom ?? 1
-    const scale = renderScaleOf(effectiveRes(view, now), zoom * (window.devicePixelRatio || 1))
+    // A scrub drag renders as playback does; its end renders the frame at the paused resolution.
+    const scale = renderScaleOf(effectiveRes(view, now || scrubbing), zoom * (window.devicePixelRatio || 1))
     if (scale === applied.current) return
     applied.current = scale
     const movesAtStart = latest.current.playheadMoves()
@@ -147,7 +143,8 @@ export function ProgramMonitor(props: Props) {
         // While playing, the clock's next frame paints at the new scale. Stopped, the canvas is
         // repainted where the playhead rests: the clock's stop position until the editor's model
         // catches up, never the model's stale playhead.
-        if (latest.current.playing) return undefined
+        // A scrub paints each of its positions itself: a repaint would drop the picture in flight.
+        if (latest.current.playing || latest.current.scrubbing) return undefined
         // A step or a seek since then repaints by itself; this older position would undo it.
         const at = repaintTicks(movesAtStart, latest.current.playheadMoves(), clock.get())
         return at == null ? undefined : latest.current.repaint(at)
@@ -161,7 +158,7 @@ export function ProgramMonitor(props: Props) {
   }, [doc])
   useEffect(() => {
     applyScale()
-  }, [applyScale, doc, playing, monitor.res, monitor.pausedRes, monitor.highQuality])
+  }, [applyScale, doc, playing, props.scrubbing, monitor.res, monitor.pausedRes, monitor.highQuality])
 
   // ---- magnification: Fit, or the zoom (one frame pixel per device pixel at 100%) about the centre.
   // A wheel zoom on the canvas shows its own percentage in the dropdown until a level is chosen.
@@ -501,10 +498,7 @@ export function ProgramMonitor(props: Props) {
       phrase={phrase}
       invoke={invoke}
       onSeek={onSeek}
-      onCancelSeek={() => {
-        send.cancel()
-        props.setScrubbing(false)
-      }}
+      onCancelSeek={() => props.scrub.cancel()}
       onRange={(change) => {
         if (change.phase === 'start') {
           playback.stopProgram()
