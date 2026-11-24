@@ -6,6 +6,9 @@ import { animationFrameLatest } from '../monitors/throttle'
 import type { InvokeOptions } from '../session/invoke'
 import { useProgramTime, type Playback } from '../session/playback'
 import { Placeholder } from './Placeholder'
+import { localSelection, useLocalSelection } from '../session/localSelection'
+import { carriesEffect, effectDrag, endEffectDrag } from '../timeline/effectDrag'
+import { fitsTrack, isTransition } from './effectsTree'
 import { keyframeMoveTarget, laneRuler, numberSpec, paramText, selectedClip, stepOf, timelineTimeOf, useClipEffects, useParamEdit, type ClipEffect, type ClipTimes, type EffectParam, type ParamTarget } from './effects'
 
 const ChevronDown = TesseraIcons.ChevronDownIcon
@@ -367,20 +370,29 @@ type EffectHeaderProps = {
   enabled: boolean
   intrinsic: boolean
   open: boolean
+  /** The header a person selected (upstream `selected_effect`), which Delete removes. */
+  selected: boolean
   foldKey: string
   onFold: (key: string) => void
+  onSelect: (clip: number, index: number) => void
   onMenu: (target: MenuTarget) => void
   invoke: Invoke
   phrase: Phrases
 }
 
-/** An effect's row (upstream `show`): a click anywhere on it but the fx switch and the reset folds it; a right-click opens its menu. */
-const EffectHeader = memo(function EffectHeader({ clip, index, id, name, enabled, intrinsic, open, foldKey, onFold, onMenu, invoke, phrase }: EffectHeaderProps) {
+/**
+ * An effect's row (upstream `show`): only the arrow folds it; a click elsewhere on it but the fx
+ * switch and the reset selects it (Delete then removes it); a right-click opens its menu.
+ */
+const EffectHeader = memo(function EffectHeader({ clip, index, id, name, enabled, intrinsic, open, selected, foldKey, onFold, onSelect, onMenu, invoke, phrase }: EffectHeaderProps) {
   return (
     <div
       className="film-ec-row film-ec-effect"
+      data-selected={selected || undefined}
+      aria-selected={selected}
       onContextMenu={(event) => {
         event.preventDefault()
+        onSelect(clip, index)
         onMenu({ kind: 'effect', at: { x: event.clientX, y: event.clientY }, clip, effect: index, intrinsic })
       }}
       data-testid={`film-ec-effect-${id}`}
@@ -389,7 +401,9 @@ const EffectHeader = memo(function EffectHeader({ clip, index, id, name, enabled
         className="film-ec-left"
         data-kit-ui-id="control:effects.effect"
         onClick={(event) => {
-          if (!(event.target as HTMLElement).closest('.film-ec-fx, .film-ec-reset')) onFold(foldKey)
+          const target = event.target as HTMLElement
+          if (target.closest('.film-ec-fold')) onFold(foldKey)
+          else if (!target.closest('.film-ec-fx, .film-ec-reset')) onSelect(clip, index)
         }}
       >
         <button type="button" className="film-ec-fold" aria-expanded={open} aria-label={phrase(name)} data-testid={`film-ec-effect-${id}-fold`}>
@@ -471,6 +485,14 @@ export function EffectControls({ film, doc, revision, playback, invoke, seekTick
   const [, setFolds] = useState(0)
   const [menu, setMenu] = useState<MenuTarget | null>(null)
   const onMenu = useCallback((target: MenuTarget) => setMenu(target), [])
+  const selectedEffect = useLocalSelection((selection) => selection.effect)
+  const onSelect = useCallback((clip: number, index: number) => localSelection.set({ effect: { clip, index } }), [])
+  const [dropping, setDropping] = useState(false)
+  // Another clip shown: the effect selected on the one before is let go, so Delete never removes it unseen.
+  const shownClip = chosen?.clip.id ?? null
+  useEffect(() => {
+    if (selectedEffect && selectedEffect.clip !== shownClip) localSelection.set({ effect: null })
+  }, [selectedEffect, shownClip])
   const scrub = useRef<{ pointerId: number } | null>(null)
   // The ruler's scrub moves the playhead at most once per frame, the latest, one move in flight.
   const seekNow = useRef(seekTicks)
@@ -519,7 +541,8 @@ export function EffectControls({ film, doc, revision, playback, invoke, seekTick
     for (const effect of effects.effects) {
       const key = `${effects.clip}:${effect.index}`
       const open = !collapsed.has(key)
-      rows.push(<EffectHeader key={`fx-${effects.clip}-${effect.index}`} clip={effects.clip} index={effect.index} id={effect.id} name={effect.name} enabled={effect.enabled} intrinsic={effect.intrinsic} open={open} onFold={fold} foldKey={key} onMenu={onMenu} invoke={invoke} phrase={phrase} />)
+      const selected = selectedEffect?.clip === effects.clip && selectedEffect.index === effect.index && !effect.intrinsic
+      rows.push(<EffectHeader key={`fx-${effects.clip}-${effect.index}`} clip={effects.clip} index={effect.index} id={effect.id} name={effect.name} enabled={effect.enabled} intrinsic={effect.intrinsic} open={open} selected={selected} onFold={fold} onSelect={onSelect} foldKey={key} onMenu={onMenu} invoke={invoke} phrase={phrase} />)
       if (!open) continue
       for (const param of effect.params) {
         rows.push(<ParamRow key={`p-${effects.clip}-${effect.index}-${param.id}`} clip={effects.clip} effect={effect} param={param} mediaTime={effects.mediaTime} times={times} fps={fps} edit={edit} invoke={invoke} phrase={phrase} onMenu={onMenu} />)
@@ -528,7 +551,32 @@ export function EffectControls({ film, doc, revision, playback, invoke, seekTick
   }
 
   return (
-    <div className="film-ec" data-testid="film-effect-controls">
+    <div
+      className="film-ec"
+      data-testid="film-effect-controls"
+      data-drop={dropping || undefined}
+      // An effect or preset from the Effects panel dropped here goes on the clip shown (upstream's drop on Effect Controls).
+      onDragOver={(event) => {
+        const payload = carriesEffect(event.dataTransfer) ? effectDrag(event.dataTransfer) : null
+        const fits = payload != null && ('preset' in payload ? chosen.kind === 'video' : !isTransition(payload.kind) && fitsTrack(payload.kind, chosen.kind))
+        if (!fits) return
+        event.preventDefault()
+        event.dataTransfer.dropEffect = 'copy'
+        setDropping(true)
+      }}
+      onDragLeave={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDropping(false)
+      }}
+      onDrop={(event) => {
+        setDropping(false)
+        const payload = effectDrag(event.dataTransfer)
+        if (!payload) return
+        event.preventDefault()
+        endEffectDrag()
+        if ('preset' in payload) void invoke('presets.apply', { preset: payload.preset, clips: [chosen.clip.id] })
+        else if (!isTransition(payload.kind) && fitsTrack(payload.kind, chosen.kind)) void invoke('effects.apply', { effect: payload.effect, clips: [chosen.clip.id] })
+      }}
+    >
       <div className="film-ec-head">
         <div className="film-ec-left film-ec-pills">
           <span className="film-ec-pill" title={phrase('Source · {name}').replace('{name}', name)}>

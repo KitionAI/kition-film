@@ -133,6 +133,8 @@ export const MONITOR_ALIASES: Readonly<Record<string, readonly string[]>> = {
  * standing for upstream's ids. The keyframe navigator's buttons serve both panels' rows.
  */
 export const EFFECT_ALIASES: Readonly<Record<string, readonly string[]>> = {
+  // The Effects panel's folders (`effects.rs` `folder_row`), top folders and sub-folders alike.
+  'control:effects.folder': ['effects.folder.{}/{}'],
   'control:effects.effect': ['effectControls.effect.{}'],
   'control:effects.effect.savePreset': ['effectControls.effect.{}.savePreset'],
   'control:effects.effect.clear': ['effectControls.effect.{}.clear'],
@@ -149,6 +151,7 @@ export const EFFECT_ALIASES: Readonly<Record<string, readonly string[]>> = {
 }
 
 const EFFECT_LABELS: Readonly<Record<string, string>> = {
+  'control:effects.folder': 'Folder',
   'control:effects.effect': 'Effect',
   'control:effects.effect.savePreset': 'Save Preset…',
   'control:effects.effect.clear': 'Clear',
@@ -171,7 +174,27 @@ const EFFECT_LABELS: Readonly<Record<string, string>> = {
   'control:effects.keyframeMenu.clear': 'Clear',
 }
 
-const EFFECTS: readonly KitUiItem[] = Object.keys(EFFECT_ALIASES).map((id) => ({ id, label: EFFECT_LABELS[id] ?? id }))
+const EFFECTS: readonly KitUiItem[] = [
+  ...Object.keys(EFFECT_ALIASES).map((id) => ({ id, label: EFFECT_LABELS[id] ?? id })),
+  // The Effects panel's rows (`effects.rs`, `presets.rs`): an effect or transition, and a saved preset.
+  { id: 'control:effects.item', label: 'Effect' },
+  { id: 'control:effects.preset', label: 'Preset' },
+]
+
+/**
+ * What upstream draws for effects and transitions without registering an id the manifest reads:
+ * the Effects panel's search box and a transition row's menu, a transition's menu on the Timeline
+ * and the preview of an effect dragged over it, and the Set Transition Duration dialog.
+ */
+const EFFECTS_PANEL_UNREGISTERED: readonly KitUiItem[] = [
+  { id: 'control:effects.search', label: 'Search effects' },
+  { id: 'control:effects.itemMenu.setDefaultTransition', label: 'Set Selected as Default Transition' },
+  { id: 'control:timeline.transitionMenu.setDuration', label: 'Set Transition Duration…' },
+  { id: 'control:timeline.effectDrop', label: 'Effect drop' },
+  { id: 'control:transitionDuration.value', label: 'Duration:' },
+  { id: 'control:transitionDuration.ok', label: 'OK' },
+  { id: 'control:transitionDuration.cancel', label: 'Cancel' },
+]
 
 /**
  * The controls upstream draws in Effect Controls and Properties without registering an id: an
@@ -342,7 +365,7 @@ const HISTORY_UNREGISTERED: readonly KitUiItem[] = [{ id: 'control:history.row',
  * declared control is an element upstream registers (`film-upstream.json` `elements`, without
  * its run-time `{}` parts), or a shared id standing for some (`SHARED_ALIASES`).
  */
-export const KITION_ONLY: readonly KitUiItem[] = [{ id: 'control:appBar.exportMovie', label: 'exportMovie' }, { id: 'control:status.message', label: 'Status' }, ...MONITOR_UNREGISTERED, ...PROJECT_UNREAD, ...EFFECTS_UNREGISTERED, ...HISTORY_UNREGISTERED, ...DIALOG_KITION]
+export const KITION_ONLY: readonly KitUiItem[] = [{ id: 'control:appBar.exportMovie', label: 'exportMovie' }, { id: 'control:status.message', label: 'Status' }, ...MONITOR_UNREGISTERED, ...PROJECT_UNREAD, ...EFFECTS_UNREGISTERED, ...EFFECTS_PANEL_UNREGISTERED, ...HISTORY_UNREGISTERED, ...DIALOG_KITION]
 
 /**
  * Every element the Film editor draws (Kit UI protocol section 9). Ids are public: a host hides or

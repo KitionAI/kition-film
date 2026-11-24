@@ -113,7 +113,6 @@ const DEAD_ENDS: Readonly<Record<string, string>> = {
 const HIDDEN_PANELS: Readonly<Record<string, string>> = {
   mediaBrowser: 'Browses local folders; File ▸ Import picks media through the host.',
   libraries: 'Libraries are not built.',
-  effects: PANEL_LATER,
   audioClipMixer: PANEL_LATER,
   metadata: PANEL_LATER,
   audioTrackMixer: PANEL_LATER,

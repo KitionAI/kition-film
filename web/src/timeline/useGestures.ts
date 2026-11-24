@@ -4,16 +4,41 @@ import type { FilmInfo, FilmProjectItem } from '../film'
 import type { FilmSessionState } from '../session/useFilmSession'
 import { scrollHalf, zoomAt } from './layout'
 import type { TimelineViewStore } from './view'
-import { CLICK_MS, begin, dropRow, findClip, hitAt, hitTest, isDrag, moveDrag, placeCommand, preview, release, sceneOf, snapAt, xOf, type Command, type Drag, type Layout, type Mods, type Pressed, type Row, type Scene } from './gestures'
+import { CLICK_MS, EDGE_PX, begin, dropRow, findClip, hitAt, hitTest, isDrag, moveDrag, placeCommand, preview, release, sceneOf, snapAt, tickAt, xOf, type Command, type Drag, type Layout, type Mods, type Pressed, type Row, type Scene } from './gestures'
 import { createDragView, type Bracket } from './dragView'
 import { FILM_DRAG_TYPE, endFilmDrag, filmDrag } from './drop'
 import { previewCommands } from '../dialogs/previewViews'
+import { snapTo } from './snap'
+import { carriesEffect, effectDrag, endEffectDrag } from './effectDrag'
+import { fitsTrack, isTransition, type EffectPayload } from '../panels/effectsTree'
+import { localSelection } from '../session/localSelection'
+import { ALIGNMENT_LABELS, appliedTransition, alignmentOf, cutOf, defaultDuration, dragEnd, dropEdge, durationCommand, grabEnd, maxFrames, transitionSpan, type SpanClip, type TransitionGrab, type TransitionInfo } from './transitions'
 
 /** Where the track rows are this render: the header's width, the content's, the rows (y from the panel's top), and the video half's scroll range. */
 export type GestureGeometry = { headerWidth: number; contentWidth: number; rows: readonly Row[]; maxVideo: number }
 
 /** Settings ▸ Timeline ▸ Still Image Default Duration, which a dropped still's preview spans. */
 export type StillDuration = { amount: number; unit: string }
+
+/** Settings ▸ Timeline ▸ Video and Audio Transition Default Duration, which a dropped transition's preview spans. */
+export type TransitionDurations = { video: { duration?: number; unit?: string }; audio: { duration?: number; unit?: string } }
+
+/** A transition on the document as the gestures read it (ticks), with its track's kind, and the clips by id. */
+export type FoundTransition = { info: TransitionInfo; kind: 'video' | 'audio'; track: number; clips: ReadonlyMap<number, SpanClip> }
+
+/** The transition `id` of `film`, in ticks, or null. */
+export function findTransition(film: FilmInfo | null, id: number): FoundTransition | null {
+  if (!film) return null
+  const tps = film.ticksPerSecond
+  const ticks = (seconds: number) => Math.round(seconds * tps)
+  for (const track of film.tracks) {
+    const transition = track.transitions.find((each) => each.id === id)
+    if (!transition) continue
+    const clips = new Map(track.clips.map((clip) => [clip.id, { id: clip.id, start: ticks(clip.start), duration: ticks(clip.duration) }]))
+    return { info: { ...transition, start: ticks(transition.start), duration: ticks(transition.duration) }, kind: track.kind, track: track.id, clips }
+  }
+  return null
+}
 
 type Options = {
   film: FilmInfo | null
@@ -23,6 +48,8 @@ type Options = {
   invoke: (id: string, params?: Record<string, unknown>) => Promise<unknown>
   rollRipple: boolean
   still: StillDuration
+  /** The default transition durations, which a dropped transition's preview spans. */
+  transitionDurations: TransitionDurations
   items: ReadonlyMap<number, FilmProjectItem>
   geometry: () => GestureGeometry
   root: RefObject<HTMLDivElement | null>
@@ -39,12 +66,14 @@ type Options = {
  * A press in progress: what it grabbed (with the modifiers at the press), whether it became a
  * drag, the drag, the modifiers of the latest pointer event, and the long-press timer.
  */
-type Gesture = { pointer: number; pressed: Pressed; mods: Mods; started: boolean; drag: Drag | null; x: number; y: number; frame: number; timer: ReturnType<typeof setTimeout> | null }
+type Gesture = { pointer: number; pressed: Pressed; mods: Mods; started: boolean; drag: Drag | null; x: number; y: number; frame: number; timer: ReturnType<typeof setTimeout> | null; transition?: { id: number; grab: TransitionGrab | null; frames: number } }
 
 /** Upstream's drag auto-scroll: within 20 px of the right edge or 10 px of the left, 6 px a frame. */
 const EDGE_RIGHT = 20
 const EDGE_LEFT = 10
 const EDGE_STEP = 6
+/** How far in from each end of a transition a press takes that end (upstream's edge zone). */
+const EDGE_ZONE = EDGE_PX
 
 const modsOf = (event: { shiftKey: boolean; altKey: boolean; metaKey: boolean; ctrlKey: boolean }): Mods => ({ shift: event.shiftKey, alt: event.altKey, command: isMac() ? event.metaKey : event.ctrlKey })
 
@@ -65,15 +94,15 @@ function cursorFor(tool: string, grab: ReturnType<typeof hitTest>) {
  * the cursor and hover feedback, the clip menu, a double-click into a nested sequence, and drops
  * from the Project panel or the Source monitor.
  */
-export function useGestures({ film, session, store, tool, invoke, rollRipple, still, items, geometry, root, doc, previewClips = null }: Options) {
+export function useGestures({ film, session, store, tool, invoke, rollRipple, still, transitionDurations, items, geometry, root, doc, previewClips = null }: Options) {
   const { store: uiStore } = useUi()
   // A replacement project can reuse both this Worker and the same sequence/clip IDs.
   const projectEpoch = (doc as { info?: { inspected?: { project?: { epoch?: number } } } } | null)?.info?.inspected?.project?.epoch
   const epoch = useRef(0)
   const dragView = useMemo(createDragView, [])
   const scene = useMemo(() => (film ? sceneOf(film, session, rollRipple) : null), [film, session, rollRipple])
-  const latest = useRef({ scene, tool, invoke, film, still, items, previewClips })
-  latest.current = { scene, tool, invoke, film, still, items, previewClips }
+  const latest = useRef({ scene, tool, invoke, film, still, items, previewClips, transitionDurations })
+  latest.current = { scene, tool, invoke, film, still, items, previewClips, transitionDurations }
   const gesture = useRef<Gesture | null>(null)
   // Commands go out one after another, in the order the gesture made them.
   const queue = useRef<Promise<unknown>>(Promise.resolve())
@@ -163,6 +192,26 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
     }
   }, [])
 
+  /** The end of transition `id` a press at `x` takes (upstream `Hit::Transition`'s `edge`), or null in its middle. */
+  const transitionGrabAt = useCallback(
+    (id: number, x: number): TransitionGrab | null => {
+      const { scene, film } = latest.current
+      const found = findTransition(film, id)
+      if (!scene || !found || !(scene.frame > 0)) return null
+      const layout = layoutNow()
+      const t = tickAt(scene, layout, x)
+      const { info, clips } = found
+      const cut = cutOf(info, clips)
+      const alignment = alignmentOf(info.from, info.to)
+      const zone = EDGE_ZONE / layout.pps * scene.tps
+      const side = grabEnd(info, cut, alignment, t, zone)
+      if (side == null) return null
+      const frames = Math.max(1, Math.round(info.duration / scene.frame))
+      return { id, cut, alignment, side, end: side > 0 ? info.start + info.duration : info.start, pressT: t, frames, limit: maxFrames(info, clips, scene.frame) }
+    },
+    [layoutNow],
+  )
+
   /** Where the pointer last hovered over the tracks with no button down, so a tool chosen by key redraws its feedback there. */
   const hovered = useRef<{ x: number; y: number; mods: Mods } | null>(null)
   /** No hover feedback: the default cursor, no edge brackets, no Razor line or its snap indicator. */
@@ -186,6 +235,7 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       const layout = layoutNow()
       const grab = hitTest(scene, layout, x, y, tool, mods)
       element.style.cursor = cursorFor(tool, grab)
+      if (tool === 'Selection' && grab.kind === 'transition' && transitionGrabAt(grab.id, x)) element.style.cursor = 'col-resize'
       const row = grab.kind === 'edge' || grab.kind === 'clip' ? layout.rows.find((each) => each.track === grab.track) : undefined
       let razor = null
       let snapX: number | null = null
@@ -217,6 +267,9 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
   }, [tool, hover, clearHover])
   // Another document: a gesture in progress, its feedback, and the clip menu belong to the old one.
   const [menu, setMenu] = useState<{ at: ContextMenuPoint; clip: number | null } | null>(null)
+  // The transition menu (Set Transition Duration…), and the Set Transition Duration dialog's transition.
+  const [transitionMenu, setTransitionMenu] = useState<{ at: ContextMenuPoint; id: number } | null>(null)
+  const [durationDialog, setDurationDialog] = useState<number | null>(null)
   useLayoutEffect(() => {
     // Pending input belongs to the document/sequence and configuration that accepted it.
     // Subscribe synchronously: a deny/allow pair may arrive before React renders either one.
@@ -226,6 +279,9 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       finish()
       clearHover()
       setMenu(null)
+      setTransitionMenu(null)
+      setDurationDialog(null)
+      localSelection.set({ transition: null })
     }
     cancel()
     const unsubscribe = uiStore.subscribe(cancel)
@@ -235,6 +291,32 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       finish()
     }
   }, [doc, projectEpoch, film?.activeSequence, uiStore, finish, clearHover])
+
+  /** A transition end's drag where the pointer is now: its span drawn, snapped as upstream snaps it. */
+  const updateTransition = useCallback(
+    (current: Gesture) => {
+      const { scene, film } = latest.current
+      const grab = current.transition?.grab
+      if (!scene || !grab || !current.transition) return
+      const found = findTransition(film, grab.id)
+      const layout = layoutNow()
+      let snapX: number | null = null
+      const exclude = found ? [found.info.from, found.info.to].filter((clip): clip is number => clip != null) : []
+      const dragged = dragEnd(
+        grab,
+        tickAt(scene, layout, current.x),
+        (t) => {
+          const snapped = snapTo(scene, layout, t, exclude, true)
+          snapX = snapped.x
+          return snapped.time
+        },
+        scene.frame,
+      )
+      current.transition.frames = dragged.frames
+      dragView.set({ transition: { id: grab.id, start: dragged.start, duration: dragged.duration }, snapX })
+    },
+    [dragView, layoutNow],
+  )
 
   /**
    * The press becomes a drag (upstream `drag_started`): what that sends now, with the modifiers of
@@ -248,13 +330,19 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       current.started = true
       if (current.timer) clearTimeout(current.timer)
       current.timer = null
+      // A transition's end resizes it (upstream `Drag::Transition`); its middle does nothing: the
+      // engine has no command that moves a transition along its cut.
+      if (current.transition) {
+        updateTransition(current)
+        return
+      }
       const started = begin(scene, layoutNow(), current.pressed, tool, current.mods, false)
       send(started.commands)
       current.drag = started.drag
       if (current.drag) current.frame = requestAnimationFrame(autoScroll)
       update()
     },
-    [autoScroll, layoutNow, send, update],
+    [autoScroll, layoutNow, send, update, updateTransition],
   )
 
   const onPointerDown = useCallback(
@@ -265,6 +353,11 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       const mods = modsOf(event)
       event.currentTarget.setPointerCapture(event.pointerId)
       const current: Gesture = { pointer: event.pointerId, pressed: { x, y, grab: hitTest(scene, layoutNow(), x, y, tool, mods) }, mods, started: false, drag: null, x, y, frame: 0, timer: null }
+      const grab = current.pressed.grab
+      // The Selection tool on a transition: a click selects it, a drag of an end resizes it.
+      if (tool === 'Selection' && grab.kind === 'transition') current.transition = { id: grab.id, grab: transitionGrabAt(grab.id, x), frames: 0 }
+      // A press anywhere else on the tracks lets go of the transition chosen.
+      else localSelection.set({ transition: null })
       // Held past egui's click time, a press is a drag where it is.
       current.timer = setTimeout(() => {
         current.timer = null
@@ -274,7 +367,7 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       hovered.current = null
       dragView.set({ razor: null, brackets: [], snapX: null })
     },
-    [dragView, layoutNow, placeOf, startDrag],
+    [dragView, layoutNow, placeOf, startDrag, transitionGrabAt],
   )
 
   const onPointerMove = useCallback(
@@ -294,14 +387,33 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
         if (isDrag(x - current.pressed.x, y - current.pressed.y)) startDrag(current)
         return
       }
-      update()
+      if (current.transition) updateTransition(current)
+      else update()
     },
-    [clearHover, hover, placeOf, root, startDrag, update],
+    [clearHover, hover, placeOf, root, startDrag, update, updateTransition],
   )
 
   const onPointerLeave = useCallback(() => {
     if (!gesture.current) clearHover()
   }, [clearHover])
+
+  /** Selects transition `id` (upstream `timeline.select` with `transitions`): the clips are let go. */
+  const selectTransition = useCallback(
+    (id: number) => {
+      localSelection.set({ transition: id })
+      if ((latest.current.scene?.selection.length ?? 0) > 0) send([{ id: 'timeline.select', params: { clips: [] } }])
+    },
+    [send],
+  )
+  /** Gives transition `id` a length of `frames`: one apply of it again (`durationCommand`), and the new one selected. */
+  const resizeTransition = useCallback(async (id: number, frames: number) => {
+    const found = findTransition(latest.current.film, id)
+    const command = found ? durationCommand(found.info, found.kind, frames) : null
+    if (!command) return
+    const generation = epoch.current
+    const applied = appliedTransition(await latest.current.invoke(command.id, command.params))
+    if (epoch.current === generation && applied != null) localSelection.set({ transition: applied })
+  }, [])
 
   const onPointerUp = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -309,6 +421,13 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       if (!current || event.pointerId !== current.pointer) return
       const { scene, tool } = latest.current
       const { x, y } = placeOf(event)
+      if (current.transition) {
+        const { id, grab, frames } = current.transition
+        finish()
+        if (!current.started) selectTransition(id)
+        else if (grab && frames > 0 && frames !== grab.frames) void resizeTransition(id, frames)
+        return
+      }
       // A click acts with the modifiers held when it ends (upstream's `clicked` frame).
       if (scene && !current.started) {
         const clicked = begin(scene, layoutNow(), current.pressed, tool, modsOf(event), true)
@@ -321,7 +440,7 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       }
       finish()
     },
-    [finish, layoutNow, placeOf, send, store],
+    [finish, layoutNow, placeOf, resizeTransition, selectTransition, send, store],
   )
 
   // The clip menu (upstream's `context_menu` on the tracks): a right-click selects an unselected clip first.
@@ -337,21 +456,37 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       if (isMac() && event.ctrlKey && event.button === 0) return
       const { x, y } = placeOf(event)
       const hit = hitAt(scene, layoutNow(), x, y)
+      if (hit.kind === 'transition') {
+        selectTransition(hit.id)
+        setTransitionMenu({ at: { x: event.clientX, y: event.clientY }, id: hit.id })
+        return
+      }
+      localSelection.set({ transition: null })
       const clip = hit.kind === 'clip' ? hit.clip : null
       if (clip != null && !scene.selection.includes(clip)) send([{ id: 'timeline.select', params: { clips: [clip] } }])
       setMenu({ at: { x: event.clientX, y: event.clientY }, clip })
     },
-    [layoutNow, placeOf, send],
+    [layoutNow, placeOf, selectTransition, send],
   )
   const closeMenu = useCallback(() => setMenu(null), [])
+  const closeTransitionMenu = useCallback(() => setTransitionMenu(null), [])
+  const closeDurationDialog = useCallback(() => setDurationDialog(null), [])
 
   // A double-click on a nested sequence's clip opens it in its own Timeline tab.
   const onDoubleClick = useCallback(
     (event: ReactMouseEvent<HTMLDivElement>) => {
       const { scene, tool, items, previewClips: previewing } = latest.current
-      if (!scene || previewing || tool !== 'Selection' || !(event.target as Element).closest('.film-tl-lane')) return
+      // The press's pointer capture makes the panel itself the double-click's target: its place decides (`hitAt`).
+      const onLane = (event.target as Element).closest('.film-tl-lane') != null || event.target === event.currentTarget
+      if (!scene || previewing || tool !== 'Selection' || !onLane) return
       const { x, y } = placeOf(event)
       const hit = hitAt(scene, layoutNow(), x, y)
+      // A double-click on a transition: Set Transition Duration (upstream `open_duration`).
+      if (hit.kind === 'transition') {
+        selectTransition(hit.id)
+        setDurationDialog(hit.id)
+        return
+      }
       if (hit.kind !== 'clip') return
       const found = findClip(scene, hit.clip)
       if (!found || items.get(found.clip.item)?.type !== 'Sequence') return
@@ -360,13 +495,60 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
         { id: 'sequence.revealNested', params: {} },
       ])
     },
-    [layoutNow, placeOf, send],
+    [layoutNow, placeOf, selectTransition, send],
+  )
+
+  /**
+   * An effect from the Effects panel over the tracks (upstream `effect_drop_preview`): the clip under
+   * the pointer, if the effect fits its track, outlined; a transition's span on the nearer cut of
+   * that clip, with its alignment; and the commands its drop sends (the apply, then the clip
+   * selected, as upstream), or null where it cannot land.
+   */
+  const effectTarget = useCallback(
+    (event: { clientX: number; clientY: number; dataTransfer: DataTransfer | null }): { commands: Command[]; view: NonNullable<ReturnType<typeof dragView.get>['effectDrop']> } | null => {
+      const { scene, transitionDurations } = latest.current
+      const payload: EffectPayload | null = effectDrag(event.dataTransfer)
+      if (!scene || !payload) return null
+      const { x, y } = placeOf(event)
+      const layout = layoutNow()
+      if (x < 0 || x > layout.width) return null
+      const row = layout.rows.find((each) => each.top <= y && y < each.top + each.height)
+      const track = row ? scene.tracks.find((each) => each.id === row.track) : undefined
+      if (!row || !track) return null
+      const t = tickAt(scene, layout, x)
+      const clip = track.clips.find((each) => each.start <= t && t < each.start + each.duration)
+      if (!clip) return null
+      const box = { top: row.top, height: row.height }
+      const clipView = { x: xOf(scene, layout, clip.start), width: (clip.duration / scene.tps) * layout.pps, ...box, transition: false, cutX: null, label: null }
+      if ('preset' in payload) {
+        if (track.kind !== 'video') return null
+        return { commands: [{ id: 'presets.apply', params: { preset: payload.preset, clips: [clip.id] } }, { id: 'timeline.select', params: { clips: [clip.id] } }], view: clipView }
+      }
+      if (!fitsTrack(payload.kind, track.kind)) return null
+      if (!isTransition(payload.kind)) return { commands: [{ id: 'effects.apply', params: { effect: payload.effect, clips: [clip.id] } }, { id: 'timeline.select', params: { clips: [clip.id] } }], view: clipView }
+      const { edge, cut, alignment } = dropEdge(clip, track.clips, t)
+      const span = transitionSpan(cut, defaultDuration(track.kind === 'video' ? transitionDurations.video : transitionDurations.audio, scene.frame, scene.tps), alignment, scene.frame)
+      const left = xOf(scene, layout, span.start)
+      return {
+        // `effects.apply` takes no edge: the transition commands place it on the clip's edge the pointer is nearer.
+        commands: [{ id: track.kind === 'video' ? 'sequence.applyVideoTransition' : 'sequence.applyAudioTransition', params: { effect: payload.effect, clip: clip.id, edge } }],
+        view: { x: left, width: Math.max(2, (span.duration / scene.tps) * layout.pps), ...box, transition: true, cutX: xOf(scene, layout, cut), label: ALIGNMENT_LABELS[alignment] },
+      }
+    },
+    [layoutNow, placeOf],
   )
 
   // Drops from the Project panel and the Source monitor (`timeline.place`), previewed where they would land.
   const onDragOver = useCallback(
     (event: ReactDragEvent<HTMLDivElement>) => {
       const { scene, items, still, film, previewClips: previewing } = latest.current
+      if (scene && film && !previewing && carriesEffect(event.dataTransfer)) {
+        event.preventDefault()
+        const target = effectTarget(event)
+        event.dataTransfer.dropEffect = target ? 'copy' : 'none'
+        dragView.set({ effectDrop: target?.view ?? null })
+        return
+      }
       if (!scene || !film || previewing || !event.dataTransfer.types.includes(FILM_DRAG_TYPE)) return
       event.preventDefault()
       event.dataTransfer.dropEffect = 'copy'
@@ -393,7 +575,7 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
   )
   const onDragLeave = useCallback(
     (event: ReactDragEvent<HTMLDivElement>) => {
-      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) dragView.set({ drop: null, snapX: null })
+      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) dragView.set({ drop: null, snapX: null, effectDrop: null })
     },
     [dragView],
   )
@@ -401,6 +583,14 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
     (event: ReactDragEvent<HTMLDivElement>) => {
       const { scene, previewClips: previewing } = latest.current
       if (previewing) return
+      if (carriesEffect(event.dataTransfer)) {
+        event.preventDefault()
+        const target = effectTarget(event)
+        dragView.set({ effectDrop: null })
+        endEffectDrag()
+        if (target) send(target.commands)
+        return
+      }
       const payload = filmDrag(event.dataTransfer)
       dragView.set({ drop: null, snapX: null })
       if (!scene || !payload) return
@@ -414,5 +604,5 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
   )
 
   const handlers = { onPointerDown, onPointerMove, onPointerUp, onPointerLeave, onPointerCancel: finish, onLostPointerCapture: finish, onContextMenu, onDoubleClick, onDragOver, onDragLeave, onDrop }
-  return { dragView, handlers, menu, closeMenu, scene }
+  return { dragView, handlers, menu, closeMenu, scene, transitionMenu, closeTransitionMenu, durationDialog, openDurationDialog: setDurationDialog, closeDurationDialog }
 }

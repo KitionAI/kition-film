@@ -148,7 +148,7 @@ test('Edit mode is served; Import and Export modes are not (wave 3)', () => {
 test('window.panel.<Kind> of a panel the editor does not draw opens nothing and says why', () => {
   const { s, route } = page()
   const before = s.tree
-  assert.throws(() => route('window.panel.Effects', {}), /does not draw this panel/)
+  assert.throws(() => route('window.panel.Metadata', {}), /does not draw this panel/)
   assert.throws(() => route('window.panel.MediaBrowser', {}), /File ▸ Import/)
   assert.equal(s.tree, before)
 })

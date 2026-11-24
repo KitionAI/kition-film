@@ -183,9 +183,10 @@ export function dialogLabels(specs) {
 
 /**
  * Every label Film draws through phrase() that the rule above can read without a browser, with
- * where it comes from. `engineCommands` (the built engine's `commands()`) is optional.
+ * where it comes from. `engineCommands` (the built engine's `commands()`) and `engineEffects`
+ * (the labels the Effects panel draws from its `effects.list` and `presets.list`) are optional.
  */
-export async function drawnLabels({ engineCommands = null } = {}) {
+export async function drawnLabels({ engineCommands = null, engineEffects = null } = {}) {
   const web = fileURLToPath(new URL('..', import.meta.url))
   const manifest = JSON.parse(readFileSync(new URL('./film-upstream.json', import.meta.url), 'utf8'))
   const status = JSON.parse(readFileSync(new URL('./film-status.json', import.meta.url), 'utf8'))
@@ -230,6 +231,8 @@ export async function drawnLabels({ engineCommands = null } = {}) {
   // A declared label that is a key of the editor's strings (`exportMovie`) is read through t().
   const { CATALOGS } = await import(new URL('../src/strings.ts', import.meta.url).href)
   for (const group of Object.values(FILM_UI)) for (const item of group ?? []) if (!(item.label in CATALOGS['en-US'])) add(item.label, 'Kit UI declaration')
+  // The Effects panel's folders, effects, and presets, as the built engine lists them (`effectsTree.ts` `effectLabels`).
+  for (const label of engineEffects ?? []) add(label, 'Effects panel')
   for (const command of engineCommands ?? []) {
     add(command.title, 'engine command')
     for (const name of command.menu ?? []) add(name, 'engine menu')
@@ -261,6 +264,7 @@ export const LABEL_TABLES = [
   { file: 'dialogs/project.ts', name: 'VIEW_LABELS' },
   { file: 'panels/projectModel.ts', name: 'FONT_SIZES' },
   { file: 'session/errors.ts', name: 'ENGINE_REASONS', fields: ['reason'] },
+  { file: 'timeline/transitions.ts', name: 'ALIGNMENT_LABELS' },
 ]
 
 /** The text of the declaration `const <name> =` in `text`: up to the end of its value (balanced brackets, or its line). */

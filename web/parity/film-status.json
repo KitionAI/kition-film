@@ -1612,9 +1612,8 @@
     "wave": 1
   },
   "menu:Window/window.panel.Effects": {
-    "status": "hidden",
-    "wave": 1,
-    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
+    "status": "done",
+    "wave": 1
   },
   "menu:Window/window.panel.Markers": {
     "status": "done",
@@ -2748,9 +2747,9 @@
     "note": "Dropped from wave 2: Info's UI line (UI frame rate and frames queued). The web editor renders on demand and keeps no frame queue, and the status bar already shows the playback fps."
   },
   "panel:effects": {
-    "status": "hidden",
+    "status": "done",
     "wave": 2,
-    "reason": "The editor does not draw this panel yet; its tab said only \"Not available in this editor yet\"."
+    "note": "The plan \"Film usable by hand\", phase 3: the folder tree, search, double-click and drag to a clip, a cut, or Effect Controls; Color Presets wait for the Color panel."
   },
   "panel:markers": {
     "status": "done",
@@ -3613,11 +3612,11 @@
     "reason": "The value and velocity graphs (graph_rows) follow in wave 2; Task 19's plan covers the lane, not the graphs."
   },
   "element:effects.item.{}": {
-    "status": "todo",
+    "status": "done",
     "wave": 2
   },
   "element:effects.folder.{}/{}": {
-    "status": "todo",
+    "status": "done",
     "wave": 2
   },
   "element:effects.presetMenu.apply": {
@@ -6195,7 +6194,7 @@
     "wave": 3
   },
   "element:effects.preset.{}": {
-    "status": "todo",
+    "status": "done",
     "wave": 2
   },
   "element:savePreset.name": {

@@ -35,7 +35,9 @@ import { editPointMarks, emptyDropCommand, type Row as GestureRow } from './gest
 import { FILM_DRAG_TYPE, endFilmDrag, filmDrag } from './drop'
 import { useDragView, type DragViewStore } from './dragView'
 import { ClipMenu } from './ClipMenu'
-import { useGestures, type GestureGeometry, type StillDuration } from './useGestures'
+import { useGestures, type GestureGeometry, type StillDuration, type TransitionDurations } from './useGestures'
+import { TransitionMenu, TransitionDurationDialog } from './TransitionControls'
+import { useLocalSelection } from '../session/localSelection'
 import { PreviewGhosts } from './PreviewGhosts'
 import type { Thumbnails } from './thumbnails'
 import { PreviewContext, previewCacheKey, useDrawsPreview, usePreviewFilm, usePreviewState } from '../dialogs/usePreview'
@@ -64,8 +66,8 @@ const FADE_OUT = fade(Math.cos)
 const FADE_IN = fade(Math.sin)
 
 /** Settings ▸ Timeline and ▸ Trim, as the panel reads them. */
-type Prefs = { autoScroll: string; mouseScrolling: string; still: StillDuration; rollRipple: boolean }
-const DEFAULT_PREFS: Prefs = { autoScroll: 'pageScroll', mouseScrolling: 'vertical', still: { amount: 5, unit: 'seconds' }, rollRipple: false }
+type Prefs = { autoScroll: string; mouseScrolling: string; still: StillDuration; rollRipple: boolean; transitions: TransitionDurations }
+const DEFAULT_PREFS: Prefs = { autoScroll: 'pageScroll', mouseScrolling: 'vertical', still: { amount: 5, unit: 'seconds' }, rollRipple: false, transitions: { video: { duration: 30, unit: 'frames' }, audio: { duration: 1, unit: 'seconds' } } }
 
 /** Transition names by effect id, and which effects are audio transitions (the engine's `effects.list`). */
 type Transitions = { names: Record<string, string>; audio: ReadonlySet<string> }
@@ -330,6 +332,8 @@ type HalfProps = {
 /** One half of the track area: its headers and lanes, clipped to it, the clips in view drawn on each lane's scrolling layer. */
 function TrackHalf({ kind, tracks, rows, top, height, headerWidth, contentWidth, view, film, session, colors, items, revision, targeting, transitions, media, dpr, dragView, clipsById, editMarks, run, onResize, onToggleHeight, phrase, preview, previewing, pictures, pictureItems, previewOnly }: HalfProps) {
   const previews = useDragView(dragView, (shown) => shown.previews)
+  const resized = useDragView(dragView, (shown) => shown.transition)
+  const chosenTransition = useLocalSelection((selection) => selection.transition)
   if (height <= 0) return null
   const tps = film.ticksPerSecond
   const visibleFrom = timeAt(view, -2)
@@ -424,13 +428,16 @@ function TrackHalf({ kind, tracks, rows, top, height, headerWidth, contentWidth,
                   )
                 })}
                 {track.transitions.map((transition) => {
-                  const left = transition.start * view.pps
-                  const width = transition.duration * view.pps
-                  const name = transitions.names[transition.effect] ?? transition.effect
+                  // A transition whose end is being dragged is drawn where the drag has it.
+                  const span = resized?.id === transition.id ? { start: resized.start / tps, duration: resized.duration / tps } : transition
+                  const left = span.start * view.pps
+                  const width = span.duration * view.pps
+                  const name = phrase(transitions.names[transition.effect] ?? transition.effect)
+                  const selected = chosenTransition === transition.id
                   // Audio by the effect's kind (upstream `EffectKind::AudioTransition`): crossing fade curves, no name.
                   const audio = transitions.audio.has(transition.effect)
                   return (
-                    <span key={transition.id} className="film-tl-transition" style={{ transform: `translateX(${left}px)`, width, height: Math.max(0, row.height - 18) }} title={name} data-audio={audio || undefined} data-kit-ui-id="control:timeline.transition">
+                    <span key={transition.id} className="film-tl-transition" style={{ transform: `translateX(${left}px)`, width, height: Math.max(0, row.height - 18) }} title={name} data-audio={audio || undefined} data-selected={selected || undefined} aria-selected={selected} data-kit-ui-id="control:timeline.transition" data-testid={`film-transition-${transition.id}`}>
                       {audio ? (
                         <svg className="film-tl-fades" viewBox="0 0 16 16" preserveAspectRatio="none" aria-hidden="true">
                           <polyline points={FADE_OUT} vectorEffect="non-scaling-stroke" />
@@ -601,12 +608,16 @@ export function TimelinePanel(props: TimelinePanelProps) {
     })
     void Promise.all([query('prefs.get', { key: 'timeline' }), query('prefs.get', { key: 'trim' })])
       .then(([timeline, trim]) => {
-        const value = timeline as { autoScroll?: string; mouseScrolling?: string; stillImageDuration?: number; stillImageUnit?: string } | null
+        const value = timeline as { autoScroll?: string; mouseScrolling?: string; stillImageDuration?: number; stillImageUnit?: string; videoTransitionDuration?: number; videoTransitionUnit?: string; audioTransitionDuration?: number; audioTransitionUnit?: string } | null
         setPrefs({
           autoScroll: value?.autoScroll ?? DEFAULT_PREFS.autoScroll,
           mouseScrolling: value?.mouseScrolling ?? DEFAULT_PREFS.mouseScrolling,
           still: { amount: value?.stillImageDuration ?? DEFAULT_PREFS.still.amount, unit: value?.stillImageUnit ?? DEFAULT_PREFS.still.unit },
           rollRipple: (trim as { selectionToolRollRipple?: boolean } | null)?.selectionToolRollRipple ?? false,
+          transitions: {
+            video: { duration: value?.videoTransitionDuration ?? DEFAULT_PREFS.transitions.video.duration, unit: value?.videoTransitionUnit ?? DEFAULT_PREFS.transitions.video.unit },
+            audio: { duration: value?.audioTransitionDuration ?? DEFAULT_PREFS.transitions.audio.duration, unit: value?.audioTransitionUnit ?? DEFAULT_PREFS.transitions.audio.unit },
+          },
         })
       })
       .catch(() => undefined)
@@ -653,7 +664,7 @@ export function TimelinePanel(props: TimelinePanelProps) {
 
   const gestureGeometry = useRef<GestureGeometry>({ headerWidth, contentWidth, rows: [], maxVideo: 0 })
   const geometryOf = useCallback(() => gestureGeometry.current, [])
-  const gestures = useGestures({ film, session, store, tool, invoke, rollRipple: prefs.rollRipple, still: prefs.still, items, geometry: geometryOf, root, doc, previewClips: documentClips })
+  const gestures = useGestures({ film, session, store, tool, invoke, rollRipple: prefs.rollRipple, still: prefs.still, transitionDurations: prefs.transitions, items, geometry: geometryOf, root, doc, previewClips: documentClips })
   const { scene } = gestures
   const editMarks = useMemo(() => {
     const byTrack = new Map<number, ReturnType<typeof editPointMarks>>()
@@ -838,6 +849,8 @@ export function TimelinePanel(props: TimelinePanelProps) {
         <ZoomBar view={view} store={store} width={contentWidth} duration={duration} testId="film-timeline-zoombar" />
       </div>
       <GestureOverlay dragView={gestures.dragView} left={headerWidth} width={contentWidth} top={TOP_H - RULER_H} bottom={audioTop + audioHeight} phrase={phrase} />
+      {gestures.transitionMenu ? <TransitionMenu at={gestures.transitionMenu.at} onClose={gestures.closeTransitionMenu} onDuration={() => gestures.openDurationDialog(gestures.transitionMenu!.id)} phrase={phrase} /> : null}
+      {gestures.durationDialog != null ? <TransitionDurationDialog id={gestures.durationDialog} film={film} invoke={invoke} onClose={gestures.closeDurationDialog} phrase={phrase} /> : null}
       {gestures.menu ? <ClipMenu at={gestures.menu.at} onClose={gestures.closeMenu} film={film} labels={labels} clip={gestures.menu.clip} invoke={invoke} query={query} phrase={phrase} /> : null}
     </div>
   )
@@ -859,6 +872,17 @@ function GestureOverlay({ dragView, left, width, top, bottom, phrase }: { dragVi
       {shown.brackets.map((bracket) => (
         <span key={`${bracket.x}:${bracket.out}`} className="film-tl-bracket" data-out={bracket.out || undefined} data-ripple={bracket.ripple || undefined} style={{ left: bracket.out ? bracket.x - 6 : bracket.x, top: bracket.top + 1, height: Math.max(0, bracket.height - 2) }} />
       ))}
+      {shown.effectDrop ? (
+        <>
+          <span className="film-tl-effect-drop" data-transition={shown.effectDrop.transition || undefined} style={{ left: shown.effectDrop.x, width: shown.effectDrop.width, top: shown.effectDrop.top + 1, height: Math.max(0, shown.effectDrop.height - 2) }} data-kit-ui-id="control:timeline.effectDrop" data-testid="film-timeline-effect-drop" />
+          {shown.effectDrop.cutX != null ? <span className="film-tl-effect-drop-cut" style={{ left: shown.effectDrop.cutX, top: shown.effectDrop.top + 1, height: Math.max(0, shown.effectDrop.height - 2) }} /> : null}
+          {shown.effectDrop.label ? (
+            <span className="film-tl-effect-drop-label" style={{ left: shown.effectDrop.x + shown.effectDrop.width / 2, top: shown.effectDrop.top + 2 }} data-testid="film-timeline-effect-drop-label">
+              {phrase(shown.effectDrop.label)}
+            </span>
+          ) : null}
+        </>
+      ) : null}
       {shown.drop ? (
         <span className="film-tl-drop" style={{ left: shown.drop.x, width: Math.max(2, shown.drop.width), top: shown.drop.top + 1, height: Math.max(0, shown.drop.height - 2) }} data-testid="film-timeline-drop">
           {shown.drop.insert ? <span>{phrase('Insert')}</span> : null}

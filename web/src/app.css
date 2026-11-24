@@ -4079,3 +4079,144 @@ button.film-project-tab {
 .film-program-scrollbars[data-both] > .kui-scrollbar[aria-orientation='horizontal'] {
   right: 14px;
 }
+
+/* The Effects panel (upstream `panels/effects.rs`): a search box over a folder tree, 20 px rows. */
+.film-fx {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  font-size: 12px;
+  color: var(--kit-text);
+}
+
+.film-fx-search-row {
+  flex: none;
+  padding: 6px 8px;
+}
+
+.film-fx-search {
+  width: 100%;
+}
+
+.film-fx-tree {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.film-fx-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 20px;
+  padding-right: 8px;
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.film-fx-row:hover {
+  background: var(--kit-primary-soft);
+}
+
+.film-fx-item[aria-selected='true'] {
+  background: color-mix(in srgb, var(--kit-primary) 28%, transparent);
+}
+
+.film-fx-folder svg {
+  flex: none;
+  color: var(--kit-text-muted);
+}
+
+.film-fx-chevron {
+  flex: none;
+  width: 11px;
+}
+
+/* An effect's "fx" box, a transition's box crossed corner to corner (upstream draws both). */
+.film-fx-icon {
+  position: relative;
+  flex: none;
+  width: 13px;
+  height: 13px;
+  box-sizing: border-box;
+  border: 1px solid var(--kit-text-muted);
+  border-radius: 2px;
+  color: var(--kit-text-muted);
+  font-size: 7px;
+  line-height: 11px;
+  text-align: center;
+}
+
+.film-fx-icon[data-transition] {
+  background: linear-gradient(to top right, transparent calc(50% - 0.5px), var(--kit-text-muted) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px));
+}
+
+.film-fx-icon[data-preset] {
+  border-style: dashed;
+}
+
+.film-fx-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.film-fx-empty {
+  margin: 8px;
+  color: var(--kit-text-muted);
+}
+
+/* An effect dragged over a clip: the clip it lands on; a transition: where it lands on the cut, and its alignment. */
+.film-tl-effect-drop {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid var(--kit-primary);
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+.film-tl-effect-drop[data-transition] {
+  background: color-mix(in srgb, var(--kit-primary) 35%, transparent);
+}
+
+.film-tl-effect-drop-cut {
+  position: absolute;
+  width: 3px;
+  margin-left: -1.5px;
+  background: var(--kit-primary);
+  pointer-events: none;
+}
+
+.film-tl-effect-drop-label {
+  position: absolute;
+  padding: 0 4px;
+  border-radius: 2px;
+  background: var(--kit-surface);
+  color: var(--kit-primary);
+  font-size: 11px;
+  line-height: 15px;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* A selected transition (upstream fills it with the selection colour and outlines it). */
+.film-tl-transition[data-selected] {
+  border: 2px solid var(--kit-primary);
+  background: repeating-linear-gradient(-45deg, color-mix(in srgb, var(--kit-primary) 55%, transparent) 0 1px, rgba(0, 0, 0, 0.35) 1px 4px);
+}
+
+/* Effect Controls: the effect a person selected (its header), which Delete removes; and a drop of an effect. */
+.film-ec-effect[data-selected] .film-ec-left {
+  background: color-mix(in srgb, var(--kit-primary) 28%, transparent);
+}
+
+.film-ec[data-drop] {
+  outline: 2px solid var(--kit-primary);
+  outline-offset: -2px;
+}

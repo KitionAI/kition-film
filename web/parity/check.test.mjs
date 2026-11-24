@@ -114,7 +114,12 @@ const engine = existsSync(new URL('kition_film_kit_bg.wasm', engineDir))
   ? await (async () => {
       const sdk = await import(new URL('kition_film_kit.js', engineDir).href)
       sdk.initSync({ module: readFileSync(new URL('kition_film_kit_bg.wasm', engineDir)) })
-      return new Map(JSON.parse(sdk.FilmDocument.create('Untitled', 1920, 1080).commands()).map((command) => [command.id, command]))
+      const doc = sdk.FilmDocument.create('Untitled', 1920, 1080)
+      const commands = new Map(JSON.parse(doc.commands()).map((command) => [command.id, command]))
+      // The Effects panel draws the engine's effect, folder, and preset names through phrase().
+      const { effectDefsOf, effectLabels, presetsOf } = await import(new URL('../src/panels/effectsTree.ts', import.meta.url).href)
+      commands.effectLabels = effectLabels(effectDefsOf(JSON.parse(doc.execute('effects.list', '{}'))), presetsOf(JSON.parse(doc.execute('presets.list', '{}'))))
+      return commands
     })()
   : null
 
@@ -320,7 +325,7 @@ const zhCatalog = new URL('../src/i18n/upstream/zh-hans.tsv', import.meta.url)
 const zh = existsSync(zhCatalog) ? i18n.readCatalog(zhCatalog) : { table: new Map(), twice: [] }
 
 test('every label Film draws through phrase() has a zh-CN catalog entry', async () => {
-  const drawn = await i18n.drawnLabels({ engineCommands: engine ? [...engine.values()] : null })
+  const drawn = await i18n.drawnLabels({ engineCommands: engine ? [...engine.values()] : null, engineEffects: engine?.effectLabels ?? null })
   const overrides = PHRASES['zh-CN'] ?? {}
   const missing = [...drawn].filter(([label]) => !zh.table.has(label) && !(label in overrides)).map(([label, origin]) => `${JSON.stringify(label)} (${origin})`)
   console.log(`zh-CN: ${drawn.size} drawn labels${engine ? '' : ' (engine not built: its command titles unchecked)'}, ${zh.table.size} catalog entries, ${missing.length} missing`)

@@ -29,8 +29,12 @@ export type FilmClip = {
   timeInterpolation: string | null
 }
 
-/** A transition on a track, in seconds. */
-export type FilmTransition = { id: number; effect: string; start: number; duration: number }
+/**
+ * A transition on a track, in seconds: the clips it joins (`from` ends at the cut, `to` starts
+ * there; one of them is null at a free clip end), its settings as `{param: value}`, and whether it
+ * plays reversed.
+ */
+export type FilmTransition = { id: number; effect: string; start: number; duration: number; from: number | null; to: number | null; params: Record<string, unknown>; reverse: boolean }
 
 export type FilmTrack = {
   id: number
@@ -138,7 +142,7 @@ type InspectedTrack = {
   syncLock?: boolean
   enabled?: boolean
   items?: InspectedItem[]
-  transitions?: Array<{ id?: number; effect?: string; start?: number; duration?: number }>
+  transitions?: Array<{ id?: number; effect?: string; start?: number; duration?: number; from?: number | null; to?: number | null; params?: Record<string, unknown> | null; reverse?: boolean }>
 }
 
 type InspectedBin = { id?: number; item?: number; name?: string | null; type?: string | null; duration?: number | null; label?: string | null; stamp?: string | null; children?: InspectedBin[] }
@@ -238,7 +242,16 @@ export function describe(info: KitEngineInfo): FilmInfo {
       volumeDb: floatParam(item.effects?.find((effect) => effect.effect === 'volume')?.params?.level?.value) ?? 0,
       timeInterpolation: item.timeInterpolation ?? null,
     })),
-    transitions: (track.transitions ?? []).map((transition) => ({ id: transition.id ?? 0, effect: transition.effect ?? '', start: (transition.start ?? 0) / tps, duration: (transition.duration ?? 0) / tps })),
+    transitions: (track.transitions ?? []).map((transition) => ({
+      id: transition.id ?? 0,
+      effect: transition.effect ?? '',
+      start: (transition.start ?? 0) / tps,
+      duration: (transition.duration ?? 0) / tps,
+      from: transition.from ?? null,
+      to: transition.to ?? null,
+      params: transitionParams(transition.params),
+      reverse: transition.reverse ?? false,
+    })),
   }))
   const video = tracks('video', sequence?.video)
   const audio = tracks('audio', sequence?.audio)
@@ -320,4 +333,11 @@ export function picturePanBounds(width: number, height: number, zoom: number | n
   if (!zoom || !(width > 0) || !(height > 0)) return null
   const margin = SCROLL_MARGIN / zoom
   return { x0: -margin, y0: -margin, x1: width + margin, y1: height + margin }
+}
+
+/** A transition's settings as `sequence.inspect` gives them, as `{param: value}` (a keyframed parameter's `{value}`). */
+function transitionParams(params: Record<string, unknown> | null | undefined): Record<string, unknown> {
+  const out: Record<string, unknown> = {}
+  for (const [name, param] of Object.entries(params ?? {})) out[name] = param !== null && typeof param === 'object' && !Array.isArray(param) && 'value' in param ? (param as { value: unknown }).value : param
+  return out
 }

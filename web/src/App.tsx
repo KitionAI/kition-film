@@ -70,6 +70,8 @@ import { SourceMonitor } from './monitors/SourceMonitor'
 import { Placeholder } from './panels/Placeholder'
 import { ProjectPanel, type ProjectThumbnails } from './panels/ProjectPanel'
 import { EffectControls } from './panels/EffectControls'
+import { EffectsPanel } from './panels/EffectsPanel'
+import { localSelection } from './session/localSelection'
 import { PropertiesPanel } from './panels/PropertiesPanel'
 import { AudioMeters } from './panels/AudioMeters'
 import { MarkersPanel } from './panels/MarkersPanel'
@@ -618,6 +620,12 @@ function EffectControlsPart() {
   return <EffectControls film={live.state} doc={live.doc} revision={live.revision} playback={live.playback} invoke={live.invoke} seekTicks={live.seekTicks} phrase={live.phrase} />
 }
 
+/** Effects (upstream `panels/effects.rs` `show`): the effects, transitions, and presets to apply. */
+function EffectsPart() {
+  const live = useLive()
+  return <EffectsPanel open={live.doc != null} query={live.query} invoke={live.invoke} phrase={live.phrase} />
+}
+
 /** Properties (upstream `effect_controls::properties_panel`). */
 function PropertiesPart() {
   const live = useLive()
@@ -674,6 +682,7 @@ const PARTS: Readonly<Record<string, PanelParts>> = {
   source: { render: () => <SourcePanel /> },
   project: { render: () => <ProjectPart />, menu: (close) => <ProjectMenuPart close={close} /> },
   effectControls: { render: () => <EffectControlsPart /> },
+  effects: { render: () => <EffectsPart /> },
   properties: { render: () => <PropertiesPart /> },
   audioMeters: { render: () => <AudioMetersPart /> },
   markers: { render: () => <MarkersPart /> },
@@ -1106,6 +1115,17 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
       createInvoke({
         run: async (id, params, options) => {
           moves.current += 1
+          // Delete in Effect Controls removes the effect selected there (upstream `keys.rs`'s
+          // `selected_effect`); in the Timeline, a selected transition cannot be removed on its own
+          // (the engine has no such command), so Delete says so instead of acting on nothing.
+          if ((id === 'edit.clear' || id === 'edit.rippleDelete') && Object.keys(params).length === 0) {
+            const chosen = localSelection.get()
+            if (focusedNow.current === 'effectControls' && chosen.effect) {
+              localSelection.set({ effect: null })
+              return await session.run('effects.remove', { clip: chosen.effect.clip, index: chosen.effect.index }, null, options)
+            }
+            if (focusedNow.current === 'timeline' && chosen.transition != null && (stateNow.current?.selection.length ?? 0) === 0) throw new Error(t('transition.cannotDelete'))
+          }
           // Sequence ▸ Close Gap names no track: the gap the playhead is in (`closeGapTrack`), or why not.
           if (id === 'sequence.closeGap' && params.track === undefined) {
             const film = stateNow.current

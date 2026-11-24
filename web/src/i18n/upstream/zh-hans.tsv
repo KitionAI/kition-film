@@ -1688,3 +1688,341 @@
 	select an item or bin to rename	请先在“项目”面板中选择要重命名的项目或素材箱
 	Open a Source clip first	请先在源监视器中打开一个剪辑
 	In to Out duration	入点到出点的时长
+# The Effects panel (the plan "Film usable by hand", phase 3): its folders, the engine's effects, transitions and presets
+# (effects.list, presets.list), and the transition controls on the Timeline. Effect names follow the
+# Simplified Chinese names video editors use (过渡 for transitions, 溶解, 擦除, 划像, 键…).
+	Search effects	搜索效果
+	Set Transition Duration…	设置过渡持续时间…
+	Set Transition Duration	设置过渡持续时间
+	Folder	文件夹
+	Preset	预设
+	Audio Effects	音频效果
+	Audio Transitions	音频过渡
+	Video Effects	视频效果
+	Video Transitions	视频过渡
+	Legacy	旧版
+	Presets	预设
+	Center at Cut	中心切入
+	Start at Cut	起点切入
+	End at Cut	终点切入
+	Effect drop	效果放置位置
+	Blur In	模糊入
+	Gaussian Blur from 60 to 0 over the first second	高斯模糊在第一秒内从 60 降到 0
+	Blur Out	模糊出
+	Gaussian Blur from 0 to 60 over the last second	高斯模糊在最后一秒内从 0 升到 60
+	Fade In	淡入
+	Opacity 0 → 100 % over the first second	不透明度在第一秒内从 0 升到 100%
+	Fade Out	淡出
+	Opacity 100 → 0 % over the last second	不透明度在最后一秒内从 100% 降到 0
+	Mosaic In	马赛克入
+	Large blocks resolving to the picture over the first second	第一秒内由大色块逐渐还原成画面
+	Soft Vignette	柔和暗角
+	Darkens outside a feathered oval mask	压暗羽化椭圆蒙版之外的部分
+	Spotlight	聚光灯
+	Brightens inside a feathered circular mask	提亮羽化圆形蒙版之内的部分
+	Warm Tint	暖色调
+	Warm highlights, brown shadows	暖色高光，棕色阴影
+	PiP 35% Upper Right	画中画 35% 右上
+	Picture-in-picture: 35 % scale in the upper right	画中画：缩放到 35%，放在右上角
+	Amplitude and Compression	振幅与压限
+	Amplify	增幅
+	Channel Mixer	通道混合器
+	DeEsser	消除齿音
+	Dynamics	动态
+	Dynamics Processing	动态处理
+	Hard Limiter	强制限幅
+	Multiband Compressor	多频段压缩器
+	Single-band Compressor	单频段压缩器
+	Tube-modeled Compressor	电子管建模压缩器
+	Delay and Echo	延迟与回声
+	Analog Delay	模拟延迟
+	Delay	延迟
+	Multitap Delay	多功能延迟
+	Filter and EQ	滤波器和 EQ
+	Bandpass	带通
+	Bass	低音
+	FFT Filter	FFT 滤波器
+	Graphic Equalizer (10 Bands)	图形均衡器（10 段）
+	Graphic Equalizer (20 Bands)	图形均衡器（20 段）
+	Graphic Equalizer (30 Bands)	图形均衡器（30 段）
+	Highpass	高通
+	Lowpass	低通
+	Notch Filter	陷波滤波器
+	Parametric Equalizer	参数均衡器
+	Scientific Filter	科学滤波器
+	Simple Notch Filter	简单的陷波滤波器
+	Simple Parametric EQ	简单的参数均衡
+	Treble	高音
+	Modulation	调制
+	Chorus/Flanger	和声/镶边
+	Flanger	镶边
+	Phaser	移相器
+	Noise Reduction/Restoration	降杂/恢复
+	Automatic Click Remover	自动咔嗒声移除
+	DeHummer	消除嗡嗡声
+	DeNoise	降噪
+	DeReverb	减少混响
+	Enhance Speech	增强语音
+	Reverb	混响
+	Convolution Reverb	卷积混响
+	Studio Reverb	室内混响
+	Surround Reverb	环绕声混响
+	Special	特殊效果
+	Binauralizer - Ambisonics	双耳化 - 全景声
+	Distortion	失真
+	Fill Left with Right	用右侧填充左侧
+	Fill Right with Left	用左侧填充右侧
+	GuitarSuite	吉他套件
+	Invert	反转
+	Loudness Meter	响度计
+	Mastering	母带处理
+	Panner - Ambisonics	声像器 - 全景声
+	Swap Channels	互换声道
+	Vocal Enhancer	人声增强
+	Stereo Imagery	立体声声像
+	Stereo Expander	立体声扩展器
+	Stereo Width	立体声宽度
+	Time and Pitch	时间与变调
+	Pitch Shifter	音高换档器
+	Balance	平衡
+	Mute	静音
+	Crossfade	交叉淡化
+	Constant Power	恒定功率
+	Constant Gain	恒定增益
+	Exponential Fade	指数淡化
+	Adjust	调整
+	Levels	色阶
+	Lighting Effects	光照效果
+	ProcAmp	ProcAmp
+	Blur & Sharpen	模糊与锐化
+	Bokeh Blur	散景模糊
+	Channel Blur	通道模糊
+	Compound Blur	复合模糊
+	Directional Blur	方向模糊
+	Focus Blur	焦点模糊
+	Gaussian Blur	高斯模糊
+	Reduce Interlace Flicker	减少交错闪烁
+	Sharpen	锐化
+	Unsharp Mask	钝化蒙版
+	Color Correction	颜色校正
+	ASC CDL	ASC CDL
+	Brightness & Contrast	亮度与对比度
+	Tint	色彩
+	Video Limiter	视频限制器
+	Vignette	暗角
+	Distort	扭曲
+	Corner Pin	边角定位
+	Lens Distortion	镜头扭曲
+	Magnify	放大
+	Mirror	镜像
+	Spherize	球面化
+	Turbulent Displace	湍流置换
+	Twirl	旋转扭曲
+	Warp Stabilizer	变形稳定器
+	Wave Warp	波形变形
+	Generate	生成
+	4-Color Gradient	四色渐变
+	Gradient	梯度渐变
+	Image Control	图像控制
+	Black & White	黑白
+	Channel Mix	通道混合
+	Color Pass	颜色过滤
+	Color Replace	颜色替换
+	Gamma Correction	灰度系数校正
+	Rounded Crop	圆角裁剪
+	Immersive Video	沉浸式视频
+	VR Blur	VR 模糊
+	VR Chromatic Aberrations	VR 色差
+	VR Color Gradients	VR 颜色渐变
+	VR De-Noise	VR 降噪
+	VR Digital Glitch	VR 数字故障
+	VR Fractal Noise	VR 分形杂色
+	VR Glow	VR 发光
+	VR Plane to Sphere	VR 平面到球面
+	VR Projection	VR 投影
+	VR Rotate Sphere	VR 旋转球面
+	VR Sharpen	VR 锐化
+	Keying	键控
+	Alpha Adjust	Alpha 调整
+	Color Key	颜色键
+	Logo Cutout	标志抠像
+	Luma Key	亮度键
+	Track Matte Key	轨道遮罩键
+	Ultra Key	超级键
+	Lights & Glows	光效与发光
+	Echo Glow	回声发光
+	Edge Glow	边缘发光
+	Glint	闪光点
+	Lens Flare	镜头光晕
+	Light Leaks	漏光
+	RGB Split	RGB 分离
+	Volumetric Rays	体积光
+	Wonder Glow	奇幻发光
+	Noise & Grain	杂色与颗粒
+	Noise	杂色
+	Perspective	透视
+	Basic 3D	基本 3D
+	Drop Shadow	投影
+	Long Shadow	长投影
+	Stylize	风格化
+	Brush Strokes	画笔描边
+	Color Emboss	彩色浮雕
+	Find Edges	查找边缘
+	Mosaic	马赛克
+	Posterize	色调分离
+	Roughen Edges	粗糙边缘
+	Strobe Light	闪光灯
+	Time	时间
+	Posterize Time	抽帧时间
+	3D Rotate	3D 旋转
+	Auto Reframe	自动重构
+	Camera Shake	摄像机抖动
+	Grow	放大入场
+	Horizontal Flip	水平翻转
+	Offset	位移
+	Shrink	缩小离场
+	Spin	旋转
+	Spacer	间隔
+	Vertical Flip	垂直翻转
+	Wiggle	摆动
+	Utility	实用程序
+	Auto Align	自动对齐
+	Cineon Converter	Cineon 转换器
+	Clone	克隆
+	Simple Text	简单文本
+	Metadata & Timecode Burn-in	元数据和时间码刻录
+	Obsolete	过时
+	Bevel Alpha	斜面 Alpha
+	Cell Pattern	单元格图案
+	Change to Color	更改为颜色
+	Checkerboard	棋盘
+	Circle	圆形
+	Color Balance	颜色平衡
+	Echo	残影
+	Emboss	浮雕
+	Grid	网格
+	Leave Color	保留颜色
+	Lightning	闪电
+	Median	中间值
+	Paint Bucket	油漆桶
+	Write-on	书写
+	Animation	动画
+	Block Motion	方块运动
+	Flip Motion	翻转运动
+	Fold Motion	折叠运动
+	Pop Motion	弹出运动
+	Pull Motion	拉动运动
+	Spin Motion	旋转运动
+	Spring Motion	弹簧运动
+	Travel Motion	穿行运动
+	Additive Dissolve	叠加溶解
+	Blur Dissolve	模糊溶解
+	Burn Alpha	烧灼 Alpha
+	Cross Dissolve	交叉溶解
+	Dip to Black	黑场过渡
+	Dip to Color	颜色过渡
+	Dip to White	白场过渡
+	Film Dissolve	胶片溶解
+	Luma Fade	亮度淡化
+	Morph Cut	变形剪切
+	Grunge & Distort	做旧与扭曲
+	Chaos	混乱
+	Earthquake	地震
+	Flicker	闪烁
+	Glass	玻璃
+	Glitch	故障
+	Grunge	做旧
+	Kaleidoscope	万花筒
+	Liquid Distortion	液体扭曲
+	TV Power	电视开关机
+	VHS Damage	VHS 损坏
+	VR Chroma Leaks	VR 色度泄漏
+	VR Gradient Wipe	VR 渐变擦除
+	VR Iris Wipe	VR 光圈擦除
+	VR Light Leaks	VR 漏光
+	VR Light Rays	VR 光线
+	VR Mobius Zoom	VR 默比乌斯缩放
+	VR Random Blocks	VR 随机块
+	VR Spherical Blur	VR 球形模糊
+	Lights & Blurs	光效与模糊
+	Burn Chroma	烧灼色度
+	Chroma Leak	色度泄漏
+	Cross Zoom	交叉缩放
+	Flare	光晕
+	Flash	闪白
+	Glow	发光
+	Lens Blur	镜头模糊
+	Light Leak	漏光过渡
+	Light Sweep	扫光
+	Phosphor	荧光
+	Radial Blur	径向模糊
+	Ray	光线
+	Solarize	曝光过度
+	Stripe	条纹
+	Zoom Blur	缩放模糊
+	3D Roll	3D 滚动
+	Film Roll	胶片滚动
+	Push	推
+	Roll	滚动
+	Split	拆分
+	Stretch	伸展
+	Whip	急摇
+	Smart Tools	智能工具
+	Motion Camera	运动摄像机
+	Motion Tween	运动补间
+	Shape Dissolve	形状溶解
+	Shape Flow	形状流动
+	Text Animator	文本动画器
+	Typewriter	打字机
+	Transformers	变换器
+	3D Spin	3D 旋转过渡
+	3D Spinback	3D 回旋
+	Frame	画框
+	Louver	百叶
+	Page Peel	页面剥落
+	Slice	切片
+	Wave	波浪
+	Wipe	擦除
+	Clock Wipe	时钟式擦除
+	Linear Wipe	线性擦除
+	Neon Wipe	霓虹擦除
+	Panel Wipe	面板擦除
+	Plateau Wipe	平台擦除
+	Radial Wipe	径向擦除
+	Soft Wipe	柔和擦除
+	Star Wipe	星形擦除
+	Stretch Wipe	伸展擦除
+	Alpha Glow	Alpha 发光
+	Block Dissolve	块溶解
+	Camera Blur	相机模糊
+	Directional Blur (Legacy)	方向模糊（旧版）
+	Edge Feather	边缘羽化
+	Gaussian Blur (Legacy)	高斯模糊（旧版）
+	Gradient Wipe (Legacy)	渐变擦除（旧版）
+	Linear Wipe (Legacy)	线性擦除（旧版）
+	Magnify (Legacy)	放大（旧版）
+	Mosaic (Legacy)	马赛克（旧版）
+	Noise (Legacy)	杂色（旧版）
+	Ramp	渐变
+	Replicate	复制
+	Twirl (Legacy)	旋转扭曲（旧版）
+	Additive Dissolve (Legacy)	叠加溶解（旧版）
+	Barn Doors	划出
+	Center Split	中心拆分
+	Clock Wipe (Legacy)	时钟式擦除（旧版）
+	Cross Dissolve (Legacy)	交叉溶解（旧版）
+	Cross Zoom (Legacy)	交叉缩放（旧版）
+	Dip to Black (Legacy)	黑场过渡（旧版）
+	Dip to White (Legacy)	白场过渡（旧版）
+	Film Dissolve (Legacy)	胶片溶解（旧版）
+	Inset	内滑
+	Iris Box	盒形划像
+	Iris Cross	交叉划像
+	Iris Diamond	菱形划像
+	Iris Round	圆划像
+	Non-Additive Dissolve	非叠加溶解
+	Push (Legacy)	推（旧版）
+	Radial Wipe (Legacy)	径向擦除（旧版）
+	Slide (Legacy)	滑动（旧版）
+	Split (Legacy)	拆分（旧版）
+	Whip (Legacy)	急摇（旧版）

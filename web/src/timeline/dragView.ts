@@ -16,9 +16,16 @@ export type DragView = {
   razor: { x: number; top: number; height: number } | null
   brackets: readonly Bracket[]
   drop: { x: number; width: number; top: number; height: number; insert: boolean } | null
+  /**
+   * An effect from the Effects panel over a clip: the clip it would land on; a transition: the span
+   * it would take on the cut (`cutX`) and its alignment there (upstream `effect_drop_preview`).
+   */
+  effectDrop: { x: number; width: number; top: number; height: number; transition: boolean; cutX: number | null; label: string | null } | null
+  /** A transition whose end is being dragged: its span as drawn while the drag lasts (ticks). */
+  transition: { id: number; start: number; duration: number } | null
 }
 
-const EMPTY: DragView = { previews: new Map(), snapX: null, marquee: null, razor: null, brackets: [], drop: null }
+const EMPTY: DragView = { previews: new Map(), snapX: null, marquee: null, razor: null, brackets: [], drop: null, effectDrop: null, transition: null }
 
 /** The store: a drag redraws the track halves and the overlay that read it, not the whole panel. */
 export function createDragView() {
