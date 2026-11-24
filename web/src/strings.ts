@@ -104,7 +104,6 @@ const enUS: Catalog = {
   "error.syncLock": "This edit would put {track} out of sync: its sync lock is on and a clip is in the way. Turn off sync lock on the {track} track header (or lock that track), then try again.",
   "error.mediaOffline": "Media offline: {path}",
   "closeGap.noGap": "Close Gap: put the playhead in a gap between two clips on an unlocked track first",
-  "transition.cannotDelete": "A transition cannot be removed on its own yet: Undo (Cmd+Z) takes back the step that added it",
 }
 
 const zhCN: Catalog = {
@@ -210,7 +209,6 @@ const zhCN: Catalog = {
   "error.syncLock": "这次编辑会让 {track} 失去同步：它开着同步锁定，而且有片段挡在那里。请在 {track} 的轨道头上关闭同步锁定（或锁定这条轨道）后再试。",
   "error.mediaOffline": "媒体脱机：{path}",
   "closeGap.noGap": "封闭间隙：请先把播放指示器放到未锁定轨道上两个片段之间的空隙里",
-  "transition.cannotDelete": "目前还不能单独删除转场：撤销（Cmd+Z）可以去掉添加它的那一步",
 }
 
 export const CATALOGS: Record<string, Catalog> = { 'en-US': enUS, 'zh-CN': zhCN }

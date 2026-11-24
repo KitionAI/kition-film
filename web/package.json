@@ -18,6 +18,7 @@
     "test:modes": "node tests/modes.mjs chromium && node tests/modes.mjs webkit",
     "test:deadends": "node tests/deadends.mjs chromium && node tests/deadends.mjs webkit",
     "test:effects": "node tests/effects.mjs chromium && node tests/effects.mjs webkit",
+    "test:transitions": "node tests/transitions.mjs chromium && node tests/transitions.mjs webkit",
     "test:picture": "node tests/picture.mjs chromium && node tests/picture.mjs webkit",
     "test:scrub": "node tests/scrub.mjs chromium && node tests/scrub.mjs webkit",
     "test:scenarios": "pnpm test:scenarios:1 && pnpm test:scenarios:2 && pnpm test:scenarios:3 && pnpm test:scenarios:4",

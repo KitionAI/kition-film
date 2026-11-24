@@ -190,8 +190,10 @@ const EFFECTS_PANEL_UNREGISTERED: readonly KitUiItem[] = [
   { id: 'control:effects.search', label: 'Search effects' },
   { id: 'control:effects.itemMenu.setDefaultTransition', label: 'Set Selected as Default Transition' },
   { id: 'control:timeline.transitionMenu.setDuration', label: 'Set Transition Duration…' },
+  { id: 'control:timeline.transitionMenu.clear', label: 'Clear Transition' },
   { id: 'control:timeline.effectDrop', label: 'Effect drop' },
   { id: 'control:transitionDuration.value', label: 'Duration:' },
+  { id: 'control:transitionDuration.alignment', label: 'Alignment' },
   { id: 'control:transitionDuration.ok', label: 'OK' },
   { id: 'control:transitionDuration.cancel', label: 'Cancel' },
 ]

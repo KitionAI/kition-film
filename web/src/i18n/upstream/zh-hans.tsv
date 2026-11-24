@@ -1705,6 +1705,11 @@
 	Center at Cut	中心切入
 	Start at Cut	起点切入
 	End at Cut	终点切入
+	Custom Start	自定义起点
+	Clear Transition	删除转场
+	Move Effect Up	上移效果
+	Move Effect Down	下移效果
+	Move Effect	移动效果
 	Effect drop	效果放置位置
 	Blur In	模糊入
 	Gaussian Blur from 60 to 0 over the first second	高斯模糊在第一秒内从 60 降到 0

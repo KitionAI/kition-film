@@ -1,0 +1,31 @@
+format: 1
+id: film.timeline.transitions/move-align-clear
+feature: film.timeline.transitions
+intent: >-
+  A person places, moves, aligns and clears a transition by hand, in WebKit (Kition Desktop's
+  engine on macOS): Cross Dissolve dragged from the Effects panel well left of a cut shows "End at
+  Cut" and ends at the cut, well right of it shows "Start at Cut" and starts there, on it shows
+  "Center at Cut" and centres, each one undo step; its middle dragged right moves it later over the
+  cut with the same length (Custom Start), one undo step; its left end dragged left then trims only
+  that side; Set Transition Duration reads Custom Start, and with Start at Cut chosen and 8 frames
+  typed puts it at the cut, 8 frames long, one undo step; selected, Delete clears it (the clips
+  stay) and undo brings it back, Backspace clears it too, and its menu's 删除转场 (Clear Transition)
+  clears it. Before this, Delete only said it could not, a drag of its middle did nothing and a drop
+  always centred it.
+layer: gate
+source:
+  kind: probe
+  from: web/tests/transitions.mjs webkit (plan "Film usable by hand", phase 3 engine gaps)
+  license: Apache-2.0
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/transitions.mjs, webkit]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [webkit]
+timeout_s: 180
+since: "2026-11-24"

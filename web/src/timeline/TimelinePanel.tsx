@@ -828,7 +828,7 @@ export function TimelinePanel(props: TimelinePanelProps) {
         <ZoomBar view={view} store={store} width={contentWidth} duration={duration} testId="film-timeline-zoombar" />
       </div>
       <GestureOverlay dragView={gestures.dragView} left={headerWidth} width={contentWidth} top={TOP_H - RULER_H} bottom={audioTop + audioHeight} phrase={phrase} />
-      {gestures.transitionMenu ? <TransitionMenu at={gestures.transitionMenu.at} onClose={gestures.closeTransitionMenu} onDuration={() => gestures.openDurationDialog(gestures.transitionMenu!.id)} phrase={phrase} /> : null}
+      {gestures.transitionMenu ? <TransitionMenu at={gestures.transitionMenu.at} onClose={gestures.closeTransitionMenu} onDuration={() => gestures.openDurationDialog(gestures.transitionMenu!.id)} onClear={() => gestures.clearTransition(gestures.transitionMenu!.id)} phrase={phrase} /> : null}
       {gestures.durationDialog != null ? <TransitionDurationDialog id={gestures.durationDialog} film={film} invoke={invoke} onClose={gestures.closeDurationDialog} phrase={phrase} /> : null}
       {gestures.menu ? <ClipMenu at={gestures.menu.at} onClose={gestures.closeMenu} film={film} labels={labels} clip={gestures.menu.clip} invoke={invoke} query={query} phrase={phrase} /> : null}
     </div>

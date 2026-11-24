@@ -12,7 +12,7 @@ import { snapTo } from './snap'
 import { carriesEffect, effectDrag, endEffectDrag } from './effectDrag'
 import { fitsTrack, isTransition, type EffectPayload } from '../panels/effectsTree'
 import { localSelection } from '../session/localSelection'
-import { ALIGNMENT_LABELS, appliedTransition, alignmentOf, cutOf, defaultDuration, dragEnd, dropEdge, durationCommand, grabEnd, maxFrames, transitionSpan, type SpanClip, type TransitionGrab, type TransitionInfo } from './transitions'
+import { ALIGNMENT_LABELS, alignedMaxFrames, alignmentAt, alignmentOf, boundsOf, cutOf, defaultDuration, dragEnd, dropAlignment, dropEdge, durationCommand, grabEnd, maxFrames, removeCommand, slideSpan, spanCommand, transitionSpan, type SpanClip, type TransitionGrab, type TransitionInfo } from './transitions'
 
 /** Where the track rows are this render: the header's width, the content's, the rows (y from the panel's top), and the video half's scroll range. */
 export type GestureGeometry = { headerWidth: number; contentWidth: number; rows: readonly Row[]; maxVideo: number }
@@ -66,12 +66,14 @@ type Options = {
  * A press in progress: what it grabbed (with the modifiers at the press), whether it became a
  * drag, the drag, the modifiers of the latest pointer event, and the long-press timer.
  */
-type Gesture = { pointer: number; pressed: Pressed; mods: Mods; started: boolean; drag: Drag | null; x: number; y: number; frame: number; timer: ReturnType<typeof setTimeout> | null; transition?: { id: number; grab: TransitionGrab | null; frames: number } }
+type Gesture = { pointer: number; pressed: Pressed; mods: Mods; started: boolean; drag: Drag | null; x: number; y: number; frame: number; timer: ReturnType<typeof setTimeout> | null; transition?: { id: number; grab: TransitionGrab | null; frames: number; pressT: number; span: { start: number; duration: number } | null } }
 
 /** Upstream's drag auto-scroll: within 20 px of the right edge or 10 px of the left, 6 px a frame. */
 const EDGE_RIGHT = 20
 const EDGE_LEFT = 10
 const EDGE_STEP = 6
+/** How far either side of a cut a dropped transition is centred on it; further out it starts or ends there. */
+const DROP_CENTER_PX = 16
 /** How far in from each end of a transition a press takes that end (upstream's edge zone). */
 const EDGE_ZONE = EDGE_PX
 
@@ -202,12 +204,19 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       const t = tickAt(scene, layout, x)
       const { info, clips } = found
       const cut = cutOf(info, clips)
-      const alignment = alignmentOf(info.from, info.to)
+      const bounds = boundsOf(info, clips)
+      const two = info.from != null && info.to != null
+      // Between two clips a centred one grows on both sides; one placed otherwise trims the end
+      // dragged (upstream `drag_span`); one at a free clip edge grows from that edge.
+      const actual = bounds ? alignmentAt(info, bounds.cut, scene.frame) : 'center'
+      const alignment = !two ? alignmentOf(info.from, info.to) : actual === 'center' ? 'center' : 'custom'
       const zone = EDGE_ZONE / layout.pps * scene.tps
       const side = grabEnd(info, cut, alignment, t, zone)
       if (side == null) return null
       const frames = Math.max(1, Math.round(info.duration / scene.frame))
-      return { id, cut, alignment, side, end: side > 0 ? info.start + info.duration : info.start, pressT: t, frames, limit: maxFrames(info, clips, scene.frame) }
+      const end = side > 0 ? info.start + info.duration : info.start
+      const other = side > 0 ? info.start : info.start + info.duration
+      return { id, cut, alignment, side, end, pressT: t, frames, limit: alignment === 'custom' ? alignedMaxFrames(info, clips, 'custom', scene.frame) : maxFrames(info, clips, scene.frame), lo: bounds?.lo, hi: bounds?.hi, other }
     },
     [layoutNow],
   )
@@ -235,7 +244,12 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       const layout = layoutNow()
       const grab = hitTest(scene, layout, x, y, tool, mods)
       element.style.cursor = cursorFor(tool, grab)
-      if (tool === 'Selection' && grab.kind === 'transition' && transitionGrabAt(grab.id, x)) element.style.cursor = 'col-resize'
+      if (tool === 'Selection' && grab.kind === 'transition') {
+        // An end resizes it; the middle of one between two clips slides it over its cut.
+        const found = findTransition(latest.current.film, grab.id)
+        if (transitionGrabAt(grab.id, x)) element.style.cursor = 'col-resize'
+        else if (found && found.info.from != null && found.info.to != null) element.style.cursor = 'ew-resize'
+      }
       const row = grab.kind === 'edge' || grab.kind === 'clip' ? layout.rows.find((each) => each.track === grab.track) : undefined
       let razor = null
       let snapX: number | null = null
@@ -292,27 +306,39 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
     }
   }, [doc, projectEpoch, film?.activeSequence, uiStore, finish, clearHover])
 
-  /** A transition end's drag where the pointer is now: its span drawn, snapped as upstream snaps it. */
+  /** A transition's drag where the pointer is now: an end resizes it (snapped as upstream snaps it), its middle slides it over its cut; its span drawn. */
   const updateTransition = useCallback(
     (current: Gesture) => {
       const { scene, film } = latest.current
-      const grab = current.transition?.grab
-      if (!scene || !grab || !current.transition) return
-      const found = findTransition(film, grab.id)
+      const dragging = current.transition
+      if (!scene || !dragging) return
+      const found = findTransition(film, dragging.id)
+      if (!found) return
       const layout = layoutNow()
+      const t = tickAt(scene, layout, current.x)
+      const grab = dragging.grab
+      if (!grab) {
+        // The middle: a fade to or from nothing does not slide.
+        if (found.info.from == null || found.info.to == null) return
+        const span = slideSpan(found.info, found.clips, t - dragging.pressT, scene.frame)
+        dragging.span = span
+        dragView.set({ transition: { id: dragging.id, ...span }, snapX: null })
+        return
+      }
       let snapX: number | null = null
-      const exclude = found ? [found.info.from, found.info.to].filter((clip): clip is number => clip != null) : []
+      const exclude = [found.info.from, found.info.to].filter((clip): clip is number => clip != null)
       const dragged = dragEnd(
         grab,
-        tickAt(scene, layout, current.x),
-        (t) => {
-          const snapped = snapTo(scene, layout, t, exclude, true)
+        t,
+        (time) => {
+          const snapped = snapTo(scene, layout, time, exclude, true)
           snapX = snapped.x
           return snapped.time
         },
         scene.frame,
       )
-      current.transition.frames = dragged.frames
+      dragging.frames = dragged.frames
+      dragging.span = { start: dragged.start, duration: dragged.duration }
       dragView.set({ transition: { id: grab.id, start: dragged.start, duration: dragged.duration }, snapX })
     },
     [dragView, layoutNow],
@@ -330,8 +356,7 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       current.started = true
       if (current.timer) clearTimeout(current.timer)
       current.timer = null
-      // A transition's end resizes it (upstream `Drag::Transition`); its middle does nothing: the
-      // engine has no command that moves a transition along its cut.
+      // A transition's end resizes it, its middle moves it over its cut (upstream `Drag::Transition`).
       if (current.transition) {
         updateTransition(current)
         return
@@ -354,8 +379,8 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       event.currentTarget.setPointerCapture(event.pointerId)
       const current: Gesture = { pointer: event.pointerId, pressed: { x, y, grab: hitTest(scene, layoutNow(), x, y, tool, mods) }, mods, started: false, drag: null, x, y, frame: 0, timer: null }
       const grab = current.pressed.grab
-      // The Selection tool on a transition: a click selects it, a drag of an end resizes it.
-      if (tool === 'Selection' && grab.kind === 'transition') current.transition = { id: grab.id, grab: transitionGrabAt(grab.id, x), frames: 0 }
+      // The Selection tool on a transition: a click selects it, a drag of an end resizes it, of its middle moves it.
+      if (tool === 'Selection' && grab.kind === 'transition') current.transition = { id: grab.id, grab: transitionGrabAt(grab.id, x), frames: 0, pressT: tickAt(scene, layoutNow(), x), span: null }
       // A press anywhere else on the tracks lets go of the transition chosen.
       else localSelection.set({ transition: null })
       // Held past egui's click time, a press is a drag where it is.
@@ -405,14 +430,12 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
     },
     [send],
   )
-  /** Gives transition `id` a length of `frames`: one apply of it again (`durationCommand`), and the new one selected. */
-  const resizeTransition = useCallback(async (id: number, frames: number) => {
-    const found = findTransition(latest.current.film, id)
-    const command = found ? durationCommand(found.info, found.kind, frames) : null
+  /** Sends the one command a transition's drag ends with (`sequence.setTransition`), keeping it selected. */
+  const commitTransition = useCallback(async (id: number, command: Command | null) => {
     if (!command) return
     const generation = epoch.current
-    const applied = appliedTransition(await latest.current.invoke(command.id, command.params))
-    if (epoch.current === generation && applied != null) localSelection.set({ transition: applied })
+    await latest.current.invoke(command.id, command.params)
+    if (epoch.current === generation) localSelection.set({ transition: id })
   }, [])
 
   const onPointerUp = useCallback(
@@ -422,10 +445,18 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       const { scene, tool } = latest.current
       const { x, y } = placeOf(event)
       if (current.transition) {
-        const { id, grab, frames } = current.transition
+        const { id, grab, frames, span } = current.transition
         finish()
         if (!current.started) selectTransition(id)
-        else if (grab && frames > 0 && frames !== grab.frames) void resizeTransition(id, frames)
+        else {
+          // A centred one or one at a free edge takes its new length (it stays so aligned); one
+          // trimmed or slid takes its new place: either is one command, one undo step.
+          const found = findTransition(latest.current.film, id)
+          if (!found) return
+          if (grab && grab.alignment !== 'custom') {
+            if (frames > 0 && frames !== grab.frames) void commitTransition(id, durationCommand(found.info, found.kind, frames))
+          } else if (span) void commitTransition(id, spanCommand(found.info, span.start, span.duration))
+        }
         return
       }
       // A click acts with the modifiers held when it ends (upstream's `clicked` frame).
@@ -440,7 +471,7 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       }
       finish()
     },
-    [finish, layoutNow, placeOf, resizeTransition, selectTransition, send, store],
+    [commitTransition, finish, layoutNow, placeOf, selectTransition, send, store],
   )
 
   // The clip menu (upstream's `context_menu` on the tracks): a right-click selects an unselected clip first.
@@ -471,6 +502,13 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
   const closeMenu = useCallback(() => setMenu(null), [])
   const closeTransitionMenu = useCallback(() => setTransitionMenu(null), [])
   const closeDurationDialog = useCallback(() => setDurationDialog(null), [])
+  /** Clears transition `id` (its menu's Clear Transition): one undo step. */
+  const clearTransition = useCallback((id: number) => {
+    setTransitionMenu(null)
+    localSelection.set({ transition: null })
+    const found = findTransition(latest.current.film, id)
+    if (found) void latest.current.invoke(removeCommand(found.info).id, removeCommand(found.info).params)
+  }, [])
 
   // A double-click on a nested sequence's clip opens it in its own Timeline tab.
   const onDoubleClick = useCallback(
@@ -526,12 +564,16 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
       }
       if (!fitsTrack(payload.kind, track.kind)) return null
       if (!isTransition(payload.kind)) return { commands: [{ id: 'effects.apply', params: { effect: payload.effect, clips: [clip.id] } }, { id: 'timeline.select', params: { clips: [clip.id] } }], view: clipView }
-      const { edge, cut, alignment } = dropEdge(clip, track.clips, t)
+      const drop = dropEdge(clip, track.clips, t)
+      const { edge, cut } = drop
+      // On a cut between two clips the pointer picks the alignment: on the cut, centred; on the
+      // outgoing clip, ending there; on the incoming one, starting there.
+      const alignment = dropAlignment(drop, t, (DROP_CENTER_PX / layout.pps) * scene.tps)
       const span = transitionSpan(cut, defaultDuration(track.kind === 'video' ? transitionDurations.video : transitionDurations.audio, scene.frame, scene.tps), alignment, scene.frame)
       const left = xOf(scene, layout, span.start)
       return {
         // `effects.apply` takes no edge: the transition commands place it on the clip's edge the pointer is nearer.
-        commands: [{ id: track.kind === 'video' ? 'sequence.applyVideoTransition' : 'sequence.applyAudioTransition', params: { effect: payload.effect, clip: clip.id, edge } }],
+        commands: [{ id: track.kind === 'video' ? 'sequence.applyVideoTransition' : 'sequence.applyAudioTransition', params: drop.alignment === 'center' ? { effect: payload.effect, clip: clip.id, edge, align: alignment } : { effect: payload.effect, clip: clip.id, edge } }],
         view: { x: left, width: Math.max(2, (span.duration / scene.tps) * layout.pps), ...box, transition: true, cutX: xOf(scene, layout, cut), label: ALIGNMENT_LABELS[alignment] },
       }
     },
@@ -604,5 +646,5 @@ export function useGestures({ film, session, store, tool, invoke, rollRipple, st
   )
 
   const handlers = { onPointerDown, onPointerMove, onPointerUp, onPointerLeave, onPointerCancel: finish, onLostPointerCapture: finish, onContextMenu, onDoubleClick, onDragOver, onDragLeave, onDrop }
-  return { dragView, handlers, menu, closeMenu, scene, transitionMenu, closeTransitionMenu, durationDialog, openDurationDialog: setDurationDialog, closeDurationDialog }
+  return { dragView, handlers, menu, closeMenu, scene, transitionMenu, closeTransitionMenu, durationDialog, openDurationDialog: setDurationDialog, closeDurationDialog, clearTransition }
 }
