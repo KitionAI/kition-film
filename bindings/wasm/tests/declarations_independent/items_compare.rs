@@ -15,7 +15,7 @@ pub const PATHS: &[(&str, &str)] =
 pub fn compared_path(command: &str, path: &str) -> bool {
     let hash = |source: &str| source.bytes().fold(0xcbf29ce484222325u64, |hash, byte| (hash ^ u64::from(byte)).wrapping_mul(0x100000001b3));
     PATHS.contains(&(command, path))
-        && hash(include_str!("../../../../crates/engine/engine/src/commands.rs")) == 0x422d17df7f6d60c9
+        && hash(include_str!("../../../../crates/engine/engine/src/commands.rs")) == 0xa5f7dd875311a060
         && hash(include_str!("../../../../crates/engine/engine/src/clip_ops.rs")) == 0xd8532e3f9a552dfc
 }
 

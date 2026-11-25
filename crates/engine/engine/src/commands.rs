@@ -4202,8 +4202,9 @@ fn write_project(s: &mut Session, path: &str, adopt: bool) -> Result<Value> {
         s.flush_kdm();
     }
     // the project only: what is open (sequence tabs, how each is shown) is the person's view
-    // state, never the file's
-    let bytes = kition_film_format::encode(&s.project, false);
+    // state, never the file's; nor is the session's own id counter (`encode_file`: the file's
+    // `next_id` is the first id past every id the project holds)
+    let bytes = kition_film_format::encode_file(&s.project, false);
     s.services.write_file(path, &bytes).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
     if adopt {
         s.path = Some(path.to_string());

@@ -47,7 +47,7 @@ pub fn compared_path(command: &str, path: &str) -> bool {
         "audio.voiceover.settings" => (include_str!("../../../../crates/engine/engine/src/voiceover.rs"), 0x91aaae0773822eca),
         "audioMixing.deletePreset" => (include_str!("../../../../crates/engine/engine/src/audio_mixing.rs"), 0x62e5a74e1bc8c02c),
         "multicam.gridLayout" => (include_str!("../../../../crates/engine/engine/src/multicam.rs"), 0xca49dbd431e8f30e),
-        _ => (include_str!("../../../../crates/engine/engine/src/commands.rs"), 0x422d17df7f6d60c9),
+        _ => (include_str!("../../../../crates/engine/engine/src/commands.rs"), 0xa5f7dd875311a060),
     };
     source.bytes().fold(0xcbf29ce484222325u64, |hash, byte| (hash ^ u64::from(byte)).wrapping_mul(0x100000001b3)) == reviewed
 }

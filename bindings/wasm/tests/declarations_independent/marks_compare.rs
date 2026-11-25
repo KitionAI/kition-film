@@ -42,7 +42,7 @@ pub fn compared_path(command: &str, path: &str) -> bool {
     let commands = include_str!("../../../../crates/engine/engine/src/commands.rs");
     let sequence = include_str!("../../../../crates/engine/engine/src/sequence_tools.rs");
     let hash = |source: &str| source.bytes().fold(0xcbf29ce484222325u64, |hash, byte| (hash ^ u64::from(byte)).wrapping_mul(0x100000001b3));
-    hash(commands) == 0x422d17df7f6d60c9 && hash(sequence) == 0x848ed5aa3b9d96b3
+    hash(commands) == 0xa5f7dd875311a060 && hash(sequence) == 0x848ed5aa3b9d96b3
 }
 
 pub fn more(command: &str, path: &str) -> Vec<&'static str> {

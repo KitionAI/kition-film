@@ -29,5 +29,10 @@ fn a_saved_demo_reopens() {
     let opened = t.execute("file.open", json!({ "path": path }));
     std::fs::remove_dir_all(&dir).ok();
     opened.unwrap();
-    assert_eq!(*t.project, *s.project);
+    // The file's id counter is the first id past every id the demo holds; the session's own is
+    // no smaller.
+    let mut content = (*s.project).clone();
+    content.next_id = content.minimum_next_id(true).unwrap();
+    assert!(s.project.next_id >= content.next_id);
+    assert_eq!(*t.project, content);
 }

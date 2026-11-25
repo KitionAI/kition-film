@@ -1016,7 +1016,8 @@ impl Worker {
             None => (self.data_dir.join(names::AUTO_SAVE_DIR), s.project.name.clone()),
         };
         let t0 = Instant::now();
-        let bytes = kition_film_format::encode(&s.project, false);
+        // A project file, as `file.save` writes it: without the session's own id counter.
+        let bytes = kition_film_format::encode_file(&s.project, false);
         let serialize_ms = t0.elapsed().as_secs_f64() * 1000.0;
         let t1 = Instant::now();
         let unix = unix_now();

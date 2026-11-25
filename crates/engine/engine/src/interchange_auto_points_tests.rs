@@ -139,7 +139,7 @@ fn a_linked_clip_gets_its_anchor_from_the_real_size_of_the_media() {
     s.execute("file.saveAs", json!({"path": path})).unwrap();
     let mut t = Session::default();
     t.execute("file.open", json!({"path": path})).unwrap();
-    assert_eq!(*t.project, *s.project);
+    assert_eq!(*t.project, crate::as_saved(&s.project), "the file holds the content, its id counter the first id past every id it holds");
     // undo: Link Media takes the real size and the anchor back together, then the import itself
     let linked = s.project.clone();
     s.execute("edit.undo", json!({})).unwrap();

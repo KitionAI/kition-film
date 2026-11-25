@@ -34,7 +34,12 @@ fn saved_file_is_versioned_and_save_copy_keeps_state() {
     assert_eq!(s.path.as_deref(), Some(path.as_str()));
     let mut t = Session::default();
     t.execute("file.open", json!({"path": copy})).unwrap();
-    assert_eq!(*t.project, *s.project);
+    // The copy holds the whole project and its id counter as the file states it, the first id
+    // past every id the project holds (`encode_file`); the session's own counter (which may run
+    // ahead, or in its replica's id range) is the session's and not saved.
+    let content = crate::as_saved(&s.project);
+    assert!(s.project.next_id >= content.next_id, "the session never hands out an id the copy holds");
+    assert_eq!(*t.project, content);
     // Revert discards the edit.
     s.execute("file.revert", json!({})).unwrap();
     assert!(!s.is_dirty());
