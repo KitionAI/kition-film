@@ -1,6 +1,10 @@
 //! Effect operands from commands.rs:2669-2899,3108-3213 and masks.rs:179-210.
 //! Whole effect/clip profiles retain unrelated values; the projection is exact
 //! about when timebase, source geometry, and automatic defaults are consumed.
+//! Re-read after effects.setParam's named `merge` (451e643e) and effects.moveKeyframe's
+//! `value`, `merge` and `begin`: a merge key and `begin` only join or start undo steps
+//! (history, not the document), and a moved keyframe's new value is written into the
+//! clip's effects the move already holds, so no declaration changes with them.
 use kition_film_engine::project::{EffectKind, ItemId, ItemKind, ParamValue, Project};
 use kition_film_kit::FilmDocument;
 use kition_kit::{EditorState, KitDocument, Premise, Under};
@@ -273,7 +277,15 @@ fn effect_value_paths_compare_index_defaults_animation_mask_and_time_precedence(
                 assert!(compared_path(command, path));
                 for index in [None, Some(0), Some(1), Some(999)] {
                     for address in [json!({}), json!({"time":0,"frame":10}), json!({"frame":10}), json!({"seconds":0.5}), json!({"timecode":"00:00:00:10"})] {
-                        for media_time in [None, Some(0)] {
+                        for (media_time, merge) in
+                            [None, Some(0)].into_iter().flat_map(|media_time| [None, Some(json!(true)), Some(json!("drag"))].map(|merge| (media_time, merge)))
+                        {
+                            // only the commands that take a merge key are given one
+                            if merge.is_some() && !matches!(command, "effects.setParam" | "effects.moveKeyframe")
+                                || merge == Some(json!("drag")) && command != "effects.setParam"
+                            {
+                                continue;
+                            }
                             let mask = path == "mask-path";
                             let mut params = json!({"clip":clip,"effect":"opacity","param":if mask { "path" } else { "opacity" },"value":50});
                             if mask {
@@ -284,6 +296,13 @@ fn effect_value_paths_compare_index_defaults_animation_mask_and_time_precedence(
                             }
                             if let Some(time) = media_time {
                                 params["mediaTime"] = json!(time);
+                            }
+                            if let Some(merge) = merge {
+                                params["merge"] = merge;
+                                params["begin"] = json!(true);
+                                if command == "effects.moveKeyframe" {
+                                    params["to"] = json!(254_016_000_000i64);
+                                }
                             }
                             params.as_object_mut().unwrap().extend(address.as_object().unwrap().clone());
                             let mut expected = Under::default();

@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { DEFAULT_VIEW, FIT_MIN_TRACK_H, fitTrackHeight } from './layout.ts'
-import { FADER_MAX_DB, FADER_MIN_DB, bandHit, bandOf, dbOfY, dbText, dbToPos, draggedDb, keysAround, keyTimeBetween, levelAt, linePoints, posToDb, yOfDb } from './volumeBand.ts'
+import { FADER_MAX_DB, FADER_MIN_DB, bandHit, bandOf, dbOfY, dbText, dbToPos, draggedDb, draggedKey, keysAround, keyTimeBetween, levelAt, linePoints, posToDb, yOfDb } from './volumeBand.ts'
 import { HANDLE_SIZE, draggedFrames, fadeAt, fadeCommand, handleX, onHandle } from './fades.ts'
 
 test('a newly shown sequence fits its tracks to a short half, never under the minimum', () => {
@@ -80,6 +80,32 @@ test('a keyframe moved in time lands on a frame, a frame from its neighbours, in
   assert.equal(dbText(FADER_MIN_DB), '-∞ dB')
   assert.equal(dbText(3.14159), '+3.14 dB')
   assert.equal(dbText(-6), '-6.00 dB')
+})
+
+test('a keyframe dragged moves both ways at once: its time sideways, its level up or down, each only as the pointer went', () => {
+  const frame = 1 / 24
+  const keys = [{ time: 1, mediaTime: 10, value: -6 }, { time: 2, mediaTime: 20, value: 0 }, { time: 3, mediaTime: 30, value: -12 }]
+  const band = { height: 40 }
+  // Straight down: the time is exactly its own, the level lower.
+  const down = draggedKey(keys, 1, keys[1], 0, 10, 100, frame, 0, 4, band)
+  assert.equal(down.time, 2)
+  assert.ok(down.value < 0)
+  assert.equal(down.value, draggedDb(band, 0, 0, 10))
+  // Straight sideways: the level is exactly its own, the time later on a frame.
+  const side = draggedKey(keys, 1, keys[1], 30, 0, 100, frame, 0, 4, band)
+  assert.equal(side.value, 0)
+  assert.equal(side.time, keyTimeBetween(keys, 1, 2.3, frame, 0, 4))
+  // Diagonally: both, in one drag.
+  const both = draggedKey(keys, 1, keys[1], -30, -10, 100, frame, 0, 4, band)
+  assert.ok(both.time < 2 && both.value > 0, JSON.stringify(both))
+  // Never past a neighbour, never off the faders' scale.
+  const far = draggedKey(keys, 1, keys[1], 500, -500, 100, frame, 0, 4, band)
+  assert.equal(far.time, keyTimeBetween(keys, 1, 7, frame, 0, 4))
+  assert.ok(far.time < 3)
+  assert.equal(far.value, FADER_MAX_DB)
+  assert.equal(draggedKey(keys, 1, keys[1], 0, 500, 100, frame, 0, 4, band).value, FADER_MIN_DB)
+  // A zoom of nothing moves it nowhere in time.
+  assert.equal(draggedKey(keys, 1, keys[1], 30, 0, 0, frame, 0, 4, band).time, 2)
 })
 
 test('fade handles: only at a free clip end, at the fade\'s length, and the one command a drag sends', () => {

@@ -9,6 +9,7 @@
 // - fade handles at a free clip end's top corner: dragged in, a fade (a transition from or to
 //   nothing) of that length, shown as a ramp while dragging; dragged again it changes, dragged back
 //   to the end it is cleared; each one undo step;
+// - a keyframe dragged diagonally moves in time and level at once, one undo step;
 // - the ruler: the In and Out marks dragged, a marker dragged along it, a marker double-clicked opens its dialog;
 // - context menus on empty track space and on the ruler, in Chinese, whose rows do what they say;
 // - an Option/Alt-drag of a clip copies it where it is dropped (drawn as a copy while dragging, the
@@ -219,6 +220,29 @@ try {
   assert.ok(Math.abs(after.keys[0].value - before.keys[0].value - (after.keys[1].value - before.keys[1].value)) < 0.01, 'both by as much')
   assert.equal(after.keys.length, 2, 'no keyframe added')
   assert.equal(await undoSteps(), steps + 1, 'one undo step')
+  // The second keyframe dragged diagonally (left and down): earlier and quieter in one drag, one undo step.
+  before = await volumeOf()
+  steps = await undoSteps()
+  at = await keyAt(1)
+  let followed = false
+  let drawnAt = null
+  await drag(at, { x: at.x - 30, y: at.y + 10 }, async () => {
+    const now = await keyAt(1)
+    drawnAt = now
+    followed = now.x < at.x - 15 && now.y > at.y + 5
+    tip = await kit.getByTestId('film-timeline-tip').textContent().catch(() => null)
+  })
+  assert.ok(followed, `the keyframe is drawn under the pointer both ways while dragging: ${JSON.stringify({ at, drawnAt, keys: (await volumeOf()).keys })}`)
+  assert.ok(tip && /dB$/.test(tip), `its level shows next to the pointer: ${tip}`)
+  assert.ok(await until(async () => {
+    const now = await volumeOf()
+    return now.keys[1].mediaTime < before.keys[1].mediaTime && now.keys[1].value < before.keys[1].value - 0.5
+  }), `dragged left and down it moves earlier and quieter: ${JSON.stringify((await volumeOf()).keys)} (${await message()})`)
+  assert.equal((await volumeOf()).keys.length, 2, 'no keyframe added or lost')
+  assert.equal((await volumeOf()).keys[0].value, before.keys[0].value, 'the other keyframe stays')
+  assert.equal(await undoSteps(), steps + 1, 'one undo step')
+  await undo()
+  assert.ok(await until(async () => JSON.stringify((await volumeOf()).keys) === JSON.stringify(before.keys)), `one undo takes the whole drag back: ${JSON.stringify((await volumeOf()).keys)}`)
   // A click chooses the first keyframe; Delete removes it, one undo step.
   at = await keyAt(0)
   await page.mouse.click(at.x, at.y)

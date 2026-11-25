@@ -276,7 +276,7 @@ pub fn description(id: &str) -> &'static str {
             "Lists available effects and transitions (filter by `kind` Video, Audio, VideoTransition, AudioTransition, `folder`, or one `effect` by id or name, the exact id first) with ids; `detail` (implied by `effect`) adds `paramInfo`: each parameter's id, type, default, min / max / unit, choice `options`, and `accepts` (the values it takes, e.g. booleans for an amount, left/right/up/down for a direction). Read to find effect ids and transition `params`."
         }
         "effects.moveKeyframe" => {
-            "Moves the keyframe of an effect parameter at `mediaTime` to media time `to` (both clip media ticks). `mask` targets a mask's parameter."
+            "Moves the keyframe of an effect parameter at `mediaTime` to media time `to` (both clip media ticks), with a new `value` when given. `mask` targets a mask's parameter. `merge: true` makes a drag of the keyframe (each call naming where the last one left it) one undo step; `begin` starts a new one."
         }
         "effects.remove" => "Removes the effect at `index` (0-based, as sequence.inspect lists a clip's effects; fixed effects can't be removed) from `clip`.",
         "effects.reset" => "Resets every parameter of the effect at `index` of `clip` to its defaults.",

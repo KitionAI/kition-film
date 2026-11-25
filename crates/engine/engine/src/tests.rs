@@ -1198,3 +1198,48 @@ fn markers_edit_moves_a_marker_in_time() {
         assert_eq!(starts(&s), before, "{bad}");
     }
 }
+
+/// `effects.moveKeyframe` takes a new `value` with its new time, and `merge` makes a keyframe's
+/// drag on the timeline (time and level at once) one undo step; `begin` starts a new one.
+#[test]
+fn move_keyframe_takes_a_value_and_merges_a_drag() {
+    let mut s = demo();
+    let c = s.active_sequence().unwrap().video_tracks[0].items[1].clone();
+    let rate = s.sequence_rate();
+    let (t0, t1) = (c.start, c.start + rate.tick_of(12));
+    s.execute("effects.setParam", json!({"clip": c.id.0, "param": "scale", "value": 50.0, "time": t0.0})).unwrap();
+    s.execute("effects.setParam", json!({"clip": c.id.0, "param": "scale", "value": 80.0, "time": t1.0})).unwrap();
+    let keys = |s: &Session| {
+        let it = s.active_sequence().unwrap().find_item(c.id).unwrap().1.clone();
+        it.effect("motion").unwrap().params["scale"].keyframes.iter().map(|k| (k.time, k.value.as_f64())).collect::<Vec<_>>()
+    };
+    let m1 = c.source_time_at(t1);
+    let undo = s.history.undo.len();
+    let mut at = m1;
+    for (i, (df, v)) in [(1, 70.0), (2, 60.0), (3, 55.0)].into_iter().enumerate() {
+        let to = m1 + rate.tick_of(df);
+        s.execute("effects.moveKeyframe", json!({"clip": c.id.0, "param": "scale", "mediaTime": at.0, "to": to.0, "value": v, "merge": true, "begin": i == 0}))
+            .unwrap();
+        at = to;
+    }
+    assert_eq!(s.history.undo.len(), undo + 1, "a drag is one undo step");
+    assert_eq!(keys(&s)[1], (m1 + rate.tick_of(3), Some(55.0)));
+    s.undo();
+    assert_eq!(keys(&s)[1], (m1, Some(80.0)), "one undo takes the whole drag back");
+    // without merge each move is its own step; without a value the level stays
+    s.execute("effects.moveKeyframe", json!({"clip": c.id.0, "param": "scale", "mediaTime": m1.0, "to": (m1 + rate.tick_of(1)).0})).unwrap();
+    assert_eq!(keys(&s)[1], (m1 + rate.tick_of(1), Some(80.0)));
+    assert_eq!(s.history.undo.len(), undo + 1);
+    let before = keys(&s);
+    let at = m1 + rate.tick_of(1);
+    for bad in [
+        json!({"clip": c.id.0, "param": "scale", "mediaTime": at.0, "to": at.0, "value": "loud"}),
+        json!({"clip": c.id.0, "param": "scale", "mediaTime": at.0, "to": at.0, "value": [1, 2]}),
+        json!({"clip": c.id.0, "param": "scale", "mediaTime": at.0, "value": 3.0}),
+        json!({"clip": c.id.0, "param": "nope", "mediaTime": at.0, "to": at.0, "value": 3.0}),
+        json!({"clip": u64::MAX, "param": "scale", "mediaTime": at.0, "to": at.0}),
+    ] {
+        assert!(s.execute("effects.moveKeyframe", bad.clone()).is_err(), "{bad}");
+        assert_eq!(keys(&s), before, "{bad}");
+    }
+}

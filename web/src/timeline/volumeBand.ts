@@ -144,6 +144,18 @@ export function keyTimeBetween(keys: readonly VolumeKey[], index: number, t: num
   return lo <= hi ? Math.min(hi, Math.max(lo, snapped)) : keys[index]?.time ?? t
 }
 
+/**
+ * Where a keyframe dragged by (`dx`, `dy`) points from its place at the press (`origin`) lands
+ * (upstream's keyframe drag, both ways at once): its time follows the pointer sideways (on a frame,
+ * between its neighbours, inside the clip; `pps` points a second), its level up or down as a fader
+ * moves, kept on the faders' scale. A way the pointer did not move keeps the keyframe's own value.
+ */
+export function draggedKey(keys: readonly VolumeKey[], index: number, origin: VolumeKey, dx: number, dy: number, pps: number, frame: number, clipStart: number, clipEnd: number, band: { height: number }) {
+  const time = dx === 0 || !(pps > 0) ? origin.time : keyTimeBetween(keys, index, origin.time + dx / pps, frame, clipStart, clipEnd)
+  const value = dy === 0 ? origin.value : Math.min(FADER_MAX_DB, Math.max(FADER_MIN_DB, draggedDb(band, origin.value, 0, dy)))
+  return { time, value }
+}
+
 /** The level next to the pointer while dragging (upstream `tip`): one decimal place more, −∞ at the bottom. */
 export function dbText(db: number) {
   return db <= FADER_MIN_DB ? '-∞ dB' : `${db >= 0 ? '+' : ''}${db.toFixed(2)} dB`

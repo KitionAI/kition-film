@@ -12,7 +12,7 @@ import { snapTo } from './snap'
 import { carriesEffect, effectDrag, endEffectDrag } from './effectDrag'
 import { fitsTrack, isTransition, type EffectPayload } from '../panels/effectsTree'
 import { localSelection } from '../session/localSelection'
-import { FADER_MAX_DB, FADER_MIN_DB, bandHit, bandOf, dbText, draggedDb, keysAround, keyTimeBetween, levelAt } from './volumeBand'
+import { FADER_MAX_DB, FADER_MIN_DB, bandHit, bandOf, dbText, draggedDb, draggedKey, keysAround, levelAt, type VolumeKey } from './volumeBand'
 import { draggedFrames, fadeAt, fadeCommand, onHandle } from './fades'
 import { ALIGNMENT_LABELS, alignedMaxFrames, alignmentAt, alignmentOf, boundsOf, cutOf, defaultDuration, dragEnd, dropAlignment, dropEdge, durationCommand, grabEnd, maxFrames, removeCommand, slideSpan, spanCommand, transitionSpan, type SpanClip, type TransitionGrab, type TransitionInfo } from './transitions'
 
@@ -111,11 +111,12 @@ type Gesture = {
   transition?: { id: number; grab: TransitionGrab | null; frames: number; pressT: number; span: { start: number; duration: number } | null }
   /**
    * An audio clip's Volume line pressed (upstream `Grab::Volume`): the line (`key` null; a drag
-   * changes the level there, or the keyframes either side of it) or one keyframe (a drag up or down
-   * changes its level, sideways moves it in time, the way the drag first goes). Each drag is one
-   * undo step: every level it sends is one `effects.setParam` merged under `merge`.
+   * changes the level there, or the keyframes either side of it) or one keyframe (`origin`: where it
+   * was at the press; a drag moves it freely, up or down in level and sideways in time at once, as
+   * upstream's keyframe drag does). Each drag is one undo step: every level it sends is one
+   * `effects.setParam`, every place of a keyframe one `effects.moveKeyframe`, merged under `merge`.
    */
-  volume?: { clip: number; key: number | null; from: number; around: Array<{ ticks: number; value: number }>; axis: 'value' | 'time' | null; token: LiveToken; keyTime: number | null }
+  volume?: { clip: number; key: number | null; from: number; around: Array<{ ticks: number; value: number }>; origin: VolumeKey | null; token: LiveToken; keyTime: number | null }
   /** The playhead's line pressed on empty track space: the press and the drag scrub it, as the ruler does. */
   playhead?: boolean
   /** A fade handle pressed: the clip, its end, its track's kind, the fade there (if any), and the length the drag gives (frames). */
@@ -130,8 +131,12 @@ const PLAYHEAD_GRAB = 4
 
 /** The Selection and Pen tools take the Volume line and the fade handles (upstream `grab_at`). */
 const takesBand = (tool: string) => tool === 'Selection' || tool === 'Pen'
-/** A drag's own merge key: its levels are one undo step, a new drag another; `begun` once its first level went out. */
-type LiveToken = { merge: string; begun: boolean }
+/**
+ * A drag's own merge key: its levels are one undo step, a new drag another; `begun` once its first
+ * level went out. `at`: a dragged keyframe's media time in the engine now (each move names where the
+ * last one that went out left it; a move dropped for a newer one never got there).
+ */
+type LiveToken = { merge: string; begun: boolean; at?: number }
 let volumeDrags = 0
 const VOLUME = { effect: 'volume', param: 'level' }
 
@@ -216,9 +221,14 @@ export function useGestures({ film, session, store, tool, invoke, scrub, rollRip
       for (const [index, command] of commands.entries()) {
         if (epoch.current !== generation) return
         // The drag's first level starts its undo step; the rest join it.
-        const params = { ...command.params, merge: token.merge, begin: index === 0 && !token.begun }
+        const params: Record<string, unknown> = { ...command.params, merge: token.merge, begin: index === 0 && !token.begun }
         if (index === 0) token.begun = true
-        await latest.current.invoke(command.id, params).catch(() => undefined)
+        const keyframe = command.id === 'effects.moveKeyframe'
+        if (keyframe && token.at != null) params.mediaTime = token.at
+        // A keyframe's merge is the engine's own per keyframe (`merge: true`); `begin` starts the drag's step.
+        if (keyframe) params.merge = true
+        const moved = await latest.current.invoke(command.id, params).then(() => true, () => false)
+        if (keyframe && moved && typeof params.to === 'number') token.at = params.to
       }
     }
     void run().finally(() => {
@@ -576,9 +586,10 @@ export function useGestures({ film, session, store, tool, invoke, scrub, rollRip
   /**
    * A drag of the Volume line or one of its keyframes where the pointer is now (upstream
    * `timeline_volume::drag` and its keyframe drag): the line's level (or the keyframes either side
-   * of the press, by as much) and a keyframe's level go to the engine as the pointer moves, heard
-   * and drawn, every one merged into the drag's one undo step; a keyframe moved in time is drawn
-   * where it would land and moved on release. The level shows next to the pointer.
+   * of the press, by as much) goes to the engine as the pointer moves, heard and drawn; a keyframe
+   * follows the pointer both ways at once (its level up or down, its time sideways, on a frame and
+   * between its neighbours), each place one `effects.moveKeyframe`; every step of a drag is merged
+   * into its one undo step. The level shows next to the pointer.
    */
   const updateVolume = useCallback(
     (current: Gesture) => {
@@ -587,20 +598,18 @@ export function useGestures({ film, session, store, tool, invoke, scrub, rollRip
       const body = held ? bodyOf(held.clip) : null
       const band = body ? bandOf(body.height) : null
       if (!held || !body || !band || !scene) return
-      const key = held.key != null ? body.clip.volumeKeys[held.key] : undefined
-      if (held.key != null && !key) return
       const dx = current.x - current.pressed.x
       const dy = current.y - current.pressed.y
-      // A keyframe goes the way the drag first goes: sideways in time, else up or down in level.
-      if (held.key != null && held.axis == null) {
-        if (dx === 0 && dy === 0) return
-        held.axis = Math.abs(dx) > Math.abs(dy) ? 'time' : 'value'
-      }
-      if (held.axis === 'time' && key) {
-        const pps = layoutNow().pps
-        const time = keyTimeBetween(body.clip.volumeKeys, held.key!, key.time + dx / pps, scene.frame / scene.tps, body.clip.start, body.clip.start + body.clip.duration)
+      const origin = held.origin
+      if (held.key != null && origin) {
+        const { time, value: db } = draggedKey(body.clip.volumeKeys, held.key, origin, dx, dy, layoutNow().pps, scene.frame / scene.tps, body.clip.start, body.clip.start + body.clip.duration, band)
+        const tip = { x: current.x, y: current.y, text: dbText(db) }
         held.keyTime = time
-        dragView.set({ volume: { clip: held.clip, line: false, key: held.key, keyTime: time }, tip: null })
+        dragView.set({ volume: { clip: held.clip, line: false, key: held.key, keyTime: time }, tip })
+        // Nothing changed yet (a press held still): no undo step.
+        if (!held.token.begun && time === origin.time && db === origin.value) return
+        const to = origin.mediaTime + Math.round((time - origin.time) * scene.tps)
+        sendLive(held.token, [{ id: 'effects.moveKeyframe', params: { clip: held.clip, ...VOLUME, mediaTime: origin.mediaTime, to, value: db } }])
         return
       }
       const db = draggedDb(band, held.from, current.pressed.y, current.y)
@@ -709,7 +718,7 @@ export function useGestures({ film, session, store, tool, invoke, scrub, rollRip
         const key = band.key != null ? clip.volumeKeys[band.key] : undefined
         const around = band.key == null && clip.volumeKeys.length ? keysAround(clip.volumeKeys, t).map((index) => ({ ticks: Math.round(clip.volumeKeys[index].time * scene.tps), value: clip.volumeKeys[index].value })) : []
         const from = key ? key.value : levelAt(clip.volumeKeys, clip.volumeDb, t)
-        current.volume = { clip: clip.id, key: band.key, from, around: key ? [{ ticks: Math.round(key.time * scene.tps), value: key.value }] : around, axis: null, token: { merge: `volume-line-${(volumeDrags += 1)}`, begun: false }, keyTime: null }
+        current.volume = { clip: clip.id, key: band.key, from, around, origin: key ?? null, token: { merge: `volume-line-${(volumeDrags += 1)}`, begun: false, at: key?.mediaTime }, keyTime: null }
         localSelection.set({ transition: null, keyframe: key ? { clip: clip.id, mediaTime: key.mediaTime } : null })
       }
       // A press anywhere else on the tracks lets go of the transition and the keyframe chosen.
@@ -791,12 +800,16 @@ export function useGestures({ film, session, store, tool, invoke, scrub, rollRip
         return
       }
       if (current.volume && (current.started || current.volume.key != null)) {
-        const { clip, key, axis, keyTime } = current.volume
+        const { clip, origin, token } = current.volume
         finish()
-        // A keyframe moved in time: one `effects.moveKeyframe` (its level was not changed).
-        const found = key != null ? bodyOf(clip)?.clip.volumeKeys[key] : undefined
-        if (found && axis === 'time' && keyTime != null && scene && Math.abs(keyTime - found.time) * scene.tps >= 1) {
-          send([{ id: 'effects.moveKeyframe', params: { clip, ...VOLUME, mediaTime: found.mediaTime, to: found.mediaTime + Math.round((keyTime - found.time) * scene.tps) } }])
+        // A keyframe dragged went to the engine as it moved; the one chosen is where it now is.
+        if (origin && token.begun) {
+          const chosen = () => {
+            const at = token.at ?? origin.mediaTime
+            if (live.current.busy) setTimeout(chosen, 30)
+            else localSelection.set({ keyframe: { clip, mediaTime: at } })
+          }
+          chosen()
         }
         return
       }
@@ -836,7 +849,7 @@ export function useGestures({ film, session, store, tool, invoke, scrub, rollRip
       }
       finish()
     },
-    [bodyOf, commitTransition, finish, layoutNow, placeOf, selectTransition, send, sendCopy, store, timeOfX],
+    [commitTransition, finish, layoutNow, placeOf, selectTransition, send, sendCopy, store, timeOfX],
   )
 
   // The clip menu (upstream's `context_menu` on the tracks): a right-click selects an unselected clip first.
