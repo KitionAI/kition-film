@@ -8,8 +8,9 @@ intent: >-
   touch it); a click selects it (drawn selected, the clips let go); dragging its right end draws it
   longer and lengthens it on release, centred, as one undo step that one undo takes back; a
   double-click opens Set Transition Duration, where 10 frames typed and OK set its length; its menu
-  offers Set Transition Duration…; Delete on it says it cannot be removed on its own and removes
-  nothing. The whole script also runs the Effects panel steps.
+  offers Set Transition Duration…; Delete on the selected transition removes it (no clip with it)
+  in one undo step, one undo brings it back as it was, and redo removes it again. The whole script
+  also runs the Effects panel steps.
 layer: gate
 source:
   kind: probe

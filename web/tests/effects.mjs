@@ -5,11 +5,11 @@
 // or to the clip Effect Controls shows; the applied effect's parameter scrubs in Effect Controls and
 // the Program picture changes; its header selected, Delete removes it. A transition dragged onto a
 // cut lands centred on it; a click selects it, dragging an end lengthens it, a double-click opens Set
-// Transition Duration; Delete on it says it cannot be removed on its own. Every edit is one undo step.
+// Transition Duration; Delete on it removes it, one undo brings it back and redo removes it again.
+// Every edit is one undo step.
 import assert from 'node:assert/strict'
 import { chromium, webkit } from 'playwright'
 import { createServer } from 'vite'
-import { CATALOGS } from '../src/strings.ts'
 import { readCatalog } from '../parity/i18n.mjs'
 
 const ZH = readCatalog(new URL('../src/i18n/upstream/zh-hans.tsv', import.meta.url)).table
@@ -277,16 +277,30 @@ try {
   assert.ok(await until(async () => (await v1()).transitions[0]?.duration === transition.duration), 'one undo restores it')
   transition = (await v1()).transitions[0]
 
-  // Its menu offers Set Transition Duration…; Delete on it says it cannot be removed on its own, and changes nothing.
+  // Its menu offers Set Transition Duration…; Delete on the selected transition removes it (the
+  // engine's state), in one undo step; one undo brings it back as it was, redo removes it again.
   const mBox = await drawn().boundingBox()
   await page.mouse.click(mBox.x + mBox.width / 2, mBox.y + mBox.height / 2, { button: 'right' })
   assert.equal(await kit.getByTestId('film-transition-menu-duration').textContent(), zh('Set Transition Duration…'), 'the transition menu')
   await page.keyboard.press('Escape')
   await page.mouse.click(mBox.x + mBox.width / 2, mBox.y + mBox.height / 2)
+  assert.ok(await until(async () => (await drawn().getAttribute('aria-selected')) === 'true'), 'a click selects the transition')
+  const kept = (await v1()).transitions[0]
+  const deleteSteps = await undoSteps()
   await page.keyboard.press('Delete')
-  assert.ok(await until(async () => (await message()) === CATALOGS['zh-CN']['transition.cannotDelete']), `Delete says it cannot remove a transition: ${await message()}`)
+  assert.ok(await until(async () => (await v1()).transitions.length === 0), `Delete removes the selected transition (${await message()})`)
   assert.equal((await v1()).items.length, 2, 'Delete removed no clip')
-  assert.equal((await v1()).transitions.length, 1, 'the transition stays')
+  assert.equal(await undoSteps(), deleteSteps + 1, 'one undo step')
+  await undo()
+  assert.ok(await until(async () => (await v1()).transitions.length === 1), 'one undo brings the transition back')
+  assert.deepEqual((await v1()).transitions[0], kept, 'as it was')
+  assert.equal((await v1()).items.length, 2)
+  await kit.locator('.kui-app').focus()
+  await page.keyboard.press(`${mod}+Shift+z`)
+  assert.ok(await until(async () => (await v1()).transitions.length === 0), `redo removes it again (${await message()})`)
+  assert.equal((await v1()).items.length, 2, 'redo removed no clip')
+  await undo()
+  assert.ok(await until(async () => (await v1()).transitions.length === 1), 'undo brings it back once more')
   await undo()
   assert.ok(await until(async () => (await v1()).transitions.length === 0), 'undo takes back the step that added it')
 
