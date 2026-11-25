@@ -12,9 +12,9 @@ use serde_json::json;
 /// A project of two sequences (a red matte on the first), saved: what both sessions open.
 fn two_sequences() -> (Vec<u8>, u64) {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
-    let matte = doc.execute("file.newColorMatte", json!({ "color": "#ff0000", "seconds": 4.0 })).unwrap();
+    let matte = doc.execute("item.newColorMatte", json!({ "color": "#ff0000", "seconds": 4.0 })).unwrap();
     doc.execute("timeline.place", json!({ "item": matte["item"], "track": "V1", "seconds": 0.0 })).unwrap();
-    let second = doc.execute("file.newSequence", json!({ "name": "B" })).unwrap()["sequence"].as_u64().unwrap();
+    let second = doc.execute("sequence.new", json!({ "name": "B" })).unwrap()["sequence"].as_u64().unwrap();
     (doc.save(None).unwrap(), second)
 }
 

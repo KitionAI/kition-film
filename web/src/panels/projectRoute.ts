@@ -183,7 +183,7 @@ export function createProjectRoute(deps: ProjectRouteDeps) {
       case 'markIn':
       case 'markOut': {
         const hover = ui.hover.current
-        if (!hover) return run(op === 'markIn' ? 'markers.markIn' : 'markers.markOut', {})
+        if (!hover) return run(op === 'markIn' ? 'marker.markIn' : 'marker.markOut', {})
         const key = op === 'markIn' ? 'in' : 'out'
         await run('project.setMarks', { item: hover.item, [key]: hover.time })
         return { item: hover.item, [key]: hover.time }

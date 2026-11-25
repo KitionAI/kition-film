@@ -256,7 +256,7 @@ test('steps preview together through previewBeginSteps', async () => {
   const engine = fakeEngine()
   const preview = createPreview({ engine: () => engine, schedule: frames().schedule })
   const steps = [
-    { command: 'file.newSequence', params: { name: 'Cut 2' } },
+    { command: 'sequence.new', params: { name: 'Cut 2' } },
     { command: 'sequence.settings', params: { dropFrame: true } },
   ]
   await preview.handle().begin(request(steps, ['project']))

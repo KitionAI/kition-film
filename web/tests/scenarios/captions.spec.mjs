@@ -3,36 +3,36 @@ import { test, expect, TICKS } from './fixtures.mjs'
 async function setup(film) {
   await film.open()
   await film.command('file.newProject', { name: 'Caption scenes' })
-  await film.command('file.newSequence', { name: 'Captions', width: 320, height: 180, fps: 24, video: 1, audio: 0 })
+  await film.command('sequence.new', { name: 'Captions', width: 320, height: 180, fps: 24, video: 1, audio: 0 })
 }
 
 test('F55 invalid first caption leaves no empty track; the first valid cue and track are one saved undo step', async ({ film }) => {
   await setup(film)
   const history = await film.history()
-  const result = await film.attempt('captions.add', { track: 'C9', text: 'Invalid' })
+  const result = await film.attempt('caption.add', { track: 'C9', text: 'Invalid' })
   expect(result).toContain('no such caption track')
-  expect((await film.command('captions.list')).tracks).toEqual([])
+  expect((await film.command('caption.list')).tracks).toEqual([])
   expect(await film.history()).toEqual(history)
-  await film.menu('captions.add')
-  await expect.poll(async () => (await film.command('captions.list')).tracks.length).toBe(1)
-  const tracks = (await film.command('captions.list')).tracks
+  await film.menu('caption.add')
+  await expect.poll(async () => (await film.command('caption.list')).tracks.length).toBe(1)
+  const tracks = (await film.command('caption.list')).tracks
   expect(tracks[0].captions).toHaveLength(1)
   expect((await film.history()).undo).toHaveLength(history.undo.length + 1)
   await film.undo()
-  await expect.poll(async () => (await film.command('captions.list')).tracks).toEqual([])
+  await expect.poll(async () => (await film.command('caption.list')).tracks).toEqual([])
   await film.redo()
-  await expect.poll(async () => (await film.command('captions.list')).tracks).toEqual(tracks)
+  await expect.poll(async () => (await film.command('caption.list')).tracks).toEqual(tracks)
   await film.saveReopen()
-  expect((await film.command('captions.list')).tracks).toEqual(tracks)
+  expect((await film.command('caption.list')).tracks).toEqual(tracks)
 })
 
 test('F56 caption pixels appear only in their cue interval, respect track visibility, and survive reopen', async ({ film }) => {
   await setup(film)
-  const { item } = await film.command('file.newColorMatte', { color: '#000000', seconds: 1 })
+  const { item } = await film.command('item.newColorMatte', { color: '#000000', seconds: 1 })
   await film.command('timeline.place', { item, seconds: 0 })
-  await film.command('captions.add', { time: TICKS / 4, durationSeconds: 0.25, text: 'Visible cue' })
+  await film.command('caption.add', { time: TICKS / 4, durationSeconds: 0.25, text: 'Visible cue' })
   // Caption sizes are specified relative to a 1080-line frame: 144 gives 24 px at 180 lines.
-  await film.command('captions.setStyle', { track: 'C1', size: 144, outline: 0, color: '#ffffff', background: false })
+  await film.command('caption.setStyle', { track: 'C1', size: 144, outline: 0, color: '#ffffff', background: false })
   await film.saveReopen()
   const bright = () => film.kit.getByTestId('film-program').evaluate(program => {
     const [zoom, x, y] = program.dataset.view.split(' ').map(Number)
@@ -55,7 +55,7 @@ test('F56 caption pixels appear only in their cue interval, respect track visibi
   }
   await film.command('playhead.set', { frame: 8 })
   await expect.poll(bright).toBeGreaterThan(20)
-  await film.command('captions.setTrack', { track: 'C1', enabled: false })
+  await film.command('caption.setTrack', { track: 'C1', enabled: false })
   await expect.poll(bright).toBe(0)
   await film.undo()
   await expect.poll(bright).toBeGreaterThan(20)

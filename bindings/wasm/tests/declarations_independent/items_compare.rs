@@ -43,7 +43,7 @@ fn item_commands_compare_explicit_selection_precedence_all_kinds_and_subclip_rou
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
     let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
     let mut items = vec![sequence];
-    for command in ["file.newColorMatte", "file.newAdjustmentLayer"] {
+    for command in ["item.newColorMatte", "item.newAdjustmentLayer"] {
         items.push(doc.execute(command, json!({"seconds":2})).unwrap()["item"].as_u64().unwrap());
     }
     let graphic = doc.execute("graphics.newText", json!({"newClip":true,"text":"Text"})).unwrap()["clip"].as_u64().unwrap();
@@ -130,7 +130,7 @@ fn item_commands_compare_explicit_selection_precedence_all_kinds_and_subclip_rou
 #[test]
 fn clip_selection_and_enable_compare_link_closure_and_same_field_assignments() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
-    let source = doc.execute("file.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
+    let source = doc.execute("item.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
     let placed = doc.execute("timeline.place", json!({"item":source,"track":"V1","time":0})).unwrap();
     let clips: Vec<_> = placed["clips"].as_array().unwrap().iter().map(|id| id.as_u64().unwrap()).collect();
     assert_eq!(clips.len(), 2);

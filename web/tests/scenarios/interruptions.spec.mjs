@@ -50,7 +50,7 @@ for (const action of ['permissions', 'new project']) {
       await film.configure({ disable: [] })
     } else {
       await film.command('file.newProject', { name: 'New graphic destination' })
-      await film.command('file.newSequence', { name: 'New sequence', width: 64, height: 36, fps: 24 })
+      await film.command('sequence.new', { name: 'New sequence', width: 64, height: 36, fps: 24 })
     }
     const before = await film.details()
     const history = await film.history()

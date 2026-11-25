@@ -61,7 +61,7 @@ fn markers_on_disk(file: &std::path::Path) -> Vec<(u64, String)> {
         .collect()
 }
 
-/// `effects.setParam` by clip id with no time, on a clip with no keyframe, needs the clip's effects
+/// `effect.setParam` by clip id with no time, on a clip with no keyframe, needs the clip's effects
 /// and no position (`s3a` in `outside.rs`: a ripple insert before it applies). On a clip whose
 /// opacity is animated it keys the value at the clip's source time under the playhead, which the
 /// insert moved: refused as `relocated`. (The scratch recipe stated no position for both: applied.)
@@ -70,7 +70,7 @@ async fn an_effect_parameter_by_id_on_an_animated_clip_after_a_ripple_insert_is_
     let f = Fixture::new(CLIPS);
     let (sequence, _) = f.inspect().await;
     let mine = v1(&sequence)[2];
-    f.colleague(&[("effects.setParam", json!({ "clip": mine, "effect": "opacity", "param": "opacity", "value": 80, "seconds": 2.5 }))]);
+    f.colleague(&[("effect.setParam", json!({ "clip": mine, "effect": "opacity", "param": "opacity", "value": 80, "seconds": 2.5 }))]);
     let (sequence, basis) = f.inspect().await;
     f.colleague(&[ripple_insert(&sequence)]);
     let before = std::fs::read(f.file()).unwrap();
@@ -103,16 +103,16 @@ async fn a_keyframe_edit_by_media_time_applies_after_a_move_and_is_refused_after
         let f = Fixture::new(CLIPS);
         let (sequence, _) = f.inspect().await;
         let mine = v1(&sequence)[2];
-        f.colleague(&[("effects.setParam", json!({ "clip": mine, "effect": "opacity", "param": "opacity", "value": 80, "seconds": 2.5 }))]);
+        f.colleague(&[("effect.setParam", json!({ "clip": mine, "effect": "opacity", "param": "opacity", "value": 80, "seconds": 2.5 }))]);
         let key = first_key(&f.file(), mine);
         let (sequence, basis) = f.inspect().await;
         let theirs = match change {
             "ripple insert" => ripple_insert(&sequence),
-            _ => ("effects.setParam", json!({ "clip": mine, "effect": "opacity", "param": "opacity", "value": 10, "seconds": 2.75 })),
+            _ => ("effect.setParam", json!({ "clip": mine, "effect": "opacity", "param": "opacity", "value": 10, "seconds": 2.75 })),
         };
         f.colleague(&[theirs]);
         let step =
-            json!({ "command": "effects.setKeyframe", "params": { "clip": mine, "effect": "opacity", "param": "opacity", "mediaTime": key, "value": 40 } });
+            json!({ "command": "effect.setKeyframe", "params": { "clip": mine, "effect": "opacity", "param": "opacity", "mediaTime": key, "value": 40 } });
         let answer = f.call("run", json!({ "basis": basis, "steps": [step] })).await;
         match change {
             "ripple insert" => {
@@ -196,12 +196,12 @@ async fn renaming_a_clip_needs_its_name_alone() {
 async fn moving_a_caption_needs_the_caption_tracks() {
     for change in ["another caption", "another project item"] {
         let f = Fixture::new(CLIPS);
-        let made = f.colleague(&[("captions.add", json!({ "text": "first", "seconds": 1 })), ("captions.add", json!({ "text": "second", "seconds": 6 }))]);
+        let made = f.colleague(&[("caption.add", json!({ "text": "first", "seconds": 1 })), ("caption.add", json!({ "text": "second", "seconds": 6 }))]);
         let (mine, other) = (made[0]["caption"].as_u64().unwrap(), made[1]["caption"].as_u64().unwrap());
         let (sequence, basis) = f.inspect().await;
         let item = sequence["id"].as_u64().unwrap();
         let theirs = match change {
-            "another caption" => ("captions.setText", json!({ "caption": other, "text": "theirs" })),
+            "another caption" => ("caption.setText", json!({ "caption": other, "text": "theirs" })),
             _ => rename_another_item(&sequence),
         };
         f.colleague(&[theirs]);
@@ -210,7 +210,7 @@ async fn moving_a_caption_needs_the_caption_tracks() {
         let mut expected_mine = before_sequence.find_caption(kition_film_project::ClipId(mine)).unwrap().1.clone();
         expected_mine.start += before_sequence.settings.frame_rate.tick_of(2);
         let expected_other = before_sequence.find_caption(kition_film_project::ClipId(other)).unwrap().1.clone();
-        let step = json!({ "command": "captions.move", "params": { "captions": [mine], "deltaFrames": 2 } });
+        let step = json!({ "command": "caption.move", "params": { "captions": [mine], "deltaFrames": 2 } });
         let answer = f.call("run", json!({ "basis": basis, "steps": [step] })).await;
         answer.unwrap_or_else(|error| panic!("{change}: {error}"));
         let after = kition_film_format::decode(&std::fs::read(f.file()).unwrap()).unwrap();
@@ -221,7 +221,7 @@ async fn moving_a_caption_needs_the_caption_tracks() {
     }
 }
 
-/// A marker has no tool id: `markers.edit` needs its marker in the sequence's item
+/// A marker has no tool id: `marker.edit` needs its marker in the sequence's item
 /// (`sequence.markers.<i>`). After the colleague renamed that marker it is refused as `changed`,
 /// their name kept; after the colleague renamed another marker it applies. (Before: no premise,
 /// the colleague's name overwritten. A caption had this protection from the scratch recipe; a
@@ -230,13 +230,13 @@ async fn moving_a_caption_needs_the_caption_tracks() {
 async fn editing_a_marker_needs_that_marker() {
     for change in ["that marker", "another marker"] {
         let f = Fixture::new(CLIPS);
-        let made = f.colleague(&[("markers.add", json!({ "seconds": 1 })), ("markers.add", json!({ "seconds": 5 }))]);
+        let made = f.colleague(&[("marker.add", json!({ "seconds": 1 })), ("marker.add", json!({ "seconds": 5 }))]);
         let (mine, other) = (made[0]["marker"].as_u64().unwrap_or_else(|| panic!("{made:?}")), made[1]["marker"].as_u64().unwrap());
         let (sequence, basis) = f.inspect().await;
         let item = sequence["id"].as_u64().unwrap();
         let named = if change == "that marker" { mine } else { other };
-        f.colleague(&[("markers.edit", json!({ "marker": named, "name": "Theirs" }))]);
-        let step = json!({ "command": "markers.edit", "params": { "marker": mine, "name": "Mine" } });
+        f.colleague(&[("marker.edit", json!({ "marker": named, "name": "Theirs" }))]);
+        let step = json!({ "command": "marker.edit", "params": { "marker": mine, "name": "Mine" } });
         let answer = f.call("run", json!({ "basis": basis, "steps": [step] })).await;
         let names = |file: &std::path::Path| markers_on_disk(file).into_iter().find(|(id, _)| *id == mine).map(|(_, name)| name);
         match change {
@@ -263,7 +263,7 @@ async fn add_edit_to_all_tracks_needs_the_captions() {
         let (sequence, basis) = f.inspect().await;
         let item = sequence["id"].as_u64().unwrap();
         let theirs = match change {
-            "caption there" => ("captions.add", json!({ "text": "theirs", "seconds": 2 })),
+            "caption there" => ("caption.add", json!({ "text": "theirs", "seconds": 2 })),
             _ => rename_another_item(&sequence),
         };
         f.colleague(&[theirs]);
@@ -292,13 +292,13 @@ async fn place_clip_with_snap_needs_the_markers_near_its_time() {
     for change in ["marker near", "marker far", "another project item", "caption elsewhere"] {
         let f = Fixture::new(CLIPS);
         let (sequence, _) = f.inspect().await;
-        f.colleague(&[("markers.add", json!({ "seconds": 15 }))]);
+        f.colleague(&[("marker.add", json!({ "seconds": 15 }))]);
         let (_, basis) = f.inspect().await;
         let item = sequence["id"].as_u64().unwrap();
         f.colleague(&[match change {
-            "marker near" => ("markers.add", json!({ "seconds": 10.0 + 1.0 / 30.0 })),
-            "marker far" => ("markers.add", json!({ "seconds": 15.5 })),
-            "caption elsewhere" => ("captions.add", json!({ "text": "theirs", "seconds": 2 })),
+            "marker near" => ("marker.add", json!({ "seconds": 10.0 + 1.0 / 30.0 })),
+            "marker far" => ("marker.add", json!({ "seconds": 15.5 })),
+            "caption elsewhere" => ("caption.add", json!({ "text": "theirs", "seconds": 2 })),
             _ => rename_another_item(&sequence),
         }]);
         let step = json!({ "command": "timeline.place", "params": { "item": sequence["video"][0]["items"][1]["item"], "track": "V1", "seconds": 10, "snap": "markers" } });
@@ -361,8 +361,8 @@ async fn a_caption_or_marker_is_held_by_its_id_across_others_saves() {
         for change in ["one added before it", "it changed, then one added before it"] {
             let f = Fixture::new(CLIPS);
             let add = |seconds: i64| match write {
-                "caption" => ("captions.add", json!({ "text": "added", "seconds": seconds })),
-                _ => ("markers.add", json!({ "seconds": seconds })),
+                "caption" => ("caption.add", json!({ "text": "added", "seconds": seconds })),
+                _ => ("marker.add", json!({ "seconds": seconds })),
             };
             let made = f.colleague(&[add(5)]);
             let mine = made[0][write].as_u64().unwrap_or_else(|| panic!("{made:?}"));
@@ -370,20 +370,20 @@ async fn a_caption_or_marker_is_held_by_its_id_across_others_saves() {
             let item = sequence["id"].as_u64().unwrap();
             if change.starts_with("it changed") {
                 f.colleague(&[match write {
-                    "caption" => ("captions.setText", json!({ "caption": mine, "text": "Theirs" })),
-                    _ => ("markers.edit", json!({ "marker": mine, "name": "Theirs" })),
+                    "caption" => ("caption.setText", json!({ "caption": mine, "text": "Theirs" })),
+                    _ => ("marker.edit", json!({ "marker": mine, "name": "Theirs" })),
                 }]);
             }
             f.colleague(&[add(1)]);
             let step = match write {
-                "caption" => json!({ "command": "captions.setText", "params": { "caption": mine, "text": "Mine" } }),
-                _ => json!({ "command": "markers.edit", "params": { "marker": mine, "name": "Mine" } }),
+                "caption" => json!({ "command": "caption.setText", "params": { "caption": mine, "text": "Mine" } }),
+                _ => json!({ "command": "marker.edit", "params": { "marker": mine, "name": "Mine" } }),
             };
             let answer = f.call("run", json!({ "basis": basis, "steps": [step] })).await;
             // The sequence (its markers) and its captions as a new engine lists them.
             let doc = |file: &std::path::Path| {
                 let mut doc = <kition_film_kit::FilmDocument as kition_kit::KitDocument>::open(FILE, &std::fs::read(file).unwrap()).unwrap();
-                let captions = kition_kit::KitDocument::execute(&mut doc, "captions.list", json!({})).unwrap();
+                let captions = kition_kit::KitDocument::execute(&mut doc, "caption.list", json!({})).unwrap();
                 format!("{} {captions}", kition_kit::KitDocument::inspect(&doc).unwrap())
             };
             if change.starts_with("it changed") {
@@ -410,7 +410,7 @@ async fn automate_to_sequence_holds_the_time_its_overwrite_covers() {
     for case in ["sequentially, a clip after", "at markers, a clip at one"] {
         let f = Fixture::new(CLIPS);
         if case.starts_with("at markers") {
-            f.colleague(&[("markers.add", json!({ "seconds": 12 }))]);
+            f.colleague(&[("marker.add", json!({ "seconds": 12 }))]);
         }
         let (sequence, basis) = f.inspect().await;
         let item = sequence["video"][0]["items"][1]["item"].as_u64().unwrap();
@@ -439,7 +439,7 @@ async fn automate_to_sequence_holds_the_time_its_overwrite_covers() {
 async fn automate_by_sort_holds_the_order_of_its_items_alone() {
     for change in ["its item moved", "another item moved"] {
         let f = Fixture::new(CLIPS);
-        let made = f.colleague(&[("file.newBin", json!({ "name": "Later" }))]);
+        let made = f.colleague(&[("bin.add", json!({ "name": "Later" }))]);
         let bin = made[0]["bin"].as_u64().unwrap();
         let (sequence, basis) = f.inspect().await;
         let items = sequence["video"][0]["items"].as_array().unwrap();
@@ -506,13 +506,13 @@ async fn transition_at_a_time_holds_the_lanes_before_its_cut_not_the_lane_order(
 async fn a_caption_or_marker_write_applies_after_a_change_of_a_clip() {
     for write in ["caption", "marker"] {
         let f = Fixture::new(CLIPS);
-        let made = f.colleague(&[("captions.add", json!({ "text": "first", "seconds": 1 })), ("markers.add", json!({ "seconds": 5 }))]);
+        let made = f.colleague(&[("caption.add", json!({ "text": "first", "seconds": 1 })), ("marker.add", json!({ "seconds": 5 }))]);
         let (caption, marker) = (made[0]["caption"].as_u64().unwrap(), made[1]["marker"].as_u64().unwrap());
         let (sequence, basis) = f.inspect().await;
         f.colleague(&[opacity(v1(&sequence)[6], 30.0)]);
         let step = match write {
-            "caption" => json!({ "command": "captions.setText", "params": { "caption": caption, "text": "mine" } }),
-            _ => json!({ "command": "markers.edit", "params": { "marker": marker, "name": "Mine" } }),
+            "caption" => json!({ "command": "caption.setText", "params": { "caption": caption, "text": "mine" } }),
+            _ => json!({ "command": "marker.edit", "params": { "marker": marker, "name": "Mine" } }),
         };
         let ran = f.ok("run", json!({ "basis": basis, "steps": [step] })).await;
         println!("{write} after a clip change: applied, {}", ran["changes"]);

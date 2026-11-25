@@ -18,9 +18,9 @@ fn run(doc: &mut FilmDocument, command: &str, params: Value) -> Value {
 /// A 320 x 180 sequence that is red for its first second and blue for its second.
 fn film() -> FilmDocument {
     let mut doc = FilmDocument::create("Edit.kfilm", 320, 180).unwrap();
-    let red = run(&mut doc, "file.newColorMatte", json!({ "color": "#ff0000", "seconds": 1 }));
+    let red = run(&mut doc, "item.newColorMatte", json!({ "color": "#ff0000", "seconds": 1 }));
     run(&mut doc, "timeline.place", json!({ "item": red["item"], "track": "V1", "seconds": 0 }));
-    let blue = run(&mut doc, "file.newColorMatte", json!({ "color": "#0000ff", "seconds": 1 }));
+    let blue = run(&mut doc, "item.newColorMatte", json!({ "color": "#0000ff", "seconds": 1 }));
     run(&mut doc, "timeline.place", json!({ "item": blue["item"], "track": "V1", "seconds": 1 }));
     doc
 }
@@ -91,7 +91,7 @@ fn rendering_reads_no_playhead_and_changes_nothing() {
     run(&mut doc, "playhead.set", json!({ "seconds": 1.5 }));
     let clip = doc.inspect().unwrap()["sequence"]["video"][0]["items"][1]["clip"].clone();
     run(&mut doc, "timeline.select", json!({ "clips": [clip] }));
-    run(&mut doc, "file.newSequence", json!({ "name": "Other", "width": 64, "height": 36 }));
+    run(&mut doc, "sequence.new", json!({ "name": "Other", "width": 64, "height": 36 }));
     assert_ne!(doc.inspect().unwrap()["project"]["activeSequence"], json!(sequence));
     let before = editor_state(&doc);
     let second = render(&mut doc, call);
@@ -157,7 +157,7 @@ fn an_unknown_sequence_lists_the_sequences() {
 fn several_top_level_sequences_need_the_sequence_named() {
     let mut doc = film();
     let [first] = sequences(&doc)[..] else { panic!("one sequence") };
-    run(&mut doc, "file.newSequence", json!({ "name": "Other", "width": 64, "height": 36 }));
+    run(&mut doc, "sequence.new", json!({ "name": "Other", "width": 64, "height": 36 }));
     let [_, other] = sequences(&doc)[..] else { panic!("two sequences") };
     let error = refused(&mut doc, json!({ "target": { "time": 0.5 } }));
     let (message, errors) = kition_kit::schema::parse_refusal(&error).unwrap_or_else(|| panic!("not a typed refusal: {error}"));

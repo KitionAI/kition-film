@@ -91,7 +91,7 @@ test("upstream's UI rows become kit: rows, keeping their parity key's command", 
   for (const row of ui) assert.equal(at(`kit:${row.command}`).length, 1, row.command)
   assert.deepEqual(at('kit:view.playbackRes.quarter')[0].path, ['View', 'Playback Resolution'])
   // Engine rows stay engine commands, where upstream draws them.
-  assert.deepEqual(at('markers.markIn')[0].path, ['Markers'])
+  assert.deepEqual(at('marker.markIn')[0].path, ['Markers'])
 })
 
 test('File ▸ Import and File ▸ Export ▸ Media are taken over by Kition, in place', () => {
@@ -131,7 +131,7 @@ test("check marks: the workspace in use and the focused monitor's view, as upstr
   assert.equal(checked('kit:view.highQualityPlayback'), false)
   assert.equal(checked('kit:view.safeMargins'), false)
   // Upstream checks only `view.*` and workspace rows: the engine's toggles draw plain.
-  for (const command of ['sequence.snap', 'sequence.linkedSelection', 'media.toggleProxies', 'markers.markIn', 'kit:help.about']) assert.equal(checked(command), undefined, command)
+  for (const command of ['sequence.snap', 'sequence.linkedSelection', 'media.toggleProxies', 'marker.markIn', 'kit:help.about']) assert.equal(checked(command), undefined, command)
   // Before the workspace is known, its rows draw plain.
   assert.equal(menuChecked({ workspace: null, views: DEFAULT_VIEWS, focused: 'timeline' })('kit:window.workspace.editing'), undefined)
   // View ▸ Dynamic Audio Waveforms is checked while on, its default (upstream menu_dialogs.rs checked).
@@ -147,13 +147,13 @@ test('imports name media relative to the project, as the project names them', ()
 
 test("the shortcuts list holds the engine's shortcuts and upstream's UI keys, without hidden commands", () => {
   const rows = [
-    { id: 'markers.markIn', label: 'Mark In', category: 'Markers', shortcuts: [{ keys: 'I', panel: null }] },
+    { id: 'marker.markIn', label: 'Mark In', category: 'Markers', shortcuts: [{ keys: 'I', panel: null }] },
     { id: 'file.save', label: 'Save', category: 'File', shortcuts: [{ keys: 'Cmd+S', panel: null }] },
     { id: 'edit.undo', label: 'Undo', category: 'Edit', shortcuts: [{ keys: 'Cmd+Z', panel: null }, { keys: 'Left', panel: 'History' }] },
   ]
   const list = shortcutList(rows, upstream)
   const find = (command) => list.filter((item) => item.command === command)
-  assert.deepEqual(find('markers.markIn').map((item) => item.keys), ['I'])
+  assert.deepEqual(find('marker.markIn').map((item) => item.keys), ['I'])
   assert.deepEqual(find('edit.undo').map((item) => [item.keys, item.panel]), [['Cmd+Z', null], ['Left', 'History']])
   assert.equal(find('file.save').length, 0)
   // Upstream's UI keys, which the web engine does not hold.
@@ -163,15 +163,15 @@ test("the shortcuts list holds the engine's shortcuts and upstream's UI keys, wi
 
 test("rows show the engine's live bindings (its first application-wide one), as menu_items_for's shortcuts.primary", () => {
   const live = [
-    { id: 'markers.markIn', shortcuts: [{ keys: 'Q', panel: null }] },
-    { id: 'markers.markOut', shortcuts: [{ keys: 'O', panel: 'Timeline' }] },
+    { id: 'marker.markIn', shortcuts: [{ keys: 'Q', panel: null }] },
+    { id: 'marker.markOut', shortcuts: [{ keys: 'O', panel: 'Timeline' }] },
     { id: 'file.import', shortcuts: [{ keys: 'Cmd+Shift+I', panel: null }] },
   ]
   const rows = withLiveShortcuts(FILM_MENUS, live)
   const find = (command) => rows.find((row) => row.command === command)
-  assert.equal(find('markers.markIn').shortcut, 'Q')
+  assert.equal(find('marker.markIn').shortcut, 'Q')
   // Unbound application-wide: no key shows (not the manifest's default).
-  assert.equal(find('markers.markOut').shortcut, '')
+  assert.equal(find('marker.markOut').shortcut, '')
   // A takeover row shows its engine command's binding.
   assert.equal(find('kit:file.import').shortcut, 'Cmd+Shift+I')
   // Upstream's UI commands keep their defaults; so does every row before the list is read.

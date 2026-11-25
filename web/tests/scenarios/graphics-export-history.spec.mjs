@@ -5,7 +5,7 @@ for (const edits of [0, 205]) {
     test(`F82 exporting a graphics template preserves history after ${edits} edits, redo=${redo}`, async ({ film }) => {
       await film.open()
       await film.command('file.newProject', { name: 'Export history' })
-      await film.command('file.newSequence', { width: 64, height: 36, fps: 24 })
+      await film.command('sequence.new', { width: 64, height: 36, fps: 24 })
       const { clip } = await film.command('graphics.newText', { text: 'Original 标题' })
       await film.command('graphics.newText', { clip, text: 'Subtitle' })
       const result = await film.commands(Array.from({ length: edits }, (_, n) => ({ command: 'graphics.setText', params: { clip, layer: 0, text: `Take ${n}` } })))

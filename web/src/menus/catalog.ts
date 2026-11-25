@@ -68,7 +68,7 @@ export const FILM_MENUS: readonly MenuRow[] = buildMenus(
 /** Kition's own rows in `FILM_MENUS`: upstream's UI rows, the takeovers, and Help. */
 export const KIT_ROWS: readonly MenuRow[] = FILM_MENUS.filter((row) => row.command.startsWith(KIT))
 
-/** A row of the engine's `shortcuts.list` (`session/keys.ts` `ShortcutRow`). */
+/** A row of the engine's `shortcut.list` (`session/keys.ts` `ShortcutRow`). */
 type LiveShortcuts = ReadonlyArray<{ id: string; shortcuts: ReadonlyArray<{ keys: string; panel?: string | null }> }>
 
 /**

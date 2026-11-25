@@ -1148,17 +1148,17 @@ pub fn audio_gain(s: &mut Session, p: &Value) -> Result<Value> {
 
 /// Effects panel ▸ Set Selected as Default Transition (video or audio, from the effect's kind).
 fn set_default_transition(s: &mut Session, p: &Value) -> Result<Value> {
-    let id = str_p(p, "effect").ok_or_else(|| bad("effects.setDefaultTransition", "need `effect`"))?;
+    let id = str_p(p, "effect").ok_or_else(|| bad("effect.setDefaultTransition", "need `effect`"))?;
     use kition_film_project::vtransition::find_transition;
     let def = find_effect(id)
         .or_else(|| find_transition(id, kition_film_project::EffectKind::VideoTransition))
         .or_else(|| find_transition(id, kition_film_project::EffectKind::AudioTransition))
         .or_else(|| kition_film_project::effect_defs().iter().find(|d| d.name.eq_ignore_ascii_case(id)))
-        .ok_or_else(|| bad("effects.setDefaultTransition", format!("no effect `{id}`")))?;
+        .ok_or_else(|| bad("effect.setDefaultTransition", format!("no effect `{id}`")))?;
     match def.kind {
         kition_film_project::EffectKind::AudioTransition => s.state.default_audio_transition = def.id.to_string(),
         kition_film_project::EffectKind::VideoTransition => s.state.default_video_transition = def.id.to_string(),
-        _ => return Err(bad("effects.setDefaultTransition", format!("`{}` is not a transition", def.name))),
+        _ => return Err(bad("effect.setDefaultTransition", format!("`{}` is not a transition", def.name))),
     }
     Ok(json!({"video": s.state.default_video_transition, "audio": s.state.default_audio_transition}))
 }
@@ -1329,7 +1329,7 @@ pub fn commands() -> Vec<CommandSpec> {
             true,
         ),
         spec(
-            "effects.setDefaultTransition",
+            "effect.setDefaultTransition",
             "Set Selected as Default Transition",
             &[],
             None,

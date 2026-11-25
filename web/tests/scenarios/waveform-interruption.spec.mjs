@@ -5,9 +5,9 @@ for (const display of ['audioWaveform', 'videoAndWaveform']) {
     test(`F87 ${display} held waveform scrub cannot survive ${interruption} interruption`, async ({ film, page }) => {
       await film.open()
       await film.command('file.newProject', { name: 'Waveform interruption' })
-      await film.command('file.newSequence', { width: 64, height: 36, fps: 24 })
-      const first = (await film.command('file.newBarsAndTone', { seconds: 2 })).item
-      const second = (await film.command('file.newBarsAndTone', { seconds: 1 })).item
+      await film.command('sequence.new', { width: 64, height: 36, fps: 24 })
+      const first = (await film.command('item.newBarsAndTone', { seconds: 2 })).item
+      const second = (await film.command('item.newBarsAndTone', { seconds: 1 })).item
       await film.command('source.open', { item: first })
       await film.kit.getByTestId('film-source-settings').click()
       await film.kit.getByTestId(`film-source-settings-display-${display}`).click()

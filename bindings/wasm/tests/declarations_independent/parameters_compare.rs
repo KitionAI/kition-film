@@ -1,7 +1,7 @@
 //! Effect operands from commands.rs:2669-2899,3108-3213 and masks.rs:179-210.
 //! Whole effect/clip profiles retain unrelated values; the projection is exact
 //! about when timebase, source geometry, and automatic defaults are consumed.
-//! Re-read after effects.setParam's named `merge` (451e643e) and effects.moveKeyframe's
+//! Re-read after effect.setParam's named `merge` (451e643e) and effect.moveKeyframe's
 //! `value`, `merge` and `begin`: a merge key and `begin` only join or start undo steps
 //! (history, not the document), and a moved keyframe's new value is written into the
 //! clip's effects the move already holds, so no declaration changes with them.
@@ -13,18 +13,18 @@ use serde_json::{Value, json};
 use super::sync_compare::normalized;
 
 pub const PATHS: &[(&str, &str)] = &[
-    ("effects.apply", "standard"),
-    ("effects.remove", "effect-index"),
-    ("effects.toggleEnabled", "effect-index"),
-    ("effects.reset", "effect-index"),
-    ("effects.setParam", "parameter"),
-    ("effects.setParam", "mask-path"),
-    ("effects.toggleAnimation", "animated"),
-    ("effects.addKeyframe", "animated"),
-    ("effects.deleteKeyframe", "media-key"),
-    ("effects.moveKeyframe", "media-key"),
-    ("effects.setInterpolation", "media-key"),
-    ("effects.setKeyframe", "media-key"),
+    ("effect.apply", "standard"),
+    ("effect.remove", "effect-index"),
+    ("effect.toggleEnabled", "effect-index"),
+    ("effect.reset", "effect-index"),
+    ("effect.setParam", "parameter"),
+    ("effect.setParam", "mask-path"),
+    ("effect.toggleAnimation", "animated"),
+    ("effect.addKeyframe", "animated"),
+    ("effect.deleteKeyframe", "media-key"),
+    ("effect.moveKeyframe", "media-key"),
+    ("effect.setInterpolation", "media-key"),
+    ("effect.setKeyframe", "media-key"),
 ];
 
 pub fn compared_path(command: &str, path: &str) -> bool {
@@ -37,12 +37,12 @@ pub fn compared_path(command: &str, path: &str) -> bool {
 
 pub fn more(command: &str) -> Vec<&'static str> {
     let mut classes = vec!["whole-effect-profile"];
-    if command == "effects.apply" {
+    if command == "effect.apply" {
         classes.extend(["coarse-selection-state", "unused-transition-editor-inputs", "clip-owner-position"]);
-    } else if !matches!(command, "effects.setParam" | "effects.toggleEnabled") {
+    } else if !matches!(command, "effect.setParam" | "effect.toggleEnabled") {
         classes.push("whole-clip-default");
     }
-    if matches!(command, "effects.deleteKeyframe" | "effects.moveKeyframe" | "effects.setInterpolation" | "effects.setKeyframe") {
+    if matches!(command, "effect.deleteKeyframe" | "effect.moveKeyframe" | "effect.setInterpolation" | "effect.setKeyframe") {
         classes.push("unused-explicit-media-time-playhead");
     }
     classes
@@ -57,8 +57,8 @@ fn size(sequence: u64) -> Premise {
 }
 
 fn timebase(sequence: u64, command: &str, params: &Value, answer: &mut Under) {
-    let used = matches!(command, "effects.setParam" | "effects.toggleAnimation" | "effects.addKeyframe")
-        || (command == "effects.setInterpolation" && params.get("mediaTime").and_then(Value::as_i64).is_none());
+    let used = matches!(command, "effect.setParam" | "effect.toggleAnimation" | "effect.addKeyframe")
+        || (command == "effect.setInterpolation" && params.get("mediaTime").and_then(Value::as_i64).is_none());
     if !used || params.get("time").and_then(Value::as_i64).is_some() {
         return;
     }
@@ -103,10 +103,10 @@ fn mask_parameter_mapping_compares_source_kinds_and_motion_fallbacks() {
             for motion in ["resolved", "disabled", "missing-position"] {
                 let (mut doc, sequence, media, clips) = fixture();
                 let clip = clips[0];
-                doc.execute("masks.add", json!({"clip":clip,"shape":"rectangle"})).unwrap();
+                doc.execute("mask.add", json!({"clip":clip,"shape":"rectangle"})).unwrap();
                 let source = match kind {
                     "subclip" => doc.execute("clip.makeSubclip", json!({"item":media,"start":0,"end":254_016_000_000i64})).unwrap()["item"].as_u64().unwrap(),
-                    "adjustment" => doc.execute("file.newAdjustmentLayer", json!({})).unwrap()["item"].as_u64().unwrap(),
+                    "adjustment" => doc.execute("item.newAdjustmentLayer", json!({})).unwrap()["item"].as_u64().unwrap(),
                     "graphic" => {
                         let graphic = doc.execute("graphics.newText", json!({"newClip":true,"track":1,"text":"Source"})).unwrap()["clip"].as_u64().unwrap();
                         kition_film_format::decode(&doc.save(None).unwrap())
@@ -121,7 +121,7 @@ fn mask_parameter_mapping_compares_source_kinds_and_motion_fallbacks() {
                             .0
                     }
                     "sequence" => {
-                        let nested = doc.execute("file.newSequence", json!({"name":"Source","width":640,"height":360})).unwrap()["sequence"].as_u64().unwrap();
+                        let nested = doc.execute("sequence.new", json!({"name":"Source","width":640,"height":360})).unwrap()["sequence"].as_u64().unwrap();
                         doc.execute("sequence.open", json!({"item":sequence})).unwrap();
                         nested
                     }
@@ -150,7 +150,7 @@ fn mask_parameter_mapping_compares_source_kinds_and_motion_fallbacks() {
                 }
                 let doc = FilmDocument::open("Edit.kfilm", &kition_film_format::encode(&loaded.project, true)).unwrap();
                 let params = json!({"clip":clip,"effect":"opacity","param":"path","mask":0});
-                assert_eq!(normalized(doc.under("effects.setParam", &params).unwrap().unwrap()), normalized(expected), "{kind}/{fitting}/{motion}");
+                assert_eq!(normalized(doc.under("effect.setParam", &params).unwrap().unwrap()), normalized(expected), "{kind}/{fitting}/{motion}");
             }
         }
     }
@@ -160,7 +160,7 @@ fn fixture() -> (FilmDocument, u64, u64, Vec<u64>) {
     let mut doc = FilmDocument::create("Edit.kfilm", 320, 180).unwrap();
     doc.execute("sequence.linkedSelection", json!({"on":false})).unwrap();
     let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let media = doc.execute("file.newOfflineFile", json!({"seconds":2})).unwrap()["item"].as_u64().unwrap();
+    let media = doc.execute("item.newOfflineFile", json!({"seconds":2})).unwrap()["item"].as_u64().unwrap();
     let clips = doc.execute("timeline.place", json!({"item":media,"time":0,"track":"V1","audioTrack":"A1"})).unwrap()["clips"]
         .as_array()
         .unwrap()
@@ -174,17 +174,17 @@ fn contract(doc: &FilmDocument, command: &str) {
     let spec = doc.commands().into_iter().find(|spec| spec.id == command).unwrap();
     let read_time = matches!(
         command,
-        "effects.setParam"
-            | "effects.toggleAnimation"
-            | "effects.addKeyframe"
-            | "effects.deleteKeyframe"
-            | "effects.moveKeyframe"
-            | "effects.setInterpolation"
-            | "effects.setKeyframe"
+        "effect.setParam"
+            | "effect.toggleAnimation"
+            | "effect.addKeyframe"
+            | "effect.deleteKeyframe"
+            | "effect.moveKeyframe"
+            | "effect.setInterpolation"
+            | "effect.setKeyframe"
     );
     assert_eq!(
         spec.reads,
-        if command == "effects.apply" {
+        if command == "effect.apply" {
             vec![EditorState::Part, EditorState::Selection, EditorState::Time, EditorState::Active, EditorState::Mode]
         } else if read_time {
             vec![EditorState::Part, EditorState::Time]
@@ -193,7 +193,7 @@ fn contract(doc: &FilmDocument, command: &str) {
         }
     );
     assert!(spec.mutates && spec.enabled && spec.objects.is_empty() && spec.places.is_empty(), "{command}");
-    let target = if command == "effects.apply" { "clips" } else { "clip" };
+    let target = if command == "effect.apply" { "clips" } else { "clip" };
     assert_eq!(spec.targets, Some(target));
     assert_eq!(spec.object_types, [(target, &["Clip"][..])]);
     assert!(spec.name_params.is_empty() && spec.name_field.is_none() && spec.index.is_none() && !spec.index_numbers && !spec.index_reversed);
@@ -204,8 +204,8 @@ fn standard_effect_path_compares_all_definitions_kind_eligibility_and_automatic_
     let (mut doc, sequence, _, clips) = fixture();
     let project = kition_film_format::decode(&doc.save(None).unwrap()).unwrap().project;
     let q = project.sequence(ItemId(sequence)).unwrap();
-    contract(&doc, "effects.apply");
-    assert!(compared_path("effects.apply", "standard"));
+    contract(&doc, "effect.apply");
+    assert!(compared_path("effect.apply", "standard"));
     for selected in [vec![], vec![clips[0]], vec![clips[1]], clips.clone()] {
         doc.execute("timeline.select", json!({"clips":selected})).unwrap();
         for def in kition_film_engine::project::effect_defs().iter().filter(|def| matches!(def.kind, EffectKind::Audio | EffectKind::Video)) {
@@ -249,7 +249,7 @@ fn standard_effect_path_compares_all_definitions_kind_eligibility_and_automatic_
                         expected.premises.push(Premise::on(json!(target)).fields(if eligible { vec!["effects"] } else { vec![] }).positions(["clips"]));
                         expected.premises.push(leaf(track.id.0, &["props.kind"]));
                     }
-                    assert_eq!(normalized(doc.under("effects.apply", &params).unwrap().unwrap_or_default()), normalized(expected), "{params}/{selected:?}");
+                    assert_eq!(normalized(doc.under("effect.apply", &params).unwrap().unwrap_or_default()), normalized(expected), "{params}/{selected:?}");
                 }
             }
         }
@@ -262,17 +262,17 @@ fn effect_value_paths_compare_index_defaults_animation_mask_and_time_precedence(
         for fitting in [false, true] {
             let (mut doc, sequence, media, clips) = fixture();
             let clip = clips[0];
-            doc.execute("masks.add", json!({"clip":clip,"shape":"rectangle"})).unwrap();
+            doc.execute("mask.add", json!({"clip":clip,"shape":"rectangle"})).unwrap();
             if fitting {
                 doc.execute("timeline.select", json!({"clips":[clip]})).unwrap();
                 doc.execute("clip.scaleToFrameSize", json!({})).unwrap();
             }
             if animated {
-                doc.execute("effects.toggleAnimation", json!({"clip":clip,"effect":"opacity","param":"opacity"})).unwrap();
+                doc.execute("effect.toggleAnimation", json!({"clip":clip,"effect":"opacity","param":"opacity"})).unwrap();
             }
             let project: Project = kition_film_format::decode(&doc.save(None).unwrap()).unwrap().project;
             let (_, found) = project.sequence(ItemId(sequence)).unwrap().find_item(kition_film_engine::project::ClipId(clip)).unwrap();
-            for &(command, path) in PATHS.iter().filter(|(command, _)| *command != "effects.apply") {
+            for &(command, path) in PATHS.iter().filter(|(command, _)| *command != "effect.apply") {
                 contract(&doc, command);
                 assert!(compared_path(command, path));
                 for index in [None, Some(0), Some(1), Some(999)] {
@@ -281,8 +281,8 @@ fn effect_value_paths_compare_index_defaults_animation_mask_and_time_precedence(
                             [None, Some(0)].into_iter().flat_map(|media_time| [None, Some(json!(true)), Some(json!("drag"))].map(|merge| (media_time, merge)))
                         {
                             // only the commands that take a merge key are given one
-                            if merge.is_some() && !matches!(command, "effects.setParam" | "effects.moveKeyframe")
-                                || merge == Some(json!("drag")) && command != "effects.setParam"
+                            if merge.is_some() && !matches!(command, "effect.setParam" | "effect.moveKeyframe")
+                                || merge == Some(json!("drag")) && command != "effect.setParam"
                             {
                                 continue;
                             }
@@ -300,20 +300,20 @@ fn effect_value_paths_compare_index_defaults_animation_mask_and_time_precedence(
                             if let Some(merge) = merge {
                                 params["merge"] = merge;
                                 params["begin"] = json!(true);
-                                if command == "effects.moveKeyframe" {
+                                if command == "effect.moveKeyframe" {
                                     params["to"] = json!(254_016_000_000i64);
                                 }
                             }
                             params.as_object_mut().unwrap().extend(address.as_object().unwrap().clone());
                             let mut expected = Under::default();
-                            if command == "effects.toggleEnabled"
-                                || (matches!(command, "effects.deleteKeyframe" | "effects.moveKeyframe" | "effects.setInterpolation" | "effects.setKeyframe")
+                            if command == "effect.toggleEnabled"
+                                || (matches!(command, "effect.deleteKeyframe" | "effect.moveKeyframe" | "effect.setInterpolation" | "effect.setKeyframe")
                                     && media_time.is_some())
-                                || (command == "effects.setParam" && !mask && !animated && address.as_object().unwrap().is_empty())
+                                || (command == "effect.setParam" && !mask && !animated && address.as_object().unwrap().is_empty())
                             {
                                 expected.premises.push(leaf(clip, &["effects"]));
                             }
-                            if command == "effects.reset"
+                            if command == "effect.reset"
                                 && found.effects.get(index.unwrap_or(0)).and_then(|effect| effect.def()).is_some_and(|def| {
                                     def.instance()
                                         .params

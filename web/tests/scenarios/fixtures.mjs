@@ -269,8 +269,8 @@ export async function holdWorkerCommandReply(film, command, params = {}) {
 /** Original generated matte: six frames at 24 fps, no external assets or reference application. */
 export async function tinyMovie(film) {
   await film.command('file.newProject', { name: 'Six red frames' })
-  await film.command('file.newSequence', { name: 'Red', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
-  const matte = await film.command('file.newColorMatte', { color: '#ff0000', seconds: 0.25 })
+  await film.command('sequence.new', { name: 'Red', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
+  const matte = await film.command('item.newColorMatte', { color: '#ff0000', seconds: 0.25 })
   await film.command('timeline.place', { item: matte.item, track: 'V1', seconds: 0 })
   await expect.poll(async () => (await film.sequence()).duration).toBe(TICKS / 4)
 }

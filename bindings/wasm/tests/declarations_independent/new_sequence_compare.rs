@@ -7,7 +7,7 @@ use kition_film_kit::FilmDocument;
 use kition_kit::{EditorState, KitDocument, Premise, Under};
 use serde_json::{Value, json};
 
-pub const PATHS: &[(&str, &str)] = &[("file.newSequence", "plain"), ("file.newSequence", "from-item")];
+pub const PATHS: &[(&str, &str)] = &[("sequence.new", "plain"), ("sequence.new", "from-item")];
 pub fn compared_path(command: &str, path: &str) -> bool {
     let hash = |s: &str| s.bytes().fold(0xcbf29ce484222325u64, |h, b| (h ^ u64::from(b)).wrapping_mul(0x100000001b3));
     PATHS.contains(&(command, path))
@@ -139,20 +139,20 @@ pub(super) fn expected(project: &Project, params: &Value, flattening: bool, fact
 fn new_sequences_compare_empty_destinations_all_sources_parameter_overrides_and_flattened_material() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
     let nested = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let finite = doc.execute("file.newOfflineFile", json!({"name":"Finite","seconds":4})).unwrap()["item"].as_u64().unwrap();
+    let finite = doc.execute("item.newOfflineFile", json!({"name":"Finite","seconds":4})).unwrap()["item"].as_u64().unwrap();
     let first = doc.execute("timeline.place", json!({"item":finite,"track":"V1","audioTrack":"A1","time":0})).unwrap()["clips"][0].as_u64().unwrap();
     let second = doc.execute("timeline.razor", json!({"clip":first,"time":254_016_000_000i64})).unwrap()["clips"][0].clone();
     doc.execute("sequence.applyVideoTransition", json!({"clip":second,"edge":"in","frames":8})).unwrap();
-    let adjustment = doc.execute("file.newAdjustmentLayer", json!({"seconds":2})).unwrap()["item"].as_u64().unwrap();
-    let synthetic = doc.execute("file.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].as_u64().unwrap();
+    let adjustment = doc.execute("item.newAdjustmentLayer", json!({"seconds":2})).unwrap()["item"].as_u64().unwrap();
+    let synthetic = doc.execute("item.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].as_u64().unwrap();
     let restricted = doc.execute("clip.makeSubclip", json!({"item":finite,"start":0,"end":508_032_000_000i64})).unwrap()["item"].as_u64().unwrap();
     let open =
         doc.execute("clip.makeSubclip", json!({"item":restricted,"start":0,"end":254_016_000_000i64,"restrictTrims":false})).unwrap()["item"].as_u64().unwrap();
-    let audio_only = doc.execute("file.newOfflineFile", json!({"name":"Audio","video":false,"seconds":2})).unwrap()["item"].as_u64().unwrap();
+    let audio_only = doc.execute("item.newOfflineFile", json!({"name":"Audio","video":false,"seconds":2})).unwrap()["item"].as_u64().unwrap();
     let graphic_clip = doc.execute("graphics.newText", json!({"newClip":true,"text":"Graphic","time":1_524_096_000_000i64})).unwrap()["clip"].as_u64().unwrap();
     let interim = kition_film_format::decode(&doc.save(None).unwrap()).unwrap().project;
     let graphic = interim.sequence(ItemId(nested)).unwrap().find_item(kition_film_engine::project::ClipId(graphic_clip)).unwrap().1.item.0;
-    doc.execute("file.newSequence", json!({"name":"Current"})).unwrap();
+    doc.execute("sequence.new", json!({"name":"Current"})).unwrap();
     let project = kition_film_format::decode(&doc.save(None).unwrap()).unwrap().project;
     let facts = doc.derived(&[json!(nested)], &["newSequenceVideoMaterial".into(), "newSequenceAudioMaterial".into()]).unwrap();
     for flatten in [false, true] {
@@ -173,13 +173,13 @@ fn new_sequences_compare_empty_destinations_all_sources_parameter_overrides_and_
                                     params[key] = value;
                                 }
                             }
-                            let spec = doc.commands().into_iter().find(|s| s.id == "file.newSequence").unwrap();
+                            let spec = doc.commands().into_iter().find(|s| s.id == "sequence.new").unwrap();
                             assert!(spec.enabled && spec.mutates && spec.targets.is_none() && spec.places.is_empty());
                             assert_eq!(spec.objects, vec!["fromItem"]);
                             assert_eq!(spec.object_types, vec![("fromItem", &["Item"][..])]);
                             assert_eq!(spec.reads, vec![EditorState::Mode]);
                             assert_eq!(
-                                normalized(doc.under("file.newSequence", &params).unwrap().unwrap()),
+                                normalized(doc.under("sequence.new", &params).unwrap().unwrap()),
                                 normalized(expected(&project, &params, flatten, &facts)),
                                 "{params}/flatten={flatten}"
                             );

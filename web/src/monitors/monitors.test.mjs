@@ -54,7 +54,7 @@ test('the two rows share ids where the meaning is the same; insert/overwrite are
 })
 
 test("a transport press: Source marks name their target, Source steps move its playhead, Export Frame waits, the rest run with the monitor", () => {
-  assert.deepEqual(transportAction('source', 'src.markIn'), { command: 'markers.markIn', params: { target: 'source' } })
+  assert.deepEqual(transportAction('source', 'src.markIn'), { command: 'marker.markIn', params: { target: 'source' } })
   assert.deepEqual(transportAction('source', 'src.goOut'), { seek: 'goOut' })
   assert.deepEqual(transportAction('source', 'source.insert'), { command: 'source.insert', params: { monitor: 'source' } })
   assert.deepEqual(transportAction('program', 'sequence.lift'), { command: 'sequence.lift', params: { monitor: 'program' } })

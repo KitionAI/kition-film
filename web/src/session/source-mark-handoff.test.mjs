@@ -40,7 +40,7 @@ function setup(fps = 24, start = 0, end = 10 * T) {
   }
 }
 
-for (const id of ['markers.markIn', 'markers.markOut']) {
+for (const id of ['marker.markIn', 'marker.markOut']) {
   test(`${id} captures the last queued scrub without waiting for its acknowledgement`, async () => {
     const f = setup(), gate = f.holdSeek()
     try {
@@ -67,7 +67,7 @@ for (const [fps, start, end, wanted] of [[24, 0, 10 * T, 10 * T], [24, 3 * T, 6 
     const f = setup(fps, start, end), gate = f.holdSeek()
     try {
       f.playback.moveSource(start); f.playback.moveSource(wanted)
-      await f.invoke('markers.markIn')
+      await f.invoke('marker.markIn')
       gate.resolve(); await f.playback.readSource()
       assert.equal(f.marks.at(-1).time, f.playback.sourceTime())
     } finally { gate.resolve(); f.playback.dispose() }
@@ -78,12 +78,12 @@ for (const sameId of [false, true]) {
   test(`pending mark cancels after ${sameId ? 'project replacement reusing IDs' : 'source replacement'}`, async () => {
     const f = setup(), gate = f.holdInspect()
     try {
-      const old = f.invoke('markers.markIn'); f.replace(sameId)
-      await f.invoke('markers.markOut')
+      const old = f.invoke('marker.markIn'); f.replace(sameId)
+      await f.invoke('marker.markOut')
       assert.equal(f.marks.length, 1)
       gate.resolve(); await old
       assert.equal(f.marks.length, 1)
-      assert.equal(f.marks[0].id, 'markers.markOut')
+      assert.equal(f.marks[0].id, 'marker.markOut')
       assert.deepEqual(f.errors, [])
     } finally { gate.resolve(); f.playback.dispose() }
   })
@@ -93,9 +93,9 @@ test('queued mark captures time and focus before a slow read, preserving key ord
   const f = setup(), seek = f.holdSeek()
   try {
     f.playback.moveSource(2 * T); f.playback.moveSource(3 * T)
-    const read = f.holdInspect(), first = f.invoke('markers.markIn')
+    const read = f.holdInspect(), first = f.invoke('marker.markIn')
     f.playback.moveSource(4 * T)
-    const second = f.invoke('markers.markIn')
+    const second = f.invoke('marker.markIn')
     f.focus('program'); f.playback.moveSource(5 * T)
     await new Promise(resolve => setImmediate(resolve))
     read.resolve(); await Promise.all([first, second])
@@ -109,12 +109,12 @@ test('explicit time and Program targeting retain parameters/options and avoid So
     const options = { refresh: 'none', throws: true }
     for (const params of [{ target: 'source', time: 123 }, { target: 'program' }, { target: 'invalid' }, { monitor: 'program' }]) {
       const reads = f.reads.length
-      await f.invoke('markers.markIn', params, options)
+      await f.invoke('marker.markIn', params, options)
       assert.deepEqual(f.marks.at(-1).params, params)
       assert.deepEqual(f.marks.at(-1).options, { refresh: 'none' })
       assert.equal(f.reads.length, reads)
     }
-    f.focus('program'); await f.invoke('markers.markOut', { target: 'source' })
+    f.focus('program'); await f.invoke('marker.markOut', { target: 'source' })
     assert.equal(f.marks.at(-1).params.target, 'source')
   } finally { f.playback.dispose() }
 })
@@ -123,7 +123,7 @@ test('after seek settlement, external engine positioning is authoritative', asyn
   const f = setup()
   try {
     f.playback.moveSource(2 * T); await f.playback.readSource()
-    f.externalSeek(6 * T); await f.invoke('markers.markIn')
+    f.externalSeek(6 * T); await f.invoke('marker.markIn')
     assert.equal(f.marks.at(-1).time, 6 * T)
   } finally { f.playback.dispose() }
 })
@@ -132,7 +132,7 @@ test('failed seek does not leave a stale marking position', async () => {
   const f = setup()
   try {
     f.failSeek(); f.playback.moveSource(8 * T); await f.playback.settleSource()
-    f.externalSeek(T); await f.invoke('markers.markOut')
+    f.externalSeek(T); await f.invoke('marker.markOut')
     assert.equal(f.marks.at(-1).time, T)
     assert.deepEqual(f.errors, ['seek failed'])
   } finally { f.playback.dispose() }
@@ -141,10 +141,10 @@ test('failed seek does not leave a stale marking position', async () => {
 test('a failed mark read reports the error and does not block subsequent marks', async () => {
   const f = setup(), gate = f.holdInspect()
   try {
-    const failed = f.invoke('markers.markIn')
+    const failed = f.invoke('marker.markIn')
     gate.reject(new Error('mark read failed')); await failed
-    await f.invoke('markers.markOut')
+    await f.invoke('marker.markOut')
     assert.deepEqual(f.errors, ['mark read failed'])
-    assert.deepEqual(f.marks.map(m => m.id), ['markers.markOut'])
+    assert.deepEqual(f.marks.map(m => m.id), ['marker.markOut'])
   } finally { gate.resolve(); f.playback.dispose() }
 })

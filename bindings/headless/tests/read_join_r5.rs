@@ -16,7 +16,7 @@ async fn departed_members(all: bool) {
         let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
         let (_, basis) = f.inspect().await;
         if related {
-            f.colleague(&[("edit.clear", json!({"clips":[right]}))]);
+            f.colleague(&[("edit.delete", json!({"clips":[right]}))]);
         } else {
             f.colleague(&[("clip.rename", json!({"clip":clips[5],"name":"Unrelated"}))]);
         }

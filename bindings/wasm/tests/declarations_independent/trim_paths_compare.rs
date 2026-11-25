@@ -38,7 +38,7 @@ fn leaf(id: u64, fields: impl IntoIterator<Item = impl Into<String>>) -> Premise
 fn fixture() -> (FilmDocument, u64, u64) {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
     let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let item = doc.execute("file.newBarsAndTone", json!({"seconds":4})).unwrap()["item"].clone();
+    let item = doc.execute("item.newBarsAndTone", json!({"seconds":4})).unwrap()["item"].clone();
     let first = doc.execute("timeline.place", json!({"item":item,"track":"V1","time":0})).unwrap()["clips"][0].as_u64().unwrap();
     doc.execute("timeline.razor", json!({"clip":first,"time":508_032_000_000i64})).unwrap();
     (doc, sequence, first)

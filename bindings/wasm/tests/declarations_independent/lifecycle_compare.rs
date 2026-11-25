@@ -11,10 +11,10 @@ pub const PATHS: &[(&str, &str)] = &[
     ("file.newProject", "replace"),
     ("file.openDemoProject", "replace"),
     ("file.importDemoFootage", "fixed"),
-    ("jobs.cancel", "job"),
+    ("job.cancel", "job"),
     ("edit.deselectAll", "selection"),
     ("project.deselectAll", "clear"),
-    ("events.clear", "session log"),
+    ("event.clear", "session log"),
     ("trim.clear", "editor"),
     ("trim.toggleType", "editor"),
     ("file.close", "delegate"),
@@ -57,7 +57,7 @@ fn lifecycle_paths_compare_local_identity_inputs_root_replacement_and_extra_prog
         let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
         let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
         if populated {
-            let item = doc.execute("file.newColorMatte", json!({"seconds":2})).unwrap()["item"].clone();
+            let item = doc.execute("item.newColorMatte", json!({"seconds":2})).unwrap()["item"].clone();
             doc.execute("timeline.place", json!({"item":item,"track":"V1","time":0})).unwrap();
         }
         let project = kition_film_format::decode(&doc.save(None).unwrap()).unwrap().project;
@@ -98,7 +98,7 @@ fn lifecycle_paths_compare_local_identity_inputs_root_replacement_and_extra_prog
                     if command == "file.newProject" {
                         p["name"] = json!("New");
                     }
-                    if command == "jobs.cancel" {
+                    if command == "job.cancel" {
                         p["job"] = json!(1);
                     }
                     let mut want = Under::default();

@@ -57,7 +57,7 @@ fn a_sequence_cannot_be_placed_in_a_sequence_it_contains() {
     refused(&mut s, "timeline.place", json!({"item": nested.0, "seconds": 0.0}));
     // one level further: a third sequence that holds outer cannot go into Inner either
     s.execute("sequence.open", json!({"item": outer.0})).unwrap();
-    let third = ItemId(s.execute("file.newSequence", json!({"name": "Third"})).unwrap()["sequence"].as_u64().unwrap());
+    let third = ItemId(s.execute("sequence.new", json!({"name": "Third"})).unwrap()["sequence"].as_u64().unwrap());
     s.execute("sequence.open", json!({"item": third.0})).unwrap();
     s.execute("timeline.place", json!({"item": outer.0, "seconds": 0.0})).expect("a nest of a nest is fine");
     s.execute("sequence.open", json!({"item": nested.0})).unwrap();
@@ -99,7 +99,7 @@ fn a_project_opened_with_a_cycle_can_still_be_edited_and_repaired() {
     s.execute("clip.enable", json!({})).expect("edits are not locked out");
     // and removing the clip repairs it, after which the guard is back
     s.execute("timeline.select", json!({"clips": [bad.0]})).unwrap();
-    s.execute("edit.clear", json!({})).unwrap();
+    s.execute("edit.delete", json!({})).unwrap();
     assert_eq!(s.project.nest_cycle(), None);
     refused(&mut s, "timeline.place", json!({"item": a.0, "seconds": 1.0}));
 }
@@ -209,7 +209,7 @@ fn a_nest_keeps_its_length_when_its_sequence_gets_shorter() {
     // remove the second clip inside the nest
     s.execute("sequence.open", json!({"item": nested.0})).unwrap();
     s.execute("timeline.select", json!({"clips": [second_id.0]})).unwrap();
-    s.execute("edit.clear", json!({})).unwrap();
+    s.execute("edit.delete", json!({})).unwrap();
     assert_eq!(s.active_sequence().unwrap().duration(), first);
     s.execute("sequence.open", json!({"item": outer.0})).unwrap();
     // the nest is as long as before; its end is now past the contents
@@ -247,7 +247,7 @@ fn a_nest_can_be_trimmed_out_to_reveal_what_its_sequence_gained() {
     // make room after the nest in the outer sequence: drop everything that follows it on V1/A1
     let later: Vec<u64> = s.active_sequence().unwrap().video_tracks[0].items.iter().filter(|i| i.start >= whole.end()).map(|i| i.id.0).collect();
     s.execute("timeline.select", json!({"clips": later})).unwrap();
-    s.execute("edit.clear", json!({})).unwrap();
+    s.execute("edit.delete", json!({})).unwrap();
     // add 48 frames of media to the end of the nested sequence
     let media = s.project.items.values().find(|i| i.name == "Desert_Dunes.mp4").unwrap().id;
     s.execute("sequence.open", json!({"item": nested.0})).unwrap();
@@ -531,9 +531,9 @@ fn make_subsequence_loads_the_new_sequence_in_the_source_monitor() {
 #[test]
 fn nest_at_23_976_fps_keeps_the_length_of_what_it_nests() {
     let mut s = Session::default();
-    s.execute("file.newSequence", json!({"name": "Film", "fps": 23.976})).unwrap();
-    let long = s.execute("file.newColorMatte", json!({"color": "#ff0000", "seconds": 4.0})).unwrap()["item"].as_u64().unwrap();
-    let short = s.execute("file.newColorMatte", json!({"color": "#0000ff", "seconds": 2.0})).unwrap()["item"].as_u64().unwrap();
+    s.execute("sequence.new", json!({"name": "Film", "fps": 23.976})).unwrap();
+    let long = s.execute("item.newColorMatte", json!({"color": "#ff0000", "seconds": 4.0})).unwrap()["item"].as_u64().unwrap();
+    let short = s.execute("item.newColorMatte", json!({"color": "#0000ff", "seconds": 2.0})).unwrap()["item"].as_u64().unwrap();
     s.execute("timeline.place", json!({"item": long, "track": "V1", "seconds": 0.0})).unwrap();
     s.execute("timeline.place", json!({"item": short, "track": "V1", "seconds": 4.0})).unwrap();
     let (first, second) = {
@@ -556,8 +556,8 @@ fn nest_at_23_976_fps_keeps_the_length_of_what_it_nests() {
 #[test]
 fn nest_of_less_than_a_frame_is_one_frame_long() {
     let mut s = Session::default();
-    s.execute("file.newSequence", json!({"name": "Film", "fps": 23.976})).unwrap();
-    let matte = s.execute("file.newColorMatte", json!({"color": "#ff0000", "seconds": 4.0})).unwrap()["item"].as_u64().unwrap();
+    s.execute("sequence.new", json!({"name": "Film", "fps": 23.976})).unwrap();
+    let matte = s.execute("item.newColorMatte", json!({"color": "#ff0000", "seconds": 4.0})).unwrap()["item"].as_u64().unwrap();
     s.execute("timeline.place", json!({"item": matte, "track": "V1", "seconds": 0.0})).unwrap();
     let clip = s.active_sequence().unwrap().video_tracks[0].items[0].id;
     s.edit_sequence("Sliver", |q, _, _| {

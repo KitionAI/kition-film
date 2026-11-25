@@ -61,14 +61,14 @@ export function AboutTabs({ draft, set }: { draft: Record<string, unknown>; set:
   )
 }
 
-/** The engine's shortcuts (`shortcuts.list`) and upstream's UI keys, by menu; read-only until the Keyboard Shortcuts editor (wave 3). */
+/** The engine's shortcuts (`shortcut.list`) and upstream's UI keys, by menu; read-only until the Keyboard Shortcuts editor (wave 3). */
 function ShortcutsList({ reserved }: { reserved: (keys: string) => boolean }) {
   const { t, phrase, testId, query } = useKitEditor()
   // Null while reading; 'failed' when the engine could not answer (`query` answers null then).
   const [items, setItems] = useState<ShortcutItem[] | 'failed' | null>(null)
   useEffect(() => {
     let stale = false
-    void query<ShortcutListRow[]>('shortcuts.list').then((rows) => {
+    void query<ShortcutListRow[]>('shortcut.list').then((rows) => {
       if (!stale) setItems(rows ? shortcutList(rows, upstream, reserved) : 'failed')
     })
     return () => {

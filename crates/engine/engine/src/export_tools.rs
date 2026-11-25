@@ -12,7 +12,7 @@
 //!   `range` (`entire` | `inOut` | `workArea` | `custom` with `start…` / `end…` times).
 //! - **Queue** (session state, not saved with the project). `export.queue.add` snapshots the
 //!   project and resolves the settings; `export.queue.start` encodes the ready items one after
-//!   another as ordinary background jobs ([`crate::Job`], visible in `jobs.list`); the frontend's
+//!   another as ordinary background jobs ([`crate::Job`], visible in `job.list`); the frontend's
 //!   per-frame [`Session::poll_persistence`] (or `export.queue.list`) advances it.
 //! - **Quick Export** (`export.quick`): the active sequence with a preset (the last one used,
 //!   initially Match Source – Adaptive High Bitrate) to a default path next to the project.

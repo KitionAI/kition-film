@@ -34,7 +34,7 @@ async fn a_mode_set_by_an_earlier_step_applies_until_the_run_ends() {
     let mut doc = FilmDocument::open(FILE, &project(4)).unwrap();
     let destination = doc.inspect().unwrap()["sequence"]["id"].clone();
     let media = doc.inspect().unwrap()["sequence"]["video"][0]["items"][0]["item"].clone();
-    let source = doc.execute("file.newSequence", json!({"name":"Source","video":2,"audio":0})).unwrap()["sequence"].clone();
+    let source = doc.execute("sequence.new", json!({"name":"Source","video":2,"audio":0})).unwrap()["sequence"].clone();
     doc.execute("timeline.place", json!({"item":media,"track":"V1","time":0})).unwrap();
     doc.execute("timeline.place", json!({"item":media,"track":"V2","time":0})).unwrap();
     doc.execute("sequence.open", json!({"item":destination})).unwrap();
@@ -115,9 +115,9 @@ async fn agent_runs_restore_marker_and_multicamera_switches() {
     for (command, params) in [
         ("sequence.selectionFollowsPlayhead", json!({})),
         ("sequence.showThroughEdits", json!({})),
-        ("markers.rippleSequenceMarkers", json!({})),
-        ("markers.copyPasteIncludesSequenceMarkers", json!({})),
-        ("markers.filterColors", json!({"color":"Red"})),
+        ("marker.rippleSequenceMarkers", json!({})),
+        ("marker.copyPasteIncludesSequenceMarkers", json!({})),
+        ("marker.filterColors", json!({"color":"Red"})),
         ("multicam.audioFollowsVideo", json!({})),
         ("multicam.selectionTopDown", json!({})),
         ("multicam.showPreviewMonitor", json!({})),
@@ -159,7 +159,7 @@ async fn agent_runs_restore_default_transition_choices() {
         [("mosaic_transition", "exponential_fade", "video", "cross_dissolve"), ("exponential_fade", "mosaic_transition", "audio", "constant_power")]
     {
         let f = Fixture::new(3);
-        f.ok("run", json!({"steps":[{"command":"effects.setDefaultTransition","params":{"effect":effect}}]})).await;
+        f.ok("run", json!({"steps":[{"command":"effect.setDefaultTransition","params":{"effect":effect}}]})).await;
         let view = f.kits.open(kition_kits::Caller::User, FILE).await.unwrap();
         let actual = f
             .kits
@@ -167,7 +167,7 @@ async fn agent_runs_restore_default_transition_choices() {
                 kition_kits::Caller::User,
                 view.kit_id,
                 &view.document_id,
-                "effects.setDefaultTransition",
+                "effect.setDefaultTransition",
                 json!({"effect":probe}).as_object().unwrap().clone(),
             )
             .await

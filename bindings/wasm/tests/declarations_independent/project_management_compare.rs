@@ -110,11 +110,11 @@ fn expected(project: &Project, sequence: u64, command: &str, selected: &[u64], i
 fn project_management_compares_recursive_bins_reference_scans_and_ordered_offline_targets() {
     let mut doc = FilmDocument::create("Project.kfilm", 64, 36).unwrap();
     let seq = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let offline = doc.execute("file.newOfflineFile", json!({"seconds":3})).unwrap()["item"].as_u64().unwrap();
-    let live = doc.execute("file.newColorMatte", json!({"seconds":3})).unwrap()["item"].as_u64().unwrap();
+    let offline = doc.execute("item.newOfflineFile", json!({"seconds":3})).unwrap()["item"].as_u64().unwrap();
+    let live = doc.execute("item.newColorMatte", json!({"seconds":3})).unwrap()["item"].as_u64().unwrap();
     let sub = doc.execute("clip.makeSubclip", json!({"item":offline,"start":0,"end":254_016_000_000i64})).unwrap()["item"].as_u64().unwrap();
-    let bin = doc.execute("file.newBin", json!({"name":"Sources"})).unwrap()["bin"].as_u64().unwrap();
-    let nested = doc.execute("file.newBin", json!({"name":"Child","parent":bin})).unwrap()["bin"].as_u64().unwrap();
+    let bin = doc.execute("bin.add", json!({"name":"Sources"})).unwrap()["bin"].as_u64().unwrap();
+    let nested = doc.execute("bin.add", json!({"name":"Child","parent":bin})).unwrap()["bin"].as_u64().unwrap();
     doc.execute("project.moveToBin", json!({"items":[offline,sub],"bin":nested})).unwrap();
     let clip = doc.execute("timeline.place", json!({"item":offline,"track":"V1","time":0})).unwrap()["clips"][0].as_u64().unwrap();
     let project = kition_film_format::decode(&doc.save(None).unwrap()).unwrap().project;

@@ -13,7 +13,7 @@ use serde_json::json;
 
 fn project() -> FilmDocument {
     let mut doc = FilmDocument::create("Edit.kfilm", 320, 180).unwrap();
-    let matte = doc.execute("file.newColorMatte", json!({ "color": "#ff0000", "seconds": 2 })).unwrap();
+    let matte = doc.execute("item.newColorMatte", json!({ "color": "#ff0000", "seconds": 2 })).unwrap();
     doc.execute("timeline.place", json!({ "item": matte["item"], "track": "V1", "seconds": 0 })).unwrap();
     doc
 }
@@ -27,11 +27,11 @@ fn a_commands_failure_carries_its_reason() {
     let mut doc = project();
     assert_eq!(reason(&doc.execute("timeline.noSuchCommand", json!({})).unwrap_err()), CommandFailure::NotFound);
     assert_eq!(
-        reason(&doc.execute("effects.setParam", json!({ "effect": "opacity", "param": "opacity", "value": 1 })).unwrap_err()),
+        reason(&doc.execute("effect.setParam", json!({ "effect": "opacity", "param": "opacity", "value": 1 })).unwrap_err()),
         CommandFailure::InvalidParams
     );
     // A parameter the command does not take (named with the one it resembles).
-    let unknown = doc.execute("effects.setParam", json!({ "clipz": 1 })).unwrap_err();
+    let unknown = doc.execute("effect.setParam", json!({ "clipz": 1 })).unwrap_err();
     assert_eq!(reason(&unknown), CommandFailure::InvalidParams);
     assert!(unknown.contains("did you mean `clip`"), "{unknown}");
     // Nothing selected: the command cannot run now.

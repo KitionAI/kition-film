@@ -42,7 +42,7 @@ export function EffectsPanel({ open, query, invoke, phrase }: EffectsPanelProps)
   useEffect(() => {
     if (!open) return undefined
     let live = true
-    void Promise.all([query('effects.list'), query('presets.list')]).then(([effects, saved]) => {
+    void Promise.all([query('effect.list'), query('preset.list')]).then(([effects, saved]) => {
       if (!live) return
       setDefs(effectDefsOf(effects))
       setPresets(presetsOf(saved))
@@ -58,8 +58,8 @@ export function EffectsPanel({ open, query, invoke, phrase }: EffectsPanelProps)
     setFolds((count) => count + 1)
   }
   const apply = (row: EffectRow) => {
-    if (row.kind === 'effect') void invoke('effects.apply', { effect: row.def.id })
-    else if (row.kind === 'preset') void invoke('presets.apply', { preset: row.preset.name })
+    if (row.kind === 'effect') void invoke('effect.apply', { effect: row.def.id })
+    else if (row.kind === 'preset') void invoke('preset.apply', { preset: row.preset.name })
   }
   const payloadOf = (row: EffectRow): EffectPayload | null => (row.kind === 'effect' ? { effect: row.def.id, kind: row.def.kind } : row.kind === 'preset' ? { preset: row.preset.name } : null)
   const keyOf = (row: EffectRow) => (row.kind === 'folder' ? `folder:${row.key}` : row.kind === 'effect' ? `effect:${row.def.id}` : `preset:${row.preset.name}`)
@@ -150,7 +150,7 @@ export function EffectsPanel({ open, query, invoke, phrase }: EffectsPanelProps)
             label={phrase('Set Selected as Default Transition')}
             uiId="control:effects.itemMenu.setDefaultTransition"
             testId="film-effects-menu-default"
-            onSelect={() => void invoke('effects.setDefaultTransition', { effect: menu.effect })}
+            onSelect={() => void invoke('effect.setDefaultTransition', { effect: menu.effect })}
           />
         </ContextMenu>
       ) : null}

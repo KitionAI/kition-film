@@ -12,7 +12,7 @@ test('F52 attached proxy changes the monitor, full-resolution export stays origi
     reads.push(await lendMedia(film, `clips/${name}.mp4`, readFileSync(path)))
   }
   await film.command('file.newProject', { name: 'Proxy review' })
-  await film.command('file.newSequence', { name: 'Proxy preview', width: 64, height: 36, fps: 24, video: 1, audio: 0 })
+  await film.command('sequence.new', { name: 'Proxy preview', width: 64, height: 36, fps: 24, video: 1, audio: 0 })
   const imported = await film.command('file.import', { paths: ['../clips/original.mp4'] })
   expect(imported.errors).toEqual([])
   const item = imported.items[0]

@@ -35,11 +35,11 @@ fn open(name: &str) -> (Headless<FilmDocument>, String, std::path::PathBuf) {
     let mut doc = FilmDocument::create("Edit.kfilm", 320, 180).unwrap();
     let mut clips = Vec::new();
     for (color, seconds) in [("#ff0000", 0), ("#0000ff", 2)] {
-        let matte = doc.execute("file.newColorMatte", json!({ "color": color, "seconds": 2 })).unwrap();
+        let matte = doc.execute("item.newColorMatte", json!({ "color": color, "seconds": 2 })).unwrap();
         clips.push(doc.execute("timeline.place", json!({ "item": matte["item"], "track": "V1", "seconds": seconds })).unwrap()["clips"][0].clone());
     }
     for (value, seconds) in [(0, 0), (100, 1)] {
-        doc.execute("effects.setParam", json!({ "clip": clips[0], "effect": "opacity", "param": "opacity", "value": value, "seconds": seconds })).unwrap();
+        doc.execute("effect.setParam", json!({ "clip": clips[0], "effect": "opacity", "param": "opacity", "value": value, "seconds": seconds })).unwrap();
     }
     std::fs::write(root.join("Edit.kfilm"), doc.save(None).unwrap()).unwrap();
     let mut kit = kit();

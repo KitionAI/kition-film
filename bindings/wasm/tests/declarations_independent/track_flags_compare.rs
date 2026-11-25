@@ -32,7 +32,7 @@ fn targeted_flags_compare_empty_and_populated_lanes_default_and_explicit_target_
             for mask in 0..8 {
                 let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
                 if populated {
-                    let item = doc.execute("file.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
+                    let item = doc.execute("item.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
                     doc.execute("timeline.place", json!({"item":item,"track":"V1","time":0})).unwrap();
                 }
                 let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();

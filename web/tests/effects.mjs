@@ -165,8 +165,8 @@ try {
   // Two standard effects swap places by dragging one's header over the other, one undo step; its
   // menu moves it up and down among the standard effects only (the fixed ones keep theirs).
   await kit.getByTestId('film-clip-10').click()
-  await frame.evaluate(() => window.filmPreview.run('effects.apply', { clips: [10], effect: 'gaussian_blur' }))
-  await frame.evaluate(() => window.filmPreview.run('effects.apply', { clips: [10], effect: 'invert' }))
+  await frame.evaluate(() => window.filmPreview.run('effect.apply', { clips: [10], effect: 'gaussian_blur' }))
+  await frame.evaluate(() => window.filmPreview.run('effect.apply', { clips: [10], effect: 'invert' }))
   const standard = async () => (await effectsOf(10)).filter((effect) => ['gaussian_blur', 'invert'].includes(effect))
   assert.ok(await until(async () => (await standard()).join() === 'gaussian_blur,invert'), `Gaussian Blur then Invert: ${await effectsOf(10)}`)
   await kit.getByTestId('film-workspace-tab-effectControls').click()
@@ -202,7 +202,7 @@ try {
   for (const effect of ['gaussian_blur', 'invert']) await kit.getByTestId(`film-ec-effect-${effect}-fold`).click()
   for (const effect of ['invert', 'gaussian_blur']) {
     const index = (await clipOf(10)).effects.findIndex((each) => each.effect === effect)
-    await frame.evaluate((at) => window.filmPreview.run('effects.remove', { clip: 10, index: at }), index)
+    await frame.evaluate((at) => window.filmPreview.run('effect.remove', { clip: 10, index: at }), index)
   }
   assert.ok(await until(async () => (await standard()).length === 0), 'the two effects removed again')
 

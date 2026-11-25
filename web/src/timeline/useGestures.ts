@@ -114,7 +114,7 @@ type Gesture = {
    * changes the level there, or the keyframes either side of it) or one keyframe (`origin`: where it
    * was at the press; a drag moves it freely, up or down in level and sideways in time at once, as
    * upstream's keyframe drag does). Each drag is one undo step: every level it sends is one
-   * `effects.setParam`, every place of a keyframe one `effects.moveKeyframe`, merged under `merge`.
+   * `effect.setParam`, every place of a keyframe one `effect.moveKeyframe`, merged under `merge`.
    */
   volume?: { clip: number; key: number | null; from: number; around: Array<{ ticks: number; value: number }>; origin: VolumeKey | null; token: LiveToken; keyTime: number | null }
   /** The playhead's line pressed on empty track space: the press and the drag scrub it, as the ruler does. */
@@ -223,7 +223,7 @@ export function useGestures({ film, session, store, tool, invoke, scrub, rollRip
         // The drag's first level starts its undo step; the rest join it.
         const params: Record<string, unknown> = { ...command.params, merge: token.merge, begin: index === 0 && !token.begun }
         if (index === 0) token.begun = true
-        const keyframe = command.id === 'effects.moveKeyframe'
+        const keyframe = command.id === 'effect.moveKeyframe'
         if (keyframe && token.at != null) params.mediaTime = token.at
         // A keyframe's merge is the engine's own per keyframe (`merge: true`); `begin` starts the drag's step.
         if (keyframe) params.merge = true
@@ -588,7 +588,7 @@ export function useGestures({ film, session, store, tool, invoke, scrub, rollRip
    * `timeline_volume::drag` and its keyframe drag): the line's level (or the keyframes either side
    * of the press, by as much) goes to the engine as the pointer moves, heard and drawn; a keyframe
    * follows the pointer both ways at once (its level up or down, its time sideways, on a frame and
-   * between its neighbours), each place one `effects.moveKeyframe`; every step of a drag is merged
+   * between its neighbours), each place one `effect.moveKeyframe`; every step of a drag is merged
    * into its one undo step. The level shows next to the pointer.
    */
   const updateVolume = useCallback(
@@ -609,7 +609,7 @@ export function useGestures({ film, session, store, tool, invoke, scrub, rollRip
         // Nothing changed yet (a press held still): no undo step.
         if (!held.token.begun && time === origin.time && db === origin.value) return
         const to = origin.mediaTime + Math.round((time - origin.time) * scene.tps)
-        sendLive(held.token, [{ id: 'effects.moveKeyframe', params: { clip: held.clip, ...VOLUME, mediaTime: origin.mediaTime, to, value: db } }])
+        sendLive(held.token, [{ id: 'effect.moveKeyframe', params: { clip: held.clip, ...VOLUME, mediaTime: origin.mediaTime, to, value: db } }])
         return
       }
       const db = draggedDb(band, held.from, current.pressed.y, current.y)
@@ -621,8 +621,8 @@ export function useGestures({ film, session, store, tool, invoke, scrub, rollRip
       }
       const clamp = (value: number) => Math.min(FADER_MAX_DB, Math.max(FADER_MIN_DB, value))
       const commands: Command[] = held.around.length
-        ? held.around.map((each) => ({ id: 'effects.setParam', params: { clip: held.clip, ...VOLUME, time: each.ticks, value: clamp(each.value + db - held.from) } }))
-        : [{ id: 'effects.setParam', params: { clip: held.clip, ...VOLUME, value: db } }]
+        ? held.around.map((each) => ({ id: 'effect.setParam', params: { clip: held.clip, ...VOLUME, time: each.ticks, value: clamp(each.value + db - held.from) } }))
+        : [{ id: 'effect.setParam', params: { clip: held.clip, ...VOLUME, value: db } }]
       sendLive(held.token, commands)
       dragView.set({ volume: { clip: held.clip, line: held.key == null, key: held.key, keyTime: null }, tip })
     },
@@ -818,7 +818,7 @@ export function useGestures({ film, session, store, tool, invoke, scrub, rollRip
         const { clip } = current.volume
         finish()
         const t = Math.max(0, Math.round(tickAt(scene, layoutNow(), x) / scene.frame) * scene.frame)
-        send([{ id: 'effects.addKeyframe', params: { clip, ...VOLUME, time: t } }])
+        send([{ id: 'effect.addKeyframe', params: { clip, ...VOLUME, time: t } }])
         return
       }
       if (current.transition) {
@@ -944,10 +944,10 @@ export function useGestures({ film, session, store, tool, invoke, scrub, rollRip
       const clipView = { x: xOf(scene, layout, clip.start), width: (clip.duration / scene.tps) * layout.pps, ...box, transition: false, cutX: null, label: null }
       if ('preset' in payload) {
         if (track.kind !== 'video') return null
-        return { commands: [{ id: 'presets.apply', params: { preset: payload.preset, clips: [clip.id] } }, { id: 'timeline.select', params: { clips: [clip.id] } }], view: clipView }
+        return { commands: [{ id: 'preset.apply', params: { preset: payload.preset, clips: [clip.id] } }, { id: 'timeline.select', params: { clips: [clip.id] } }], view: clipView }
       }
       if (!fitsTrack(payload.kind, track.kind)) return null
-      if (!isTransition(payload.kind)) return { commands: [{ id: 'effects.apply', params: { effect: payload.effect, clips: [clip.id] } }, { id: 'timeline.select', params: { clips: [clip.id] } }], view: clipView }
+      if (!isTransition(payload.kind)) return { commands: [{ id: 'effect.apply', params: { effect: payload.effect, clips: [clip.id] } }, { id: 'timeline.select', params: { clips: [clip.id] } }], view: clipView }
       const drop = dropEdge(clip, track.clips, t)
       const { edge, cut } = drop
       // On a cut between two clips the pointer picks the alignment: on the cut, centred; on the
@@ -956,7 +956,7 @@ export function useGestures({ film, session, store, tool, invoke, scrub, rollRip
       const span = transitionSpan(cut, defaultDuration(track.kind === 'video' ? transitionDurations.video : transitionDurations.audio, scene.frame, scene.tps), alignment, scene.frame)
       const left = xOf(scene, layout, span.start)
       return {
-        // `effects.apply` takes no edge: the transition commands place it on the clip's edge the pointer is nearer.
+        // `effect.apply` takes no edge: the transition commands place it on the clip's edge the pointer is nearer.
         commands: [{ id: track.kind === 'video' ? 'sequence.applyVideoTransition' : 'sequence.applyAudioTransition', params: drop.alignment === 'center' ? { effect: payload.effect, clip: clip.id, edge, align: alignment } : { effect: payload.effect, clip: clip.id, edge } }],
         view: { x: left, width: Math.max(2, (span.duration / scene.tps) * layout.pps), ...box, transition: true, cutX: xOf(scene, layout, cut), label: ALIGNMENT_LABELS[alignment] },
       }

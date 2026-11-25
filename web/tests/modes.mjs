@@ -8,5 +8,5 @@ await runModeSmoke({
   config: new URL('../vite.config.ts', import.meta.url).pathname,
   browser: process.argv[2] === 'webkit' ? webkit : chromium,
   createServer,
-  line: { tab: 'home', primary: ['film-cmd-file.import', 'film-cmd-sequence.addEdit', 'film-cmd-edit.rippleDelete', 'film-cmd-source.insert', 'film-cmd-sequence.applyVideoTransition', 'film-cmd-markers.add', 'film-cmd-graphics.newText'] },
+  line: { tab: 'home', primary: ['film-cmd-file.import', 'film-cmd-sequence.addEdit', 'film-cmd-edit.rippleDelete', 'film-cmd-source.insert', 'film-cmd-sequence.applyVideoTransition', 'film-cmd-marker.add', 'film-cmd-graphics.newText'] },
 })

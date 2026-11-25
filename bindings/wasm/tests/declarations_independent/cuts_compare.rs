@@ -110,7 +110,7 @@ fn expected(project: &Project, seq: u64, command: &str, selected: &[u64], linked
 fn cuts_compare_selection_fallback_links_locks_timebases_and_named_track_windows() {
     let mut doc = FilmDocument::create("Cut.kfilm", 64, 36).unwrap();
     let seq = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let item = doc.execute("file.newBarsAndTone", json!({"seconds":3})).unwrap()["item"].clone();
+    let item = doc.execute("item.newBarsAndTone", json!({"seconds":3})).unwrap()["item"].clone();
     let clips = doc.execute("timeline.place", json!({"item":item,"track":"V1","time":0})).unwrap()["clips"]
         .as_array()
         .unwrap()

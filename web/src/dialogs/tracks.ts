@@ -298,7 +298,7 @@ const colorRow: FieldRow = { kind: 'color', field: 'color', label: 'Color:' }
  * monitor would show nothing new).
  */
 const newColorMatte: DialogSpec = {
-  id: 'file.newColorMatte',
+  id: 'item.newColorMatte',
   family: 'menu',
   title: 'New Color Matte',
   prefix: 'colorMatte',
@@ -313,7 +313,7 @@ const newColorMatte: DialogSpec = {
   // What it makes follows the draft only.
   dependsOn: () => null,
   defaults: async (ctx) => {
-    const read = await engineDefaults(ctx, 'file.newColorMatte')
+    const read = await engineDefaults(ctx, 'item.newColorMatte')
     if (read) return { ...read.params }
     return { color: '#000000', name: 'Color Matte', width: ctx.film?.width || 1920, height: ctx.film?.height || 1080, seconds: 5 }
   },

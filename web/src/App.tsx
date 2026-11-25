@@ -1179,19 +1179,19 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
           moves.current += 1
           // Delete in Effect Controls removes the effect selected there (upstream `keys.rs`'s
           // `selected_effect`; there the key's binding is the panel-less `project.delete`); in the
-          // Timeline, Delete or Backspace on a selected transition clears it (upstream `edit.clear`
+          // Timeline, Delete or Backspace on a selected transition clears it (upstream `edit.delete`
           // with a transition selected): sequence.removeTransition, one undo step; and a Volume keyframe chosen there.
-          if ((id === 'edit.clear' || id === 'edit.rippleDelete' || id === 'project.delete') && Object.keys(params).length === 0) {
+          if ((id === 'edit.delete' || id === 'edit.rippleDelete' || id === 'project.delete') && Object.keys(params).length === 0) {
             const chosen = localSelection.get()
             if (focusedNow.current === 'effectControls' && chosen.effect) {
               localSelection.set({ effect: null })
-              return await session.run('effects.remove', { clip: chosen.effect.clip, index: chosen.effect.index }, null, options)
+              return await session.run('effect.remove', { clip: chosen.effect.clip, index: chosen.effect.index }, null, options)
             }
             // A keyframe chosen on an audio clip's Volume line: Delete removes it (upstream's keyframe menu Delete), one undo step.
             if (id !== 'project.delete' && focusedNow.current === 'timeline' && chosen.keyframe) {
               const key = chosen.keyframe
               localSelection.set({ keyframe: null })
-              return await session.run('effects.deleteKeyframe', { clip: key.clip, effect: 'volume', param: 'level', mediaTime: key.mediaTime }, null, options)
+              return await session.run('effect.deleteKeyframe', { clip: key.clip, effect: 'volume', param: 'level', mediaTime: key.mediaTime }, null, options)
             }
             if (id !== 'project.delete' && focusedNow.current === 'timeline' && chosen.transition != null && (stateNow.current?.selection.length ?? 0) === 0) {
               const transition = chosen.transition

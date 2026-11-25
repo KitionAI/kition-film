@@ -20,7 +20,7 @@ fn root_actions_hold_every_serialized_or_replaced_field_in_empty_and_populated_p
     for (populated, saved) in [(false, false), (false, true), (true, false), (true, true)] {
         let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
         if populated {
-            let item = doc.execute("file.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
+            let item = doc.execute("item.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
             doc.execute("timeline.place", json!({"item":item,"track":"V1","time":0})).unwrap();
         }
         if saved {

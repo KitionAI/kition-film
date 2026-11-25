@@ -2,8 +2,8 @@ import { test, expect, editState, TICKS, holdWorkerCommandReply } from './fixtur
 
 async function project(film) {
   await film.command('file.newProject', { name: 'Source scrub to play' })
-  await film.command('file.newSequence', { width: 64, height: 36, fps: 24 })
-  return (await film.command('file.newBarsAndTone', { seconds: 10 })).item
+  await film.command('sequence.new', { width: 64, height: 36, fps: 24 })
+  return (await film.command('item.newBarsAndTone', { seconds: 10 })).item
 }
 
 async function queuedScrubs(film) {
@@ -59,7 +59,7 @@ for (const interruption of ['source', 'project']) {
   test(`F93 fresh scrub progresses during an obsolete ${interruption} seek acknowledgement`, async ({ film }) => {
     await film.open()
     const first = await project(film)
-    const second = (await film.command('file.newBarsAndTone', { seconds: 10 })).item
+    const second = (await film.command('item.newBarsAndTone', { seconds: 10 })).item
     await film.command('source.open', { item: first })
     const { bar, gate } = await queuedScrubs(film)
     let released = false

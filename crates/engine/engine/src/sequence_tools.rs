@@ -12,14 +12,14 @@
 //! | `sequence.throughEdits` | query: the through edits of the active sequence | |
 //! | `sequence.makeSubsequence` | Sequence ▸ Make Subsequence | Shift+U |
 //! | `sequence.deleteTracks` | Sequence ▸ Delete Tracks… | |
-//! | `markers.markSplitVideoIn` … `markers.markSplitAudioOut` | Markers ▸ Mark Split ▸ Video In … Audio Out | |
-//! | `markers.goToSplitVideoIn` … `markers.goToSplitAudioOut` | Markers ▸ Go to Split ▸ Video In … Audio Out | |
-//! | `markers.addRange` | Markers ▸ Add Range Marker | Ctrl+Shift+M |
-//! | `markers.addRangeInOut` | Markers ▸ Add Range Marker to In and Out | Ctrl+M |
-//! | `markers.showAllMarkerColors` / `markers.filterColors` | Markers ▸ Show All Marker Colors / Markers panel colour filter | |
-//! | `markers.addChapter` | Markers ▸ Add Chapter Marker… | |
-//! | `markers.rippleSequenceMarkers` | Markers ▸ Ripple Sequence Markers | |
-//! | `markers.copyPasteIncludesSequenceMarkers` | Markers ▸ Copy Paste Includes Sequence Markers | |
+//! | `marker.markSplitVideoIn` … `marker.markSplitAudioOut` | Markers ▸ Mark Split ▸ Video In … Audio Out | |
+//! | `marker.goToSplitVideoIn` … `marker.goToSplitAudioOut` | Markers ▸ Go to Split ▸ Video In … Audio Out | |
+//! | `marker.addRange` | Markers ▸ Add Range Marker | Ctrl+Shift+M |
+//! | `marker.addRangeInOut` | Markers ▸ Add Range Marker to In and Out | Ctrl+M |
+//! | `marker.showAllMarkerColors` / `marker.filterColors` | Markers ▸ Show All Marker Colors / Markers panel colour filter | |
+//! | `marker.addChapter` | Markers ▸ Add Chapter Marker… | |
+//! | `marker.rippleSequenceMarkers` | Markers ▸ Ripple Sequence Markers | |
+//! | `marker.copyPasteIncludesSequenceMarkers` | Markers ▸ Copy Paste Includes Sequence Markers | |
 //!
 //! Split points: Mark Split sets a video-only or audio-only In/Out (on the sequence, or with
 //! `"target":"source"` on the Source monitor clip). Ordinary Mark In / Mark Out clear the split of
@@ -130,36 +130,36 @@ fn groups() -> Vec<(&'static str, Vec<CommandSpec>)> {
             )],
         ),
         (
-            "markers.markSelection",
+            "marker.markSelection",
             vec![
-                spec("markers.markSplitVideoIn", "Video In", &["Markers", "Mark Split"], None, SPLIT, always, |s, p| mark_split(s, p, Side::VideoIn)),
-                spec("markers.markSplitVideoOut", "Video Out", &["Markers", "Mark Split"], None, SPLIT, always, |s, p| mark_split(s, p, Side::VideoOut)),
-                spec("markers.markSplitAudioIn", "Audio In", &["Markers", "Mark Split"], None, SPLIT, always, |s, p| mark_split(s, p, Side::AudioIn)),
-                spec("markers.markSplitAudioOut", "Audio Out", &["Markers", "Mark Split"], None, SPLIT, always, |s, p| mark_split(s, p, Side::AudioOut)),
+                spec("marker.markSplitVideoIn", "Video In", &["Markers", "Mark Split"], None, SPLIT, always, |s, p| mark_split(s, p, Side::VideoIn)),
+                spec("marker.markSplitVideoOut", "Video Out", &["Markers", "Mark Split"], None, SPLIT, always, |s, p| mark_split(s, p, Side::VideoOut)),
+                spec("marker.markSplitAudioIn", "Audio In", &["Markers", "Mark Split"], None, SPLIT, always, |s, p| mark_split(s, p, Side::AudioIn)),
+                spec("marker.markSplitAudioOut", "Audio Out", &["Markers", "Mark Split"], None, SPLIT, always, |s, p| mark_split(s, p, Side::AudioOut)),
             ],
         ),
         (
-            "markers.goToOut",
+            "marker.goToOut",
             vec![
-                spec("markers.goToSplitVideoIn", "Video In", &["Markers", "Go to Split"], None, r#"{"target":"program|source"}"#, has_split, |s, p| {
+                spec("marker.goToSplitVideoIn", "Video In", &["Markers", "Go to Split"], None, r#"{"target":"program|source"}"#, has_split, |s, p| {
                     go_to_split(s, p, Side::VideoIn)
                 }),
-                spec("markers.goToSplitVideoOut", "Video Out", &["Markers", "Go to Split"], None, r#"{"target":"program|source"}"#, has_split, |s, p| {
+                spec("marker.goToSplitVideoOut", "Video Out", &["Markers", "Go to Split"], None, r#"{"target":"program|source"}"#, has_split, |s, p| {
                     go_to_split(s, p, Side::VideoOut)
                 }),
-                spec("markers.goToSplitAudioIn", "Audio In", &["Markers", "Go to Split"], None, r#"{"target":"program|source"}"#, has_split, |s, p| {
+                spec("marker.goToSplitAudioIn", "Audio In", &["Markers", "Go to Split"], None, r#"{"target":"program|source"}"#, has_split, |s, p| {
                     go_to_split(s, p, Side::AudioIn)
                 }),
-                spec("markers.goToSplitAudioOut", "Audio Out", &["Markers", "Go to Split"], None, r#"{"target":"program|source"}"#, has_split, |s, p| {
+                spec("marker.goToSplitAudioOut", "Audio Out", &["Markers", "Go to Split"], None, r#"{"target":"program|source"}"#, has_split, |s, p| {
                     go_to_split(s, p, Side::AudioOut)
                 }),
             ],
         ),
         (
-            "markers.add",
+            "marker.add",
             vec![
                 spec(
-                    "markers.addRange",
+                    "marker.addRange",
                     "Add Range Marker",
                     &["Markers"],
                     Some("Ctrl+Shift+M"),
@@ -168,7 +168,7 @@ fn groups() -> Vec<(&'static str, Vec<CommandSpec>)> {
                     add_range_marker,
                 ),
                 spec(
-                    "markers.addRangeInOut",
+                    "marker.addRangeInOut",
                     "Add Range Marker to In and Out",
                     &["Markers"],
                     Some("Ctrl+M"),
@@ -179,20 +179,20 @@ fn groups() -> Vec<(&'static str, Vec<CommandSpec>)> {
             ],
         ),
         (
-            "markers.clearAll",
+            "marker.clearAll",
             vec![
-                spec("markers.showAllMarkerColors", "Show All Marker Colors", &["Markers"], None, "{}", has_hidden_colors, |s, _| {
+                spec("marker.showAllMarkerColors", "Show All Marker Colors", &["Markers"], None, "{}", has_hidden_colors, |s, _| {
                     s.state.hidden_marker_colors.clear();
                     Ok(json!({"hidden": []}))
                 }),
-                spec("markers.filterColors", "Marker Colour Filter", &[], None, r#"{"hidden":[label]}|{"color":label,"visible":bool?}"#, always, filter_colors),
+                spec("marker.filterColors", "Marker Colour Filter", &[], None, r#"{"hidden":[label]}|{"color":label,"visible":bool?}"#, always, filter_colors),
             ],
         ),
         (
-            "markers.edit",
+            "marker.edit",
             vec![
                 spec(
-                    "markers.addChapter",
+                    "marker.addChapter",
                     "Add Chapter Marker…",
                     &["Markers"],
                     None,
@@ -206,12 +206,12 @@ fn groups() -> Vec<(&'static str, Vec<CommandSpec>)> {
                         Ok(json!({"marker": id.0}))
                     },
                 ),
-                spec("markers.rippleSequenceMarkers", "Ripple Sequence Markers", &["Markers"], None, r#"{"on":bool?}"#, always, |s, p| {
+                spec("marker.rippleSequenceMarkers", "Ripple Sequence Markers", &["Markers"], None, r#"{"on":bool?}"#, always, |s, p| {
                     s.state.ripple_sequence_markers = bool_p(p, "on").unwrap_or(!s.state.ripple_sequence_markers);
                     Ok(json!({"rippleSequenceMarkers": s.state.ripple_sequence_markers}))
                 }),
                 spec(
-                    "markers.copyPasteIncludesSequenceMarkers",
+                    "marker.copyPasteIncludesSequenceMarkers",
                     "Copy Paste Includes Sequence Markers",
                     &["Markers"],
                     None,
@@ -894,7 +894,7 @@ pub fn ripple_markers(markers: &mut Vec<Marker>, from: Tick, shift: Tick) {
 
 fn add_marker(s: &mut Session, label: &str, t: Tick, dur: Tick, kind: MarkerKind, name: String, p: &Value) -> Result<MarkerId> {
     let comment = str_p(p, "comment").unwrap_or("").to_string();
-    let color = crate::commands::marker_color_p(p, "markers.add")?.unwrap_or(Label::Green);
+    let color = crate::commands::marker_color_p(p, "marker.add")?.unwrap_or(Label::Green);
     s.edit_sequence(label, |q, ctx, _| {
         let id = MarkerId(ctx.alloc());
         q.markers.push(Marker { id, start: t, duration: dur, name, comment, kind, color });
@@ -910,10 +910,10 @@ fn add_range_marker(s: &mut Session, p: &Value) -> Result<Value> {
     let t = crate::commands::marker_time_p(s, p).unwrap_or(s.playhead());
     let dur = match p.get("duration").and_then(Value::as_i64).map(Tick) {
         Some(d) => d,
-        None => crate::commands::marker_duration_p(s, p, "markers.addRange")?.unwrap_or(rate.tick_of(rate.timecode_base())),
+        None => crate::commands::marker_duration_p(s, p, "marker.addRange")?.unwrap_or(rate.tick_of(rate.timecode_base())),
     };
     if dur <= Tick::ZERO {
-        return Err(bad("markers.addRange", "the duration must be positive"));
+        return Err(bad("marker.addRange", "the duration must be positive"));
     }
     let name = str_p(p, "name").unwrap_or("").to_string();
     let id = add_marker(s, "Add Range Marker", t, dur, MarkerKind::Comment, name, p)?;
@@ -935,11 +935,11 @@ fn filter_colors(s: &mut Session, p: &Value) -> Result<Value> {
         let mut v = Vec::new();
         for x in a {
             let n = x.as_str().unwrap_or_default();
-            v.push(crate::commands::marker_color(n, "markers.filterColors")?);
+            v.push(crate::commands::marker_color(n, "marker.filterColors")?);
         }
         s.state.hidden_marker_colors = v;
     } else if let Some(n) = str_p(p, "color") {
-        let c = crate::commands::marker_color(n, "markers.filterColors")?;
+        let c = crate::commands::marker_color(n, "marker.filterColors")?;
         let hidden = s.state.hidden_marker_colors.contains(&c);
         let visible = bool_p(p, "visible").unwrap_or(hidden);
         s.state.hidden_marker_colors.retain(|x| *x != c);
@@ -947,7 +947,7 @@ fn filter_colors(s: &mut Session, p: &Value) -> Result<Value> {
             s.state.hidden_marker_colors.push(c);
         }
     } else {
-        return Err(bad("markers.filterColors", "need `hidden` or `color`"));
+        return Err(bad("marker.filterColors", "need `hidden` or `color`"));
     }
     Ok(json!({"hidden": s.state.hidden_marker_colors.iter().map(|c| c.name()).collect::<Vec<_>>()}))
 }

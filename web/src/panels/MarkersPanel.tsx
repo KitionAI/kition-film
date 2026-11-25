@@ -49,7 +49,7 @@ const MarkerRow = memo(function MarkerRow({ marker, fps, dropFrame, phrase, onGo
 
 /**
  * Markers (upstream `misc.rs` `markers`): the colour filter row (a chip shows or hides that colour,
- * `markers.filterColors`), then the active sequence's markers the filter shows; a click moves the
+ * `marker.filterColors`), then the active sequence's markers the filter shows; a click moves the
  * playhead to a marker's start, and a double-click opens the marker dialog on it (Premiere's;
  * upstream's panel opens none).
  */
@@ -57,7 +57,7 @@ export function MarkersPanel({ markers: documentMarkers, sequence, fps, dropFram
   const { t } = useKitEditor()
   const hiddenColors = useMemo(() => new Set(hidden.map(markerColor)), [hidden])
   const onGo = useCallback((marker: FilmMarker) => void invoke('playhead.set', { time: Math.round(marker.start * ticksPerSecond) }), [invoke, ticksPerSecond])
-  const onEdit = useCallback((marker: FilmMarker) => void invoke('markers.edit', { marker: marker.id }), [invoke])
+  const onEdit = useCallback((marker: FilmMarker) => void invoke('marker.edit', { marker: marker.id }), [invoke])
   // A dialog's markers preview (Task 10): the preview's markers of this sequence, added and
   // changed ones outlined, removed ones faded where they were.
   // It draws the sequence's own markers; the strip lists those of clips and items.
@@ -87,7 +87,7 @@ export function MarkersPanel({ markers: documentMarkers, sequence, fps, dropFram
               style={{ ['--film-marker' as string]: markerColor(label) }}
               data-kit-ui-id="control:markers.filter"
               data-testid={`film-markers-filter-${label}`}
-              onClick={() => void invoke('markers.filterColors', { color: label, visible: !on })}
+              onClick={() => void invoke('marker.filterColors', { color: label, visible: !on })}
             />
           )
         })}

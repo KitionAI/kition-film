@@ -70,7 +70,7 @@ async fn geometric_preset_holds_source_size_and_allows_source_names() {
                 it.name = "unrelated".into();
             }
         });
-        let answer = f.call("run", json!({"basis":basis,"steps":[{"command":"presets.apply","params":{"clips":[clip],"preset":"PiP 35% Upper Right"}}]})).await;
+        let answer = f.call("run", json!({"basis":basis,"steps":[{"command":"preset.apply","params":{"clips":[clip],"preset":"PiP 35% Upper Right"}}]})).await;
         if related {
             assert_eq!(answer.expect_err("the point scales with source width")["error"]["code"], "conflict");
         } else {
@@ -87,7 +87,7 @@ async fn preset_effect_assignment_allows_a_clip_rename_but_protects_existing_eff
         let (seq, basis) = f.inspect().await;
         let clip = v1(&seq)[0];
         f.colleague(&[if related { opacity(clip, 50.0) } else { ("clip.rename", json!({"clip":clip,"name":"unrelated"})) }]);
-        let answer = f.call("run", json!({"basis":basis,"steps":[{"command":"presets.apply","params":{"clips":[clip],"preset":"Fade In"}}]})).await;
+        let answer = f.call("run", json!({"basis":basis,"steps":[{"command":"preset.apply","params":{"clips":[clip],"preset":"Fade In"}}]})).await;
         if related {
             assert_eq!(answer.expect_err("intrinsic opacity replacement protects the assigned effect")["error"]["code"], "conflict");
         } else {

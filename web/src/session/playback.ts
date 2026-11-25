@@ -551,7 +551,7 @@ export function createPlayback(deps: PlaybackDeps) {
     if (view?.item == null) throw new Error('Open a media file in the Source monitor first')
     const start = view.start ?? 0
     const frame = TICKS_PER_SECOND / (view.fps && view.fps > 0 ? view.fps : 30)
-    const time = id === 'markers.goToIn' ? view.markIn ?? start : view.markOut ?? Math.max(start, (view.end ?? start) - frame)
+    const time = id === 'marker.goToIn' ? view.markIn ?? start : view.markOut ?? Math.max(start, (view.end ?? start) - frame)
     moveSource(time)
     return null
   }
@@ -581,8 +581,8 @@ export function createPlayback(deps: PlaybackDeps) {
   function run(id: string, params: Params, focused: string): unknown {
     const toSource = targetsSource(focused, params)
     switch (id) {
-      case 'markers.goToIn':
-      case 'markers.goToOut':
+      case 'marker.goToIn':
+      case 'marker.goToOut':
         return navigateSource(id)
       case 'source.playback.toggle':
         return source.playing ? (stopSource(), { playing: false }) : playSource()

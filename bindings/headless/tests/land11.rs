@@ -110,7 +110,7 @@ async fn a_move_holds_its_destination_instead_of_the_playhead() {
         let clips = v1(&sequence);
         f.colleague(&[match change {
             "inside" => opacity(clips[4], 25.0),
-            "deleted" => ("edit.clear", json!({"clips": [clips[4]]})),
+            "deleted" => ("edit.delete", json!({"clips": [clips[4]]})),
             "playhead" => opacity(clips[0], 25.0),
             "unrelated lock" => ("timeline.setTrack", json!({"track": "V3", "locked": true})),
             _ => opacity(clips[6], 25.0),
@@ -171,9 +171,9 @@ async fn insert_moves_hold_the_captions_they_ripple() {
         let f = Fixture::new(8);
         let (sequence, _) = f.inspect().await;
         let clips = v1(&sequence);
-        let made = f.colleague(&[("captions.add", json!({"text": "Mine", "seconds": 6}))]);
+        let made = f.colleague(&[("caption.add", json!({"text": "Mine", "seconds": 6}))]);
         let (_, basis) = f.inspect().await;
-        f.colleague(&[if changed { ("captions.setText", json!({"caption": made[0]["caption"], "text": "Theirs"})) } else { opacity(clips[1], 25.0) }]);
+        f.colleague(&[if changed { ("caption.setText", json!({"caption": made[0]["caption"], "text": "Theirs"})) } else { opacity(clips[1], 25.0) }]);
         let answer = f
             .call(
                 "run",
@@ -195,9 +195,9 @@ async fn insert_moves_hold_the_captions_they_ripple() {
 async fn snapped_moves_hold_the_markers_that_choose_their_destination() {
     let f = Fixture::new(8);
     let (sequence, _) = f.inspect().await;
-    f.colleague(&[("markers.add", json!({"seconds": 4.05}))]);
+    f.colleague(&[("marker.add", json!({"seconds": 4.05}))]);
     let (_, basis) = f.inspect().await;
-    f.colleague(&[("markers.clearAll", json!({"target": "program"}))]);
+    f.colleague(&[("marker.clearAll", json!({"target": "program"}))]);
     let error = f
         .refused(
             "run",
@@ -279,7 +279,7 @@ async fn batch_color_receipt_reports_stored_precision() {
     let f = Fixture::new(2);
     let (sequence, _) = f.inspect().await;
     let clip = v1(&sequence)[0];
-    f.ok("run", json!({"steps": [{"command": "effects.apply", "params": {"clips": [clip], "effect": "tint"}}]})).await;
+    f.ok("run", json!({"steps": [{"command": "effect.apply", "params": {"clips": [clip], "effect": "tint"}}]})).await;
     let (sequence, _) = f.inspect().await;
     let slot = sequence["video"][0]["items"][0]["effects"].as_array().unwrap().iter().position(|effect| effect["effect"] == "tint").unwrap();
     let path = format!("effects.{slot}.params.black.value.Color");
@@ -322,7 +322,7 @@ async fn mixer_ordinals_cannot_retarget_after_deleting_a_strip() {
 async fn search_bins_hold_the_json_entry_the_command_resolves() {
     for changed in [true, false] {
         let f = Fixture::new(2);
-        let made = f.colleague(&[("file.newSearchBin", json!({"text": "Color", "name": "Mine"})), ("file.newSearchBin", json!({"text": "Other"}))]);
+        let made = f.colleague(&[("bin.addSearch", json!({"text": "Color", "name": "Mine"})), ("bin.addSearch", json!({"text": "Other"}))]);
         let bin = made[0]["bin"].as_u64().unwrap();
         let (_, basis) = f.inspect().await;
         f.colleague(&[("project.editSearchBin", json!({"bin": made[usize::from(!changed)]["bin"], "name": "Theirs"}))]);
@@ -351,7 +351,7 @@ async fn batch_effect_numbers_obey_the_engines_hard_limits() {
 async fn caption_text_survives_an_unrelated_whole_list_edit() {
     for changed in [true, false] {
         let f = Fixture::new(2);
-        let made = f.colleague(&[("captions.add", json!({"text": "Mine", "seconds": 1})), ("captions.add", json!({"text": "Other", "seconds": 5}))]);
+        let made = f.colleague(&[("caption.add", json!({"text": "Mine", "seconds": 1})), ("caption.add", json!({"text": "Other", "seconds": 5}))]);
         let caption = made[0]["caption"].as_u64().unwrap();
         let (sequence, basis) = f.inspect().await;
         rewrite(&f.file(), |project| {
@@ -359,7 +359,7 @@ async fn caption_text_survives_an_unrelated_whole_list_edit() {
             seq.caption_tracks[0].captions[usize::from(!changed)].text = "Theirs".to_owned();
         });
         let answer =
-            f.call("run", json!({"basis": basis, "steps": [{"command": "captions.setText", "params": {"caption": caption, "text": "New text"}}]})).await;
+            f.call("run", json!({"basis": basis, "steps": [{"command": "caption.setText", "params": {"caption": caption, "text": "New text"}}]})).await;
         if changed {
             assert_conflict(&answer.expect_err("target caption changed"), &sequence["id"].as_u64().unwrap().to_string(), "changed");
         } else {
@@ -372,11 +372,11 @@ async fn caption_text_survives_an_unrelated_whole_list_edit() {
 #[tokio::test(flavor = "multi_thread")]
 async fn caption_text_follows_its_track_after_deleting_an_earlier_track() {
     let f = Fixture::new(2);
-    let made = f.colleague(&[("captions.newTrack", json!({"name": "First"})), ("captions.newTrack", json!({"name": "Second"}))]);
-    let caption = f.colleague(&[("captions.add", json!({"track": made[1]["track"], "seconds": 1, "text": "Mine"}))])[0]["caption"].clone();
+    let made = f.colleague(&[("caption.newTrack", json!({"name": "First"})), ("caption.newTrack", json!({"name": "Second"}))]);
+    let caption = f.colleague(&[("caption.add", json!({"track": made[1]["track"], "seconds": 1, "text": "Mine"}))])[0]["caption"].clone();
     let (_, basis) = f.inspect().await;
-    f.colleague(&[("captions.deleteTrack", json!({"track": made[0]["track"]}))]);
-    f.ok("run", json!({"basis": basis, "steps": [{"command": "captions.setText", "params": {"caption": caption, "text": "New text"}}]})).await;
+    f.colleague(&[("caption.deleteTrack", json!({"track": made[0]["track"]}))]);
+    f.ok("run", json!({"basis": basis, "steps": [{"command": "caption.setText", "params": {"caption": caption, "text": "New text"}}]})).await;
     f.shutdown().await;
 }
 

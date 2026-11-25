@@ -579,7 +579,7 @@ export const DIALOGS = createRegistry([...CLIP_DIALOGS, ...CLIP_STRUCTURE_DIALOG
  * They stay direct: the menu bar runs them through `invoke` with no values, and kit-editor opens its
  * parameters dialog only for a required parameter, which the engine's converted schemas never mark.
  */
-export const DIRECT_ROWS: ReadonlySet<string> = new Set(['file.newBarsAndTone', 'file.newBlackVideo', 'file.newCountingLeader', 'file.newTransparentVideo', 'file.newAdjustmentLayer', 'markers.addChapter', 'mixer.addSubmix'])
+export const DIRECT_ROWS: ReadonlySet<string> = new Set(['item.newBarsAndTone', 'item.newBlackVideo', 'item.newCountingLeader', 'item.newTransparentVideo', 'item.newAdjustmentLayer', 'marker.addChapter', 'mixer.addSubmix'])
 
 /**
  * "…" rows that reach upstream's dialogs other than through the manifest's dialog list (its
@@ -590,17 +590,17 @@ export const DIRECT_ROWS: ReadonlySet<string> = new Set(['file.newBarsAndTone', 
 export const OTHER_PATHS: Readonly<Record<string, string>> = {
   'clip.synchronize': 'multicam.rs show_dialog',
   'clip.mergeClips': 'multicam.rs show_dialog',
-  'clip.createMulticam': 'multicam.rs show_dialog',
+  'clip.addMulticam': 'multicam.rs show_dialog',
   'clip.rename': "project.rs: the Project panel's inline rename",
   'view.addGuide': 'monitor_view.rs dialogs',
   'view.guideTemplates.save': 'monitor_view.rs dialogs',
   'view.guideTemplates.manage': 'monitor_view.rs dialogs',
-  'captions.newTrack': "text.rs: the Text panel's caption track formats",
-  'captions.export': 'lib.rs file_dialog: a file picker',
+  'caption.newTrack': "text.rs: the Text panel's caption track formats",
+  'caption.export': 'lib.rs file_dialog: a file picker',
   'file.mediaPropertiesFile': 'menu_dialogs.rs: a file picker, then Properties',
   // Not upstream's: the plan's marker dialog (Premiere's Marker dialog over the engine's
-  // markers.edit) on a Markers row's double-click, where upstream's panel opens none.
-  'markers.edit': "Kition's marker dialog (Premiere's): a Markers row's double-click",
+  // marker.edit) on a Markers row's double-click, where upstream's panel opens none.
+  'marker.edit': "Kition's marker dialog (Premiere's): a Markers row's double-click",
   'media.attachProxies': 'media_dialogs.rs: a file picker',
   'projectPanel.metadataDisplay': 'project.rs route: project_dialogs.rs metadata_display',
   'projectPanel.saveViewPresetAs': 'project.rs route: project_dialogs.rs Save As New View Preset',

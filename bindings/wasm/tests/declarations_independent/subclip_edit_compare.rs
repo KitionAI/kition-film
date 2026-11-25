@@ -22,7 +22,7 @@ pub fn more(_: &str) -> Vec<&'static str> {
 #[test]
 fn subclip_edits_compare_target_precedence_conversion_and_every_range_spelling() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
-    let parent = doc.execute("file.newOfflineFile", json!({"seconds":3})).unwrap()["item"].as_u64().unwrap();
+    let parent = doc.execute("item.newOfflineFile", json!({"seconds":3})).unwrap()["item"].as_u64().unwrap();
     let subclip = doc.execute("clip.makeSubclip", json!({"item":parent,"start":0,"end":254_016_000_000i64})).unwrap()["item"].as_u64().unwrap();
     for selected in [vec![], vec![parent], vec![subclip], vec![parent, subclip]] {
         doc.execute("project.select", json!({"items":selected})).unwrap();

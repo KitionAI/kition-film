@@ -35,14 +35,14 @@ pub fn more(command: &str) -> Vec<&'static str> {
 fn sequence_settings_compare_every_patch_subset_resize_branch_and_motion_inputs() {
     let mut doc = FilmDocument::create("Edit.kfilm", 320, 180).unwrap();
     let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let item = doc.execute("file.newColorMatte", json!({"seconds":2})).unwrap()["item"].clone();
+    let item = doc.execute("item.newColorMatte", json!({"seconds":2})).unwrap()["item"].clone();
     for n in 0..2 {
         let clip = doc.execute("timeline.place", json!({"item":item,"track":"V1","seconds":n*2})).unwrap()["clips"][0].clone();
         if n == 0 {
             doc.execute("timeline.select", json!({"clips":[clip]})).unwrap();
             doc.execute("clip.scaleToFrameSize", json!({})).unwrap();
         }
-        doc.execute("effects.addKeyframe", json!({"clip":clip,"effect":"motion","param":"position","time":0})).unwrap();
+        doc.execute("effect.addKeyframe", json!({"clip":clip,"effect":"motion","param":"position","time":0})).unwrap();
     }
     let spec = doc.commands().into_iter().find(|spec| spec.id == "sequence.settings").unwrap();
     assert!(spec.mutates && spec.enabled);

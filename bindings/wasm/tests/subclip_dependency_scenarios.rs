@@ -11,8 +11,8 @@ fn run(doc: &mut FilmDocument, command: &str, params: Value) -> Value {
 fn n21_deleting_a_subclip_parent_is_atomic_and_deleting_both_is_undoable() {
     let mut doc = FilmDocument::create("Subclip.kfilm", 64, 36).unwrap();
     run(&mut doc, "file.newProject", json!({"name": "Subclip dependencies"}));
-    run(&mut doc, "file.newSequence", json!({"name": "Subclip", "width": 64, "height": 36, "fps": 24, "video": 1, "audio": 0}));
-    let parent = run(&mut doc, "file.newColorMatte", json!({"color": "#ff0000", "seconds": 2}))["item"].clone();
+    run(&mut doc, "sequence.new", json!({"name": "Subclip", "width": 64, "height": 36, "fps": 24, "video": 1, "audio": 0}));
+    let parent = run(&mut doc, "item.newColorMatte", json!({"color": "#ff0000", "seconds": 2}))["item"].clone();
     run(&mut doc, "project.select", json!({"items": [parent]}));
     let subclip = run(&mut doc, "clip.makeSubclip", json!({"item": parent, "startFrame": 12, "endFrame": 24, "name": "Dependent subclip"}))["item"].clone();
     run(&mut doc, "timeline.place", json!({"item": subclip, "seconds": 0}));
@@ -43,8 +43,8 @@ fn n21_deleting_a_subclip_parent_is_atomic_and_deleting_both_is_undoable() {
 fn n22_deleting_a_bin_cannot_strand_a_subclip_in_another_bin() {
     let mut doc = FilmDocument::create("Bins.kfilm", 64, 36).unwrap();
     run(&mut doc, "file.newProject", json!({"name": "Bin dependencies"}));
-    let bin = run(&mut doc, "file.newBin", json!({"name": "Originals"}))["bin"].clone();
-    let parent = run(&mut doc, "file.newColorMatte", json!({"color": "#ff0000", "seconds": 2}))["item"].clone();
+    let bin = run(&mut doc, "bin.add", json!({"name": "Originals"}))["bin"].clone();
+    let parent = run(&mut doc, "item.newColorMatte", json!({"color": "#ff0000", "seconds": 2}))["item"].clone();
     let subclip = run(&mut doc, "clip.makeSubclip", json!({"item": parent, "startFrame": 12, "endFrame": 24}))["item"].clone();
     run(&mut doc, "project.moveToBin", json!({"items": [parent], "bin": bin}));
     run(&mut doc, "project.select", json!({"items": [bin]}));

@@ -4,7 +4,7 @@ use kition_kit::{Premise, Under};
 use serde_json::{Value, json};
 
 pub fn under(session: &Session, command: &str, params: &Value) -> Option<Under> {
-    if !matches!(command, "clip.createMulticam" | "clip.mergeClips" | "clip.synchronize") {
+    if !matches!(command, "clip.addMulticam" | "clip.mergeClips" | "clip.synchronize") {
         return None;
     }
     let mut answer = Under::default();

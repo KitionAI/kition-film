@@ -17,8 +17,8 @@ fn demo() -> Session {
 #[test]
 fn n24_subclip_placement_uses_parent_dimensions_for_its_visible_picture() {
     let mut s = Session::default();
-    s.execute("file.newSequence", json!({"width": 64, "height": 36, "fps": 24, "video": 1, "audio": 0})).unwrap();
-    let parent = s.execute("file.newColorMatte", json!({"color": "#ff0000", "seconds": 2})).unwrap()["item"].clone();
+    s.execute("sequence.new", json!({"width": 64, "height": 36, "fps": 24, "video": 1, "audio": 0})).unwrap();
+    let parent = s.execute("item.newColorMatte", json!({"color": "#ff0000", "seconds": 2})).unwrap()["item"].clone();
     let subclip = s.execute("clip.makeSubclip", json!({"item": parent, "startFrame": 12, "endFrame": 24})).unwrap()["item"].clone();
     s.execute("timeline.place", json!({"item": subclip, "seconds": 0})).unwrap();
     for frame in [0, 6, 11] {
@@ -31,8 +31,8 @@ fn n24_subclip_placement_uses_parent_dimensions_for_its_visible_picture() {
 #[test]
 fn n25_subclip_placement_keeps_linked_parent_audio() {
     let mut s = Session::default();
-    s.execute("file.newSequence", json!({"width": 64, "height": 36, "fps": 24, "video": 1, "audio": 1})).unwrap();
-    let parent = s.execute("file.newBarsAndTone", json!({"seconds": 2})).unwrap()["item"].clone();
+    s.execute("sequence.new", json!({"width": 64, "height": 36, "fps": 24, "video": 1, "audio": 1})).unwrap();
+    let parent = s.execute("item.newBarsAndTone", json!({"seconds": 2})).unwrap()["item"].clone();
     let subclip = s.execute("clip.makeSubclip", json!({"item": parent, "startFrame": 12, "endFrame": 24})).unwrap()["item"].clone();
     s.execute("timeline.place", json!({"item": subclip, "seconds": 0})).unwrap();
     let seq = s.active_sequence().unwrap();
@@ -61,7 +61,7 @@ fn n32_audio_only_subclip_placement_inherits_channel_mapping_and_renders_the_sel
         .collect();
     std::fs::write(&path, kition_film_media::wav::write_wav16(&samples, 2, 48_000)).unwrap();
     let mut s = Session::default();
-    s.execute("file.newSequence", json!({"width": 64, "height": 36, "fps": 24, "video": 1, "audio": 1})).unwrap();
+    s.execute("sequence.new", json!({"width": 64, "height": 36, "fps": 24, "video": 1, "audio": 1})).unwrap();
     let parent = s.execute("file.import", json!({"paths": [path.to_string_lossy()]})).unwrap()["items"][0].clone();
     s.execute("project.select", json!({"items": [parent]})).unwrap();
     s.execute("clip.audioChannels", json!({"format": "mono", "clips": [[1]]})).unwrap();
@@ -99,8 +99,8 @@ fn n32_audio_only_subclip_placement_inherits_channel_mapping_and_renders_the_sel
 fn n33_invalid_audio_channel_numbers_never_wrap_or_disappear_from_the_requested_map() {
     for timeline in [false, true] {
         let mut s = Session::default();
-        s.execute("file.newSequence", json!({"width": 64, "height": 36, "fps": 24, "video": 1, "audio": 1})).unwrap();
-        let item = s.execute("file.newBarsAndTone", json!({"seconds": 1})).unwrap()["item"].clone();
+        s.execute("sequence.new", json!({"width": 64, "height": 36, "fps": 24, "video": 1, "audio": 1})).unwrap();
+        let item = s.execute("item.newBarsAndTone", json!({"seconds": 1})).unwrap()["item"].clone();
         s.execute("timeline.place", json!({"item": item, "seconds": 0})).unwrap();
         let audio = s.active_sequence().unwrap().audio_tracks[0].items[0].id;
         s.execute("project.select", json!({"items": if timeline { json!([]) } else { json!([item]) }})).unwrap();
@@ -133,10 +133,10 @@ fn n33_invalid_audio_channel_numbers_never_wrap_or_disappear_from_the_requested_
 fn n34_subclip_replacement_updates_both_linked_streams_and_inherits_audio_mapping() {
     for command in ["clip.replaceFromBin", "clip.replaceFromSource", "clip.replaceFromSourceMatchFrame"] {
         let mut s = Session::default();
-        s.execute("file.newSequence", json!({"width": 64, "height": 36, "fps": 24, "video": 1, "audio": 1})).unwrap();
-        let old = s.execute("file.newBarsAndTone", json!({"seconds": 0.5})).unwrap()["item"].clone();
+        s.execute("sequence.new", json!({"width": 64, "height": 36, "fps": 24, "video": 1, "audio": 1})).unwrap();
+        let old = s.execute("item.newBarsAndTone", json!({"seconds": 0.5})).unwrap()["item"].clone();
         s.execute("timeline.place", json!({"item": old, "seconds": 0})).unwrap();
-        let parent = s.execute("file.newBarsAndTone", json!({"seconds": 2})).unwrap()["item"].clone();
+        let parent = s.execute("item.newBarsAndTone", json!({"seconds": 2})).unwrap()["item"].clone();
         s.execute("project.select", json!({"items": [parent]})).unwrap();
         s.execute("clip.audioChannels", json!({"format": "mono", "clips": [[1]]})).unwrap();
         let item = s.execute("clip.makeSubclip", json!({"item": parent, "startFrame": 12, "endFrame": 36})).unwrap()["item"].clone();
@@ -169,10 +169,10 @@ fn n36_replacing_linked_media_cannot_bypass_a_locked_picture_or_sound_track() {
     for command in ["clip.replaceFromBin", "clip.replaceFromSource", "clip.replaceFromSourceMatchFrame"] {
         for locked in ["V1", "A1"] {
             let mut s = Session::default();
-            s.execute("file.newSequence", json!({"width": 64, "height": 36, "fps": 24, "video": 1, "audio": 1})).unwrap();
-            let old = s.execute("file.newBarsAndTone", json!({"seconds": 0.5})).unwrap()["item"].clone();
+            s.execute("sequence.new", json!({"width": 64, "height": 36, "fps": 24, "video": 1, "audio": 1})).unwrap();
+            let old = s.execute("item.newBarsAndTone", json!({"seconds": 0.5})).unwrap()["item"].clone();
             let placed = s.execute("timeline.place", json!({"item": old, "seconds": 0})).unwrap()["clips"].clone();
-            let item = s.execute("file.newBarsAndTone", json!({"seconds": 1})).unwrap()["item"].clone();
+            let item = s.execute("item.newBarsAndTone", json!({"seconds": 1})).unwrap()["item"].clone();
             s.execute("source.open", json!({"item": item})).unwrap();
             s.execute("timeline.setTrack", json!({"track": locked, "locked": true})).unwrap();
             let before = kition_film_format::encode(&s.project, false);
@@ -229,8 +229,8 @@ fn menus_and_shortcuts_follow_premiere() {
     assert_eq!(pos("edit.removeAttributes"), pos("edit.pasteAttributes") + 1);
     assert_eq!(pos("edit.selectAllMatching"), pos("edit.selectAll") + 1);
     assert!(pos("edit.removeUnused") > pos("edit.label.yellow") && pos("edit.consolidateDuplicates") == pos("edit.removeUnused") + 1);
-    assert_eq!(pos("file.newSequenceFromClip"), pos("file.newSequence") + 1);
-    assert_eq!(pos("file.newBinFromSelection"), pos("file.newBin") + 1);
+    assert_eq!(pos("sequence.newFromClip"), pos("sequence.new") + 1);
+    assert_eq!(pos("bin.addFromSelection"), pos("bin.add") + 1);
     // Close Project, Close All Projects, Close All Other Projects (M3.11), Save
     assert_eq!(pos("file.closeProject") + 3, pos("file.save"));
     assert_eq!(pos("file.saveAll"), pos("file.saveCopy") + 2, "Save a Copy, Save as Template (M3.11), Save All");
@@ -258,7 +258,7 @@ fn menus_and_shortcuts_follow_premiere() {
     assert_eq!(sc("edit.pasteAttributes"), Some("Cmd+Alt+V"));
     assert_eq!(sc("clip.makeSubclip"), Some("Cmd+U"));
     assert_eq!(sc("clip.audioChannels"), Some("Shift+G"));
-    assert_eq!(sc("file.newBinFromSelection"), Some("Shift+B"));
+    assert_eq!(sc("bin.addFromSelection"), Some("Shift+B"));
     assert_eq!(sc("file.closeProject"), Some("Cmd+Shift+W"));
     // every id is unique
     let mut sorted = ids.clone();
@@ -317,10 +317,10 @@ fn select_all_matching_selects_every_use_of_the_source() {
 fn paste_attributes_with_scaled_keyframes_and_remove_attributes() {
     let mut s = demo();
     let (a, b) = (v1(&s)[0].clone(), v1(&s)[2].clone());
-    s.execute("effects.setParam", json!({"clip": a.id.0, "effect": "motion", "param": "rotation", "value": 30.0})).unwrap();
-    s.execute("effects.setParam", json!({"clip": a.id.0, "effect": "opacity", "param": "opacity", "value": 40.0})).unwrap();
+    s.execute("effect.setParam", json!({"clip": a.id.0, "effect": "motion", "param": "rotation", "value": 30.0})).unwrap();
+    s.execute("effect.setParam", json!({"clip": a.id.0, "effect": "opacity", "param": "opacity", "value": 40.0})).unwrap();
     s.execute("timeline.select", json!({"clips": [a.id.0]})).unwrap();
-    s.execute("effects.apply", json!({"clips": [a.id.0], "effect": "gaussian_blur"})).unwrap();
+    s.execute("effect.apply", json!({"clips": [a.id.0], "effect": "gaussian_blur"})).unwrap();
     // animate scale over the whole of clip A (media time keyframes)
     let a_now = clip(&s, a.id.0);
     {
@@ -367,7 +367,7 @@ fn paste_attributes_with_scaled_keyframes_and_remove_attributes() {
     // audio: volume pasted onto another audio clip
     let aud = s.active_sequence().unwrap().audio_tracks[0].items.clone();
     s.execute("timeline.select", json!({"clips": [aud[0].id.0]})).unwrap();
-    s.execute("effects.setParam", json!({"clip": aud[0].id.0, "effect": "volume", "param": "level", "value": -3.0})).unwrap();
+    s.execute("effect.setParam", json!({"clip": aud[0].id.0, "effect": "volume", "param": "level", "value": -3.0})).unwrap();
     s.execute("sequence.linkedSelection", json!({"on": false})).unwrap();
     select(&mut s, &[aud[0].id.0]);
     s.execute("edit.copy", json!({})).unwrap();
@@ -409,12 +409,12 @@ fn remove_unused_and_consolidate_duplicates() {
 #[test]
 fn new_sequence_from_clip_bin_from_selection_and_offline_file() {
     let mut s = demo();
-    assert!(s.execute("file.newSequenceFromClip", json!({})).is_err(), "nothing selected in the Project panel");
+    assert!(s.execute("sequence.newFromClip", json!({})).is_err(), "nothing selected in the Project panel");
     let a = item_named(&s, "Desert_Dunes.mp4");
     let b = item_named(&s, "Misty_Forest.mp4");
     s.execute("project.select", json!({"items": [a.0, b.0]})).unwrap();
     let undo0 = s.history.undo.len();
-    let r = s.execute("file.newSequenceFromClip", json!({})).unwrap();
+    let r = s.execute("sequence.newFromClip", json!({})).unwrap();
     let seq = ItemId(r["sequence"].as_u64().unwrap());
     assert_eq!(s.state.active_sequence, Some(seq));
     assert_eq!(s.project.item(seq).unwrap().name, "Desert_Dunes.mp4");
@@ -427,7 +427,7 @@ fn new_sequence_from_clip_bin_from_selection_and_offline_file() {
     assert!(s.project.item(seq).is_none());
     // Bin From Selection
     s.execute("project.select", json!({"items": [a.0, b.0]})).unwrap();
-    let r = s.execute("file.newBinFromSelection", json!({})).unwrap();
+    let r = s.execute("bin.addFromSelection", json!({})).unwrap();
     let bin = kition_film_project::BinId(r["bin"].as_u64().unwrap());
     let found = s.project.root.find_bin(bin).unwrap();
     assert_eq!(found.name, "Bin 01");
@@ -435,7 +435,7 @@ fn new_sequence_from_clip_bin_from_selection_and_offline_file() {
     assert_eq!(s.project.root.parent_of(b), Some(bin));
     // Offline File
     let r = s
-        .execute("file.newOfflineFile", json!({"fileName": "A001C003.mov", "tapeName": "A001", "timecode": "01:00:00:00", "seconds": 4.0, "audio": false}))
+        .execute("item.newOfflineFile", json!({"fileName": "A001C003.mov", "tapeName": "A001", "timecode": "01:00:00:00", "seconds": 4.0, "audio": false}))
         .unwrap();
     let it = s.project.item(ItemId(r["item"].as_u64().unwrap())).unwrap();
     let m = it.as_media().unwrap();
@@ -443,7 +443,7 @@ fn new_sequence_from_clip_bin_from_selection_and_offline_file() {
     assert_eq!(m.info.duration, s.sequence_rate().snap_nearest(Tick(4 * TICKS_PER_SECOND)));
     assert_eq!(m.info.start_timecode, Some(3600 * 24));
     assert_eq!(it.metadata["Tape Name"], "A001");
-    assert!(s.execute("file.newOfflineFile", json!({"video": false, "audio": false})).is_err());
+    assert!(s.execute("item.newOfflineFile", json!({"video": false, "audio": false})).is_err());
 }
 
 #[test]
@@ -562,14 +562,14 @@ fn modify_timecode_and_reset() {
     let mut s = demo();
     let ocean = item_named(&s, "Ocean_Sunset.mp4");
     s.execute("project.select", json!({"items": [ocean.0]})).unwrap();
-    let r = s.execute("clip.modifyTimecode", json!({"timecode": "01:00:00:00", "tapeName": "Reel 1"})).unwrap();
+    let r = s.execute("clip.setTimecode", json!({"timecode": "01:00:00:00", "tapeName": "Reel 1"})).unwrap();
     let m = s.project.item(ocean).unwrap();
     let rate = m.as_media().unwrap().frame_rate();
     assert_eq!(r["startTimecode"], 3600 * rate.timecode_base());
     assert_eq!(m.metadata["Tape Name"], "Reel 1");
-    s.execute("clip.modifyTimecode", json!({"reset": true})).unwrap();
+    s.execute("clip.setTimecode", json!({"reset": true})).unwrap();
     assert_eq!(s.project.item(ocean).unwrap().as_media().unwrap().info.start_timecode, None);
-    assert!(s.execute("clip.modifyTimecode", json!({})).is_err());
+    assert!(s.execute("clip.setTimecode", json!({})).is_err());
 }
 
 #[test]
@@ -717,7 +717,7 @@ fn frame_blending_renders_in_between_frames() {
 #[test]
 fn fit_and_fill_frame() {
     let mut s = demo();
-    let r = s.execute("file.newColorMatte", json!({"width": 960, "height": 1080, "color": "#ff0000"})).unwrap();
+    let r = s.execute("item.newColorMatte", json!({"width": 960, "height": 1080, "color": "#ff0000"})).unwrap();
     let matte = r["item"].as_u64().unwrap();
     let r = s.execute("timeline.place", json!({"item": matte, "track": "V3", "seconds": 0.0})).unwrap();
     let c = r["clips"][0].as_u64().unwrap();
@@ -936,7 +936,7 @@ fn replace_with_clip_reports_clips_that_run_past_the_new_media() {
     // never more than the clip itself: an In that lies past the end of the new media altogether
     s.execute("timeline.trim", json!({"clip": c.id.0, "edge": "in", "mode": "regular", "deltaFrames": 7})).unwrap();
     let trimmed = clip(&s, c.id.0);
-    s.execute("file.newSequence", json!({"name": "Brief"})).unwrap();
+    s.execute("sequence.new", json!({"name": "Brief"})).unwrap();
     let brief = s.state.active_sequence.unwrap();
     s.execute("timeline.place", json!({"item": forest.0, "time": 0})).unwrap();
     let placed = s.active_sequence().unwrap().video_tracks[0].items[0].clone();
@@ -1043,7 +1043,7 @@ fn subclip_source_monitor_trims_and_markers() {
 #[test]
 fn color_matte_color_changes_and_undoes() {
     let mut s = demo();
-    let matte = s.execute("file.newColorMatte", json!({"width": 64, "height": 36, "color": "#ff0000"})).unwrap()["item"].as_u64().unwrap();
+    let matte = s.execute("item.newColorMatte", json!({"width": 64, "height": 36, "color": "#ff0000"})).unwrap()["item"].as_u64().unwrap();
     let px = |s: &Session| {
         let f = s.source(ItemId(matte)).unwrap().video_frame(kition_film_media::FrameRequest::full(Tick::ZERO)).unwrap();
         f.to_rgba8()[..3].to_vec()
@@ -1058,7 +1058,7 @@ fn color_matte_color_changes_and_undoes() {
     s.state.project_selection = vec![ItemId(matte)];
     s.execute("project.matteColor", json!({"color": "#00ff00"})).unwrap();
     assert_eq!(px(&s), [0, 255, 0]);
-    let bars = s.execute("file.newBarsAndTone", json!({})).unwrap()["item"].as_u64().unwrap();
+    let bars = s.execute("item.newBarsAndTone", json!({})).unwrap()["item"].as_u64().unwrap();
     assert!(s.execute("project.matteColor", json!({"item": bars, "color": "#00ff00"})).is_err());
     assert!(s.execute("project.matteColor", json!({"item": matte, "color": "green"})).is_err());
 }
@@ -1107,7 +1107,7 @@ fn add_edit_cuts_only_the_selected_clips() {
 #[test]
 fn source_inspect_names_the_media_size_and_streams() {
     let mut s = demo();
-    let matte = s.execute("file.newColorMatte", json!({"width": 64, "height": 36, "color": "#ff0000"})).unwrap()["item"].as_u64().unwrap();
+    let matte = s.execute("item.newColorMatte", json!({"width": 64, "height": 36, "color": "#ff0000"})).unwrap()["item"].as_u64().unwrap();
     s.execute("source.open", json!({"item": matte})).unwrap();
     let v = s.execute("source.inspect", json!({})).unwrap();
     assert_eq!((v["width"].as_u64(), v["height"].as_u64()), (Some(64), Some(36)));
@@ -1151,7 +1151,7 @@ fn source_inspect_names_marker_colours() {
     let bars = item_named(&s, "Bars and Tone");
     s.execute("source.open", json!({"item": bars.0})).unwrap();
     s.execute("source.setPlayhead", json!({"frame": 12})).unwrap();
-    s.execute("markers.add", json!({"target": "source"})).unwrap();
+    s.execute("marker.add", json!({"target": "source"})).unwrap();
     let v = s.execute("source.inspect", json!({})).unwrap();
     let markers = v["markers"].as_array().unwrap();
     assert_eq!(markers.len(), 1, "{v}");
@@ -1163,15 +1163,15 @@ fn n40_compound_history_retains_a_complete_step_and_the_previous_history_at_capa
     for (limit, count) in [(200, 1), (2, 4)] {
         let mut s = Session::default();
         s.execute("file.newProject", json!({})).unwrap();
-        s.execute("file.newSequence", json!({"width": 64, "height": 36, "fps": 24})).unwrap();
-        let item = s.execute("file.newColorMatte", json!({"seconds": 0.25})).unwrap()["item"].clone();
+        s.execute("sequence.new", json!({"width": 64, "height": 36, "fps": 24})).unwrap();
+        let item = s.execute("item.newColorMatte", json!({"seconds": 0.25})).unwrap()["item"].clone();
         s.history.limit = limit;
         for n in 0..limit + 5 {
             s.execute("clip.rename", json!({"item": item, "name": format!("Take {n}")})).unwrap();
         }
         let before = s.project.clone();
         let prior_steps: Vec<_> = s.history.undo.iter().skip(1).map(|entry| serde_json::to_value(&entry.1).unwrap()).collect();
-        s.execute("file.newSequenceFromClip", json!({"items": vec![item; count]})).unwrap();
+        s.execute("sequence.newFromClip", json!({"items": vec![item; count]})).unwrap();
         let after = s.project.clone();
         assert_eq!(s.history.undo.len(), limit);
         let retained: Vec<_> = s.history.undo.iter().take(limit - 1).map(|entry| serde_json::to_value(&entry.1).unwrap()).collect();
@@ -1187,8 +1187,8 @@ fn n40_compound_history_retains_a_complete_step_and_the_previous_history_at_capa
 fn n41_failed_automatic_placement_restores_project_state_and_history_at_capacity() {
     let mut s = Session::default();
     s.execute("file.newProject", json!({})).unwrap();
-    s.execute("file.newSequence", json!({"width": 64, "height": 36, "fps": 24, "audio": 1})).unwrap();
-    let item = s.execute("file.newColorMatte", json!({"seconds": 0.5})).unwrap()["item"].clone();
+    s.execute("sequence.new", json!({"width": 64, "height": 36, "fps": 24, "audio": 1})).unwrap();
+    let item = s.execute("item.newColorMatte", json!({"seconds": 0.5})).unwrap()["item"].clone();
     s.execute("timeline.place", json!({"item": item, "seconds": 0})).unwrap();
     s.history.limit = 2;
     for n in 0..3 {
@@ -1209,9 +1209,9 @@ fn n41_failed_automatic_placement_restores_project_state_and_history_at_capacity
 fn n46_failed_sequence_from_clips_restores_content_context_and_history() {
     for (prior_edits, preceding_clip) in [(0, false), (0, true), (205, false), (205, true)] {
         let mut s = Session::default();
-        s.execute("file.newSequence", json!({"name": "Empty source", "width": 64, "height": 36, "fps": 24})).unwrap();
+        s.execute("sequence.new", json!({"name": "Empty source", "width": 64, "height": 36, "fps": 24})).unwrap();
         let empty = s.state.active_sequence.unwrap();
-        let item = s.execute("file.newColorMatte", json!({"seconds": 0.5})).unwrap()["item"].clone();
+        let item = s.execute("item.newColorMatte", json!({"seconds": 0.5})).unwrap()["item"].clone();
         s.execute("sequence.nestSequences", json!({"on": false})).unwrap();
         for n in 0..prior_edits {
             s.execute("clip.rename", json!({"item": item, "name": format!("Take {n}")})).unwrap();
@@ -1223,7 +1223,7 @@ fn n46_failed_sequence_from_clips_restores_content_context_and_history() {
         let history = serde_json::to_value((&s.history.undo, &s.history.redo)).unwrap();
         let counters = (s.history.pushed, s.history.dropped, s.revision, s.events.len());
         let items = if preceding_clip { json!([item, empty.0]) } else { json!([empty.0]) };
-        let error = s.execute("file.newSequenceFromClip", json!({"items": items})).unwrap_err();
+        let error = s.execute("sequence.newFromClip", json!({"items": items})).unwrap_err();
         assert!(error.to_string().contains("no destination track"));
         assert_eq!(serde_json::to_vec(&s.project).unwrap(), project, "refusal must remove the partially created sequence");
         assert_eq!(serde_json::to_value(&s.state).unwrap(), state);
@@ -1232,7 +1232,7 @@ fn n46_failed_sequence_from_clips_restores_content_context_and_history() {
         s.execute("edit.redo", json!({})).unwrap();
         assert_eq!(s.project.item(ItemId(item.as_u64().unwrap())).unwrap().name, "Redo must survive");
         let before = s.project.clone();
-        s.execute("file.newSequenceFromClip", json!({"items": [item]})).unwrap();
+        s.execute("sequence.newFromClip", json!({"items": [item]})).unwrap();
         assert_eq!(s.active_sequence().unwrap().video_tracks[0].items.len(), 1);
         s.execute("edit.undo", json!({})).unwrap();
         assert_eq!(crate::ignoring_next_id((*s.project).clone(), &before), *before);
@@ -1243,10 +1243,10 @@ fn n46_failed_sequence_from_clips_restores_content_context_and_history() {
 fn n42_consolidation_preserves_distinct_media_formats_and_subclip_picture() {
     for (width, height, fps) in [(128, 72, 24), (64, 36, 60)] {
         let mut s = Session::default();
-        s.execute("file.newSequence", json!({"width": 64, "height": 36, "fps": 24, "video": 1, "audio": 0})).unwrap();
-        let first = s.execute("file.newColorMatte", json!({"color": "#ff0000", "seconds": 1})).unwrap()["item"].clone();
-        s.execute("file.newSequence", json!({"width": width, "height": height, "fps": fps, "video": 1, "audio": 0})).unwrap();
-        let second = s.execute("file.newColorMatte", json!({"color": "#ff0000", "seconds": 1})).unwrap()["item"].clone();
+        s.execute("sequence.new", json!({"width": 64, "height": 36, "fps": 24, "video": 1, "audio": 0})).unwrap();
+        let first = s.execute("item.newColorMatte", json!({"color": "#ff0000", "seconds": 1})).unwrap()["item"].clone();
+        s.execute("sequence.new", json!({"width": width, "height": height, "fps": fps, "video": 1, "audio": 0})).unwrap();
+        let second = s.execute("item.newColorMatte", json!({"color": "#ff0000", "seconds": 1})).unwrap()["item"].clone();
         s.execute("project.select", json!({"items": [second]})).unwrap();
         let duplicate = s.execute("edit.duplicate", json!({})).unwrap()["items"][0].clone();
         let subclip = s.execute("clip.makeSubclip", json!({"item": duplicate, "startFrame": 3, "endFrame": 9})).unwrap()["item"].clone();
@@ -1271,14 +1271,14 @@ fn n42_consolidation_preserves_distinct_media_formats_and_subclip_picture() {
 fn n43_repeated_cross_rate_paste_does_not_trim_the_preceding_linked_copy() {
     for command in ["edit.paste", "edit.pasteInsert"] {
         let mut s = Session::default();
-        s.execute("file.newSequence", json!({"width": 64, "height": 36, "fps": 24, "video": 1, "audio": 1})).unwrap();
-        let item = s.execute("file.newBarsAndTone", json!({"seconds": 2})).unwrap()["item"].clone();
+        s.execute("sequence.new", json!({"width": 64, "height": 36, "fps": 24, "video": 1, "audio": 1})).unwrap();
+        let item = s.execute("item.newBarsAndTone", json!({"seconds": 2})).unwrap()["item"].clone();
         let ids = s.execute("timeline.place", json!({"item": item, "seconds": 0, "sourceIn": TICKS_PER_SECOND / 2, "duration": TICKS_PER_SECOND / 2})).unwrap()
             ["clips"]
             .clone();
         s.execute("timeline.select", json!({"clips": ids})).unwrap();
         s.execute("edit.copy", json!({})).unwrap();
-        s.execute("file.newSequence", json!({"width": 64, "height": 36, "fps": 25, "video": 1, "audio": 1})).unwrap();
+        s.execute("sequence.new", json!({"width": 64, "height": 36, "fps": 25, "video": 1, "audio": 1})).unwrap();
         s.execute(command, json!({})).unwrap();
         let first = s.active_sequence().unwrap().video_tracks[0].items[0].clone();
         s.execute(command, json!({})).unwrap();
@@ -1301,16 +1301,16 @@ fn n43_repeated_cross_rate_paste_does_not_trim_the_preceding_linked_copy() {
 #[test]
 fn n44_cross_rate_paste_refuses_clips_that_cannot_occupy_a_destination_frame_atomically() {
     let mut s = Session::default();
-    s.execute("file.newSequence", json!({"width": 64, "height": 36, "fps": 60, "video": 1, "audio": 1})).unwrap();
+    s.execute("sequence.new", json!({"width": 64, "height": 36, "fps": 60, "video": 1, "audio": 1})).unwrap();
     let source = s.state.active_sequence.unwrap();
-    let item = s.execute("file.newBarsAndTone", json!({"seconds": 1})).unwrap()["item"].clone();
+    let item = s.execute("item.newBarsAndTone", json!({"seconds": 1})).unwrap()["item"].clone();
     let ids = s.execute("timeline.place", json!({"item": item, "seconds": 0, "duration": 2 * TICKS_PER_SECOND / 60})).unwrap()["clips"].clone();
     s.execute("timeline.select", json!({"clips": ids})).unwrap();
     s.execute("sequence.addEdit", json!({"frame": 1})).unwrap();
     let clips: Vec<_> = s.active_sequence().unwrap().video_tracks[0].items.iter().map(|clip| clip.id.0).collect();
     s.execute("timeline.select", json!({"clips": clips})).unwrap();
     s.execute("edit.copy", json!({})).unwrap();
-    s.execute("file.newSequence", json!({"width": 64, "height": 36, "fps": 24, "video": 1, "audio": 1})).unwrap();
+    s.execute("sequence.new", json!({"width": 64, "height": 36, "fps": 24, "video": 1, "audio": 1})).unwrap();
     let destination = s.state.active_sequence.unwrap();
     let before = serde_json::to_vec(&s.project).unwrap();
     let history = serde_json::to_value(&s.history.undo).unwrap();
@@ -1332,17 +1332,17 @@ fn n44_cross_rate_paste_refuses_clips_that_cannot_occupy_a_destination_frame_ato
 #[test]
 fn n45_cross_rate_paste_quantizes_shared_boundaries_without_creating_gaps_or_overlaps() {
     let mut s = Session::default();
-    s.execute("file.newSequence", json!({"width": 64, "height": 36, "fps": 24, "video": 1, "audio": 1})).unwrap();
-    let item = s.execute("file.newBarsAndTone", json!({"seconds": 2})).unwrap()["item"].clone();
+    s.execute("sequence.new", json!({"width": 64, "height": 36, "fps": 24, "video": 1, "audio": 1})).unwrap();
+    let item = s.execute("item.newBarsAndTone", json!({"seconds": 2})).unwrap()["item"].clone();
     for time in [0, TICKS_PER_SECOND / 2] {
         s.execute("timeline.place", json!({"item": item, "time": time, "sourceIn": time, "duration": TICKS_PER_SECOND / 2})).unwrap();
     }
     let clips: Vec<_> = s.active_sequence().unwrap().video_tracks[0].items.iter().map(|clip| clip.id.0).collect();
     s.execute("timeline.select", json!({"clips": clips})).unwrap();
-    s.execute("markers.copyPasteIncludesSequenceMarkers", json!({"on": true})).unwrap();
-    s.execute("markers.add", json!({"target": "program", "frame": 12, "name": "Shared cut"})).unwrap();
+    s.execute("marker.copyPasteIncludesSequenceMarkers", json!({"on": true})).unwrap();
+    s.execute("marker.add", json!({"target": "program", "frame": 12, "name": "Shared cut"})).unwrap();
     s.execute("edit.copy", json!({})).unwrap();
-    s.execute("file.newSequence", json!({"width": 64, "height": 36, "fps": 25, "video": 1, "audio": 1})).unwrap();
+    s.execute("sequence.new", json!({"width": 64, "height": 36, "fps": 25, "video": 1, "audio": 1})).unwrap();
     s.execute("edit.paste", json!({})).unwrap();
     let q = s.active_sequence().unwrap();
     assert_eq!(q.markers[0].start.0, 12 * TICKS_PER_SECOND / 25);

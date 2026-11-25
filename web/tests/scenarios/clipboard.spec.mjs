@@ -3,8 +3,8 @@ import { test, expect, clips, editState, TICKS } from './fixtures.mjs'
 test('F37 Copy and Paste Insert duplicate linked sound/picture, ripple once, and give the new pair an independent link', async ({ film, page }) => {
   await film.open()
   await film.command('file.newProject', { name: 'Linked clipboard' })
-  await film.command('file.newSequence', { name: 'Clipboard', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
-  const { item } = await film.command('file.newBarsAndTone', { seconds: 2 })
+  await film.command('sequence.new', { name: 'Clipboard', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
+  const { item } = await film.command('item.newBarsAndTone', { seconds: 2 })
   await film.command('timeline.place', { item, seconds: 0 })
   await film.command('sequence.addEdit', { time: TICKS })
   const before = await film.sequence()
@@ -30,7 +30,7 @@ test('F37 Copy and Paste Insert duplicate linked sound/picture, ripple once, and
   await expect.poll(async () => editState(await film.sequence())).toEqual(editState(after))
   // Selecting only the pasted picture and clearing removes its sound, but not the original.
   await film.command('timeline.select', { clips: [clips(after)[1].clip] })
-  await film.menu('edit.clear')
+  await film.menu('edit.delete')
   const cleared = await film.sequence()
   for (const kind of ['video', 'audio']) expect(clips(cleared, kind)).toEqual([clips(after, kind)[0], clips(after, kind)[2]])
   await film.undo()

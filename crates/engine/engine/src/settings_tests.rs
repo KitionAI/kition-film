@@ -337,7 +337,7 @@ fn label_defaults_names_and_colours() {
     let b = import_png(&mut s, &dir, "b.png", 32, 18);
     assert_eq!(s.project.item(b).unwrap().label, Label::Yellow);
     set(&mut s, "labels.defaults.sequence", json!("Teal"));
-    let r = s.execute("file.newSequence", json!({"name": "S"})).unwrap();
+    let r = s.execute("sequence.new", json!({"name": "S"})).unwrap();
     let seq = ItemId(r["sequence"].as_u64().unwrap());
     assert_eq!(s.project.item(seq).unwrap().label, Label::Teal);
     // movie / video-only / audio-only media

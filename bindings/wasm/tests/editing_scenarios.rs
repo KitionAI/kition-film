@@ -18,8 +18,8 @@ fn sequence(doc: &FilmDocument) -> Value {
 fn fixture() -> FilmDocument {
     let mut doc = FilmDocument::create("Scenario.kfilm", 64, 36).unwrap();
     run(&mut doc, "file.newProject", json!({"name": "Original comparison fixture"}));
-    run(&mut doc, "file.newSequence", json!({"name": "24 fps edit", "width": 64, "height": 36, "fps": 24, "video": 2, "audio": 2}));
-    let item = run(&mut doc, "file.newBarsAndTone", json!({"seconds": 4}))["item"].clone();
+    run(&mut doc, "sequence.new", json!({"name": "24 fps edit", "width": 64, "height": 36, "fps": 24, "video": 2, "audio": 2}));
+    let item = run(&mut doc, "item.newBarsAndTone", json!({"seconds": 4}))["item"].clone();
     run(&mut doc, "timeline.place", json!({"item": item, "track": "V1", "seconds": 0}));
     doc
 }
@@ -177,33 +177,33 @@ fn n07_extreme_playhead_steps_never_panic_or_wrap_backwards() {
 #[test]
 fn n08_unicode_captions_split_merge_lock_export_and_reopen() {
     let mut doc = fixture();
-    let caption = run(&mut doc, "captions.add", json!({"time": SECOND, "durationSeconds": 1, "text": "你好 🌊"}))["caption"].clone();
-    let split = run(&mut doc, "captions.split", json!({"caption": caption, "time": SECOND + SECOND / 2}));
+    let caption = run(&mut doc, "caption.add", json!({"time": SECOND, "durationSeconds": 1, "text": "你好 🌊"}))["caption"].clone();
+    let split = run(&mut doc, "caption.split", json!({"caption": caption, "time": SECOND + SECOND / 2}));
     let right = split["captions"][0].clone();
-    let list = run(&mut doc, "captions.list", json!({}));
+    let list = run(&mut doc, "caption.list", json!({}));
     let cues = list["tracks"][0]["captions"].as_array().unwrap();
     assert_eq!(cues.len(), 2);
     assert_eq!(cues[0]["end"], SECOND + SECOND / 2);
     assert_eq!(cues[1]["start"], SECOND + SECOND / 2);
     assert_eq!(cues[1]["end"], 2 * SECOND);
-    run(&mut doc, "captions.setText", json!({"caption": right, "text": "Second line"}));
-    run(&mut doc, "captions.merge", json!({"captions": [caption, right]}));
-    let merged = run(&mut doc, "captions.list", json!({}))["tracks"].clone();
+    run(&mut doc, "caption.setText", json!({"caption": right, "text": "Second line"}));
+    run(&mut doc, "caption.merge", json!({"captions": [caption, right]}));
+    let merged = run(&mut doc, "caption.list", json!({}))["tracks"].clone();
     assert_eq!(merged[0]["captions"][0]["text"], "你好 🌊\nSecond line");
     run(&mut doc, "edit.undo", json!({}));
-    assert_eq!(run(&mut doc, "captions.list", json!({}))["tracks"][0]["captions"].as_array().unwrap().len(), 2);
+    assert_eq!(run(&mut doc, "caption.list", json!({}))["tracks"][0]["captions"].as_array().unwrap().len(), 2);
     run(&mut doc, "edit.redo", json!({}));
-    assert_eq!(run(&mut doc, "captions.list", json!({}))["tracks"], merged);
-    run(&mut doc, "captions.setTrack", json!({"track": "C1", "locked": true}));
+    assert_eq!(run(&mut doc, "caption.list", json!({}))["tracks"], merged);
+    run(&mut doc, "caption.setTrack", json!({"track": "C1", "locked": true}));
     let locked = doc.save(None).unwrap();
-    assert!(doc.execute("captions.setText", json!({"caption": caption, "text": "Must not replace"})).is_err());
+    assert!(doc.execute("caption.setText", json!({"caption": caption, "text": "Must not replace"})).is_err());
     assert_eq!(doc.save(None).unwrap(), locked);
-    run(&mut doc, "captions.setTrack", json!({"track": "C1", "locked": false}));
-    run(&mut doc, "captions.export", json!({"path": "original.srt"}));
+    run(&mut doc, "caption.setTrack", json!({"track": "C1", "locked": false}));
+    run(&mut doc, "caption.export", json!({"path": "original.srt"}));
     let srt = String::from_utf8(doc.take_file("original.srt").unwrap()).unwrap().replace("\r\n", "\n");
     assert_eq!(srt.trim_start_matches('\u{feff}'), "1\n00:00:01,000 --> 00:00:02,000\n你好 🌊\nSecond line\n\n");
     let mut reopened = round_trip(&doc);
-    assert_eq!(run(&mut reopened, "captions.list", json!({}))["tracks"], merged);
+    assert_eq!(run(&mut reopened, "caption.list", json!({}))["tracks"], merged);
 }
 
 #[test]
@@ -244,7 +244,7 @@ fn n10_history_retention_keeps_two_hundred_steps_and_preserves_evicted_content()
     let mut doc = fixture();
     let mut retained_floor = Value::Null;
     for index in 0..205 {
-        run(&mut doc, "markers.add", json!({"time": index * FRAME, "name": format!("Original marker {index}"), "target": "program"}));
+        run(&mut doc, "marker.add", json!({"time": index * FRAME, "name": format!("Original marker {index}"), "target": "program"}));
         if index == 4 {
             retained_floor = content(&sequence(&doc));
         }
@@ -268,7 +268,7 @@ fn n10_history_retention_keeps_two_hundred_steps_and_preserves_evicted_content()
     for _ in 0..10 {
         run(&mut doc, "edit.undo", json!({}));
     }
-    run(&mut doc, "markers.add", json!({"time": 3 * SECOND, "name": "New branch after retention", "target": "program"}));
+    run(&mut doc, "marker.add", json!({"time": 3 * SECOND, "name": "New branch after retention", "target": "program"}));
     assert_eq!(doc.inspect().unwrap()["canRedo"], false);
     assert_eq!(sequence(&doc)["markers"].as_array().unwrap().len(), 196);
     round_trip(&doc);

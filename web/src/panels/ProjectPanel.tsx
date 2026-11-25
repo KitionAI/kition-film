@@ -735,7 +735,7 @@ export const ProjectPanel = memo(function ProjectPanel({ root, projectName, sele
           <IconButton icon={WandSparkles} label={phrase('Automate to Sequence')} onClick={() => void invoke('clip.automateToSequence', {})} data-kit-ui-id="control:project.button.clip.automateToSequence" data-testid="film-project-automate" />
           <IconButton icon={Search} label={phrase('Find')} onClick={() => void invoke('edit.find', {})} data-kit-ui-id="control:project.button.find" data-testid="film-project-footer-find" />
           <IconButton icon={FileInput} label={phrase('Import…')} onClick={() => void invoke('file.import', { multiple: true, ...(bin != null ? { bin } : {}) })} data-kit-ui-id="control:project.button.file.import" data-testid="film-project-import" />
-          <IconButton icon={FolderPlus} label={phrase('New Bin')} onClick={() => void invoke('file.newBin', { name: phrase('New Bin'), parent: parentForNew })} data-kit-ui-id="control:project.button.file.newBin" data-testid="film-project-new-bin" />
+          <IconButton icon={FolderPlus} label={phrase('New Bin')} onClick={() => void invoke('bin.add', { name: phrase('New Bin'), parent: parentForNew })} data-kit-ui-id="control:project.button.file.newBin" data-testid="film-project-new-bin" />
           <MenuButton align="end" placement="auto" trigger={({ toggle, open: shown }) => <IconButton icon={FilePlus2} label={phrase('New Item')} aria-expanded={shown} onClick={toggle} data-kit-ui-id="control:project.button.new-item" data-testid="film-project-new-item" />}>
             <NewItemRows invoke={invoke} phrase={phrase} />
           </MenuButton>

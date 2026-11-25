@@ -10,7 +10,7 @@ async fn geometry_commands_refuse_changed_edges_and_allow_distant_opacity() {
     for command in ["timeline.rateStretch", "timeline.slideLeft", "trim.extendPreviousEdit", "trim.previous", "clip.frameHold", "clip.insertFrameHoldSegment"] {
         for change in ["rate", "edge", "opacity"] {
             let mut doc = FilmDocument::create(FILE, 64, 36).unwrap();
-            let source = doc.execute("file.newColorMatte", json!({"seconds":4})).unwrap()["item"].clone();
+            let source = doc.execute("item.newColorMatte", json!({"seconds":4})).unwrap()["item"].clone();
             let first = doc.execute("timeline.place", json!({"item":source,"track":"V1","time":0,"duration":3*SECOND})).unwrap()["clips"][0].clone();
             let middle = doc.execute("timeline.razor", json!({"clip":first,"time":SECOND})).unwrap()["clips"][0].clone();
             let next = doc.execute("timeline.razor", json!({"clip":middle,"time":2*SECOND})).unwrap()["clips"][0].clone();
@@ -25,7 +25,7 @@ async fn geometry_commands_refuse_changed_edges_and_allow_distant_opacity() {
                     f.colleague(&[("timeline.rateStretch", json!({"clip":next,"edge":"out","delta":SECOND/4}))]);
                 }
                 _ => {
-                    f.colleague(&[("effects.setParam", json!({"clip":distant,"effect":"opacity","param":"opacity","value":55}))]);
+                    f.colleague(&[("effect.setParam", json!({"clip":distant,"effect":"opacity","param":"opacity","value":55}))]);
                 }
             }
             let params = if command == "timeline.rateStretch" {

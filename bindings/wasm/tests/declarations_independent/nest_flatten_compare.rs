@@ -96,8 +96,8 @@ fn expected(project: &Project, seq: u64, command: &str, selected: &[u64], linked
 fn nesting_and_flatten_compare_links_locks_copy_material_sources_and_destination_lanes() {
     let mut doc = FilmDocument::create("Copies.kfilm", 64, 36).unwrap();
     let seq = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let source = doc.execute("file.newSequence", json!({"name":"Cameras","video":2,"audio":2})).unwrap()["sequence"].clone();
-    let item = doc.execute("file.newBarsAndTone", json!({"seconds":3})).unwrap()["item"].clone();
+    let source = doc.execute("sequence.new", json!({"name":"Cameras","video":2,"audio":2})).unwrap()["sequence"].clone();
+    let item = doc.execute("item.newBarsAndTone", json!({"seconds":3})).unwrap()["item"].clone();
     doc.execute("timeline.place", json!({"item":item,"track":"V1","time":0})).unwrap();
     doc.execute("timeline.place", json!({"item":item,"track":"V2","audioTrack":"A2","time":0})).unwrap();
     doc.execute("sequence.open", json!({"item":seq})).unwrap();

@@ -121,9 +121,9 @@ fn layout_paths_compare_target_precedence_bin_defaults_visibility_and_literal_na
         let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
         let mut items = Vec::new();
         for name in ["First", "Second", "Outside"] {
-            items.push(doc.execute("file.newColorMatte", json!({"seconds":1,"name":name})).unwrap()["item"].as_u64().unwrap());
+            items.push(doc.execute("item.newColorMatte", json!({"seconds":1,"name":name})).unwrap()["item"].as_u64().unwrap());
         }
-        let bin_id = doc.execute("file.newBin", json!({"name":"Cards"})).unwrap()["bin"].as_u64().unwrap();
+        let bin_id = doc.execute("bin.add", json!({"name":"Cards"})).unwrap()["bin"].as_u64().unwrap();
         doc.execute("project.moveToBin", json!({"items":&items[..2],"bin":bin_id})).unwrap();
         doc.execute("project.freeform.stack", json!({"items":&items[..2]})).unwrap();
         let graphic = doc.execute("graphics.newText", json!({"newClip":true,"text":"Graphic","time":0,"track":0})).unwrap()["clip"].clone();

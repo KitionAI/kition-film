@@ -50,7 +50,7 @@ test('routes each id to the part of the editor that owns it', () => {
     // Upstream's `file_dialog`: File ▸ Import without paths picks them; Export Media without a path is Kition's MP4 export.
     ['file.import', 'fileDialog'],
     ['file.exportMedia', 'fileDialog'],
-    ['markers.markIn', 'session'],
+    ['marker.markIn', 'session'],
     ['sequence.addEdit', 'session'],
     ['playhead.stepBack', 'session'],
     // A UI command no part of the editor serves yet is not sent to the engine.
@@ -95,9 +95,9 @@ function harness(overrides = {}) {
 
 test('engine commands run in the session; tools set the tool', async () => {
   const { invoke, ran, routed } = harness()
-  assert.equal(await invoke('markers.markIn', {}), 'ok')
+  assert.equal(await invoke('marker.markIn', {}), 'ok')
   await invoke('tool.razor')
-  assert.deepEqual(ran, [{ id: 'markers.markIn', params: {} }])
+  assert.deepEqual(ran, [{ id: 'marker.markIn', params: {} }])
   assert.deepEqual(routed, [['tool', 'Razor']])
 })
 
@@ -172,7 +172,7 @@ test('the Pen flyout tools, which have no key of their own, can be chosen', asyn
 
 test('serves: a command no part of the editor runs yet is left to the browser', () => {
   const { invoke } = harness()
-  assert.equal(invoke.serves('markers.markIn'), true)
+  assert.equal(invoke.serves('marker.markIn'), true)
   assert.equal(invoke.serves('tool.razor'), true)
   assert.equal(invoke.serves('playback.toggle'), true)
   // mode.export (Cmd+M) has no workspace handler yet, so the system's Minimize still runs.
@@ -331,10 +331,10 @@ test('File ▸ Import with paths, or Export Media with a path, runs in the sessi
 test("a session command's refresh option reaches the session's run (a drag's values repaint only)", async () => {
   const seen = []
   const { invoke } = harness({ run: async (id, params, options) => (seen.push([id, options ?? null]), 'ok') })
-  await invoke('effects.setParam', { value: 1 }, { refresh: 'repaint' })
-  await invoke('effects.setParam', { value: 2 })
+  await invoke('effect.setParam', { value: 1 }, { refresh: 'repaint' })
+  await invoke('effect.setParam', { value: 2 })
   assert.deepEqual(seen, [
-    ['effects.setParam', { refresh: 'repaint' }],
-    ['effects.setParam', null],
+    ['effect.setParam', { refresh: 'repaint' }],
+    ['effect.setParam', null],
   ])
 })

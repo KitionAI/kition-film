@@ -12,8 +12,8 @@ const en = { t: createKitStrings(CATALOGS, 'en-US'), phrase: (english) => englis
 const say = (locale, text) => personMessage(text, locale.t, locale.phrase)
 
 test('"command `x` is not available right now: <reason>" never shows the id, and the reason is in Chinese', () => {
-  assert.equal(say(zh, 'command `edit.clear` is not available right now: nothing selected'), '现在不能这样做：没有选中任何片段')
-  assert.equal(say(en, 'command `edit.clear` is not available right now: nothing selected'), 'Not available right now: nothing selected')
+  assert.equal(say(zh, 'command `edit.delete` is not available right now: nothing selected'), '现在不能这样做：没有选中任何片段')
+  assert.equal(say(en, 'command `edit.delete` is not available right now: nothing selected'), 'Not available right now: nothing selected')
   assert.equal(say(zh, 'command `trim.extendToPlayhead` is not available right now: no edit points selected'), '现在不能这样做：没有选中编辑点')
   // A reason the catalog lacks stays as the engine gave it, still without the id.
   assert.equal(say(zh, 'command `x.y` is not available right now: something new'), '现在不能这样做：something new')

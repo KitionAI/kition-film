@@ -96,7 +96,7 @@ export function KeyframeNav({ param, mediaTime, times, tip, onToggle, invoke, ph
       ) : (
         <span className="film-kf-arrow" />
       )}
-      <button type="button" className="film-kf-add" data-on={on || undefined} title={phrase(tip)} aria-label={phrase(tip)} aria-pressed={on} data-kit-ui-id="control:effects.addKeyframe" data-testid={`${testId}-add`} onClick={onToggle}>
+      <button type="button" className="film-kf-add" data-on={on || undefined} title={phrase(tip)} aria-label={phrase(tip)} aria-pressed={on} data-kit-ui-id="control:effect.addKeyframe" data-testid={`${testId}-add`} onClick={onToggle}>
         <Diamond on={on} />
       </button>
       {animated ? (
@@ -226,7 +226,7 @@ function ParamValue({ param, target, edit, invoke, phrase, testId }: { param: Ef
     return <ColorValue value={value} label={label} onChange={(hex, final) => edit(target, hex, final)} testId={testId} />
   }
   if (param.kind === 'text' && typeof value === 'string' && !param.id.endsWith('_lut')) {
-    return <TextValue value={value} label={label} onCommit={(text) => void invoke('effects.setParam', { ...target, value: text })} testId={testId} />
+    return <TextValue value={value} label={label} onCommit={(text) => void invoke('effect.setParam', { ...target, value: text })} testId={testId} />
   }
   // Curves, colour wheels, mask paths, and LUT references are read-only here (wave 2: the Color panel and masks).
   return (
@@ -283,7 +283,7 @@ const ParamRow = memo(function ParamRow({ clip, effect, param, mediaTime, times,
             aria-label={`${phrase('Toggle animation')}: ${phrase(param.label)}`}
             data-kit-ui-id="control:effects.stopwatch"
             data-testid={`${testId}-stopwatch`}
-            onClick={() => void invoke('effects.toggleAnimation', { clip, effect: effect.index, param: param.id })}
+            onClick={() => void invoke('effect.toggleAnimation', { clip, effect: effect.index, param: param.id })}
           >
             <Timer size={13} aria-hidden="true" />
           </button>
@@ -297,7 +297,7 @@ const ParamRow = memo(function ParamRow({ clip, effect, param, mediaTime, times,
           <ParamValue param={param} target={target} edit={edit} invoke={invoke} phrase={phrase} testId={`${testId}-value`} />
         </span>
         {param.animatable && animated ? (
-          <KeyframeNav param={param} mediaTime={mediaTime} times={times} tip="Add/Remove Keyframe" onToggle={() => void invoke('effects.addKeyframe', { clip, effect: effect.index, param: param.id })} invoke={invoke} phrase={phrase} testId={`${testId}-nav`} />
+          <KeyframeNav param={param} mediaTime={mediaTime} times={times} tip="Add/Remove Keyframe" onToggle={() => void invoke('effect.addKeyframe', { clip, effect: effect.index, param: param.id })} invoke={invoke} phrase={phrase} testId={`${testId}-nav`} />
         ) : (
           <span className="film-kf-nav" />
         )}
@@ -333,7 +333,7 @@ const ParamRow = memo(function ParamRow({ clip, effect, param, mediaTime, times,
                 const to = keyframeMoveTarget(times, from, delta, frameTicks)
                 if (to === from) continue
                 setChosen(to)
-                void invoke('effects.moveKeyframe', { clip, effect: effect.index, param: param.id, mediaTime: from, to })
+                void invoke('effect.moveKeyframe', { clip, effect: effect.index, param: param.id, mediaTime: from, to })
               }
             }}
             onMenu={(id, at) => onMenu({ kind: 'keyframe', at, clip, effect: effect.index, param: param.id, time: Number(id) })}
@@ -431,12 +431,12 @@ const EffectHeader = memo(function EffectHeader({ clip, index, id, name, enabled
           title={phrase('Toggle Effect')}
           data-kit-ui-id="control:effects.enabled"
           data-testid={`film-ec-effect-${id}-enabled`}
-          onClick={() => void invoke('effects.toggleEnabled', { clip, index })}
+          onClick={() => void invoke('effect.toggleEnabled', { clip, index })}
         >
           fx
         </button>
         <span className="film-ec-effect-name">{phrase(name)}</span>
-        <button type="button" className="film-ec-reset" title={phrase('Reset Effect')} aria-label={`${phrase('Reset Effect')}: ${phrase(name)}`} data-kit-ui-id="control:effects.reset" data-testid={`film-ec-effect-${id}-reset`} onClick={() => void invoke('effects.reset', { clip, index })}>
+        <button type="button" className="film-ec-reset" title={phrase('Reset Effect')} aria-label={`${phrase('Reset Effect')}: ${phrase(name)}`} data-kit-ui-id="control:effect.reset" data-testid={`film-ec-effect-${id}-reset`} onClick={() => void invoke('effect.reset', { clip, index })}>
           <RotateCcw size={12} aria-hidden="true" />
         </button>
       </div>
@@ -641,8 +641,8 @@ export function EffectControls({ film, doc, revision, playback, invoke, seekTick
         if (!payload) return
         event.preventDefault()
         endEffectDrag()
-        if ('preset' in payload) void invoke('presets.apply', { preset: payload.preset, clips: [chosen.clip.id] })
-        else if (!isTransition(payload.kind) && fitsTrack(payload.kind, chosen.kind)) void invoke('effects.apply', { effect: payload.effect, clips: [chosen.clip.id] })
+        if ('preset' in payload) void invoke('preset.apply', { preset: payload.preset, clips: [chosen.clip.id] })
+        else if (!isTransition(payload.kind) && fitsTrack(payload.kind, chosen.kind)) void invoke('effect.apply', { effect: payload.effect, clips: [chosen.clip.id] })
       }}
     >
       <div className="film-ec-head">
@@ -709,17 +709,17 @@ export function EffectControls({ film, doc, revision, playback, invoke, seekTick
                   label={phrase(label)}
                   uiId={`control:effects.keyframeMenu.${key}`}
                   testId={`film-ec-menu-${key}`}
-                  onSelect={() => void invoke('effects.setInterpolation', { clip: menu.clip, effect: menu.effect, param: menu.param, mediaTime: menu.time, interpolation: key })}
+                  onSelect={() => void invoke('effect.setInterpolation', { clip: menu.clip, effect: menu.effect, param: menu.param, mediaTime: menu.time, interpolation: key })}
                 />
               ))}
               <MenuSeparator />
-              <MenuItem label={phrase('Clear')} uiId="control:effects.keyframeMenu.clear" testId="film-ec-menu-clear" onSelect={() => void invoke('effects.deleteKeyframe', { clip: menu.clip, effect: menu.effect, param: menu.param, mediaTime: menu.time })} />
+              <MenuItem label={phrase('Clear')} uiId="control:effects.keyframeMenu.clear" testId="film-ec-menu-clear" onSelect={() => void invoke('effect.deleteKeyframe', { clip: menu.clip, effect: menu.effect, param: menu.param, mediaTime: menu.time })} />
             </>
           ) : (
             <>
               {/* Save Preset… opens upstream's preset dialog, which comes with the Effects panel (wave 2). */}
               <MenuItem label={phrase('Save Preset…')} disabled uiId="control:effects.effect.savePreset" testId="film-ec-menu-save-preset" onSelect={() => undefined} />
-              {menu.intrinsic ? null : <MenuItem label={phrase('Clear')} uiId="control:effects.effect.clear" testId="film-ec-menu-remove" onSelect={() => void invoke('effects.remove', { clip: menu.clip, index: menu.effect })} />}
+              {menu.intrinsic ? null : <MenuItem label={phrase('Clear')} uiId="control:effects.effect.clear" testId="film-ec-menu-remove" onSelect={() => void invoke('effect.remove', { clip: menu.clip, index: menu.effect })} />}
               {menu.intrinsic ? null : (
                 <>
                   <MenuItem label={phrase('Move Effect Up')} disabled={up == null} uiId="control:effects.effect.moveUp" testId="film-ec-menu-move-up" onSelect={() => (up != null ? void moveEffect(menu.clip, menu.effect, up) : undefined)} />

@@ -87,7 +87,7 @@ async fn s2_a_colleagues_change_of_the_target_is_refused_as_changed_and_the_retr
 
 /// The colleague ripple-inserts a clip at the start of V1: the target keeps its id and moves one
 /// second later, at index 3 of V1's clips where it was at 2. C8-fix-7: the kit states that
-/// `effects.setParam` by clip id with no time needs the clip's effects and no position, so setting
+/// `effect.setParam` by clip id with no time needs the clip's effects and no position, so setting
 /// its opacity applies, `others` saying the insert (one created clip, the shift in a footprint);
 /// a write that depends on where it is stays refused (s3e). (C8-film pinned it refused as
 /// `relocated`.)
@@ -204,13 +204,13 @@ async fn s3e_a_ripple_insert_before_the_target_refuses_only_a_write_by_id_that_d
 }
 
 /// The time-addressed step of each kind below, `timeline.place` of a clip at `at.time` 2.5 s on V1
-/// (an insert or an overwrite), or a sequence marker at 2.5 s (`markers.add`).
+/// (an insert or an overwrite), or a sequence marker at 2.5 s (`marker.add`).
 fn at_time(kind: &str, item: &Value) -> Value {
     match kind {
         "insert" | "overwrite" => {
             json!({ "command": "timeline.place", "params": { "item": item, "track": "V1", "insert": kind == "insert" }, "at": { "time": 2.5 } })
         }
-        _ => json!({ "command": "markers.add", "params": { "name": "door" }, "at": { "time": 2.5 } }),
+        _ => json!({ "command": "marker.add", "params": { "name": "door" }, "at": { "time": 2.5 } }),
     }
 }
 
@@ -491,7 +491,7 @@ async fn s8c_fifty_unrelated_file_changes_refuse_no_write_by_on_under_premise_an
             seed ^= seed << 17;
             let theirs = clips[usize::try_from(seed % 23).unwrap()];
             f.colleague(&[opacity(theirs, f64::from(u32::try_from(round).unwrap()))]);
-            match f.call("run", json!({ "basis": basis, "steps": [{ "command": "effects.setParam", "on": [mine], "params": { "effect": "opacity", "param": "opacity", "value": 50.0 + f64::from(u32::try_from(round % 2).unwrap()) } }] })).await {
+            match f.call("run", json!({ "basis": basis, "steps": [{ "command": "effect.setParam", "on": [mine], "params": { "effect": "opacity", "param": "opacity", "value": 50.0 + f64::from(u32::try_from(round % 2).unwrap()) } }] })).await {
                 Ok(ran) => {
                     assert_eq!(ids(&ran["others"]["changed"]), [theirs.to_string()], "{ran}");
                     basis = revision(&ran);
@@ -565,7 +565,7 @@ enum Theirs {
     InsertBefore,
     /// The same at a random clip's start after the target (or at the end of V1).
     InsertAfter,
-    /// A random clip other than the target deleted, leaving a gap (`edit.clear`).
+    /// A random clip other than the target deleted, leaving a gap (`edit.delete`).
     Delete,
     /// A random clip other than the target trimmed: its Out point 3 frames earlier, no ripple.
     Trim,
@@ -632,7 +632,7 @@ async fn s10_fifty_rounds_of_mixed_editing() {
             Theirs::Property => opacity(clips[other], 30.0),
             Theirs::InsertBefore => insert_at(next(MINE + 1)),
             Theirs::InsertAfter => insert_at(MINE + 1 + next(N - MINE)),
-            Theirs::Delete => ("edit.clear", json!({ "clips": [clips[other]] })),
+            Theirs::Delete => ("edit.delete", json!({ "clips": [clips[other]] })),
             Theirs::Trim => ("timeline.trim", json!({ "clip": clips[other], "edge": "out", "mode": "regular", "deltaFrames": -3 })),
         };
         let seen_cut = cut_at(&f.file(), t);
@@ -693,7 +693,7 @@ async fn s11_a_change_next_to_the_place_does_not_refuse_a_write_by_place() {
         let items = sequence["video"][0]["items"].as_array().unwrap().clone();
         let step = match change {
             "insert at its end" => ("timeline.place", json!({ "item": items[0]["item"], "track": "V1", "time": items[3]["start"], "insert": true })),
-            "delete the next" => ("edit.clear", json!({ "clips": [clips[3]] })),
+            "delete the next" => ("edit.delete", json!({ "clips": [clips[3]] })),
             _ => ("timeline.trim", json!({ "clip": clips[1], "edge": "out", "mode": "regular", "deltaFrames": -3 })),
         };
         let t = items[2]["start"].as_i64().unwrap() + items[2]["duration"].as_i64().unwrap() / 2;
@@ -712,7 +712,7 @@ async fn s11_a_change_next_to_the_place_does_not_refuse_a_write_by_place() {
 fn caption_text(file: &std::path::Path, id: u64) -> String {
     use kition_kit::KitDocument;
     let mut doc = kition_film_kit::FilmDocument::open(FILE, &std::fs::read(file).unwrap()).unwrap();
-    let listed = doc.execute("captions.list", json!({})).unwrap();
+    let listed = doc.execute("caption.list", json!({})).unwrap();
     let text = listed.to_string();
     listed["tracks"]
         .as_array()
@@ -734,14 +734,14 @@ fn caption_text(file: &std::path::Path, id: u64) -> String {
 async fn s12_a_write_to_a_caption_a_colleague_changed_is_refused() {
     for named in ["caption", "on"] {
         let f = Fixture::new(CLIPS);
-        let made = f.colleague(&[("captions.add", json!({ "text": "first", "seconds": 1 })), ("captions.add", json!({ "text": "second", "seconds": 6 }))]);
+        let made = f.colleague(&[("caption.add", json!({ "text": "first", "seconds": 1 })), ("caption.add", json!({ "text": "second", "seconds": 6 }))]);
         let caption = made[0]["caption"].as_u64().unwrap_or_else(|| panic!("{made:?}"));
         let other = made[1]["caption"].as_u64().unwrap_or_else(|| panic!("{made:?}"));
         let (_, basis) = f.inspect().await;
-        f.colleague(&[("captions.setText", json!({ "caption": caption, "text": "theirs" }))]);
+        f.colleague(&[("caption.setText", json!({ "caption": caption, "text": "theirs" }))]);
         let step = |id: u64, text: &str| match named {
-            "on" => json!({ "command": "captions.setText", "on": [id], "params": { "text": text } }),
-            _ => json!({ "command": "captions.setText", "params": { "caption": id, "text": text } }),
+            "on" => json!({ "command": "caption.setText", "on": [id], "params": { "text": text } }),
+            _ => json!({ "command": "caption.setText", "params": { "caption": id, "text": text } }),
         };
         let refused = f.refused("run", json!({ "basis": basis, "steps": [step(caption, "mine")] })).await;
         assert_eq!(refused["error"]["code"], "conflict", "{named}: {refused}");

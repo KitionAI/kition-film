@@ -44,16 +44,16 @@ pub const PREVIEW_COMMANDS: &[&str] = &[
     "clip.editSubclip",
     "clip.makeSubclip",
     "clip.mergeClips",
-    "clip.modifyTimecode",
+    "clip.setTimecode",
     "clip.nest",
     "clip.synchronize",
-    "file.newOfflineFile",
+    "item.newOfflineFile",
     // Task 13: Sequence Settings, New Sequence, and colour management
-    "file.newSequence",
+    "sequence.new",
     "sequence.colorSettings",
     "sequence.settings",
     // Task 14: tracks, sequence tools, and new items (Color Matte and its colour picker)
-    "file.newColorMatte",
+    "item.newColorMatte",
     "project.matteColor",
     "sequence.addTracks",
     "sequence.deleteTracks",
@@ -62,12 +62,12 @@ pub const PREVIEW_COMMANDS: &[&str] = &[
     // Task 15: Find, search bins, and Automate to Sequence
     "clip.automateToSequence",
     "edit.find",
-    "file.newSearchBin",
+    "bin.addSearch",
     // Task 16: Scene Edit Detection, markers, and Project Settings
     "clip.sceneEditDetection",
     "file.projectSettings.general",
-    "markers.addFlashCue",
-    "markers.edit",
+    "marker.addFlashCue",
+    "marker.edit",
     "project.ingestSettings",
     // Task 17: media dialogs. Link Media's OK relinks after Locate…, leaves the files offline, or
     // leaves every file offline; `media.linkMedia` only opens it (it changes nothing).
@@ -88,7 +88,7 @@ pub const PREVIEW_COMMANDS: &[&str] = &[
     "graphics.set",
     "graphics.setTextType",
     // Task 26: Save Preset…
-    "presets.save",
+    "preset.save",
 ];
 
 /// The commands that write outside the project, so they never run on the scratch copy: their
@@ -101,9 +101,9 @@ pub const PREVIEW_EXTERNAL: &[&str] = &[
     // XMP next to the media
     "clip.updateMetadata",
     // proxy files
-    "media.createProxies",
+    "media.addProxies",
     // exports
-    "captions.export",
+    "caption.export",
     "file.exportAaf",
     "file.exportAle",
     "file.exportEdl",
@@ -143,9 +143,9 @@ pub const PREVIEW_EXTERNAL: &[&str] = &[
     "graphics.template.thumbnail",
     "color.presetThumbnails",
     "lut.export",
-    "presets.export",
-    "shortcuts.export",
-    "shortcuts.savePreset",
+    "preset.export",
+    "shortcut.export",
+    "shortcut.savePreset",
 ];
 
 /// What the scratch copy reads and writes through: the document's own files and lent media, and
@@ -511,7 +511,7 @@ mod tests {
             history: doc.session.execute("history.list", json!({})).unwrap(),
             inspect: doc.inspect().unwrap(),
             journal,
-            jobs: doc.session.execute("jobs.list", json!({})).unwrap(),
+            jobs: doc.session.execute("job.list", json!({})).unwrap(),
             items,
             status,
             properties,
@@ -566,14 +566,14 @@ mod tests {
         doc.execute("media.makeOffline", json!({ "items": [lost] })).unwrap();
         let half = kition_film_engine::time::TICKS_PER_SECOND / 2;
         let subclip = doc.execute("clip.makeSubclip", json!({ "item": tone, "start": 0, "end": half })).unwrap()["item"].as_u64().unwrap();
-        let matte = doc.execute("file.newColorMatte", json!({ "color": "#ff0000", "seconds": 4.0 })).unwrap()["item"].as_u64().unwrap();
+        let matte = doc.execute("item.newColorMatte", json!({ "color": "#ff0000", "seconds": 4.0 })).unwrap()["item"].as_u64().unwrap();
         doc.execute("timeline.place", json!({ "item": matte, "track": "V1", "seconds": 0.0 })).unwrap();
-        let blue = doc.execute("file.newColorMatte", json!({ "color": "#0000ff", "seconds": 2.0 })).unwrap()["item"].as_u64().unwrap();
+        let blue = doc.execute("item.newColorMatte", json!({ "color": "#0000ff", "seconds": 2.0 })).unwrap()["item"].as_u64().unwrap();
         doc.execute("timeline.place", json!({ "item": blue, "track": "V1", "seconds": 4.0 })).unwrap();
         doc.execute("timeline.select", json!({ "clips": [] })).unwrap();
         doc.execute("graphics.newText", json!({ "text": "Title", "newClip": true })).unwrap();
-        doc.execute("markers.add", json!({ "name": "Marker" })).unwrap();
-        doc.execute("file.newBin", json!({ "name": "Bin" })).unwrap();
+        doc.execute("marker.add", json!({ "name": "Marker" })).unwrap();
+        doc.execute("bin.add", json!({ "name": "Bin" })).unwrap();
         doc.execute("project.viewPreset.saveAs", json!({ "name": "View 1", "slot": 1 })).unwrap();
         let (red, blue) = (clip_at(&doc, 0, 0), clip_at(&doc, 0, 1));
         let title = clip_at(&doc, 1, 0);
@@ -602,21 +602,21 @@ mod tests {
             "clip.editSubclip" => json!({ "item": ids.subclip, "start": 0, "end": half / 2, "convertToMaster": true }),
             "clip.interpretFootage" => json!({ "colorSpace": "auto" }),
             "clip.mergeClips" => json!({ "items": [ids.matte, ids.tone], "method": "in" }),
-            "clip.modifyTimecode" => json!({ "timecode": "01:00:00:00" }),
+            "clip.setTimecode" => json!({ "timecode": "01:00:00:00" }),
             "clip.nest" => json!({ "name": "Nested Sequence 01" }),
             "clip.speedDuration" => json!({ "speed": 50.0 }),
             "clip.synchronize" => json!({ "method": "in", "clips": [ids.red, ids.blue] }),
             "edit.find" => json!({ "text": "Color" }),
-            "file.newColorMatte" => json!({ "color": "#00ff00", "seconds": 5.0 }),
-            "file.newSearchBin" => json!({ "column": "Name", "operator": "contains", "text": "tone" }),
-            "file.newSequence" => json!({ "name": "Sequence 02" }),
+            "item.newColorMatte" => json!({ "color": "#00ff00", "seconds": 5.0 }),
+            "bin.addSearch" => json!({ "column": "Name", "operator": "contains", "text": "tone" }),
+            "sequence.new" => json!({ "name": "Sequence 02" }),
             "file.replaceFonts" => json!({ "from": "Inter", "to": "Helvetica" }),
             "graphics.set" => json!({ "clip": ids.title, "layer": 0, "props": { "opacity": 50 } }),
             "graphics.setTextType" => json!({ "clip": ids.title, "layer": 0, "type": "paragraph" }),
-            "markers.edit" => json!({ "marker": ids.marker, "name": "Edited" }),
+            "marker.edit" => json!({ "marker": ids.marker, "name": "Edited" }),
             "media.makeOffline" => json!({ "items": [ids.tone], "deleteFiles": true }),
             "media.relink" => json!({ "item": ids.lost, "path": "tone.wav", "force": true }),
-            "presets.save" => json!({ "clip": ids.red, "effects": [0], "name": "Preview Preset" }),
+            "preset.save" => json!({ "clip": ids.red, "effects": [0], "name": "Preview Preset" }),
             "project.columns.set" => json!({ "columns": ["Name", "Media Duration"] }),
             "project.freeform.options" => json!({ "grid": 20, "snap": true }),
             "project.freeform.saveArrangement" => json!({ "name": "Arrangement" }),
@@ -651,10 +651,10 @@ mod tests {
     fn a_preview_frame_shows_the_change_and_ends_with_the_preview() {
         let mut doc = FilmDocument::open("Edit.kfilm", &fixture()).unwrap();
         let red = clip_at(&doc, 0, 0);
-        let matte = doc.execute("file.newColorMatte", json!({ "color": "#0000ff", "seconds": 2.0 })).unwrap();
+        let matte = doc.execute("item.newColorMatte", json!({ "color": "#0000ff", "seconds": 2.0 })).unwrap();
         doc.execute("timeline.place", json!({ "item": matte["item"], "track": "V1", "seconds": 4.0 })).unwrap();
         let faded = clip_at(&doc, 0, 1);
-        doc.execute("effects.setParam", json!({ "clip": faded, "effect": "opacity", "param": "opacity", "value": 25.0 })).unwrap();
+        doc.execute("effect.setParam", json!({ "clip": faded, "effect": "opacity", "param": "opacity", "value": 25.0 })).unwrap();
         doc.execute("timeline.select", json!({ "clips": [faded] })).unwrap();
         doc.execute("edit.copy", json!({})).unwrap();
         let own = program_frame(&doc.session, 1.0, 1.0, 64).unwrap();
@@ -827,7 +827,7 @@ mod tests {
                 ("media.offlineAll", json!({})),
                 ("media.relink", json!({ "item": ids.lost, "path": "tone.wav", "force": true })),
                 ("clip.editSubclip", json!({ "item": ids.subclip, "start": 0, "end": 1000, "convertToMaster": true })),
-                ("file.newColorMatte", json!({ "color": "#00ff00", "seconds": 1.0 })),
+                ("item.newColorMatte", json!({ "color": "#00ff00", "seconds": 1.0 })),
                 ("clip.mergeClips", json!({ "items": [ids.matte, ids.tone], "method": "in" })),
             ];
             for (command, params) in steps {
@@ -945,11 +945,11 @@ mod tests {
     fn a_job_runs_on_the_copys_own_list_and_ends_with_it() {
         with_host("jobs", |_| {
             let (mut doc, ids) = rich();
-            let jobs = doc.session.execute("jobs.list", json!({})).unwrap();
+            let jobs = doc.session.execute("job.list", json!({})).unwrap();
             let started = doc.preview_begin("clip.sceneEditDetection", json!({ "clips": [ids.red], "createSubclips": true })).unwrap();
             assert!(started["job"].is_u64(), "{started}");
             let progress = doc.with_preview(|scratch| Ok(scratch.jobs.first().map(|job| job.progress.clone()))).unwrap().expect("the copy's job");
-            assert_eq!(doc.session.execute("jobs.list", json!({})).unwrap(), jobs, "the document's jobs never show it");
+            assert_eq!(doc.session.execute("job.list", json!({})).unwrap(), jobs, "the document's jobs never show it");
             let mut report = json!({});
             for _ in 0..200 {
                 report = doc.preview_settle(20).unwrap();
@@ -959,7 +959,7 @@ mod tests {
             }
             assert_eq!(report["pending"], false, "{report}");
             assert_eq!(report["progress"], 1.0, "{report}");
-            assert_eq!(doc.session.execute("jobs.list", json!({})).unwrap(), jobs);
+            assert_eq!(doc.session.execute("job.list", json!({})).unwrap(), jobs);
             doc.preview_end();
             assert!(progress.cancel.load(std::sync::atomic::Ordering::Relaxed), "the end cancels the copy's jobs");
 
@@ -968,7 +968,7 @@ mod tests {
             let progress = doc.with_preview(|scratch| Ok(scratch.jobs.first().map(|job| job.progress.clone()))).unwrap().expect("the copy's job");
             doc.preview_end();
             assert!(progress.cancel.load(std::sync::atomic::Ordering::Relaxed));
-            assert_eq!(doc.session.execute("jobs.list", json!({})).unwrap(), jobs);
+            assert_eq!(doc.session.execute("job.list", json!({})).unwrap(), jobs);
         });
     }
 
@@ -981,7 +981,7 @@ mod tests {
         with_host("scene", |dir| {
             let mut doc = FilmDocument::create("Edit.kfilm", 640, 360).unwrap();
             // A Universal Counting Leader cuts every second at full sensitivity.
-            let leader = doc.execute("file.newCountingLeader", json!({})).unwrap()["item"].as_u64().unwrap();
+            let leader = doc.execute("item.newCountingLeader", json!({})).unwrap()["item"].as_u64().unwrap();
             doc.execute("timeline.place", json!({ "item": leader, "track": "V1", "seconds": 0.0 })).unwrap();
             let clip = clip_at(&doc, 0, 0);
             let params = json!({ "clips": [clip], "applyCuts": false, "generateMarkers": true, "sensitivity": 100.0 });
@@ -1029,7 +1029,7 @@ mod tests {
         let mut b = FilmDocument::open_with_replica("Edit.kfilm", &bytes, &snapshot, &[]).unwrap();
         let epoch = |doc: &FilmDocument| doc.inspect().unwrap()["project"]["epoch"].as_u64().unwrap();
         let start = epoch(&a);
-        b.execute("file.newBin", json!({ "name": "Peer" })).unwrap();
+        b.execute("bin.add", json!({ "name": "Peer" })).unwrap();
         let since = a.version().unwrap();
         a.import_changes(&b.export_changes(&since).unwrap()).unwrap();
         assert!(a.inspect().unwrap().to_string().contains("Peer"), "the peer's bin arrived");
@@ -1172,7 +1172,7 @@ mod tests {
             assert!(!quiet(&diff, "selection") || !quiet(&diff, "projectSelection"), "Find selects: {diff}");
 
             // a marker edit: the marker's name
-            doc.preview_begin("markers.edit", json!({ "marker": ids.marker, "name": "Edited" })).unwrap();
+            doc.preview_begin("marker.edit", json!({ "marker": ids.marker, "name": "Edited" })).unwrap();
             let diff = doc.preview_diff().unwrap();
             assert_eq!(changed(&diff, "markers", ids.marker), vec!["name".to_owned()], "{diff}");
             let marker = entry(&diff, "markers", "changed", ids.marker, None).unwrap();
@@ -1203,7 +1203,7 @@ mod tests {
     fn preview_diff_covers_bins_captions_markers_on_items_and_the_project() {
         with_host("diff-more", |_| {
             let (mut doc, ids) = rich();
-            let bin = doc.execute("file.newBin", json!({ "name": "Moved" })).unwrap()["bin"].as_u64().unwrap();
+            let bin = doc.execute("bin.add", json!({ "name": "Moved" })).unwrap()["bin"].as_u64().unwrap();
 
             // an item moved between bins: the item's bin, and both bins' items
             let diff = diff_after(&doc, |copy| drop(copy.execute("project.moveToBin", json!({ "items": [ids.matte], "bin": bin })).unwrap()));
@@ -1213,12 +1213,12 @@ mod tests {
 
             // a search bin is listed with the bins
             let made =
-                diff_after(&doc, |copy| drop(copy.execute("file.newSearchBin", json!({ "column": "Name", "operator": "contains", "text": "tone" })).unwrap()));
+                diff_after(&doc, |copy| drop(copy.execute("bin.addSearch", json!({ "column": "Name", "operator": "contains", "text": "tone" })).unwrap()));
             assert_eq!(listed(&made, "bins", "added").len(), 1, "{made}");
 
             // a caption: its caption track and the caption, by sequence
             let active = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-            let diff = diff_after(&doc, |copy| drop(copy.execute("captions.add", json!({ "text": "Hello", "seconds": 0.5 })).unwrap()));
+            let diff = diff_after(&doc, |copy| drop(copy.execute("caption.add", json!({ "text": "Hello", "seconds": 0.5 })).unwrap()));
             let caption = &diff["captions"]["added"][0];
             assert_eq!(caption["sequence"], active, "{diff}");
             assert!(entry(&diff, "tracks", "added", caption["track"].as_u64().unwrap(), Some(active)).is_some(), "{diff}");
@@ -1317,7 +1317,7 @@ mod tests {
         with_host("query", |dir| {
             let (mut doc, ids) = rich();
             let before = untouched(&mut doc, Some(dir));
-            let made = doc.preview_begin("file.newColorMatte", json!({ "color": "#00ff00", "seconds": 1.0 })).unwrap();
+            let made = doc.preview_begin("item.newColorMatte", json!({ "color": "#00ff00", "seconds": 1.0 })).unwrap();
             let matte = made["item"].as_u64().unwrap();
             let rows = |value: &Value| value["rows"].as_array().unwrap().iter().filter_map(|row| row["item"].as_u64()).collect::<Vec<_>>();
             assert!(rows(&doc.preview_query("project.items", json!({ "recursive": true })).unwrap()).contains(&matte));
@@ -1326,18 +1326,18 @@ mod tests {
                 ("project.view.get", json!({})),
                 ("project.freeform.layout", json!({})),
                 ("mixer.inspect", json!({})),
-                ("presets.list", json!({})),
+                ("preset.list", json!({})),
                 ("history.list", json!({})),
             ] {
                 doc.preview_query(command, params).unwrap_or_else(|error| panic!("{command}: {error}"));
             }
-            let bin = doc.preview_begin("file.newSearchBin", json!({ "column": "Name", "operator": "contains", "text": "tone" })).unwrap();
+            let bin = doc.preview_begin("bin.addSearch", json!({ "column": "Name", "operator": "contains", "text": "tone" })).unwrap();
             let bin = bin["bin"].as_u64().or_else(|| bin["id"].as_u64()).unwrap_or_else(|| panic!("no bin in {bin}"));
             let found = doc.preview_query("project.searchBinItems", json!({ "bin": bin })).unwrap();
             assert!(found.to_string().contains(&ids.tone.to_string()), "{found}");
-            doc.preview_begin("presets.save", json!({ "clip": ids.red, "effects": [0], "name": "Preview Preset" })).unwrap();
-            assert!(doc.preview_query("presets.list", json!({})).unwrap().to_string().contains("Preview Preset"));
-            assert!(!doc.session.execute("presets.list", json!({})).unwrap().to_string().contains("Preview Preset"));
+            doc.preview_begin("preset.save", json!({ "clip": ids.red, "effects": [0], "name": "Preview Preset" })).unwrap();
+            assert!(doc.preview_query("preset.list", json!({})).unwrap().to_string().contains("Preview Preset"));
+            assert!(!doc.session.execute("preset.list", json!({})).unwrap().to_string().contains("Preview Preset"));
 
             let journaled = doc.preview_query("sequence.addTracks", json!({})).unwrap_err();
             assert!(journaled.contains("read-only"), "{journaled}");
@@ -1365,7 +1365,7 @@ mod tests {
     fn preview_item_frame_draws_an_item_only_the_copy_has() {
         with_host("item", |_| {
             let (doc, ids) = rich();
-            let made = doc.preview_begin("file.newColorMatte", json!({ "color": "#00ff00", "seconds": 1.0 })).unwrap();
+            let made = doc.preview_begin("item.newColorMatte", json!({ "color": "#00ff00", "seconds": 1.0 })).unwrap();
             let matte = made["item"].as_u64().unwrap();
             assert!(doc.item_frame(matte, 0.0, 32).is_err(), "the document has no such item");
             let frame = doc.preview_item_frame(matte, 0.0, 32).unwrap();
@@ -1423,7 +1423,7 @@ mod tests {
         let mut doc = FilmDocument::create("Edit.kfilm", 1920, 1080).unwrap();
         for index in 0..clips {
             let matte =
-                doc.execute("file.newColorMatte", json!({ "color": format!("#{:02x}40{:02x}", index % 256, 255 - index % 256), "seconds": 2.0 })).unwrap();
+                doc.execute("item.newColorMatte", json!({ "color": format!("#{:02x}40{:02x}", index % 256, 255 - index % 256), "seconds": 2.0 })).unwrap();
             doc.execute("timeline.place", json!({ "item": matte["item"], "track": format!("V{}", 1 + index % 3), "seconds": index as f64 * 2.0 })).unwrap();
         }
         let clip = clip_at(&doc, 0, 0);
@@ -1470,7 +1470,7 @@ mod tests {
         let undo = doc.session.history.undo.len();
         timed("previewBegin sequence.addTracks", &mut || drop(doc.preview_begin("sequence.addTracks", json!({})).unwrap()));
         timed("previewDiff after Add Tracks", &mut || drop(doc.preview_diff().unwrap()));
-        timed("previewBegin markers.addFlashCue", &mut || drop(doc.preview_begin("markers.addFlashCue", json!({ "name": "Cue" })).unwrap()));
+        timed("previewBegin marker.addFlashCue", &mut || drop(doc.preview_begin("marker.addFlashCue", json!({ "name": "Cue" })).unwrap()));
         timed("previewDiff after a marker", &mut || drop(doc.preview_diff().unwrap()));
         timed("previewBegin edit.find (selection only)", &mut || drop(doc.preview_begin("edit.find", json!({ "text": "Color" })).unwrap()));
         timed("previewDiff after Find (the project shared)", &mut || drop(doc.preview_diff().unwrap()));

@@ -13,7 +13,7 @@ async fn nested_source_bounds_hold_duration_without_holding_source_clip_names() 
         let mut doc = FilmDocument::open(FILE, &project(4)).unwrap();
         let destination = doc.inspect().unwrap()["sequence"]["id"].clone();
         let media = doc.inspect().unwrap()["sequence"]["video"][0]["items"][0]["item"].clone();
-        let source = doc.execute("file.newSequence", json!({"name":"Nested source","video":1,"audio":0})).unwrap()["sequence"].as_u64().unwrap();
+        let source = doc.execute("sequence.new", json!({"name":"Nested source","video":1,"audio":0})).unwrap()["sequence"].as_u64().unwrap();
         doc.execute("timeline.place", json!({"item":media,"track":"V1","time":0})).unwrap();
         let source_duration = doc.inspect().unwrap()["sequence"]["duration"].as_i64().unwrap();
         doc.execute("sequence.open", json!({"item":destination})).unwrap();
@@ -52,7 +52,7 @@ async fn nested_placement_holds_implicit_length_and_copied_name_but_not_metadata
             let mut doc = FilmDocument::open(FILE, &project(4)).unwrap();
             let destination = doc.inspect().unwrap()["sequence"]["id"].clone();
             let media = doc.inspect().unwrap()["sequence"]["video"][0]["items"][0]["item"].clone();
-            let source = doc.execute("file.newSequence", json!({"name":"Nested source","video":1,"audio":0})).unwrap()["sequence"].as_u64().unwrap();
+            let source = doc.execute("sequence.new", json!({"name":"Nested source","video":1,"audio":0})).unwrap()["sequence"].as_u64().unwrap();
             doc.execute("timeline.place", json!({"item":media,"track":"V1","time":0})).unwrap();
             let source_duration = doc.inspect().unwrap()["sequence"]["duration"].clone();
             doc.execute("sequence.open", json!({"item":destination})).unwrap();

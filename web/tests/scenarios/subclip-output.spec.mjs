@@ -5,8 +5,8 @@ import { test, expect, clips, editState, TICKS } from './fixtures.mjs'
 test('F59 a nonzero subclip range retains linked picture and tone through history, reopen, and actual export', async ({ film, page }, testInfo) => {
   await film.open()
   await film.command('file.newProject', { name: 'Subclip picture and sound' })
-  await film.command('file.newSequence', { name: 'Subclip', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
-  const { item: parent } = await film.command('file.newBarsAndTone', { seconds: 2 })
+  await film.command('sequence.new', { name: 'Subclip', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
+  const { item: parent } = await film.command('item.newBarsAndTone', { seconds: 2 })
   const { item } = await film.command('clip.makeSubclip', { item: parent, startFrame: 12, endFrame: 24 })
   const before = editState(await film.sequence())
   await film.command('timeline.place', { item, seconds: 0 })

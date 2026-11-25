@@ -23,8 +23,8 @@ fn sequence(doc: &FilmDocument) -> Value {
 
 fn project() -> FilmDocument {
     let mut doc = FilmDocument::create("Edit.kfilm", W, H).unwrap();
-    run(&mut doc, "file.newSequence", json!({ "name": "Cut", "width": W, "height": H, "fps": 24, "video": 2, "audio": 2 }));
-    let bars = run(&mut doc, "file.newBarsAndTone", json!({ "seconds": 4 }))["item"].clone();
+    run(&mut doc, "sequence.new", json!({ "name": "Cut", "width": W, "height": H, "fps": 24, "video": 2, "audio": 2 }));
+    let bars = run(&mut doc, "item.newBarsAndTone", json!({ "seconds": 4 }))["item"].clone();
     run(&mut doc, "timeline.place", json!({ "item": bars, "track": "V1", "seconds": 0 }));
     doc
 }
@@ -118,7 +118,7 @@ fn assert_round_trip(doc: &mut FilmDocument) {
 #[test]
 fn tracks_and_clips_survive_save_and_reopen() {
     let mut doc = project();
-    let matte = run(&mut doc, "file.newColorMatte", json!({ "color": "#cc3300", "seconds": 2 }))["item"].clone();
+    let matte = run(&mut doc, "item.newColorMatte", json!({ "color": "#cc3300", "seconds": 2 }))["item"].clone();
     run(&mut doc, "timeline.place", json!({ "item": matte, "track": "V2", "seconds": 1 }));
     run(&mut doc, "timeline.setTrack", json!({ "track": "V2", "name": "Overlay", "locked": false }));
     run(&mut doc, "timeline.setTrack", json!({ "track": "A2", "muted": true, "name": "Spare" }));
@@ -141,10 +141,10 @@ fn tracks_and_clips_survive_save_and_reopen() {
 #[test]
 fn markers_and_in_out_survive_save_and_reopen() {
     let mut doc = project();
-    run(&mut doc, "markers.add", json!({ "time": SECOND, "name": "Beat", "comment": "drop 中文", "color": "Forest", "durationFrames": 12 }));
-    run(&mut doc, "markers.add", json!({ "time": 3 * SECOND, "name": "End" }));
-    run(&mut doc, "markers.markIn", json!({ "time": 12 * FRAME }));
-    run(&mut doc, "markers.markOut", json!({ "time": 3 * SECOND }));
+    run(&mut doc, "marker.add", json!({ "time": SECOND, "name": "Beat", "comment": "drop 中文", "color": "Forest", "durationFrames": 12 }));
+    run(&mut doc, "marker.add", json!({ "time": 3 * SECOND, "name": "End" }));
+    run(&mut doc, "marker.markIn", json!({ "time": 12 * FRAME }));
+    run(&mut doc, "marker.markOut", json!({ "time": 3 * SECOND }));
     let cut = sequence(&doc);
     assert_eq!(cut["markers"].as_array().unwrap().len(), 2, "{cut}");
     assert!(!cut["in"].is_null() && !cut["out"].is_null(), "{cut}");
@@ -184,11 +184,11 @@ fn titles_survive_save_and_reopen() {
 fn effects_keyframes_and_masks_survive_save_and_reopen() {
     let mut doc = project();
     let clip = clips(&doc, "video", 0)[0]["clip"].clone();
-    run(&mut doc, "effects.apply", json!({ "clips": [clip], "effect": "gaussian_blur" }));
-    run(&mut doc, "effects.setParam", json!({ "clip": clip, "effect": "motion", "param": "scale", "value": 120.0 }));
-    run(&mut doc, "effects.addKeyframe", json!({ "clip": clip, "effect": "opacity", "param": "opacity", "time": 0 }));
-    run(&mut doc, "effects.setParam", json!({ "clip": clip, "effect": "opacity", "param": "opacity", "time": 2 * SECOND, "value": 40.0 }));
-    run(&mut doc, "masks.add", json!({ "clip": clip, "shape": "ellipse", "center": [32, 18], "size": [30, 20] }));
+    run(&mut doc, "effect.apply", json!({ "clips": [clip], "effect": "gaussian_blur" }));
+    run(&mut doc, "effect.setParam", json!({ "clip": clip, "effect": "motion", "param": "scale", "value": 120.0 }));
+    run(&mut doc, "effect.addKeyframe", json!({ "clip": clip, "effect": "opacity", "param": "opacity", "time": 0 }));
+    run(&mut doc, "effect.setParam", json!({ "clip": clip, "effect": "opacity", "param": "opacity", "time": 2 * SECOND, "value": 40.0 }));
+    run(&mut doc, "mask.add", json!({ "clip": clip, "shape": "ellipse", "center": [32, 18], "size": [30, 20] }));
     let effects = &clips(&doc, "video", 0)[0]["effects"];
     assert!(effects.to_string().contains("gaussian_blur"), "{effects}");
     assert_round_trip(&mut doc);

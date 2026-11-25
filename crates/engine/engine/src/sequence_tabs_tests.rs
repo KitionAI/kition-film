@@ -11,7 +11,7 @@ fn three_tabs() -> (Session, [ItemId; 3]) {
     let mut s = Session::default();
     s.execute("file.openDemoProject", json!({})).unwrap();
     let main = s.state.active_sequence.unwrap();
-    let mut new = |name: &str| ItemId(s.execute("file.newSequence", json!({"name": name})).unwrap()["sequence"].as_u64().unwrap());
+    let mut new = |name: &str| ItemId(s.execute("sequence.new", json!({"name": name})).unwrap()["sequence"].as_u64().unwrap());
     let (b, c) = (new("B"), new("C"));
     assert_eq!(s.state.open_sequences, [main, b, c]);
     assert_eq!(s.state.active_sequence, Some(c));
@@ -147,7 +147,7 @@ fn the_view_of_a_deleted_sequence_is_forgotten() {
 fn n31_history_restores_a_sequence_to_an_empty_timeline_without_reopening_closed_tabs() {
     let mut s = Session::default();
     s.execute("file.newProject", json!({"name": "History tabs"})).unwrap();
-    let id = ItemId(s.execute("file.newSequence", json!({"name": "First"})).unwrap()["sequence"].as_u64().unwrap());
+    let id = ItemId(s.execute("sequence.new", json!({"name": "First"})).unwrap()["sequence"].as_u64().unwrap());
     s.execute("edit.undo", json!({})).unwrap();
     assert!(s.state.active_sequence.is_none());
     s.execute("edit.redo", json!({})).unwrap();

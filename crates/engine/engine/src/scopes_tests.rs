@@ -1,4 +1,4 @@
-//! `scopes.read` on generated sequences with known colours (a colour matte, colour bars).
+//! `scope.read` on generated sequences with known colours (a colour matte, colour bars).
 
 use serde_json::json;
 
@@ -6,8 +6,8 @@ use crate::Session;
 
 fn matte_sequence(hex: &str) -> Session {
     let mut s = Session::default();
-    let id = s.execute("file.newColorMatte", json!({"color": hex, "seconds": 2})).unwrap()["item"].as_u64().unwrap();
-    s.execute("file.newSequenceFromClip", json!({"items": [id]})).unwrap();
+    let id = s.execute("item.newColorMatte", json!({"color": hex, "seconds": 2})).unwrap()["item"].as_u64().unwrap();
+    s.execute("sequence.newFromClip", json!({"items": [id]})).unwrap();
     assert!(s.active_sequence().is_some());
     s
 }
@@ -15,7 +15,7 @@ fn matte_sequence(hex: &str) -> Session {
 #[test]
 fn scopes_read_reports_exact_levels_of_a_colour_matte() {
     let mut s = matte_sequence("#c86432");
-    let r = s.execute("scopes.read", json!({"columns": 4})).unwrap();
+    let r = s.execute("scope.read", json!({"columns": 4})).unwrap();
     assert_eq!(r["colorSpace"], "Rec. 709");
     let h = &r["histogram"];
     assert_eq!(h["peakBin"], json!({"r": 200, "g": 100, "b": 50, "y": h["peakBin"]["y"].clone()}));
@@ -34,25 +34,25 @@ fn scopes_read_reports_exact_levels_of_a_colour_matte() {
     assert_eq!(pk["share"], json!(1.0));
     assert!((pk["cb"].as_f64().unwrap() - cb as f64 * 100.0).abs() < 0.3 && (pk["cr"].as_f64().unwrap() - cr as f64 * 100.0).abs() < 0.3, "{pk}");
     // Rec. 601 moves luma; the matrix is reported
-    let r601 = s.execute("scopes.read", json!({"colorSpace": "601", "scopes": ["histogram"]})).unwrap();
+    let r601 = s.execute("scope.read", json!({"colorSpace": "601", "scopes": ["histogram"]})).unwrap();
     assert_eq!(r601["matrix"], "Bt601");
     assert_ne!(r601["histogram"]["peakBin"]["y"], h["peakBin"]["y"]);
     assert!(r601.get("waveform").is_none());
     // options and errors
-    let r = s.execute("scopes.read", json!({"scopes": ["waveform"], "waveformType": "yc", "bins": false})).unwrap();
+    let r = s.execute("scope.read", json!({"scopes": ["waveform"], "waveformType": "yc", "bins": false})).unwrap();
     assert_eq!(r["waveform"]["type"], "yc");
     assert!(r["waveform"]["traces"]["C"].is_array());
-    assert!(s.execute("scopes.read", json!({"scopes": ["oscilloscope"]})).is_err());
-    assert!(s.execute("scopes.read", json!({"colorSpace": "P3"})).is_err());
-    assert!(Session::default().execute("scopes.read", json!({})).is_err());
+    assert!(s.execute("scope.read", json!({"scopes": ["oscilloscope"]})).is_err());
+    assert!(s.execute("scope.read", json!({"colorSpace": "P3"})).is_err());
+    assert!(Session::default().execute("scope.read", json!({})).is_err());
 }
 
 #[test]
 fn scopes_read_finds_the_colour_bar_targets() {
     let mut s = Session::default();
-    let id = s.execute("file.newBarsAndTone", json!({"seconds": 2})).unwrap()["item"].as_u64().unwrap();
-    s.execute("file.newSequenceFromClip", json!({"items": [id]})).unwrap();
-    let r = s.execute("scopes.read", json!({"scopes": ["vectorscopeYuv"], "scale": 0.25})).unwrap();
+    let id = s.execute("item.newBarsAndTone", json!({"seconds": 2})).unwrap()["item"].as_u64().unwrap();
+    s.execute("sequence.newFromClip", json!({"items": [id]})).unwrap();
+    let r = s.execute("scope.read", json!({"scopes": ["vectorscopeYuv"], "scale": 0.25})).unwrap();
     let peaks = r["vectorscopeYuv"]["peaks"].as_array().unwrap();
     let cells: Vec<(u64, u64)> = peaks.iter().take(7).map(|p| (p["x"].as_u64().unwrap(), p["y"].as_u64().unwrap())).collect();
     let p = kition_film_scopes::Params::default();

@@ -392,9 +392,9 @@ test("Make Offline is its own confirmation: upstream's question for the Project 
 // ---- Create Proxies, Attach Proxies, Reconnect Full Resolution Media
 
 test('Create Proxies is hidden with its reason (its job writes files into a local folder): no dialog is registered for it, and its fields and item menu row are hidden', () => {
-  assert.match(hiddenReason('media.createProxies') ?? '', /local folder/)
-  assert.equal(DIALOGS.has('media.createProxies'), false)
-  for (const id of ['proxies.preset.{}', 'proxies.ok', 'proxies.cancel', 'project.itemMenu.createProxies']) assert.equal(hiddenFieldReason(id), hiddenReason('media.createProxies'), id)
+  assert.match(hiddenReason('media.addProxies') ?? '', /local folder/)
+  assert.equal(DIALOGS.has('media.addProxies'), false)
+  for (const id of ['proxies.preset.{}', 'proxies.ok', 'proxies.cancel', 'project.itemMenu.createProxies']) assert.equal(hiddenFieldReason(id), hiddenReason('media.addProxies'), id)
   // Task 1's reasons for its destination stay.
   assert.match(hiddenFieldReason('proxies.destination') ?? '', /local folder for proxies/)
 })

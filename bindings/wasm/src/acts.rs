@@ -30,10 +30,10 @@ pub fn local_settings(id: &str) -> bool {
             | "sequence.linkedSelection"
             | "sequence.nestSequences"
             | "sequence.showThroughEdits"
-            | "markers.showAllMarkerColors"
-            | "markers.filterColors"
-            | "markers.rippleSequenceMarkers"
-            | "markers.copyPasteIncludesSequenceMarkers"
+            | "marker.showAllMarkerColors"
+            | "marker.filterColors"
+            | "marker.rippleSequenceMarkers"
+            | "marker.copyPasteIncludesSequenceMarkers"
             | "multicam.audioFollowsVideo"
             | "multicam.selectionTopDown"
             | "multicam.showPreviewMonitor"
@@ -51,25 +51,25 @@ pub fn local_settings(id: &str) -> bool {
             | "mediaBrowser.favorite"
             | "mediaBrowser.clearRecent"
             | "mediaBrowser.settings"
-            | "presets.delete"
-            | "presets.rename"
-            | "presets.import"
+            | "preset.delete"
+            | "preset.rename"
+            | "preset.import"
             | "prefs.set"
             | "prefs.reset"
             | "audio.toggleScrubbing"
             | "audio.voiceover.settings"
             | "audioMixing.deletePreset"
-            | "effects.setDefaultTransition"
+            | "effect.setDefaultTransition"
             | "multicam.gridLayout"
-            | "shortcuts.set"
-            | "shortcuts.clear"
-            | "shortcuts.undo"
-            | "shortcuts.redo"
-            | "shortcuts.loadPreset"
-            | "shortcuts.savePreset"
-            | "shortcuts.deletePreset"
-            | "shortcuts.export"
-            | "shortcuts.import"
+            | "shortcut.set"
+            | "shortcut.clear"
+            | "shortcut.undo"
+            | "shortcut.redo"
+            | "shortcut.loadPreset"
+            | "shortcut.savePreset"
+            | "shortcut.deletePreset"
+            | "shortcut.export"
+            | "shortcut.import"
             | "export.queue.start"
             | "export.queue.stop"
             | "export.queue.cancel"
@@ -149,15 +149,15 @@ pub fn moves_the_editor(id: &str) -> bool {
                 | "edit.selectAllMatching"
                 | "edit.selectLabelGroup"
                 | "edit.findNext"
-                | "captions.select"
-                | "captions.goTo"
-                | "captions.next"
-                | "captions.previous"
+                | "caption.select"
+                | "caption.goTo"
+                | "caption.next"
+                | "caption.previous"
                 | "clip.revealInProject"
                 | "source.open"
                 | "source.setPlayhead"
                 | "mediaBrowser.openInSource"
-                | "masks.select"
+                | "mask.select"
                 | "transcript.select"
         )
 }
@@ -200,10 +200,10 @@ fn object_type(id: &str, name: &str) -> Option<&'static str> {
         "clip" | "clips" | "left" | "right" => "Clip",
         "reference" if id == "clip.synchronize" => "Clip",
         "item" | "items" | "fromItem" | "sequence" | "sequences" => "Item",
-        "reference" if id == "clip.createMulticam" => "Item",
+        "reference" if id == "clip.addMulticam" => "Item",
         "bin" if matches!(id, "project.searchBinItems" | "project.editSearchBin" | "project.deleteSearchBin") => return None,
         "bin" => "Bin",
-        "parent" if id == "file.newBin" => "Bin",
+        "parent" if id == "bin.add" => "Bin",
         "track" if !id.starts_with("captions.") && !id.starts_with("graphics.") => "Track",
         "strip" if id.starts_with("mixer.") => "Track",
         "target" if matches!(id, "mixer.addSend" | "mixer.setSend") => "Track",

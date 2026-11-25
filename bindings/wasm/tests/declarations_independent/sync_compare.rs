@@ -8,7 +8,7 @@ use kition_film_kit::FilmDocument;
 use kition_kit::{EditorState, KitDocument, Premise, Under};
 use serde_json::json;
 
-pub const COMMANDS: &[&str] = &["clip.synchronize", "clip.mergeClips", "clip.createMulticam"];
+pub const COMMANDS: &[&str] = &["clip.synchronize", "clip.mergeClips", "clip.addMulticam"];
 pub const METHODS: &[&str] = &["in", "out", "timecode", "marker", "audio"];
 
 pub fn compared_path(command: &str, path: &str) -> bool {
@@ -78,8 +78,8 @@ fn source(project: &Project, id: ItemId, out: &mut Under) {
 
 fn fixture() -> (FilmDocument, Vec<u64>, Vec<u64>) {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
-    let video = doc.execute("file.newOfflineFile", json!({"name":"Video","seconds":2,"audio":false})).unwrap()["item"].as_u64().unwrap();
-    let audio = doc.execute("file.newOfflineFile", json!({"name":"Audio","seconds":2,"video":false})).unwrap()["item"].as_u64().unwrap();
+    let video = doc.execute("item.newOfflineFile", json!({"name":"Video","seconds":2,"audio":false})).unwrap()["item"].as_u64().unwrap();
+    let audio = doc.execute("item.newOfflineFile", json!({"name":"Audio","seconds":2,"video":false})).unwrap()["item"].as_u64().unwrap();
     let subclip = doc.execute("clip.makeSubclip", json!({"item":video,"start":0,"end":254_016_000_000i64})).unwrap()["item"].as_u64().unwrap();
     let mut clips = Vec::new();
     for (item, track) in [(video, "V1"), (audio, "A1")] {
@@ -115,7 +115,7 @@ fn sync_paths_compare_all_methods_source_routes_addresses_and_camera_defaults() 
             spec.object_types,
             match command {
                 "clip.synchronize" => vec![("clips", &["Clip"][..]), ("reference", &["Clip"][..])],
-                "clip.createMulticam" => vec![("items", &["Item"][..]), ("reference", &["Item"][..])],
+                "clip.addMulticam" => vec![("items", &["Item"][..]), ("reference", &["Item"][..])],
                 _ => vec![("items", &["Item"][..])],
             }
         );
@@ -141,7 +141,7 @@ fn sync_paths_compare_all_methods_source_routes_addresses_and_camera_defaults() 
                                     params["removeVideoAudio"] = json!(true);
                                 }
                             }
-                            if command == "clip.createMulticam" {
+                            if command == "clip.addMulticam" {
                                 params["cameraNames"] = json!(camera);
                                 params["processedBin"] = json!(processed);
                                 params["audio"] = json!(if processed { "switch" } else { "all" });
@@ -162,7 +162,7 @@ fn sync_paths_compare_all_methods_source_routes_addresses_and_camera_defaults() 
                             } else {
                                 for &id in &selected {
                                     let mut fields = vec!["kind", "name", "props.common.label"];
-                                    if ["metadata", "cameraAngle", "label"].contains(&camera) && command == "clip.createMulticam" {
+                                    if ["metadata", "cameraAngle", "label"].contains(&camera) && command == "clip.addMulticam" {
                                         fields.extend([
                                             "props.common.metadata.Camera Angle",
                                             "props.common.metadata.Camera Label",

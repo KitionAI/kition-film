@@ -35,15 +35,15 @@ fn keyframe_modes_retime_onto_the_target() {
     let (a, b) = (clips[0], clips[2]);
     let ia = item(&s, a);
     s.state.selection = vec![a];
-    s.execute("effects.apply", json!({"effect": "gaussian_blur"})).unwrap();
+    s.execute("effect.apply", json!({"effect": "gaussian_blur"})).unwrap();
     // keyframes 0.5 s after the in point (20) and 1 s before the out point (0)
     let k1 = ia.start + secs(0.5);
     let k2 = ia.end() - secs(1.0);
     s.set_playhead(k1);
     let k1 = s.playhead();
-    s.execute("effects.toggleAnimation", json!({"clip": a.0, "effect": "gaussian_blur", "param": "blurriness", "time": k1.0})).unwrap();
-    s.execute("effects.setParam", json!({"clip": a.0, "effect": "gaussian_blur", "param": "blurriness", "value": 20.0, "time": k1.0})).unwrap();
-    s.execute("effects.setParam", json!({"clip": a.0, "effect": "gaussian_blur", "param": "blurriness", "value": 0.0, "time": k2.0})).unwrap();
+    s.execute("effect.toggleAnimation", json!({"clip": a.0, "effect": "gaussian_blur", "param": "blurriness", "time": k1.0})).unwrap();
+    s.execute("effect.setParam", json!({"clip": a.0, "effect": "gaussian_blur", "param": "blurriness", "value": 20.0, "time": k1.0})).unwrap();
+    s.execute("effect.setParam", json!({"clip": a.0, "effect": "gaussian_blur", "param": "blurriness", "value": 0.0, "time": k2.0})).unwrap();
     let ib = item(&s, b);
     assert_ne!(media_len(&ia), media_len(&ib), "the demo clips differ in length");
     let la = media_len(&ia);
@@ -51,9 +51,9 @@ fn keyframe_modes_retime_onto_the_target() {
     for (mode, key) in [(KeyframeMode::AnchorToIn, "anchorIn"), (KeyframeMode::AnchorToOut, "anchorOut"), (KeyframeMode::Scale, "scale")] {
         let name = format!("blur-{key}");
         let bi = item(&s, a).effects.iter().position(|e| e.effect == "gaussian_blur").unwrap();
-        s.execute("presets.save", json!({"clip": a.0, "name": name, "keyframes": key, "effects": [bi]})).unwrap();
+        s.execute("preset.save", json!({"clip": a.0, "name": name, "keyframes": key, "effects": [bi]})).unwrap();
         let before = item(&s, b).effects.len();
-        s.execute("presets.apply", json!({"preset": name, "clips": [b.0]})).unwrap();
+        s.execute("preset.apply", json!({"preset": name, "clips": [b.0]})).unwrap();
         let it = item(&s, b);
         assert_eq!(it.effects.len(), before + 1);
         let e = it.effects.iter().rfind(|e| e.effect == "gaussian_blur").unwrap();
@@ -102,19 +102,19 @@ fn save_without_keyframes_keeps_the_value_at_the_playhead() {
     let a = clips[0];
     let ia = item(&s, a);
     s.state.selection = vec![a];
-    s.execute("effects.apply", json!({"effect": "gaussian_blur"})).unwrap();
+    s.execute("effect.apply", json!({"effect": "gaussian_blur"})).unwrap();
     s.set_playhead(ia.start);
-    s.execute("effects.toggleAnimation", json!({"clip": a.0, "effect": "gaussian_blur", "param": "blurriness", "time": ia.start.0})).unwrap();
-    s.execute("effects.setParam", json!({"clip": a.0, "effect": "gaussian_blur", "param": "blurriness", "value": 40.0, "time": ia.start.0})).unwrap();
-    s.execute("effects.setParam", json!({"clip": a.0, "effect": "gaussian_blur", "param": "blurriness", "value": 0.0, "time": (ia.start + secs(2.0)).0}))
+    s.execute("effect.toggleAnimation", json!({"clip": a.0, "effect": "gaussian_blur", "param": "blurriness", "time": ia.start.0})).unwrap();
+    s.execute("effect.setParam", json!({"clip": a.0, "effect": "gaussian_blur", "param": "blurriness", "value": 40.0, "time": ia.start.0})).unwrap();
+    s.execute("effect.setParam", json!({"clip": a.0, "effect": "gaussian_blur", "param": "blurriness", "value": 0.0, "time": (ia.start + secs(2.0)).0}))
         .unwrap();
     s.set_playhead(ia.start + secs(1.0));
     let bi = item(&s, a).effects.iter().position(|e| e.effect == "gaussian_blur").unwrap();
-    s.execute("presets.save", json!({"name": "half blur", "keyframes": "none", "effects": [bi]})).unwrap();
-    let l = s.execute("presets.list", json!({})).unwrap();
+    s.execute("preset.save", json!({"name": "half blur", "keyframes": "none", "effects": [bi]})).unwrap();
+    let l = s.execute("preset.list", json!({})).unwrap();
     let p = l["presets"].as_array().unwrap().iter().find(|p| p["name"] == "half blur").unwrap().clone();
     assert_eq!(p["animated"], false);
-    s.execute("presets.apply", json!({"preset": "half blur", "clips": [clips[1].0]})).unwrap();
+    s.execute("preset.apply", json!({"preset": "half blur", "clips": [clips[1].0]})).unwrap();
     let e = item(&s, clips[1]).effects.into_iter().find(|e| e.effect == "gaussian_blur").unwrap();
     let v = e.param("blurriness").unwrap();
     assert!(!v.is_animated());
@@ -127,27 +127,27 @@ fn presets_with_masks_and_intrinsics_round_trip_through_files() {
     let (mut s, clips) = demo();
     let a = clips[0];
     s.state.selection = vec![a];
-    s.execute("effects.apply", json!({"effect": "black_white"})).unwrap();
-    s.execute("masks.add", json!({"effect": "black_white", "shape": "ellipse", "center": [960, 540], "size": [800, 400]})).unwrap();
-    s.execute("effects.setParam", json!({"clip": a.0, "effect": "opacity", "param": "opacity", "value": 50.0})).unwrap();
+    s.execute("effect.apply", json!({"effect": "black_white"})).unwrap();
+    s.execute("mask.add", json!({"effect": "black_white", "shape": "ellipse", "center": [960, 540], "size": [800, 400]})).unwrap();
+    s.execute("effect.setParam", json!({"clip": a.0, "effect": "opacity", "param": "opacity", "value": 50.0})).unwrap();
     let ia = item(&s, a);
     let bw = ia.effects.iter().position(|e| e.effect == "black_white").unwrap();
     let op = ia.effects.iter().position(|e| e.effect == "opacity").unwrap();
-    s.execute("presets.save", json!({"name": "masked bw", "effects": [bw, op], "description": "test"})).unwrap();
+    s.execute("preset.save", json!({"name": "masked bw", "effects": [bw, op], "description": "test"})).unwrap();
     let dir = std::env::temp_dir().join(format!("kition-film-presets-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let path = dir.join("p.json").to_string_lossy().to_string();
-    let r = s.execute("presets.export", json!({"path": path, "names": ["masked bw", "Fade In"]})).unwrap();
+    let r = s.execute("preset.export", json!({"path": path, "names": ["masked bw", "Fade In"]})).unwrap();
     assert_eq!(r["count"], 2);
     let text = std::fs::read_to_string(&path).unwrap();
     assert!(text.contains("kition-film.effect-presets"));
     // a fresh session imports and applies it
     let (mut s2, clips2) = demo();
-    s2.execute("presets.import", json!({"path": path})).unwrap();
+    s2.execute("preset.import", json!({"path": path})).unwrap();
     let names: Vec<String> =
-        s2.execute("presets.list", json!({})).unwrap()["presets"].as_array().unwrap().iter().map(|p| p["name"].as_str().unwrap().to_string()).collect();
+        s2.execute("preset.list", json!({})).unwrap()["presets"].as_array().unwrap().iter().map(|p| p["name"].as_str().unwrap().to_string()).collect();
     assert!(names.contains(&"masked bw".to_string()));
-    s2.execute("presets.apply", json!({"preset": "masked bw", "clips": [clips2[1].0]})).unwrap();
+    s2.execute("preset.apply", json!({"preset": "masked bw", "clips": [clips2[1].0]})).unwrap();
     let it = item(&s2, clips2[1]);
     let e = it.effects.iter().find(|e| e.effect == "black_white").unwrap();
     assert_eq!(e.masks.len(), 1);
@@ -155,39 +155,39 @@ fn presets_with_masks_and_intrinsics_round_trip_through_files() {
     assert_eq!(it.effect("opacity").unwrap().param("opacity").unwrap().value, ParamValue::Float(50.0));
     // garbage is rejected
     std::fs::write(dir.join("bad.json"), b"{\"format\":\"something\",\"version\":1,\"presets\":[]}").unwrap();
-    assert!(s2.execute("presets.import", json!({"path": dir.join("bad.json").to_string_lossy()})).is_err());
+    assert!(s2.execute("preset.import", json!({"path": dir.join("bad.json").to_string_lossy()})).is_err());
     let _ = std::fs::remove_dir_all(&dir);
 }
 
 #[test]
 fn builtins_apply_and_user_presets_persist() {
     let (mut s, clips) = demo();
-    let l = s.execute("presets.list", json!({})).unwrap();
+    let l = s.execute("preset.list", json!({})).unwrap();
     let all = l["presets"].as_array().unwrap();
     assert!(all.len() >= 8);
     assert!(all.iter().all(|p| p["builtin"] == true));
     for p in all {
         let name = p["name"].as_str().unwrap();
-        s.execute("presets.apply", json!({"preset": name, "clips": [clips[0].0]})).unwrap_or_else(|e| panic!("{name}: {e}"));
+        s.execute("preset.apply", json!({"preset": name, "clips": [clips[0].0]})).unwrap_or_else(|e| panic!("{name}: {e}"));
     }
     // Fade Out anchors to the out point
     let it = item(&s, clips[0]);
     let op = it.effect("opacity").unwrap().param("opacity").unwrap();
     assert_eq!(op.keyframes.last().unwrap().time, it.source_in + media_len(&it));
-    assert!(s.execute("presets.delete", json!({"name": "Fade In"})).is_err(), "built-ins stay");
+    assert!(s.execute("preset.delete", json!({"name": "Fade In"})).is_err(), "built-ins stay");
     // persistence through the data directory
     let dir = std::env::temp_dir().join(format!("kition-film-presets-lib-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     s.presets.set_dir(&dir);
     s.state.selection = vec![clips[1]];
-    s.execute("effects.apply", json!({"effect": "invert"})).unwrap();
-    s.execute("presets.save", json!({"name": "Mine"})).unwrap();
-    s.execute("presets.rename", json!({"name": "Mine", "to": "Mine 2"})).unwrap();
+    s.execute("effect.apply", json!({"effect": "invert"})).unwrap();
+    s.execute("preset.save", json!({"name": "Mine"})).unwrap();
+    s.execute("preset.rename", json!({"name": "Mine", "to": "Mine 2"})).unwrap();
     let mut lib = crate::presets::PresetLibrary::default();
     lib.set_dir(&dir);
     assert_eq!(lib.user.len(), 1);
     assert_eq!(lib.user[0].name, "Mine 2");
-    s.execute("presets.delete", json!({"name": "Mine 2"})).unwrap();
+    s.execute("preset.delete", json!({"name": "Mine 2"})).unwrap();
     let mut lib = crate::presets::PresetLibrary::default();
     lib.set_dir(&dir);
     assert!(lib.user.is_empty());
@@ -227,14 +227,14 @@ fn export_and_import_go_through_host_services() {
     let fs = Arc::new(MemFs::default());
     let mut s = Session::new(fs.clone());
     let path = "/exports/owned-preset.prfpset";
-    let r = s.execute("presets.export", json!({"path": path, "names": ["Fade In"]})).unwrap();
+    let r = s.execute("preset.export", json!({"path": path, "names": ["Fade In"]})).unwrap();
     assert_eq!(r["count"], 1);
     let bytes = fs.read_file(path).unwrap();
     assert!(String::from_utf8_lossy(&bytes).contains("kition-film.effect-presets"));
     // a second session on the same host imports it from there
     let mut s2 = Session::new(fs);
-    let r = s2.execute("presets.import", json!({"path": path})).unwrap();
+    let r = s2.execute("preset.import", json!({"path": path})).unwrap();
     assert_eq!(r["imported"], json!(["Fade In"]));
     assert_eq!(s2.presets.user.len(), 1);
-    assert!(s2.execute("presets.import", json!({"path": "/exports/missing.prfpset"})).is_err());
+    assert!(s2.execute("preset.import", json!({"path": "/exports/missing.prfpset"})).is_err());
 }

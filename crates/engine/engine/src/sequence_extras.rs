@@ -6,8 +6,8 @@
 //! | `sequence.normalizeMixTrack` | Sequence ▸ Normalize Mix Track… | Mix fader so the mix peaks at the target |
 //! | `sequence.transcribe` | Sequence ▸ Transcribe Sequence… | `transcript.generate` on the sequence's audio clips |
 //! | `sequence.simplify` | Sequence ▸ Simplify Sequence… | a simplified copy of the sequence |
-//! | `captions.showActiveOnly` | Sequence ▸ Captions ▸ Show Active Caption Tracks Only | |
-//! | `markers.addFlashCue` | Markers ▸ Add Flash Cue Marker… | `MarkerKind::FlashCue` |
+//! | `caption.showActiveOnly` | Sequence ▸ Captions ▸ Show Active Caption Tracks Only | |
+//! | `marker.addFlashCue` | Markers ▸ Add Flash Cue Marker… | `MarkerKind::FlashCue` |
 //!
 //! **Simplify Sequence** (Premiere 26): makes a copy named "<name> (Simplified)" and opens it;
 //! the original is untouched. Options: remove disabled clips, remove empty tracks, close gaps (spans
@@ -70,7 +70,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
             simplify,
         ),
         spec(
-            "captions.showActiveOnly",
+            "caption.showActiveOnly",
             "Show Active Caption Tracks Only",
             &["Sequence", "Captions"],
             None,
@@ -79,7 +79,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
             show_active_only,
         ),
         spec(
-            "markers.addFlashCue",
+            "marker.addFlashCue",
             "Add Flash Cue Marker…",
             &["Markers"],
             None,
@@ -545,7 +545,7 @@ fn active_caption_track(s: &Session, p: &Value) -> Option<TrackId> {
 }
 
 fn show_active_only(s: &mut Session, p: &Value) -> Result<Value> {
-    let active = active_caption_track(s, p).ok_or_else(|| bad("captions.showActiveOnly", "no such caption track"))?;
+    let active = active_caption_track(s, p).ok_or_else(|| bad("caption.showActiveOnly", "no such caption track"))?;
     s.edit("Show Active Caption Tracks Only", |pr, st| {
         let seq = st.active_sequence.ok_or(EngineError::NoSequence)?;
         for t in &mut pr.sequence_mut(seq).ok_or(EngineError::NoSequence)?.caption_tracks {
@@ -565,8 +565,8 @@ fn add_flash_cue(s: &mut Session, p: &Value) -> Result<Value> {
     let n = s.active_sequence().map(|q| q.markers.iter().filter(|m| m.kind == MarkerKind::FlashCue).count()).unwrap_or(0) + 1;
     let name = str_p(p, "name").map(str::to_string).unwrap_or_else(|| format!("Cue Point {n}"));
     let comment = str_p(p, "comment").unwrap_or("").to_string();
-    let color = crate::commands::marker_color_p(p, "markers.addFlashCue")?.unwrap_or(Label::Green);
-    let dur = crate::commands::marker_duration_p(s, p, "markers.addFlashCue")?.unwrap_or(Tick::ZERO);
+    let color = crate::commands::marker_color_p(p, "marker.addFlashCue")?.unwrap_or(Label::Green);
+    let dur = crate::commands::marker_duration_p(s, p, "marker.addFlashCue")?.unwrap_or(Tick::ZERO);
     let id = s.edit_sequence("Add Flash Cue Marker", |q, ctx, _| {
         let id = MarkerId(ctx.alloc());
         q.markers.push(Marker { id, start: t, duration: dur, name, comment, kind: MarkerKind::FlashCue, color });

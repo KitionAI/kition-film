@@ -4,10 +4,10 @@ for (const locked of ['V1', 'A1']) {
   test(`F68 replacing linked media refuses atomically when ${locked} is locked; unlocking restores replacement and undo`, async ({ film, page }) => {
     await film.open()
     await film.command('file.newProject', { name: 'Locked replacement' })
-    await film.command('file.newSequence', { name: 'Protected tracks', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
-    const { item: original } = await film.command('file.newBarsAndTone', { seconds: 0.5 })
+    await film.command('sequence.new', { name: 'Protected tracks', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
+    const { item: original } = await film.command('item.newBarsAndTone', { seconds: 0.5 })
     await film.command('timeline.place', { item: original, seconds: 0 })
-    const { item: replacement } = await film.command('file.newBarsAndTone', { seconds: 1 })
+    const { item: replacement } = await film.command('item.newBarsAndTone', { seconds: 1 })
     await film.command('timeline.setTrack', { track: locked, locked: true })
     const sequence = await film.sequence()
     const ids = [...clips(sequence), ...clips(sequence, 'audio')].map(clip => clip.clip)

@@ -86,7 +86,7 @@ async fn a_receipt_names_an_effect_or_keyframe_change_under_its_clip() {
     }
     println!("receipt of one opacity change: {} bytes", ran["changes"].to_string().len());
     let keyed = f
-        .ok("run", json!({ "steps": [{ "command": "effects.setParam", "params": { "clip": clip, "effect": "opacity", "param": "opacity", "value": 20, "seconds": 1.5 } }] }))
+        .ok("run", json!({ "steps": [{ "command": "effect.setParam", "params": { "clip": clip, "effect": "opacity", "param": "opacity", "value": 20, "seconds": 1.5 } }] }))
         .await;
     assert_eq!(ids(&keyed["changes"]["changed"]), [clip.to_string()], "{keyed}");
     assert_eq!(entry(&keyed["changes"]["changed"], &clip.to_string())["fields"], json!(["effects.1.params.opacity.keyframes"]), "{keyed}");
@@ -217,7 +217,7 @@ async fn a_tool_id_written_as_a_string_is_taken_in_on_and_in_a_clip_parameter() 
     let f = Fixture::new(2);
     let (sequence, _) = f.inspect().await;
     let clip = v1(&sequence)[1].to_string();
-    let step = json!({ "command": "effects.setParam", "params": { "clip": clip, "effect": "opacity", "param": "opacity", "value": 25 } });
+    let step = json!({ "command": "effect.setParam", "params": { "clip": clip, "effect": "opacity", "param": "opacity", "value": 25 } });
     let ran = f.ok("run", json!({ "steps": [step] })).await;
     assert_eq!(ran["changes"]["changed"][0]["id"], json!(v1(&sequence)[1]), "{ran}");
     assert_eq!(opacity_on_disk(&f.file(), v1(&sequence)[1]), 25.0, "{ran}");
@@ -234,7 +234,7 @@ async fn a_marker_is_told_under_its_sequences_item() {
     let f = Fixture::new(2);
     let (sequence, _) = f.inspect().await;
     let item = sequence["id"].as_u64().unwrap().to_string();
-    let ran = f.ok("run", json!({ "steps": [{ "command": "markers.add", "at": { "time": 1.5 } }] })).await;
+    let ran = f.ok("run", json!({ "steps": [{ "command": "marker.add", "at": { "time": 1.5 } }] })).await;
     assert_eq!(ids(&ran["changes"]["changed"]), std::slice::from_ref(&item), "{ran}");
     let told = entry(&ran["changes"]["changed"], &item);
     assert_eq!((told["type"].as_str(), told["fields"].clone()), (Some("Item"), json!(["sequence.markers", "sequence.markers.0"])), "{ran}");
@@ -250,7 +250,7 @@ async fn a_marker_is_told_under_its_sequences_item() {
 async fn a_step_cuts_another_sequence_named_in_at_part() {
     let f = Fixture::new(2);
     let (main, _) = f.inspect().await;
-    let made = f.ok("run", json!({ "steps": [{ "command": "file.newSequence", "params": { "name": "Other", "width": 320, "height": 180 } }] })).await;
+    let made = f.ok("run", json!({ "steps": [{ "command": "sequence.new", "params": { "name": "Other", "width": 320, "height": 180 } }] })).await;
     let other: u64 = made["changes"]["created"]
         .as_array()
         .unwrap()
@@ -323,33 +323,33 @@ const ALLOWED_IDS: &[(&str, &str)] = &[
     ("project.editSearchBin", "bin"),
     ("project.deleteSearchBin", "bin"),
     // A render job of the session: not in the file.
-    ("jobs.cancel", "job"),
+    ("job.cancel", "job"),
     // A marker is a `Marker` in the sequence's `markers` list, without a tool id; the kit's premise holds it in the sequence's item.
-    ("markers.edit", "marker"),
+    ("marker.edit", "marker"),
     // A caption track is a `CaptionTrack` in the sequence's `captionTracks` list, without a tool id: no object to hold.
-    ("captions.deleteTrack", "track"),
-    ("captions.setTrack", "track"),
-    ("captions.setStyle", "track"),
-    ("captions.showActiveOnly", "track"),
-    ("captions.export", "track"),
-    ("captions.list", "track"),
+    ("caption.deleteTrack", "track"),
+    ("caption.setTrack", "track"),
+    ("caption.setStyle", "track"),
+    ("caption.showActiveOnly", "track"),
+    ("caption.export", "track"),
+    ("caption.list", "track"),
     // A caption is an item of a caption track's json, no tool id; the kit's premise holds it in the sequence's item.
-    ("captions.split", "caption"),
-    ("captions.setText", "caption"),
-    ("captions.setTimes", "caption"),
-    ("captions.trim", "caption"),
-    ("captions.goTo", "caption"),
+    ("caption.split", "caption"),
+    ("caption.setText", "caption"),
+    ("caption.setTimes", "caption"),
+    ("caption.trim", "caption"),
+    ("caption.goTo", "caption"),
     // A keyboard shortcut's command: the editor's settings, not the file.
-    ("shortcuts.get", "command"),
-    ("shortcuts.set", "command"),
-    ("shortcuts.clear", "command"),
+    ("shortcut.get", "command"),
+    ("shortcut.set", "command"),
+    ("shortcut.clear", "command"),
     // An entry of the export queue: the session's, not in the file.
     ("export.queue.cancel", "id"),
     ("export.queue.retry", "id"),
     ("export.queue.remove", "id"),
     ("export.queue.move", "id"),
     // An event counter: a number of events seen, no object.
-    ("events.list", "since"),
+    ("event.list", "since"),
 ];
 
 /// The object model's schema gives kition-sdk's kit-env (and any reader) the kit's words

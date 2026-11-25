@@ -8,13 +8,13 @@ use kition_kit::{EditorState, KitDocument, Premise, Under};
 use serde_json::{Value, json};
 
 pub const COMPARED_PATHS: &[(&str, &str)] = &[
-    ("file.newAdjustmentLayer", "default-size"),
-    ("file.newBarsAndTone", "generator"),
-    ("file.newBlackVideo", "generator"),
-    ("file.newColorMatte", "generator"),
-    ("file.newCountingLeader", "generator"),
-    ("file.newTransparentVideo", "generator"),
-    ("file.newOfflineFile", "sequence defaults"),
+    ("item.newAdjustmentLayer", "default-size"),
+    ("item.newBarsAndTone", "generator"),
+    ("item.newBlackVideo", "generator"),
+    ("item.newColorMatte", "generator"),
+    ("item.newCountingLeader", "generator"),
+    ("item.newTransparentVideo", "generator"),
+    ("item.newOfflineFile", "sequence defaults"),
 ];
 
 pub fn compared_path(command: &str, path: &str) -> bool {
@@ -24,11 +24,11 @@ pub fn compared_path(command: &str, path: &str) -> bool {
     }
     let commands = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../crates/engine/engine/src/commands.rs"));
     let clips = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../crates/engine/engine/src/clip_ops.rs"));
-    if command == "file.newOfflineFile" {
+    if command == "item.newOfflineFile" {
         matches_source(clips, "fn offline_file(", "fn close_project(", 0x5e73a308878e49b5)
     } else {
         matches_source(commands, "fn new_generator(", "/// `project.matteColor`", 0x8c81d5d34344703d)
-            && matches_source(commands, "        cmd!(\"file.newAdjustmentLayer\",", "            \"file.importDemoFootage\",", 0xeeff5d54801eb862)
+            && matches_source(commands, "        cmd!(\"item.newAdjustmentLayer\",", "            \"file.importDemoFootage\",", 0xeeff5d54801eb862)
     }
 }
 
@@ -59,8 +59,8 @@ fn generator_paths_compare_every_default_and_explicit_dimension_combination() {
                                 params[param] = Value::Null;
                             }
                         }
-                        let offline = command == "file.newOfflineFile";
-                        let adjustment = command == "file.newAdjustmentLayer";
+                        let offline = command == "item.newOfflineFile";
+                        let adjustment = command == "item.newAdjustmentLayer";
                         let mut fields = Vec::new();
                         if !offline || mask & 4 == 0 {
                             fields.push("sequence.settings.settings.frame_rate");

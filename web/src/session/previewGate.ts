@@ -23,7 +23,7 @@ const VIEW_IDS = new Set([
   'sequence.showThroughEdits',
   'edit.find',
   'edit.findNext',
-  'markers.filterColors',
+  'marker.filterColors',
   'project.view.set',
   'project.sort',
   'project.columns.resize',

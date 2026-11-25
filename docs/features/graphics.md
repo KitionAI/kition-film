@@ -103,7 +103,7 @@ The Timecode and Clip Name effects also draw with the text engine.
 | `graphics.resetAllParameters` | Reset All Parameters | `layers` (default: the selected layers, else all) — appearance, text formatting and transform back to defaults; text, shape and geometry kept |
 | `graphics.resetDuration` | Reset Duration | `seconds` (5), limited by the next clip on the track |
 | `graphics.list` | (query) | `clip` — layers with names, kinds, text, `textType` (point / paragraph), `box`, `overflow` (the box hides text), position, anchor, scale and on-canvas quads |
-| `fonts.list` | (query) | `system` (scan system font folders, default true) — families and styles |
+| `font.list` | (query) | `system` (scan system font folders, default true) — families and styles |
 
 Without `clip`, commands use the selected graphic clip, else the topmost graphic clip under the
 playhead. Without `layer`, they use the selected layer, else the front one. New graphic clips are

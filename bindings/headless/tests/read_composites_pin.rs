@@ -10,7 +10,7 @@ async fn compound_sound_placement_refuses_changed_lanes_and_sources() {
     for command in ["timeline.placeMany", "sound.phrase", "audio.bed"] {
         for change in ["lane", "channels", "unrelated"] {
             let mut doc = FilmDocument::create(FILE, 64, 36).unwrap();
-            let item = doc.execute("file.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
+            let item = doc.execute("item.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
             let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
             let (_, basis) = f.inspect().await;
             match change {

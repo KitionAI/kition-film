@@ -12,7 +12,7 @@
    ]
   }
  },
- "captions.add": {
+ "caption.add": {
   "track": {
    "description": "id|\"C1\"?",
    "oneOf": [
@@ -25,7 +25,7 @@
    ]
   }
  },
- "captions.deleteTrack": {
+ "caption.deleteTrack": {
   "track": {
    "description": "id|\"C1\"",
    "oneOf": [
@@ -38,7 +38,7 @@
    ]
   }
  },
- "captions.export": {
+ "caption.export": {
   "track": {
    "description": "id|\"C1\"?",
    "oneOf": [
@@ -51,7 +51,7 @@
    ]
   }
  },
- "captions.list": {
+ "caption.list": {
   "track": {
    "description": "id|\"C1\"?",
    "oneOf": [
@@ -64,7 +64,7 @@
    ]
   }
  },
- "captions.setStyle": {
+ "caption.setStyle": {
   "track": {
    "description": "id|\"C1\"",
    "oneOf": [
@@ -77,7 +77,7 @@
    ]
   }
  },
- "captions.setTrack": {
+ "caption.setTrack": {
   "track": {
    "description": "id|\"C1\"",
    "oneOf": [
@@ -90,7 +90,7 @@
    ]
   }
  },
- "captions.showActiveOnly": {
+ "caption.showActiveOnly": {
   "track": {
    "description": "id|\"C1\"?",
    "oneOf": [
@@ -103,7 +103,7 @@
    ]
   }
  },
- "clip.createMulticam": {
+ "clip.addMulticam": {
   "reference": {
    "description": "item?",
    "type": "integer"
@@ -172,43 +172,43 @@
    "type": "array"
   }
  },
- "effects.addKeyframe": {
+ "effect.addKeyframe": {
   "effect": {
    "description": "str|index",
    "type": "string"
   }
  },
- "effects.deleteKeyframe": {
+ "effect.deleteKeyframe": {
   "effect": {
    "description": "str|index",
    "type": "string"
   }
  },
- "effects.moveKeyframe": {
+ "effect.moveKeyframe": {
   "effect": {
    "description": "str|index",
    "type": "string"
   }
  },
- "effects.setInterpolation": {
+ "effect.setInterpolation": {
   "effect": {
    "description": "str|index",
    "type": "string"
   }
  },
- "effects.setKeyframe": {
+ "effect.setKeyframe": {
   "effect": {
    "description": "str|index",
    "type": "string"
   }
  },
- "effects.setParam": {
+ "effect.setParam": {
   "effect": {
    "description": "\"motion\"|index",
    "type": "string"
   }
  },
- "effects.toggleAnimation": {
+ "effect.toggleAnimation": {
   "effect": {
    "description": "str|index",
    "type": "string"
@@ -226,13 +226,13 @@
    "type": "integer"
   }
  },
- "file.newBin": {
+ "bin.add": {
   "parent": {
    "description": "binId?",
    "type": "integer"
   }
  },
- "file.newSequence": {
+ "sequence.new": {
   "fromItem": {
    "description": "a project item id",
    "type": "integer"
@@ -359,43 +359,43 @@
    "type": "string"
   }
  },
- "markers.add": {
+ "marker.add": {
   "color": {
    "description": "marker colour (Red, Orange, Yellow, Green, Cyan, Blue, Purple) or label name (Violet, Iris, …)?",
    "type": "string"
   }
  },
- "markers.addChapter": {
+ "marker.addChapter": {
   "color": {
    "description": "marker colour (Red, Orange, Yellow, Green, Cyan, Blue, Purple) or label name (Violet, Iris, …)?",
    "type": "string"
   }
  },
- "markers.addFlashCue": {
+ "marker.addFlashCue": {
   "color": {
    "description": "marker colour (Red, Orange, Yellow, Green, Cyan, Blue, Purple) or label name (Violet, Iris, …)?",
    "type": "string"
   }
  },
- "markers.addRange": {
+ "marker.addRange": {
   "color": {
    "description": "marker colour (Red, Orange, Yellow, Green, Cyan, Blue, Purple) or label name (Violet, Iris, …)?",
    "type": "string"
   }
  },
- "markers.addRangeInOut": {
+ "marker.addRangeInOut": {
   "color": {
    "description": "marker colour (Red, Orange, Yellow, Green, Cyan, Blue, Purple) or label name (Violet, Iris, …)?",
    "type": "string"
   }
  },
- "markers.edit": {
+ "marker.edit": {
   "color": {
    "description": "marker colour (Red, Orange, Yellow, Green, Cyan, Blue, Purple) or label name (Violet, Iris, …)?",
    "type": "string"
   }
  },
- "masks.add": {
+ "mask.add": {
   "effect": {
    "description": "index|id?=\"opacity\"; default \"opacity\"",
    "type": "string"
@@ -405,7 +405,7 @@
    "type": "string"
   }
  },
- "masks.set": {
+ "mask.set": {
   "opacity": {
    "description": "pct?",
    "type": "number"
@@ -730,7 +730,7 @@
    "type": "number"
   }
  },
- "scopes.read": {
+ "scope.read": {
   "time": {
    "description": "ticks?|\"frame\"|\"seconds\"|\"timecode\"",
    "type": "integer"
@@ -899,7 +899,7 @@
    ]
   }
  },
- "transcript.createCaptions": {
+ "transcript.addCaptions": {
   "maxSeconds": {
    "description": "f?",
    "type": "number"

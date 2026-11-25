@@ -30,7 +30,7 @@ pub fn project(clips: usize) -> Vec<u8> {
     let mut doc = FilmDocument::create(FILE, 320, 180).unwrap();
     for n in 0..clips {
         let color = format!("#{:02x}{:02x}{:02x}", (n * 37) % 256, (n * 91) % 256, (n * 53) % 256);
-        let matte = doc.execute("file.newColorMatte", json!({ "color": color, "seconds": 1 })).unwrap();
+        let matte = doc.execute("item.newColorMatte", json!({ "color": color, "seconds": 1 })).unwrap();
         doc.execute("timeline.place", json!({ "item": matte["item"], "track": "V1", "seconds": n })).unwrap();
     }
     doc.save(None).unwrap()
@@ -174,12 +174,12 @@ pub fn entry<'a>(list: &'a Value, id: &str) -> &'a Value {
 
 /// A step setting clip `clip`'s opacity to `value`.
 pub fn set_opacity(clip: u64, value: f64) -> Value {
-    json!({ "command": "effects.setParam", "params": { "clip": clip, "effect": "opacity", "param": "opacity", "value": value } })
+    json!({ "command": "effect.setParam", "params": { "clip": clip, "effect": "opacity", "param": "opacity", "value": value } })
 }
 
 /// The colleague's command setting clip `clip`'s opacity to `value`.
 pub fn opacity(clip: u64, value: f64) -> (&'static str, Value) {
-    ("effects.setParam", json!({ "clip": clip, "effect": "opacity", "param": "opacity", "value": value }))
+    ("effect.setParam", json!({ "clip": clip, "effect": "opacity", "param": "opacity", "value": value }))
 }
 
 /// A refusal of a write whose premises others changed, naming `id` with `reason`.

@@ -29,7 +29,7 @@ fn media_route(session: &Session, mut id: ItemId, answer: &mut Under) {
     }
 }
 pub fn under(session: &Session, command: &str, params: &Value) -> Option<Under> {
-    if command == "file.newSequenceFromClip" {
+    if command == "sequence.newFromClip" {
         let mut answer = Under::default();
         answer.premises.push(Premise::on(json!("project")).fields(["~placementOptions", "~subclipOptions"]).positions(Vec::<String>::new()));
         if let Some(first) =
@@ -39,7 +39,7 @@ pub fn under(session: &Session, command: &str, params: &Value) -> Option<Under> 
         }
         return Some(answer);
     }
-    if command == "file.newBinFromSelection" {
+    if command == "bin.addFromSelection" {
         let mut answer = Under::default();
         answer.premises.extend(kition_film_engine::clip_ops::items_p(session, params).into_iter().map(|id| leaf(id.0, &[]).positions(["entries"])));
         if params.get("name").and_then(Value::as_str).is_none() {

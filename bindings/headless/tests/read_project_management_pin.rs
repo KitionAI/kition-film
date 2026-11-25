@@ -9,8 +9,8 @@ use serde_json::json;
 async fn deletion_retains_references_outside_the_program_playhead_and_allows_names() {
     for related in [false, true] {
         let mut doc = FilmDocument::create(FILE, 64, 36).unwrap();
-        let removed = doc.execute("file.newColorMatte", json!({"seconds":1})).unwrap()["item"].as_u64().unwrap();
-        let other = doc.execute("file.newColorMatte", json!({"seconds":1})).unwrap()["item"].clone();
+        let removed = doc.execute("item.newColorMatte", json!({"seconds":1})).unwrap()["item"].as_u64().unwrap();
+        let other = doc.execute("item.newColorMatte", json!({"seconds":1})).unwrap()["item"].clone();
         let clip = doc.execute("timeline.place", json!({"item":other,"track":"V1","seconds":5})).unwrap()["clips"][0].as_u64().unwrap();
         doc.execute("project.select", json!({"items":[removed]})).unwrap();
         let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());

@@ -9,7 +9,7 @@ use serde_json::json;
 async fn caption_split_holds_minimum_frame_duration_and_allows_sequence_names() {
     for change_rate in [true, false] {
         let mut doc = FilmDocument::open(FILE, &project(1)).unwrap();
-        let added = doc.execute("captions.add", json!({"text":"Split this caption", "time":0,"durationSeconds":1})).unwrap();
+        let added = doc.execute("caption.add", json!({"text":"Split this caption", "time":0,"durationSeconds":1})).unwrap();
         let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
         let (_, basis) = f.inspect().await;
         f.colleague(&[("sequence.settings", if change_rate { json!({"fps":30}) } else { json!({"name":"Independent"}) })]);
@@ -17,7 +17,7 @@ async fn caption_split_holds_minimum_frame_duration_and_allows_sequence_names() 
         let answer = f
             .call(
                 "run",
-                json!({"basis":basis,"steps":[{"command":"captions.split","params":{
+                json!({"basis":basis,"steps":[{"command":"caption.split","params":{
                     "caption":added["caption"],"time":SECOND/2
                 }}]}),
             )
@@ -35,15 +35,15 @@ async fn caption_split_holds_minimum_frame_duration_and_allows_sequence_names() 
 
 #[tokio::test(flavor = "multi_thread")]
 async fn caption_timecodes_hold_drop_frame_but_tick_addresses_do_not() {
-    for command in ["captions.add", "captions.setTimes"] {
+    for command in ["caption.add", "caption.setTimes"] {
         for timecode in [true, false] {
             let mut doc = FilmDocument::open(FILE, &project(1)).unwrap();
             doc.execute("sequence.settings", json!({"fps":29.97,"dropFrame":false})).unwrap();
-            let caption = doc.execute("captions.add", json!({"text":"Original", "time":0,"durationSeconds":1})).unwrap()["caption"].clone();
+            let caption = doc.execute("caption.add", json!({"text":"Original", "time":0,"durationSeconds":1})).unwrap()["caption"].clone();
             let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
             let (_, basis) = f.inspect().await;
             f.colleague(&[("sequence.settings", json!({"dropFrame":true}))]);
-            let params = if command == "captions.add" {
+            let params = if command == "caption.add" {
                 if timecode { json!({"text":"New", "timecode":"00:01:01:00"}) } else { json!({"text":"New", "time":61*SECOND}) }
             } else if timecode {
                 json!({"caption":caption,"startTimecode":"00:01:01:00","endTimecode":"00:01:02:00"})

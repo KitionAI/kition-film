@@ -9,8 +9,8 @@ const modes = [
 
 async function project(film) {
   await film.command('file.newProject', { name: 'Pending Source playback' })
-  await film.command('file.newSequence', { width: 64, height: 36, fps: 24 })
-  return (await film.command('file.newBarsAndTone', { seconds: 2 })).item
+  await film.command('sequence.new', { width: 64, height: 36, fps: 24 })
+  return (await film.command('item.newBarsAndTone', { seconds: 2 })).item
 }
 
 for (const mode of modes) {
@@ -18,7 +18,7 @@ for (const mode of modes) {
     test(`F91 pending Source ${mode.name} cannot play after ${interruption} interruption`, async ({ film, page }) => {
       await film.open()
       const first = await project(film)
-      const second = (await film.command('file.newBarsAndTone', { seconds: 3 })).item
+      const second = (await film.command('item.newBarsAndTone', { seconds: 3 })).item
       await film.command('source.open', { item: first })
       await film.command('project.setMarks', { item: first, in: TICKS / 2, out: 3 * TICKS / 2 })
       await film.command('prefs.set', { key: 'playback.prerollSeconds', value: 0.25 })

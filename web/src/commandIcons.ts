@@ -6,12 +6,12 @@
 import { TesseraIcons, registerCommandIcons } from '@kition/sdk/editor'
 
 registerCommandIcons({
-  "effects.setDefaultTransition": TesseraIcons.StarIcon,
+  "effect.setDefaultTransition": TesseraIcons.StarIcon,
   "export.quick": TesseraIcons.ZapIcon,
   "help.systemReport": TesseraIcons.ClipboardListIcon,
   "color.setInputLut": TesseraIcons.SwatchBookIcon,
   "color.setLook": TesseraIcons.ApertureIcon,
-  "shortcuts.registerExternal": TesseraIcons.KeyboardIcon,
+  "shortcut.registerExternal": TesseraIcons.KeyboardIcon,
   "transcript.downloadModel": TesseraIcons.DownloadIcon,
   "transcript.generate": TesseraIcons.CaptionsIcon,
 })

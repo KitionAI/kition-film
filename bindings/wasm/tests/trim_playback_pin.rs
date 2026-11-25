@@ -5,7 +5,7 @@ use serde_json::json;
 #[test]
 fn trim_playback_is_checkpointed_and_survives_an_outside_reread() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
-    let item = doc.execute("file.newColorMatte", json!({"seconds":4})).unwrap()["item"].clone();
+    let item = doc.execute("item.newColorMatte", json!({"seconds":4})).unwrap()["item"].clone();
     let clip = doc.execute("timeline.place", json!({"item":item,"track":"V1","time":0})).unwrap()["clips"][0].clone();
     doc.execute("trim.selectEditPoint", json!({"clip":clip,"edge":"out"})).unwrap();
     let before = doc.editor_state()["mode"].clone();

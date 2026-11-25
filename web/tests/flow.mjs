@@ -162,7 +162,7 @@ const settledBox = (locator, options = {}) => heldStill(() => locator.boundingBo
  * Polls the engine through the dev host until `predicate(state)` holds, and answers that state.
  * `state` is `inspect()` (`{ revision, details, … }`), with `history` (history.list's result) when
  * `{ history: true }`, and `results` by command (`results['source.inspect']`) for
- * `{ queries: [{ command, params }] }` (non-journaled reads such as `source.inspect`, `jobs.list`).
+ * `{ queries: [{ command, params }] }` (non-journaled reads such as `source.inspect`, `job.list`).
  * On timeout it throws with the last state and the last error, or answers null with
  * `{ orNull: true }`. Steps wait on the engine this way (lesson 7), never on a fixed timeout.
  */
@@ -489,8 +489,8 @@ try {
   {
     const thrown = await waitForEngine(page, () => false, { timeout: 300 }).then(() => null, (error) => error.message)
     const tolerated = await waitForEngine(page, () => false, { timeout: 300, orNull: true })
-    const read = await waitForEngine(page, (state) => state.results['history.list'] != null && state.results['jobs.list'] != null, { queries: [{ command: 'jobs.list', params: {} }, { command: 'history.list', params: {} }] })
-    step('waitForEngine throws on timeout with the last state, answers null with orNull, and keys reads by command', /timed out after 300 ms; last state \{"revision":\d+/.test(thrown ?? '') && tolerated === null && Array.isArray(read?.results['jobs.list']), JSON.stringify({ thrown, tolerated }))
+    const read = await waitForEngine(page, (state) => state.results['history.list'] != null && state.results['job.list'] != null, { queries: [{ command: 'job.list', params: {} }, { command: 'history.list', params: {} }] })
+    step('waitForEngine throws on timeout with the last state, answers null with orNull, and keys reads by command', /timed out after 300 ms; last state \{"revision":\d+/.test(thrown ?? '') && tolerated === null && Array.isArray(read?.results['job.list']), JSON.stringify({ thrown, tolerated }))
   }
   // The Program monitor opens at Fit: the canvas's own first fit, early in the frame's life, is
   // not a wheel zoom. A fresh page without this test's init scripts opens fast enough to show it.
@@ -1050,10 +1050,10 @@ try {
   const fileRows = await kit.locator('[role="menu"] [data-kit-ui-id]').evaluateAll((rows) => rows.map((row) => row.getAttribute('data-kit-ui-id')))
   await page.keyboard.press('Escape')
   step('File draws no row a browser hides', fileRows.includes('control:file.import') && !fileRows.some((id) => /file\.(save|open|close|newProject|revert)$/.test(id)), JSON.stringify(fileRows.slice(0, 12)))
-  await personRun([{ command: 'markers.clearInOut', params: {} }, { command: 'playhead.set', params: { seconds: 1 } }])
+  await personRun([{ command: 'marker.clearInOut', params: {} }, { command: 'playhead.set', params: { seconds: 1 } }])
   await until(async () => (await details()).sequence.in == null)
   await kit.getByTestId('film-menu-Markers').click()
-  await kit.getByTestId('film-cmd-markers.markIn').click()
+  await kit.getByTestId('film-cmd-marker.markIn').click()
   await until(async () => (await details()).sequence.in != null)
   const menuMarked = await details()
   step('Markers ▸ Mark In marks In at the playhead', menuMarked.sequence.in != null && menuMarked.sequence.in === menuMarked.playhead, JSON.stringify({ in: menuMarked.sequence.in, playhead: menuMarked.playhead }))
@@ -1168,7 +1168,7 @@ try {
       await page.keyboard.press('ControlOrMeta+z')
       await until(async () => (await v2()).length === dragFrom.count)
     }
-    // New Bin in the footer (`file.newBin`), then the card dragged onto the bin's card (`project.moveToBin`).
+    // New Bin in the footer (`bin.add`), then the card dragged onto the bin's card (`project.moveToBin`).
     const binsOf = (node) => (node?.children ?? []).filter((child) => child.children)
     const binsBefore = binsOf(await root()).map((bin) => bin.id)
     await kit.getByTestId('film-project-new-bin').click()
@@ -1214,7 +1214,7 @@ try {
     }
     const renamed = await until(async () => (await revision()) > renameFrom && (await nameOf()) === 'Renamed take' && ((await card.textContent()) ?? '').includes('Renamed take'))
     step('a bin opens in place on a double-click, and the item renames in place from its menu', inside && renamed, JSON.stringify({ inside, renamed, name: await nameOf() }))
-    // New Sequence From Clip makes a sequence from the item at once (file.newSequence {fromItem}), as upstream.
+    // New Sequence From Clip makes a sequence from the item at once (sequence.new {fromItem}), as upstream.
     const sequences = async () => {
       const walk = (node) => (node?.children ?? []).flatMap((child) => (child.children ? walk(child) : child.type === 'Sequence' ? [child.item] : []))
       return walk(await root())
@@ -1225,7 +1225,7 @@ try {
     await kit.getByTestId('film-project-item-new-sequence').click()
     const madeSequence = await until(async () => (await sequences()).length === sequencesBefore.length + 1 && (await undoSteps()).at(-1) === 'New Sequence From Clip')
     // The engine collapses it into one history step (New Sequence and the clip placed in it,
-    // `collapse_history`, as file.newSequenceFromClip is; scenario F73): one Cmd+Z removes it.
+    // `collapse_history`, as sequence.newFromClip is; scenario F73): one Cmd+Z removes it.
     const stepsMade = await undoSteps()
     const oneStep = stepsMade.at(-1) === 'New Sequence From Clip' && stepsMade.at(-2) !== 'New Sequence'
     await kit.locator('.kui-app').focus()
@@ -1242,7 +1242,7 @@ try {
     await page.keyboard.press('Escape')
     await page.keyboard.press('Escape')
     await kit.getByTestId('film-project-new-item').click()
-    await kit.getByTestId('film-project-new-file.newBarsAndTone').waitFor()
+    await kit.getByTestId('film-project-new-item.newBarsAndTone').waitFor()
     await checkIds()
     await page.keyboard.press('Escape')
     // Sort Icons, the bin menu, and the empty space's menu carry declared ids too.
@@ -1305,7 +1305,7 @@ try {
     if ((await binToggle.getAttribute('aria-expanded')) !== 'true') await binToggle.click()
     const openedFold = await until(async () => (await card.count()) === 1, 20)
     const foldFrom = await revision()
-    await personRun([{ command: 'file.newBlackVideo', params: {} }])
+    await personRun([{ command: 'item.newBlackVideo', params: {} }])
     await until(async () => (await revision()) > foldFrom)
     const keptAfterRevision = (await binToggle.getAttribute('aria-expanded')) === 'true' && (await card.count()) === 1
     await kit.getByTestId('film-workspace-tab-markers').click()
@@ -2377,8 +2377,8 @@ try {
     const piece = Math.floor(media.duration / 4 / frameTicks) * frameTicks
     await person([
       { command: 'timeline.select', params: { clips: all } },
-      { command: 'edit.clear', params: {} },
-      { command: 'markers.clearInOut', params: {} },
+      { command: 'edit.delete', params: {} },
+      { command: 'marker.clearInOut', params: {} },
       { command: 'playhead.set', params: { seconds: 0 } },
       { command: 'timeline.place', params: { item: media.item, track: 'V1', audioTrack: 'A1', time: 0, sourceIn: piece, duration: piece } },
       { command: 'timeline.place', params: { item: media.item, track: 'V1', audioTrack: 'A1', time: piece, sourceIn: piece * 2, duration: piece } },
@@ -2526,7 +2526,7 @@ try {
     const extractedDuration = (await seq()).duration
     await edited(undoKey, async () => (await seq()).duration === duration)
     step('I and O, then ; lifts and \' extracts: only extract shortens the sequence', lifted && liftedDuration === duration && liftedB.start === B.start && extractedDuration < duration && (await seq()).duration === duration, JSON.stringify({ duration, liftedDuration, extractedDuration, said: await said() }))
-    await person([{ command: 'markers.clearInOut', params: {} }])
+    await person([{ command: 'marker.clearInOut', params: {} }])
 
     // Right-click ▸ Speed/Duration… opens the command's dialog; the clip right-clicked is selected first.
     await edited(() => person([{ command: 'timeline.select', params: { clips: [] } }]))
@@ -2722,7 +2722,7 @@ try {
       // Paste Attributes… (Opacity only): B's 20% opacity, copied, shows on A's picture at the
       // playhead, and on the Timeline as A's changed effects; Motion (the same on both) is pasted too.
       const copyB = [
-        { command: 'effects.setParam', params: { clip: B.clip, effect: 'opacity', param: 'opacity', value: 20 } },
+        { command: 'effect.setParam', params: { clip: B.clip, effect: 'opacity', param: 'opacity', value: 20 } },
         { command: 'timeline.select', params: { clips: [B.clip], linked: false } },
         { command: 'edit.copy', params: {} },
       ]
@@ -2756,7 +2756,7 @@ try {
       step("Paste Attributes… OK pastes B's opacity onto A in one history step, as previewed, and one undo restores it", pasteOk.ok && Math.abs(pastedOpacity - 20) < 0.01 && (await opacityOf(A.clip)) !== pastedOpacity, JSON.stringify({ ...pasteOk, pastedOpacity, after: await opacityOf(A.clip) }))
 
       // Remove Attributes… (Opacity only) on A at 20%: the picture brightens back.
-      await onA([{ command: 'effects.setParam', params: { clip: A.clip, effect: 'opacity', param: 'opacity', value: 20 } }])
+      await onA([{ command: 'effect.setParam', params: { clip: A.clip, effect: 'opacity', param: 'opacity', value: 20 } }])
       const removeOpen = async () => {
         await fromMenu('edit.removeAttributes')
         await kit.getByTestId('film-dialog-removeAttributes').waitFor({ timeout: 10000 })
@@ -3162,7 +3162,7 @@ try {
       step('Audio Channels… OK maps bars.mp4 in one history step, as previewed', channelsOk.ok, JSON.stringify(channelsOk))
 
       // Modify ▸ Timecode… on bars.mp4: the Media Start cell.
-      const timecodeOpen = open('clip.modifyTimecode', 'timecode')
+      const timecodeOpen = open('clip.setTimecode', 'timecode')
       const toHour = fill('film-dialog-timecode-timecode', '01:00:00:00')
       let retimed = null
       const timecodeCancel = await previewThenCancel({
@@ -3207,7 +3207,7 @@ try {
 
       // File ▸ New ▸ Offline File… "Lost Take": the offline row.
       await person([{ command: 'project.select', params: { items: [] } }])
-      const offlineOpen = open('file.newOfflineFile', 'offlineFile')
+      const offlineOpen = open('item.newOfflineFile', 'offlineFile')
       const lostTake = fill('film-dialog-offlineFile-name', 'Lost Take')
       let offlined = null
       const offlineCancel = await previewThenCancel({
@@ -3253,7 +3253,7 @@ try {
       // Merge Clips… bars.mp4 with an audio-only (offline) file: upstream's Audio method cannot
       // synchronize a file with no sound, so its preview turns off and says why; In Points and
       // Preview again show the merged item row, named as typed.
-      const tone = (await person([{ command: 'file.newOfflineFile', params: { name: 'Tone', video: false, audio: true, seconds: 3 } }])).completed[0].result?.item ?? null
+      const tone = (await person([{ command: 'item.newOfflineFile', params: { name: 'Tone', video: false, audio: true, seconds: 3 } }])).completed[0].result?.item ?? null
       await person([{ command: 'timeline.select', params: { clips: [] } }, { command: 'project.select', params: { items: [media.item, tone] } }])
       const mergedName = 'Merged A'
       const byIn = (prefix) => async () => kit.getByTestId(`film-dialog-${prefix}-method-in`).check()
@@ -3440,7 +3440,7 @@ try {
 
       // Another sequence made active (its Timeline tab clicked) closes Sequence Settings, and nothing is applied.
       {
-        const other = (await person([{ command: 'file.newSequence', params: { name: 'Other cut' } }, { command: 'sequence.open', params: { item: sequenceId } }])).completed[0].result?.sequence ?? null
+        const other = (await person([{ command: 'sequence.new', params: { name: 'Other cut' } }, { command: 'sequence.open', params: { item: sequenceId } }])).completed[0].result?.sequence ?? null
         await waitForEngine(page, (state) => state.details?.sequence?.id === sequenceId)
         const before = await documentNow()
         const serial = (await previewState()).serial
@@ -3472,7 +3472,7 @@ try {
       }
 
       // New Sequence… "Cut 2" with 3 video tracks (from the File menu): a ghost tab and a Project row.
-      const newOpen = open('file.newSequence', 'sequenceSettings')
+      const newOpen = open('sequence.new', 'sequenceSettings')
       const cutTwo = async () => {
         await kit.getByTestId('film-dialog-sequenceSettings-name').fill('Cut 2')
         await kit.getByTestId('film-dialog-sequenceSettings-tab-tracks').click()
@@ -3517,7 +3517,7 @@ try {
       // OK from the Project panel's New Item ▸ Sequence…: it opens with V1–V3 (one step: drop-frame and Maximum Render Quality are off).
       const fromProject = async () => {
         await kit.getByTestId('film-project-new-item').click()
-        await kit.getByTestId('film-project-new-file.newSequence').click()
+        await kit.getByTestId('film-project-new-sequence.new').click()
         await kit.getByTestId('film-dialog-sequenceSettings').waitFor({ timeout: 10000 })
       }
       const newOk = await previewThenOk({ open: fromProject, change: cutTwo })
@@ -3526,7 +3526,7 @@ try {
       const tracks = (opened.sequence?.video ?? []).map((track) => track.name)
       await edited(undoKey, async () => named((await details()).project?.root, 'Cut 2') == null)
       step('New Sequence… OK (from the Project panel\'s New Item) makes "Cut 2", which opens with V1–V3, in one history step, as previewed; one undo takes it away', newOk.ok && cut != null && opened.sequence?.id === cut.item && tracks.length === 3, JSON.stringify({ ...newOk, cut: cut?.item, active: opened.sequence?.id, tracks }))
-      // With drop-frame timecode it is two steps (file.newSequence, then sequence.settings), as upstream.
+      // With drop-frame timecode it is two steps (sequence.new, then sequence.settings), as upstream.
       {
         const twoOk = await previewThenOk({
           open: newOpen,
@@ -3705,7 +3705,7 @@ try {
       // Another sequence made active (its Timeline tab clicked) with Add Tracks open: it stays
       // open, as upstream's, and lists that sequence's tracks after its last ones.
       {
-        const made = (await person([{ command: 'file.newSequence', params: { name: 'Two tracks', video: 1, audio: 2 } }, { command: 'sequence.open', params: { item: sequenceId } }])).completed[0].result?.sequence ?? null
+        const made = (await person([{ command: 'sequence.new', params: { name: 'Two tracks', video: 1, audio: 2 } }, { command: 'sequence.open', params: { item: sequenceId } }])).completed[0].result?.sequence ?? null
         await waitForEngine(page, (state) => state.details?.sequence?.id === sequenceId)
         await addOpen()
         const title = await settledBox(kit.locator('[data-testid="film-dialog"] h2'))
@@ -3827,7 +3827,7 @@ try {
       }
 
       // New Color Matte… red at 640 × 360 (File ▸ New): a red icon in a ghost row, and the matte in the strip.
-      const matteOpen = open('file.newColorMatte', 'colorMatte')
+      const matteOpen = open('item.newColorMatte', 'colorMatte')
       const redMatte = async () => {
         await colour('colorMatte', 'ff0000')()
         await number('film-dialog-colorMatte-width', 640)()
@@ -3882,10 +3882,10 @@ try {
         const before = await count()
         const stepsBefore = await history()
         await kit.getByTestId('film-project-new-item').click()
-        await kit.getByTestId('film-project-new-file.newBarsAndTone').click()
+        await kit.getByTestId('film-project-new-item.newBarsAndTone').click()
         const fromPanel = await until(async () => (await count()) === before + 1, 50)
         const panelDialog = await kit.locator('[role="dialog"]').count()
-        await fromMenu('file.newBarsAndTone')
+        await fromMenu('item.newBarsAndTone')
         const fromFile = await until(async () => (await count()) === before + 2, 50)
         const fileDialog = await kit.locator('[role="dialog"]').count()
         await fromMenu('mixer.addSubmix')
@@ -3929,7 +3929,7 @@ try {
       const toneNamed = async () => itemsOf((await details()).project?.root).filter((each) => /tone/i.test(each.name ?? ''))
       let toneItems = await toneNamed()
       if (toneItems.length === 0) {
-        await person([{ command: 'file.newOfflineFile', params: { name: 'Tone', video: false, audio: true, seconds: 3 } }])
+        await person([{ command: 'item.newOfflineFile', params: { name: 'Tone', video: false, audio: true, seconds: 3 } }])
         toneItems = await toneNamed()
       }
       const tone = toneItems[0]?.item ?? null
@@ -3996,7 +3996,7 @@ try {
       let ghost = null
       const binCancel = await previewThenCancel({
         open: async () => {
-          await fromMenu('file.newSearchBin')
+          await fromMenu('bin.addSearch')
           await kit.getByTestId('film-dialog-searchBin').waitFor({ timeout: 10000 })
         },
         change: fillBin,
@@ -4016,7 +4016,7 @@ try {
       step('Create Search Bin "Audio" (Media Type contains Audio) previews a ghost search bin, open, listing only the sound items; Cancel leaves the document as it was', binCancel.ok && audioItems.length > 0 && audioItems.includes(tone), JSON.stringify({ ...binCancel, ghost, audioItems }))
       const binOk = await previewThenOk({
         open: async () => {
-          await fromMenu('file.newSearchBin')
+          await fromMenu('bin.addSearch')
           await kit.getByTestId('film-dialog-searchBin').waitFor({ timeout: 10000 })
         },
         change: fillBin,
@@ -4163,7 +4163,7 @@ try {
       }
       const T = (await details()).ticksPerSecond ?? 254_016_000_000
       const history = async () => (await kitFrame().evaluate(() => window.filmPreview.history()))?.undo?.length ?? -1
-      const documentJobs = async () => JSON.stringify((await person([{ command: 'jobs.list', params: {} }])).completed[0].result ?? null)
+      const documentJobs = async () => JSON.stringify((await person([{ command: 'job.list', params: {} }])).completed[0].result ?? null)
       const closeDialog = async () => {
         if (await dialogShown()) await kit.getByTestId('film-dialog-cancel').click()
         await until(async () => (await dialogShown()) === 0 && !(await previewState()).open, 50)
@@ -4172,14 +4172,14 @@ try {
       // Scene Edit Detection on a Universal Counting Leader (a cut each second at full
       // sensitivity), open in the Source monitor, and a 300 s matte after it (a job long enough to
       // watch): Generate Markers previews ghost markers on the Source bar once the stepped job
-      // ends, with its progress in the strip on the way; the document's jobs.list stays empty,
+      // ends, with its progress in the strip on the way; the document's job.list stays empty,
       // and Cancel leaves the document as it was.
       const historyAtScene = await history()
       // The leader, the matte and the markers Analyze writes are the person's steps.
-      const leader = (await person([{ command: 'file.newCountingLeader', params: {} }])).completed[0].result?.item ?? null
+      const leader = (await person([{ command: 'item.newCountingLeader', params: {} }])).completed[0].result?.item ?? null
       const end = (await details()).sequence?.duration ?? 0
       await person([{ command: 'timeline.place', params: { item: leader, track: 'V1', time: end } }])
-      const longMatte = (await person([{ command: 'file.newColorMatte', params: { color: '#203040', seconds: 300 } }])).completed[0].result?.item ?? null
+      const longMatte = (await person([{ command: 'item.newColorMatte', params: { color: '#203040', seconds: 300 } }])).completed[0].result?.item ?? null
       await person([{ command: 'timeline.place', params: { item: longMatte, track: 'V1', time: (await details()).sequence?.duration ?? 0 } }])
       const analysed = (await details()).sequence.video.flatMap((track) => track.items ?? []).filter((clip) => clip.item === leader || clip.item === longMatte).map((clip) => clip.clip)
       await person([{ command: 'timeline.select', params: { clips: analysed } }, { command: 'source.open', params: { item: leader } }, { command: 'playhead.set', params: { time: end } }])
@@ -4248,7 +4248,7 @@ try {
           return ended && scene.samples > 2 && scene.rising && scene.first[0] < 1 && scene.bar && added.length >= 3 && scene.drawn && scene.jobs
         },
       })
-      step('Scene Edit Detection with Generate Markers (a counting leader and a long matte) previews as a stepped job, its progress rising in the strip, then the ghost markers on the Source bar; the document\'s jobs.list stays empty, and Cancel leaves the document as it was', sceneCancel.ok, JSON.stringify({ ...sceneCancel, scene }))
+      step('Scene Edit Detection with Generate Markers (a counting leader and a long matte) previews as a stepped job, its progress rising in the strip, then the ghost markers on the Source bar; the document\'s job.list stays empty, and Cancel leaves the document as it was', sceneCancel.ok, JSON.stringify({ ...sceneCancel, scene }))
 
       // Cancel while the job runs ends it: no preview stays open on the engine, nothing reaches
       // the document, and no ghost is left.
@@ -4274,8 +4274,8 @@ try {
       // Analyze (OK) on the leader and the long matte: the document's own job runs a step at a time
       // as upstream's thread does (the web has none), so OK closes at once with upstream's status,
       // the status bar shows the job, a playhead key answers while it runs, and the markers land
-      // in one history step when it ends; Cancel through jobs.cancel changes nothing.
-      const runningJob = async () => ((await person([{ command: 'jobs.list', params: {} }])).completed[0].result ?? []).find((each) => each.finished !== true) ?? null
+      // in one history step when it ends; Cancel through job.cancel changes nothing.
+      const runningJob = async () => ((await person([{ command: 'job.list', params: {} }])).completed[0].result ?? []).find((each) => each.finished !== true) ?? null
       const startAnalyze = async () => {
         await person([{ command: 'timeline.select', params: { clips: analysed } }])
         await fromMenu('clip.sceneEditDetection')
@@ -4315,11 +4315,11 @@ try {
         await startAnalyze()
         const shown = await until(async () => (await kit.getByTestId('film-exporting').count()) === 1, 50)
         const job = await runningJob()
-        if (job) await person([{ command: 'jobs.cancel', params: { job: job.id } }])
+        if (job) await person([{ command: 'job.cancel', params: { job: job.id } }])
         const ended = await until(async () => (await kit.getByTestId('film-exporting').count()) === 0 && (await runningJob()) == null, 200)
         await paintFrames()
         const after = await waitForEngine(page, () => true, { history: true })
-        step('jobs.cancel stops the document\'s running Scene Edit Detection: the status bar\'s job goes, and no history step or edit lands', shown && job != null && ended && (await history()) === steps && after.revision === revision, JSON.stringify({ shown, job: job?.id, ended, steps: [steps, await history()], revision: [revision, after.revision] }))
+        step('job.cancel stops the document\'s running Scene Edit Detection: the status bar\'s job goes, and no history step or edit lands', shown && job != null && ended && (await history()) === steps && after.revision === revision, JSON.stringify({ shown, job: job?.id, ended, steps: [steps, await history()], revision: [revision, after.revision] }))
       }
       // The leader, the long matte, and the markers go again, for the steps after.
       await person([{ command: 'timeline.select', params: { clips: [] } }])
@@ -4327,7 +4327,7 @@ try {
 
       // The marker dialog: a double-click on a Markers row opens it on that marker; a new colour
       // previews on the row; Cancel leaves the document; OK changes it in one step, undone by one.
-      await person([{ command: 'playhead.set', params: { time: Math.round(1.5 * T) } }, { command: 'markers.add', params: { name: 'Edit me' } }])
+      await person([{ command: 'playhead.set', params: { time: Math.round(1.5 * T) } }, { command: 'marker.add', params: { name: 'Edit me' } }])
       await fromMenu('window.panel.Markers')
       const markerNow = async () => ((await details()).sequence?.markers ?? []).find((each) => each.name === 'Edit me') ?? null
       const marker = await markerNow()
@@ -4368,7 +4368,7 @@ try {
       await person([{ command: 'playhead.set', params: { time: Math.round(3.25 * T) } }])
       const cueCancel = await previewThenCancel({
         open: async () => {
-          await fromMenu('markers.addFlashCue')
+          await fromMenu('marker.addFlashCue')
           await kit.getByTestId('film-dialog-flashCue').waitFor({ timeout: 10000 })
         },
         change: async () => kit.getByTestId('film-dialog-flashCue-name').fill('Cue A'),
@@ -5203,7 +5203,7 @@ try {
       const rootId = (await details()).project.root.id
       // A bin at the root holding two of its media items.
       const media = ((await person([{ command: 'project.items', params: { order: 'icon' } }])).completed[0].result?.rows ?? []).filter((row) => row.item != null && row.direct !== false && row.kind === 'media').map((row) => row.item)
-      const bin = (await person([{ command: 'file.newBin', params: { name: 'Floating' } }])).completed[0].result?.bin
+      const bin = (await person([{ command: 'bin.add', params: { name: 'Floating' } }])).completed[0].result?.bin
       const moved = media.slice(0, 2)
       await person([{ command: 'project.moveToBin', params: { items: moved, bin } }])
       const binCard = kit.getByTestId(`film-project-bin-${bin}`)
@@ -5481,7 +5481,7 @@ try {
       await playheadSettled()
       let shown = null
       const result = await previewThenCancel({
-        open: openFake({ id: 'markers.addFlashCue', family: 'menu', title: 'Flash Cue Marker', prefix: 'flashCue', preview: ['markers'], draft: { name: 'Preview cue' } }),
+        open: openFake({ id: 'marker.addFlashCue', family: 'menu', title: 'Flash Cue Marker', prefix: 'flashCue', preview: ['markers'], draft: { name: 'Preview cue' } }),
         change: null,
         expectPreview: async () => {
           const added = kit.locator('[data-testid^="film-marker-"][data-preview="added"]')
@@ -5513,7 +5513,7 @@ try {
     {
       let shown = null
       const result = await previewThenCancel({
-        open: openFake({ id: 'file.newSequence', family: 'sequence', title: 'New Sequence', prefix: 'newSequence', preview: ['timeline'], draft: { name: 'Cut 2', video: 3, audio: 2 } }),
+        open: openFake({ id: 'sequence.new', family: 'sequence', title: 'New Sequence', prefix: 'newSequence', preview: ['timeline'], draft: { name: 'Cut 2', video: 3, audio: 2 } }),
         change: null,
         expectPreview: async () => {
           const tab = kit.locator('[data-testid^="film-sequence-tab-preview-"][data-preview="added"]')
@@ -5562,7 +5562,7 @@ try {
     {
       let shown = null
       const result = await previewThenCancel({
-        open: openFake({ id: 'file.newColorMatte', family: 'tracks', title: 'New Color Matte', prefix: 'colorMatte', preview: ['project'], draft: { color: '#ff0000', seconds: 2 } }),
+        open: openFake({ id: 'item.newColorMatte', family: 'tracks', title: 'New Color Matte', prefix: 'colorMatte', preview: ['project'], draft: { color: '#ff0000', seconds: 2 } }),
         change: null,
         expectPreview: async () => {
           const added = kit.locator('[data-testid="film-project"] [data-testid^="film-project-item-"][data-preview="added"]')
@@ -5802,7 +5802,7 @@ try {
     const markersBefore = (await markersOf()).length
     // Added at the playhead, as M does, so each sits on a frame.
     await edited(
-      () => person([{ command: 'playhead.set', params: { frame: 3 } }, { command: 'markers.add', params: { name: 'First' } }, { command: 'playhead.set', params: { frame: 12 } }, { command: 'markers.add', params: { name: 'Second' } }, { command: 'playhead.set', params: { frame: 0 } }]),
+      () => person([{ command: 'playhead.set', params: { frame: 3 } }, { command: 'marker.add', params: { name: 'First' } }, { command: 'playhead.set', params: { frame: 12 } }, { command: 'marker.add', params: { name: 'Second' } }, { command: 'playhead.set', params: { frame: 0 } }]),
       async () => (await markersOf()).length === markersBefore + 2,
     )
     await kit.getByTestId('film-menu-Window').click()
@@ -5814,7 +5814,7 @@ try {
     await kit.getByTestId(`film-markers-row-${second.id}`).click()
     const wentToSecond = await until(async () => (await details()).playhead === second.start)
     step('two markers are listed in the Markers panel, and a click on the second goes to it', listedBoth && wentToSecond, JSON.stringify({ rows: await kit.locator('[data-testid^="film-markers-row-"]').allTextContents(), playhead: (await details()).playhead, second: second.start }))
-    // The colour filter hides a colour's markers and shows them again (`markers.filterColors`).
+    // The colour filter hides a colour's markers and shows them again (`marker.filterColors`).
     await kit.getByTestId('film-markers-filter-Green').click()
     const filtered = await until(async () => (await kit.locator('[data-testid^="film-markers-row-"]').count()) === markerList.filter((marker) => marker.color !== 'Green').length)
     await kit.getByTestId('film-markers-filter-Green').click()
@@ -6019,7 +6019,7 @@ try {
     step('with no Tools frame on screen, a denied active tool gives way to the first allowed one', razor && noTools && movedOff, JSON.stringify({ razor, noTools, movedOff }))
     // The status bar stays one line at 1100×700 with the hint, the summary, Unsaved changes, and
     // Edited by the agent: the hint gives way, cut with an ellipsis (upstream draws one line).
-    await page3.evaluate(async () => window.devHost.connection().ai.run([{ command: 'markers.add', params: {} }], false))
+    await page3.evaluate(async () => window.devHost.connection().ai.run([{ command: 'marker.add', params: {} }], false))
     await kit3.getByTestId('film-unsaved').waitFor({ timeout: 5000 }).catch(() => undefined)
     await kit3.locator('.kui-agent-edited').waitFor({ timeout: 5000 }).catch(() => undefined)
     const statusLine = await kit3.locator('.kui-status-bar').evaluate((bar) => {

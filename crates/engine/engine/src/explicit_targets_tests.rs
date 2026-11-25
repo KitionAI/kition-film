@@ -67,12 +67,12 @@ fn replace_from_bin_takes_an_explicit_item_and_clips_without_any_selection() {
 fn clip_commands_take_explicit_clips_without_a_selection() {
     let mut s = demo();
     let (a, b) = (v1(&s)[0].clone(), v1(&s)[1].clone());
-    for id in ["edit.clear", "edit.rippleDelete", "clip.audioGain", "edit.pasteAttributes", "clip.enable"] {
+    for id in ["edit.delete", "edit.rippleDelete", "clip.audioGain", "edit.pasteAttributes", "clip.enable"] {
         assert!(!s.is_enabled(id), "{id} is disabled without a selection");
         assert!(matches!(s.execute(id, json!({})), Err(EngineError::Disabled(..))), "{id} with no parameters stays disabled");
     }
     // Clear
-    s.execute("edit.clear", json!({"clips": [a.id.0]})).unwrap();
+    s.execute("edit.delete", json!({"clips": [a.id.0]})).unwrap();
     assert!(clip(&s, a.id).is_none() && clip(&s, b.id).is_some());
     s.execute("edit.undo", json!({})).unwrap();
     assert!(clip(&s, a.id).is_some());
@@ -110,7 +110,7 @@ fn clip_commands_take_explicit_clips_without_a_selection() {
     s.state.selection.clear();
     s.execute("edit.pasteAttributes", json!({"clips": [b.id.0]})).unwrap();
     assert!(s.state.selection.is_empty(), "the selection is left as it was");
-    for id in ["edit.clear", "edit.rippleDelete", "clip.audioGain", "edit.pasteAttributes"] {
+    for id in ["edit.delete", "edit.rippleDelete", "clip.audioGain", "edit.pasteAttributes"] {
         assert!(!s.is_enabled(id), "menu enablement of {id} still follows the selection");
     }
 }
@@ -163,7 +163,7 @@ fn link_and_speed_take_explicit_clips_without_a_selection() {
 fn naming_targets_lifts_only_the_selection_condition() {
     // no sequence: named clips cannot stand in for one
     let mut empty = Session::default();
-    assert_eq!(disabled(empty.execute("edit.clear", json!({"clips": [1]}))), "no sequence is open");
+    assert_eq!(disabled(empty.execute("edit.delete", json!({"clips": [1]}))), "no sequence is open");
     assert_eq!(disabled(empty.execute("clip.speedDuration", json!({"clips": [1], "speed": 50}))), "no sequence is open");
 
     let mut s = demo();
@@ -172,7 +172,7 @@ fn naming_targets_lifts_only_the_selection_condition() {
     assert_eq!(disabled(s.execute("graphics.setText", json!({"clip": a.id.0, "text": "x"}))), "select a graphic clip");
     // a locked track is still the edit's own business: named or selected, the clip stays
     s.execute("timeline.setTrack", json!({"track": "V1", "locked": true})).unwrap();
-    let _ = s.execute("edit.clear", json!({"clips": [a.id.0]}));
+    let _ = s.execute("edit.delete", json!({"clips": [a.id.0]}));
     assert!(clip(&s, a.id).is_some(), "a clip on a locked track is not removed");
 }
 
@@ -182,8 +182,8 @@ fn naming_targets_lifts_only_the_selection_condition() {
 fn project_delete_takes_explicit_bins_and_items_without_a_selection() {
     let mut s = demo();
     let before = s.project.items.len();
-    let empty = s.execute("file.newBin", json!({"name": "Empty"})).unwrap()["bin"].as_u64().unwrap();
-    let outer = s.execute("file.newBin", json!({"name": "Old footage"})).unwrap()["bin"].as_u64().unwrap();
+    let empty = s.execute("bin.add", json!({"name": "Empty"})).unwrap()["bin"].as_u64().unwrap();
+    let outer = s.execute("bin.add", json!({"name": "Old footage"})).unwrap()["bin"].as_u64().unwrap();
     let ocean = item_named(&s, "Ocean_Sunset.mp4");
     s.execute("project.moveToBin", json!({"items": [ocean.0], "bin": outer})).unwrap();
     s.state.project_selection.clear();

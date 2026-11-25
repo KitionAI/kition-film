@@ -2,7 +2,7 @@ format: 1
 id: regressions/issue-5
 feature: film.effects.basics
 intent: >-
-  effects.setParam and the keyframe commands take an effect by its display name (Gaussian Blur) as
+  effect.setParam and the keyframe commands take an effect by its display name (Gaussian Blur) as
   well as its id or index, and a choice by its option's name (blend Screen, dimensions Horizontal)
   as well as its index; an unknown option is refused with the options it has.
 layer: gate

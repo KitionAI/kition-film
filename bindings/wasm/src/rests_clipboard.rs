@@ -13,7 +13,7 @@ fn leaf(id: u64, names: &[&str]) -> Premise {
 pub fn under(session: &Session, command: &str, params: &Value) -> Option<Under> {
     let copy = matches!(command, "edit.copy" | "edit.cut");
     let paste = matches!(command, "edit.paste" | "edit.pasteInsert");
-    let delete = matches!(command, "edit.clear" | "edit.rippleDelete");
+    let delete = matches!(command, "edit.delete" | "edit.rippleDelete");
     if !copy && !paste && !delete {
         return None;
     }

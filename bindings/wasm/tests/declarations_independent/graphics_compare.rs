@@ -110,7 +110,7 @@ pub(super) fn fixture(shared: bool) -> (FilmDocument, u64, u64, u64, u64) {
         doc.execute("timeline.place", json!({"item":source,"track":"V1","seconds":10,"duration":254_016_000_000i64})).unwrap();
     }
     let other = doc.execute("graphics.newText", json!({"newClip":true,"track":1,"time":0,"text":"Other"})).unwrap()["clip"].as_u64().unwrap();
-    let item = doc.execute("file.newColorMatte", json!({"seconds":1})).unwrap()["item"].clone();
+    let item = doc.execute("item.newColorMatte", json!({"seconds":1})).unwrap()["item"].clone();
     let ordinary = doc.execute("timeline.place", json!({"item":item,"track":"V3","seconds":0})).unwrap()["clips"][0].as_u64().unwrap();
     let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
     (doc, first, other, ordinary, sequence)

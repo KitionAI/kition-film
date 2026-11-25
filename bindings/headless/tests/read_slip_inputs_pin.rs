@@ -10,7 +10,7 @@ async fn slip_keys_hold_source_windows_and_allow_unused_names() {
     for command in ["timeline.slip", "timeline.slipLeft", "timeline.slipRight", "timeline.slipLeft5", "timeline.slipRight5"] {
         for change in ["source", "bounds", "name"] {
             let mut doc = FilmDocument::open(FILE, &project(1)).unwrap();
-            let parent = doc.execute("file.newColorMatte", json!({"seconds":4})).unwrap()["item"].clone();
+            let parent = doc.execute("item.newColorMatte", json!({"seconds":4})).unwrap()["item"].clone();
             let sub = doc.execute("clip.makeSubclip", json!({"item":parent,"start":0,"end":3*SECOND,"restrictTrims":true})).unwrap()["item"].clone();
             let clip = doc.execute("timeline.place", json!({"item":sub,"track":"V2","time":2*SECOND,"sourceIn":SECOND,"duration":SECOND})).unwrap()["clips"][0]
                 .clone();

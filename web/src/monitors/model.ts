@@ -242,7 +242,7 @@ export type TransportEntry = {
 }
 
 export const SOURCE_TRANSPORT: readonly TransportEntry[] = [
-  { key: 'markers.add', label: 'Add Marker (M)', uiId: 'control:transport.addMarker', icon: 'marker' },
+  { key: 'marker.add', label: 'Add Marker (M)', uiId: 'control:transport.addMarker', icon: 'marker' },
   { key: 'src.markIn', label: 'Mark In (I)', uiId: 'control:transport.markIn', icon: 'markIn' },
   { key: 'src.markOut', label: 'Mark Out (O)', uiId: 'control:transport.markOut', icon: 'markOut' },
   { key: 'src.goIn', label: 'Go to In (Shift+I)', uiId: 'control:transport.goToIn', icon: 'goToIn' },
@@ -257,14 +257,14 @@ export const SOURCE_TRANSPORT: readonly TransportEntry[] = [
 ]
 
 export const PROGRAM_TRANSPORT: readonly TransportEntry[] = [
-  { key: 'markers.add', label: 'Add Marker (M)', uiId: 'control:transport.addMarker', icon: 'marker' },
-  { key: 'markers.markIn', label: 'Mark In (I)', uiId: 'control:transport.markIn', icon: 'markIn' },
-  { key: 'markers.markOut', label: 'Mark Out (O)', uiId: 'control:transport.markOut', icon: 'markOut' },
-  { key: 'markers.goToIn', label: 'Go to In (Shift+I)', uiId: 'control:transport.goToIn', icon: 'goToIn' },
+  { key: 'marker.add', label: 'Add Marker (M)', uiId: 'control:transport.addMarker', icon: 'marker' },
+  { key: 'marker.markIn', label: 'Mark In (I)', uiId: 'control:transport.markIn', icon: 'markIn' },
+  { key: 'marker.markOut', label: 'Mark Out (O)', uiId: 'control:transport.markOut', icon: 'markOut' },
+  { key: 'marker.goToIn', label: 'Go to In (Shift+I)', uiId: 'control:transport.goToIn', icon: 'goToIn' },
   { key: 'playhead.stepBack', label: 'Step Back 1 Frame (Left)', uiId: 'control:transport.stepBack', icon: 'stepBack' },
   { key: 'playback.toggle', label: 'Play-Stop Toggle (Space)', uiId: 'control:transport.play', icon: 'play' },
   { key: 'playhead.stepForward', label: 'Step Forward 1 Frame (Right)', uiId: 'control:transport.stepForward', icon: 'stepForward' },
-  { key: 'markers.goToOut', label: 'Go to Out (Shift+O)', uiId: 'control:transport.goToOut', icon: 'goToOut' },
+  { key: 'marker.goToOut', label: 'Go to Out (Shift+O)', uiId: 'control:transport.goToOut', icon: 'goToOut' },
   { key: 'sequence.lift', label: 'Lift (;)', uiId: 'control:transport.lift', icon: 'lift' },
   { key: 'sequence.extract', label: "Extract (')", uiId: 'control:transport.extract', icon: 'extract' },
   { key: 'exportFrame', label: 'Export Frame', uiId: 'control:transport.exportFrame', icon: 'camera' },
@@ -277,8 +277,8 @@ export type TransportAction = { command: string; params: Record<string, unknown>
 /** `transport`'s click arm: `src.*` marks with `target: "source"`, `src.go*` and steps move the source playhead, others run with `monitor`. */
 export function transportAction(which: Which, key: string): TransportAction {
   if (key === 'exportFrame') return { disabled: true }
-  if (key === 'src.markIn') return { command: 'markers.markIn', params: { target: 'source' } }
-  if (key === 'src.markOut') return { command: 'markers.markOut', params: { target: 'source' } }
+  if (key === 'src.markIn') return { command: 'marker.markIn', params: { target: 'source' } }
+  if (key === 'src.markOut') return { command: 'marker.markOut', params: { target: 'source' } }
   if (key === 'src.goIn' || key === 'src.goOut' || key === 'src.stepBack' || key === 'src.stepFwd') return { seek: key.slice('src.'.length) as 'goIn' }
   return { command: key, params: { monitor: which } }
 }

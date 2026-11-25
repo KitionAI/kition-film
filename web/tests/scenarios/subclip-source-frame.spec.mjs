@@ -14,7 +14,7 @@ test(`${subclip ? 'F69' : 'F70'} a 60 fps ${subclip ? 'subclip' : 'parent'} Sour
   await film.open()
   await lendMedia(film, 'media/six-colors-60fps.mp4', readFileSync(movie))
   await film.command('file.newProject', { name: 'Subclip source frames' })
-  await film.command('file.newSequence', { name: '60 fps', width: 64, height: 36, fps: 60, video: 1, audio: 0 })
+  await film.command('sequence.new', { name: '60 fps', width: 64, height: 36, fps: 60, video: 1, audio: 0 })
   const { items: [parent] } = await film.command('file.import', { paths: ['../media/six-colors-60fps.mp4'] })
   const item = subclip ? (await film.command('clip.makeSubclip', { item: parent, startFrame: 1, endFrame: 5 })).item : parent
   await film.command('source.open', { item })

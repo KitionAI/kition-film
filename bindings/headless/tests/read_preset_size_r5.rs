@@ -25,7 +25,7 @@ async fn preset_geometry_uses_source_dimensions_but_a_scalar_fade_does_not() {
                     it.effect_mut(id).unwrap().param_mut(param).unwrap().value = ParamValue::Float(50.0);
                 }
             });
-            let result = f.call("run", json!({"basis":basis,"steps":[{"command":"presets.apply","params":{"clips":[clip.0],"preset":preset}}]})).await;
+            let result = f.call("run", json!({"basis":basis,"steps":[{"command":"preset.apply","params":{"clips":[clip.0],"preset":preset}}]})).await;
             let required = change == "assigned-effect" || (change == "source-size" && preset != "Fade In");
             let label = format!("{preset}/{change}");
             if required {

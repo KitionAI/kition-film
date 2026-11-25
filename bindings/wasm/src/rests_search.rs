@@ -32,7 +32,7 @@ fn columns(params: &Value) -> Vec<String> {
 
 pub fn complete(session: &Session, command: &str, params: &Value, under: Option<Under>) -> Option<Under> {
     let columns = match command {
-        "file.newSearchBin" => columns(params),
+        "bin.addSearch" => columns(params),
         "project.editSearchBin" => {
             let id = params.get("bin").and_then(Value::as_u64)?;
             let bin = session.project.search_bins.iter().find(|bin| bin.id.0 == id)?;

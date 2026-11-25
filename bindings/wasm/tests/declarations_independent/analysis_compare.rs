@@ -126,7 +126,7 @@ fn expected(project: &Project, sequence: u64, command: &str, params: &Value, sel
 fn analyses_compare_item_routes_clip_owners_neighbours_replan_modes_and_linked_scene_cuts() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
     let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let media = doc.execute("file.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].as_u64().unwrap();
+    let media = doc.execute("item.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].as_u64().unwrap();
     let sub = doc.execute("clip.makeSubclip", json!({"item":media,"start":0,"end":254_016_000_000i64})).unwrap()["item"].as_u64().unwrap();
     let mut clips = Vec::new();
     for (item, at) in [(media, 0), (sub, 762_048_000_000i64)] {

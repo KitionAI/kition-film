@@ -12,26 +12,26 @@ use kition_kit::{EditorState, KitDocument, Premise, TimeSpan, Under, Within};
 use serde_json::{Value, json};
 
 pub const PATHS: &[(&str, &str)] = &[
-    ("markers.markIn", "program"),
-    ("markers.markIn", "source"),
-    ("markers.markIn", "target=source"),
-    ("markers.markOut", "program"),
-    ("markers.markOut", "source"),
-    ("markers.markOut", "target=source"),
-    ("markers.clearIn", "program"),
-    ("markers.clearIn", "target=source"),
-    ("markers.clearOut", "program"),
-    ("markers.clearOut", "target=source"),
-    ("markers.clearInOut", "program"),
-    ("markers.clearInOut", "target=source"),
-    ("markers.markSplitVideoIn", "program"),
-    ("markers.markSplitVideoIn", "source"),
-    ("markers.markSplitVideoOut", "program"),
-    ("markers.markSplitVideoOut", "source"),
-    ("markers.markSplitAudioIn", "program"),
-    ("markers.markSplitAudioIn", "source"),
-    ("markers.markSplitAudioOut", "program"),
-    ("markers.markSplitAudioOut", "source"),
+    ("marker.markIn", "program"),
+    ("marker.markIn", "source"),
+    ("marker.markIn", "target=source"),
+    ("marker.markOut", "program"),
+    ("marker.markOut", "source"),
+    ("marker.markOut", "target=source"),
+    ("marker.clearIn", "program"),
+    ("marker.clearIn", "target=source"),
+    ("marker.clearOut", "program"),
+    ("marker.clearOut", "target=source"),
+    ("marker.clearInOut", "program"),
+    ("marker.clearInOut", "target=source"),
+    ("marker.markSplitVideoIn", "program"),
+    ("marker.markSplitVideoIn", "source"),
+    ("marker.markSplitVideoOut", "program"),
+    ("marker.markSplitVideoOut", "source"),
+    ("marker.markSplitAudioIn", "program"),
+    ("marker.markSplitAudioIn", "source"),
+    ("marker.markSplitAudioOut", "program"),
+    ("marker.markSplitAudioOut", "source"),
     ("project.setMarks", "source/sequence"),
 ];
 
@@ -123,7 +123,7 @@ fn source_fields(project: &Project, source: u64, mark_in: bool, mark_out: bool) 
 #[test]
 fn mark_paths_compare_all_source_kinds_time_spellings_and_assigned_sides() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
-    let media = doc.execute("file.newColorMatte", json!({"seconds":3})).unwrap()["item"].as_u64().unwrap();
+    let media = doc.execute("item.newColorMatte", json!({"seconds":3})).unwrap()["item"].as_u64().unwrap();
     doc.execute("timeline.place", json!({"item":media,"track":"V1","time":0})).unwrap();
     let subclip = doc.execute("clip.makeSubclip", json!({"item":media,"start":0,"end":254_016_000_000i64})).unwrap()["item"].as_u64().unwrap();
     let loaded = kition_film_format::decode(&doc.save(None).unwrap()).unwrap();
@@ -205,14 +205,14 @@ fn mark_paths_compare_all_source_kinds_time_spellings_and_assigned_sides() {
                     let channel = if command.contains("Video") { "video" } else { "audio" };
                     fields.extend([format!("{base}.{channel}In"), format!("{base}.{channel}Out")]);
                 } else if program {
-                    if command != "markers.clearOut" {
+                    if command != "marker.clearOut" {
                         fields.push("sequence.settings.mark_in".into());
                     }
-                    if command != "markers.clearIn" {
+                    if command != "marker.clearIn" {
                         fields.push("sequence.settings.mark_out".into());
                     }
                     for side in ["In", "Out"] {
-                        if command.ends_with(side) || command == "markers.clearInOut" {
+                        if command.ends_with(side) || command == "marker.clearInOut" {
                             fields.extend([format!("sequence.settings.split.video{side}"), format!("sequence.settings.split.audio{side}")]);
                         }
                     }

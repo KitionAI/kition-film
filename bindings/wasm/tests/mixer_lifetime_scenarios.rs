@@ -15,7 +15,7 @@ fn new_project(doc: &mut FilmDocument) {
 }
 
 fn new_sequence(doc: &mut FilmDocument) {
-    run(doc, "file.newSequence", json!({"name": "Same layout", "width": 64, "height": 36, "fps": 24, "video": 1, "audio": 1}));
+    run(doc, "sequence.new", json!({"name": "Same layout", "width": 64, "height": 36, "fps": 24, "video": 1, "audio": 1}));
 }
 
 #[test]
@@ -67,9 +67,9 @@ fn n14_held_master_fader_cannot_commit_after_project_or_sequence_switch() {
 
 fn multicam_project(doc: &mut FilmDocument) {
     run(doc, "file.newProject", json!({"name": "Multicam context"}));
-    let source = run(doc, "file.newSequence", json!({"name": "Cameras", "width": 64, "height": 36, "fps": 24, "video": 2, "audio": 1}))["sequence"].clone();
+    let source = run(doc, "sequence.new", json!({"name": "Cameras", "width": 64, "height": 36, "fps": 24, "video": 2, "audio": 1}))["sequence"].clone();
     for (track, color) in [("V1", "#ff0000"), ("V2", "#0000ff")] {
-        let item = run(doc, "file.newColorMatte", json!({"color": color, "seconds": 2}))["item"].clone();
+        let item = run(doc, "item.newColorMatte", json!({"color": color, "seconds": 2}))["item"].clone();
         run(doc, "timeline.place", json!({"item": item, "track": track, "seconds": 0}));
     }
     new_sequence(doc);

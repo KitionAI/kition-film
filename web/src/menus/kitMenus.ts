@@ -32,7 +32,7 @@ export function relativePath(folder: string, to: string) {
   return [...from.slice(shared).map(() => '..'), ...target.slice(shared)].join('/')
 }
 
-/** A row of the engine's `shortcuts.list`. */
+/** A row of the engine's `shortcut.list`. */
 export type ShortcutListRow = { id: string; label?: string; category?: string; shortcuts: ReadonlyArray<{ keys: string; panel?: string | null }> }
 
 /** What the shortcuts list reads from the parity manifest: upstream's UI rows and keys, which the web engine does not hold. */
@@ -45,7 +45,7 @@ type ShortcutManifest = {
 export type ShortcutItem = { command: string; label: string; category: string; keys: string; panel: string | null }
 
 /**
- * Help ▸ Keyboard Shortcuts' list (read-only in wave 1): the engine's `shortcuts.list`, then
+ * Help ▸ Keyboard Shortcuts' list (read-only in wave 1): the engine's `shortcut.list`, then
  * upstream's UI rows and keys (the manifest's) for the commands the engine does not list, once per
  * command, key, and panel, without the commands a browser hides and the keys `reserved` names.
  */

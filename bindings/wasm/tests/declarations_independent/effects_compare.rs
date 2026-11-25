@@ -76,7 +76,7 @@ pub const GRAPHIC_LAYER_ACTIVE: &[&str] = &[
 // this is reviewed source tracing, not an additional blind reading.
 pub const TRANSITION_MIXER_MODE: &[&str] = &[
     "clipMixer.touch",
-    "effects.setDefaultTransition",
+    "effect.setDefaultTransition",
     "mixer.inspect",
     "mixer.recordStart",
     "mixer.setValue",
@@ -238,14 +238,14 @@ pub const BASELINE_GROUPS: &[BaselineGroup] = &[
         kind: "declaration",
         class: "source/frame dimensions or media input unheld",
         commands: &[
-            "masks.add",
-            "masks.addVertex",
-            "masks.moveVertex",
-            "masks.removeVertex",
-            "masks.set",
-            "masks.toggleVertexSmooth",
-            "masks.track",
-            "masks.translate",
+            "mask.add",
+            "mask.addVertex",
+            "mask.moveVertex",
+            "mask.removeVertex",
+            "mask.set",
+            "mask.toggleVertexSmooth",
+            "mask.track",
+            "mask.translate",
         ],
         proof: "engine/src/masks.rs:175-231,580-726",
     },
@@ -371,15 +371,15 @@ pub const BASELINE_GROUPS: &[BaselineGroup] = &[
         kind: "declaration",
         class: "whole mask target vs mask leaves",
         commands: &[
-            "masks.add",
-            "masks.addVertex",
-            "masks.moveVertex",
-            "masks.remove",
-            "masks.removeVertex",
-            "masks.set",
-            "masks.toggleVertexSmooth",
-            "masks.track",
-            "masks.translate",
+            "mask.add",
+            "mask.addVertex",
+            "mask.moveVertex",
+            "mask.remove",
+            "mask.removeVertex",
+            "mask.set",
+            "mask.toggleVertexSmooth",
+            "mask.track",
+            "mask.translate",
         ],
         proof: "engine/src/masks.rs:205-470; baseline no masks premises",
     },
@@ -560,7 +560,7 @@ fn reviewed_effects_groups_name_registered_blind_paths() {
 #[test]
 fn mask_projection_matches_the_committed_source_and_mapping_reading() {
     let mut doc = FilmDocument::create("Edit.kfilm", 320, 180).unwrap();
-    let source = doc.execute("file.newColorMatte", json!({"color":"#557799","seconds":1})).unwrap()["item"].as_u64().unwrap();
+    let source = doc.execute("item.newColorMatte", json!({"color":"#557799","seconds":1})).unwrap()["item"].as_u64().unwrap();
     let clip = doc.execute("timeline.place", json!({"item":source,"track":"V1","time":0})).unwrap()["clips"][0].as_u64().unwrap();
     // Reviewed correction, not a blind-row edit: the original fixture had neither
     // fitting nor a mask. render/src/lib.rs:338-363 consumes sequence dimensions
@@ -568,9 +568,9 @@ fn mask_projection_matches_the_committed_source_and_mapping_reading() {
     // fitting branch with an actual addressed mask (masks.rs:206-243).
     doc.execute("timeline.select", json!({"clips":[clip]})).unwrap();
     doc.execute("clip.scaleToFrameSize", json!({})).unwrap();
-    doc.execute("masks.add", json!({"clip":clip,"shape":"ellipse"})).unwrap();
+    doc.execute("mask.add", json!({"clip":clip,"shape":"ellipse"})).unwrap();
     let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    for command in ["masks.add", "masks.set", "masks.moveVertex", "masks.translate", "masks.addVertex", "masks.removeVertex", "masks.toggleVertexSmooth"] {
+    for command in ["mask.add", "mask.set", "mask.moveVertex", "mask.translate", "mask.addVertex", "mask.removeVertex", "mask.toggleVertexSmooth"] {
         let held = doc.under(command, &json!({"clip":clip,"effect":"opacity","mask":0})).unwrap().expect("geometry premises");
         let target = held.premises.iter().find(|premise| premise.id == json!(clip)).expect("target mapping premise");
         let wanted = ["effects", "item", "sourceIn", "speed", "reverse", "props.frame_hold", "props.scale_to_frame"];
@@ -584,7 +584,7 @@ fn mask_projection_matches_the_committed_source_and_mapping_reading() {
             assert_eq!(premise.fields.as_deref(), Some(fields.map(str::to_owned).as_slice()), "{command}: {held:?}");
         }
     }
-    let held = doc.under("masks.remove", &json!({"clip":clip,"effect":"opacity","mask":0})).unwrap().expect("remove premise");
+    let held = doc.under("mask.remove", &json!({"clip":clip,"effect":"opacity","mask":0})).unwrap().expect("remove premise");
     let target = held.premises.iter().find(|premise| premise.id == json!(clip)).unwrap();
     assert_eq!(target.fields.as_deref(), Some(["effects".to_owned()].as_slice()));
     assert_eq!(target.positions.as_deref(), Some([].as_slice()));

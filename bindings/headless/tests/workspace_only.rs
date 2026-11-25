@@ -165,7 +165,7 @@ fn act(root: &Path) -> Vec<String> {
 
     // A short movie in the workspace, made by the kit (for proxies and ingest), and a project.
     let mut maker = FilmDocument::create("maker.kfilm", 64, 36).unwrap();
-    let matte = maker.execute("file.newColorMatte", json!({ "color": "#3060c0", "seconds": 1.0 })).unwrap();
+    let matte = maker.execute("item.newColorMatte", json!({ "color": "#3060c0", "seconds": 1.0 })).unwrap();
     maker.execute("timeline.place", json!({ "item": matte["item"], "track": "V1", "seconds": 0.0 })).unwrap();
     let range = json!({ "range": "custom", "startSeconds": 0.0, "endSeconds": 0.5, "wait": true });
     let mut movie = json!({ "path": "clip.mov", "format": "prores" });
@@ -211,7 +211,7 @@ fn act(root: &Path) -> Vec<String> {
 
     // Commands that write folders they are given.
     let _ = agent.run(&id, "file.projectManager", json!({ "destination": at("pm"), "wait": true }));
-    let _ = agent.run(&id, "media.createProxies", json!({ "items": [clip], "destination": at("proxies"), "wait": true }));
+    let _ = agent.run(&id, "media.addProxies", json!({ "items": [clip], "destination": at("proxies"), "wait": true }));
     let _ = agent.run(&id, "project.ingestSettings", json!({ "enabled": true, "action": "copy", "destination": at("ingested") }));
     let _ = agent.run(&id, "file.import", json!({ "paths": ["clip.mov"] }));
     let _ = agent.run(&id, "file.newProjectFromTemplate", json!({ "template": at("planted.kfilm") }));
@@ -223,14 +223,14 @@ fn act(root: &Path) -> Vec<String> {
         ("lut.import", json!({ "path": at("secret.cube") })),
         ("color.setInputLut", json!({ "path": at("secret.cube") })),
         ("lut.export", json!({ "lut": "builtin:look-teal-orange", "path": at("made.cube") })),
-        ("shortcuts.export", json!({ "path": at("made-shortcuts.json") })),
-        ("shortcuts.import", json!({ "path": at("shortcuts.json") })),
+        ("shortcut.export", json!({ "path": at("made-shortcuts.json") })),
+        ("shortcut.import", json!({ "path": at("shortcuts.json") })),
         ("color.presetThumbnails", json!({ "path": at("thumbs.png") })),
         ("media.search", json!({ "folder": outside.to_string_lossy() })),
         ("media.autoRelink", json!({ "folder": outside.to_string_lossy() })),
-        ("captions.import", json!({ "path": at("secret.srt") })),
+        ("caption.import", json!({ "path": at("secret.srt") })),
         ("file.projectManager", json!({ "destination": at("pm-batch"), "wait": true })),
-        ("media.createProxies", json!({ "items": [clip], "destination": at("proxies-batch"), "wait": true })),
+        ("media.addProxies", json!({ "items": [clip], "destination": at("proxies-batch"), "wait": true })),
         ("file.projectSettings.scratchDisks", json!({ "videoPreviews": at("prev-batch") })),
         ("prefs.set", json!({ "key": "mediaCache.location", "value": at("cache") })),
         ("mediaCache.clean", json!({ "all": true })),
@@ -258,7 +258,7 @@ fn act(root: &Path) -> Vec<String> {
             wrong.push(format!("{name}: the check does not report the media outside the workspace as missing: {found}"));
         }
         let _ = agent.run(&escape, "sequence.renderInToOut", json!({ "wait": true }));
-        let _ = agent.run(&escape, "media.createProxies", json!({ "wait": true }));
+        let _ = agent.run(&escape, "media.addProxies", json!({ "wait": true }));
         let _ = agent.run(&escape, "file.import", json!({ "paths": ["clip.mov"] }));
         let _ = agent.run(&escape, "file.listAutoSaves", json!({}));
         // The project's picture item now names the file outside: deleting it must delete nothing.
@@ -271,7 +271,7 @@ fn act(root: &Path) -> Vec<String> {
 
     // An export's image overlay names a picture outside the workspace: it is not burned in.
     let mut exporter = FilmDocument::create("overlay.kfilm", 64, 36).unwrap();
-    let matte = exporter.execute("file.newColorMatte", json!({ "color": "#000000", "seconds": 1.0 })).unwrap();
+    let matte = exporter.execute("item.newColorMatte", json!({ "color": "#000000", "seconds": 1.0 })).unwrap();
     exporter.execute("timeline.place", json!({ "item": matte["item"], "track": "V1", "seconds": 0.0 })).unwrap();
     let overlay = json!({ "enabled": true, "path": at("overlay.bmp"), "size_percent": 100.0, "opacity": 100.0 });
     let mut export = json!({ "path": "overlay.png", "format": "png", "settings": { "effects": { "image_overlay": overlay } } });

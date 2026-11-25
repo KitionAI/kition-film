@@ -3,10 +3,10 @@ import { test, expect, clips, editState } from './fixtures.mjs'
 async function copiedLayers(film) {
   await film.open()
   await film.command('file.newProject', { name: 'Clipboard boundaries' })
-  const { sequence } = await film.command('file.newSequence', { name: 'Source', width: 64, height: 36, fps: 24, video: 2, audio: 1 })
+  const { sequence } = await film.command('sequence.new', { name: 'Source', width: 64, height: 36, fps: 24, video: 2, audio: 1 })
   const sources = []
   for (const [track, color] of [['V1', '#ff0000'], ['V2', '#0000ff']]) {
-    const { item } = await film.command('file.newColorMatte', { color, seconds: 1 })
+    const { item } = await film.command('item.newColorMatte', { color, seconds: 1 })
     await film.command('timeline.place', { item, track, seconds: 0 })
     sources.push(item)
   }
@@ -43,7 +43,7 @@ async function refuse(film, command, reason) {
 for (const command of ['edit.paste', 'edit.pasteInsert']) {
   test(`F45 ${command} refuses missing destination tracks, then preserves both layers after tracks are added`, async ({ film }) => {
     const { sources } = await copiedLayers(film)
-    await film.command('file.newSequence', { name: 'Destination', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
+    await film.command('sequence.new', { name: 'Destination', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
     await refuse(film, command, 'track V2')
     await film.command('sequence.addTracks', { video: 1 })
     const before = await film.sequence()
@@ -79,14 +79,14 @@ for (const command of ['edit.paste', 'edit.pasteInsert']) {
 
 test('F47 clipboard refuses recursive sequence nesting and is cleared when the project is replaced', async ({ film }) => {
   const { sequence: source } = await copiedLayers(film)
-  await film.command('file.newSequence', { name: 'Outer', width: 64, height: 36, fps: 24, video: 2, audio: 1 })
+  await film.command('sequence.new', { name: 'Outer', width: 64, height: 36, fps: 24, video: 2, audio: 1 })
   await film.command('timeline.place', { item: source, seconds: 0 })
   await film.command('timeline.select', { clips: clips(await film.sequence()).map(item => item.clip) })
   await film.command('edit.copy')
   await film.command('sequence.open', { item: source })
   await refuse(film, 'edit.paste', 'cannot be nested inside itself')
   await film.command('file.newProject', { name: 'Replacement' })
-  await film.command('file.newSequence', { name: 'Replacement', width: 64, height: 36, fps: 24, video: 2, audio: 1 })
+  await film.command('sequence.new', { name: 'Replacement', width: 64, height: 36, fps: 24, video: 2, audio: 1 })
   // IDs can be reused by a fresh project, but the old clipboard must not refer to them.
   await refuse(film, 'edit.paste', 'clipboard')
   await film.saveReopen()

@@ -3,7 +3,7 @@ import { writeFileSync } from 'node:fs'
 import { test, expect, clips, editState, TICKS } from './fixtures.mjs'
 
 async function newSequence(film, name = 'Mix', video = 1) {
-  return film.command('file.newSequence', { name, width: 64, height: 36, fps: 24, video, audio: 1 })
+  return film.command('sequence.new', { name, width: 64, height: 36, fps: 24, video, audio: 1 })
 }
 
 async function newProject(film) {
@@ -73,7 +73,7 @@ async function multicamProject(film) {
   await film.command('file.newProject', { name: 'Original multicam colors' })
   const { sequence: source } = await newSequence(film, 'Cameras', 2)
   for (const [track, color] of [['V1', '#ff0000'], ['V2', '#0000ff']]) {
-    const { item } = await film.command('file.newColorMatte', { color, seconds: 2 })
+    const { item } = await film.command('item.newColorMatte', { color, seconds: 2 })
     await film.command('timeline.place', { item, track, seconds: 0 })
   }
   await newSequence(film, 'Program')

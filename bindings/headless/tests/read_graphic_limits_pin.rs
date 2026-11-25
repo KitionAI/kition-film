@@ -9,7 +9,7 @@ use serde_json::json;
 fn fixture() -> (Fixture, u64, u64, u64) {
     let mut doc = FilmDocument::create(FILE, 320, 180).unwrap();
     let graphic = doc.execute("graphics.newText", json!({"text":"Title","newClip":true,"track":0,"time":0,"seconds":1})).unwrap()["clip"].as_u64().unwrap();
-    let item = doc.execute("file.newColorMatte", json!({"seconds":1})).unwrap()["item"].as_u64().unwrap();
+    let item = doc.execute("item.newColorMatte", json!({"seconds":1})).unwrap()["item"].as_u64().unwrap();
     let next = doc.execute("timeline.place", json!({"item":item,"track":"V1","seconds":10})).unwrap()["clips"][0].as_u64().unwrap();
     (Fixture::from_bytes(&doc.save(None).unwrap(), Default::default()), graphic, next, item)
 }

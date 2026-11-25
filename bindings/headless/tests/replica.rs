@@ -73,7 +73,7 @@ fn item_names(doc: &FilmDocument) -> Vec<String> {
 }
 
 fn matte(doc: &mut FilmDocument, color: &str) {
-    doc.execute("file.newColorMatte", json!({ "color": color, "seconds": 2 })).unwrap();
+    doc.execute("item.newColorMatte", json!({ "color": color, "seconds": 2 })).unwrap();
 }
 
 #[test]
@@ -116,7 +116,7 @@ fn opens_a_room_without_a_file_and_imports_exports_and_saves_it() {
     matte(&mut peer, "#00ff00");
     kit.model("model.import", json!({ "documentId": id, "changes": encode(&peer.export_changes(&since).unwrap()) })).unwrap();
 
-    let batch = json!({ "documentId": id, "ops": [{ "op": "command", "id": "file.newColorMatte", "params": { "color": "#0000ff", "seconds": 2 } }] });
+    let batch = json!({ "documentId": id, "ops": [{ "op": "command", "id": "item.newColorMatte", "params": { "color": "#0000ff", "seconds": 2 } }] });
     kit.model("model.batch", batch).unwrap();
     let exported = kit.model("model.export", json!({ "documentId": id, "since": encode(&peer.version().unwrap()) })).unwrap();
     peer.import_changes(&decode(exported["changes"].as_str().unwrap())).unwrap();
@@ -189,7 +189,7 @@ fn an_agents_edit_undoes_in_the_agents_scope_only() {
     let id = kit.open(OpenRequest { file: &folder.file(NAME).unwrap(), read_only: false, create: None }).unwrap().id;
 
     let matte = params(json!({ "color": "#ff0000", "seconds": 2 }));
-    assert!(kit.execute(&id, "file.newColorMatte", matte, Origin::Agent).unwrap().changed);
+    assert!(kit.execute(&id, "item.newColorMatte", matte, Origin::Agent).unwrap().changed);
     // The person's Undo does not take back the agent's edit.
     let person = kit.execute(&id, "edit.undo", params(json!({ "scope": "person" })), Origin::User).unwrap();
     assert!(!person.changed, "{person:?}");

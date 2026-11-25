@@ -66,7 +66,7 @@ fn fixture() -> (FilmDocument, u64, u64, u64, u64) {
     let seen = doc.inspect().unwrap();
     let sequence = seen["sequence"]["id"].as_u64().unwrap();
     let audio = seen["sequence"]["audio"][0]["id"].as_u64().unwrap();
-    let item = doc.execute("file.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
+    let item = doc.execute("item.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
     let clip = doc.execute("timeline.place", json!({"item":item,"audioTrack":"A1","time":0,"video":false})).unwrap()["clips"]
         .as_array()
         .unwrap()

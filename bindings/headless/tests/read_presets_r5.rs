@@ -15,7 +15,7 @@ async fn preset_library_survives_unrelated_file_refresh() {
         let sequence = ItemId(q["id"].as_u64().unwrap());
         let clip = ClipId(v1(&q)[0]);
         let source = ItemId(q["video"][0]["items"][0]["item"].as_u64().unwrap());
-        f.colleague(&[("effects.apply", json!({"clips":[clip.0],"effect":"gaussian_blur"}))]);
+        f.colleague(&[("effect.apply", json!({"clips":[clip.0],"effect":"gaussian_blur"}))]);
         rewrite(&f.file(), |p| {
             let it = p.sequence_mut(sequence).unwrap().find_item_mut(clip).unwrap().1;
             let mut zero = it.duration;
@@ -35,7 +35,7 @@ async fn preset_library_survives_unrelated_file_refresh() {
                 kition_kits::Caller::User,
                 view.kit_id,
                 &view.document_id,
-                "presets.save",
+                "preset.save",
                 json!({"clip":clip.0,"effects":[0],"name":"Fade In","keyframes":"scale"}).as_object().unwrap().clone(),
             )
             .await
@@ -53,7 +53,7 @@ async fn preset_library_survives_unrelated_file_refresh() {
                 }
             });
         }
-        let result = f.call("run", json!({"basis":basis,"steps":[{"command":"presets.apply","params":{"clips":[clip.0],"preset":"Fade In"}}]})).await;
+        let result = f.call("run", json!({"basis":basis,"steps":[{"command":"preset.apply","params":{"clips":[clip.0],"preset":"Fade In"}}]})).await;
         if change == "duration" {
             assert_eq!(result.unwrap_err()["error"]["code"], "conflict");
         } else {

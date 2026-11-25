@@ -25,7 +25,7 @@ pub fn under(session: &Session, command: &str, params: &Value) -> Option<Under> 
             | "transcript.extract"
             | "transcript.removePauses"
             | "transcript.removeFillers"
-            | "transcript.createCaptions"
+            | "transcript.addCaptions"
     ) {
         return None;
     }
@@ -48,7 +48,7 @@ pub fn under(session: &Session, command: &str, params: &Value) -> Option<Under> 
     }
     let sequence = session.state.active_sequence?;
     let q = session.active_sequence()?;
-    if command != "transcript.createCaptions" {
+    if command != "transcript.addCaptions" {
         // Range edits split/copy clips and shift suffixes; select also delegates
         // to selection-following navigation. Keep their complete owned sequence.
         answer.premises.push(leaf(json!(sequence.0), ["sequence"]));

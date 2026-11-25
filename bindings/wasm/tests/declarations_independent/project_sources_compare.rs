@@ -8,8 +8,8 @@ use kition_kit::{KitDocument, Premise, Under};
 use serde_json::{Value, json};
 
 pub const PATHS: &[(&str, &str)] = &[
-    ("file.newBinFromSelection", "items/default selection"),
-    ("file.newSequenceFromClip", "items/default selection"),
+    ("bin.addFromSelection", "items/default selection"),
+    ("sequence.newFromClip", "items/default selection"),
     ("clip.makeSubclip", "explicit clip or timeline fallback"),
     ("clip.makeSubclip", "item or source/project fallback"),
 ];
@@ -17,9 +17,9 @@ pub fn compared_path(command: &str, path: &str) -> bool {
     PATHS.contains(&(command, path))
 }
 pub fn more(command: &str) -> Vec<&'static str> {
-    if command == "file.newBinFromSelection" {
+    if command == "bin.addFromSelection" {
         vec!["coarse-selection-state", "all-moved-entry-positions"]
-    } else if command == "file.newSequenceFromClip" {
+    } else if command == "sequence.newFromClip" {
         vec![
             "coarse-selection-state",
             "coarse-mode-state",
@@ -56,7 +56,7 @@ fn route(project: &Project, mut item: ItemId, want: &mut Under) {
 }
 fn expected(project: &Project, seq: u64, timeline: &[u64], selected: &[u64], monitor: Option<u64>, command: &str, p: &Value) -> Under {
     let mut want = Under::default();
-    if command == "file.newBinFromSelection" {
+    if command == "bin.addFromSelection" {
         let ids = p.get("items").and_then(Value::as_array).map(|a| a.iter().filter_map(Value::as_u64).collect::<Vec<_>>()).unwrap_or_else(|| selected.to_vec());
         want.premises.extend(ids.iter().map(|id| leaf(*id, &[]).positions(["entries"])));
         if p.get("name").and_then(Value::as_str).is_none() {
@@ -85,10 +85,10 @@ fn expected(project: &Project, seq: u64, timeline: &[u64], selected: &[u64], mon
 fn project_sources_compare_bin_names_and_subclip_source_precedence_ancestry_and_overrides() {
     let mut doc = FilmDocument::create("Sources.kfilm", 64, 36).unwrap();
     let seq = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let source = doc.execute("file.newBarsAndTone", json!({"seconds":4})).unwrap()["item"].as_u64().unwrap();
+    let source = doc.execute("item.newBarsAndTone", json!({"seconds":4})).unwrap()["item"].as_u64().unwrap();
     let sub = doc.execute("clip.makeSubclip", json!({"item":source,"startFrame":3,"endFrame":40})).unwrap()["item"].as_u64().unwrap();
     let clip = doc.execute("timeline.place", json!({"item":sub,"track":"V1","time":0})).unwrap()["clips"][0].as_u64().unwrap();
-    doc.execute("file.newBin", json!({"name":"Bin 01"})).unwrap();
+    doc.execute("bin.add", json!({"name":"Bin 01"})).unwrap();
     let project = kition_film_format::decode(&doc.save(None).unwrap()).unwrap().project;
     for monitor in [None, Some(source), Some(sub)] {
         if let Some(item) = monitor {
@@ -98,8 +98,8 @@ fn project_sources_compare_bin_names_and_subclip_source_precedence_ancestry_and_
             doc.execute("project.select", json!({"items":selected})).unwrap();
             for timeline in [vec![clip], vec![]] {
                 doc.execute("timeline.select", json!({"clips":timeline,"linked":false})).unwrap();
-                for command in ["clip.makeSubclip", "file.newBinFromSelection"] {
-                    let params = if command == "file.newBinFromSelection" {
+                for command in ["clip.makeSubclip", "bin.addFromSelection"] {
+                    let params = if command == "bin.addFromSelection" {
                         vec![json!({}), json!({"name":"Given"}), json!({"items":[source,sub]}), json!({"items":[],"name":"Empty"})]
                     } else {
                         vec![
@@ -126,7 +126,7 @@ fn project_sources_compare_bin_names_and_subclip_source_precedence_ancestry_and_
 #[test]
 fn sequences_from_clips_compare_copied_sources_first_parent_and_bounded_subclip_settings() {
     let mut doc = FilmDocument::create("Sequence.kfilm", 64, 36).unwrap();
-    let media = doc.execute("file.newBarsAndTone", json!({"seconds":4})).unwrap()["item"].as_u64().unwrap();
+    let media = doc.execute("item.newBarsAndTone", json!({"seconds":4})).unwrap()["item"].as_u64().unwrap();
     let sub = doc.execute("clip.makeSubclip", json!({"item":media,"startFrame":3,"endFrame":40})).unwrap()["item"].as_u64().unwrap();
     doc.execute("timeline.place", json!({"item":media,"track":"V1","time":0})).unwrap();
     let project = kition_film_format::decode(&doc.save(None).unwrap()).unwrap().project;
@@ -146,7 +146,7 @@ fn sequences_from_clips_compare_copied_sources_first_parent_and_bounded_subclip_
                     }
                 }
             }
-            assert_eq!(normalized(doc.under("file.newSequenceFromClip", &p).unwrap().unwrap()), normalized(want), "{p}/{selected:?}");
+            assert_eq!(normalized(doc.under("sequence.newFromClip", &p).unwrap().unwrap()), normalized(want), "{p}/{selected:?}");
         }
     }
 }

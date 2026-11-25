@@ -4,7 +4,7 @@
 //! |---|---|---|
 //! | `clip.synchronize` | Clip ▸ Synchronize… | align selected timeline clips to a reference by In, Out, timecode, clip marker or audio |
 //! | `clip.mergeClips` | Clip ▸ Merge Clips… | one video + audio clips → a merged clip |
-//! | `clip.createMulticam` | Clip ▸ Create Multi-Camera Source Sequence… | synchronised cameras → a multi-camera source sequence |
+//! | `clip.addMulticam` | Clip ▸ Create Multi-Camera Source Sequence… | synchronised cameras → a multi-camera source sequence |
 //! | `clip.multicamEnable` | Clip ▸ Multi-Camera ▸ Enable | toggle multi-camera behaviour of nested clips |
 //! | `clip.multicamFlatten` | Clip ▸ Multi-Camera ▸ Flatten | replace multi-camera clips by the clips their angle shows |
 //! | `multicam.switchAngle` | | set the angle of clips (keys 1–9 when stopped, clicking an angle) |
@@ -155,7 +155,7 @@ fn base_commands() -> Vec<CommandSpec> {
             true,
         ),
         spec(
-            "clip.createMulticam",
+            "clip.addMulticam",
             "Create Multi-Camera Source Sequence…",
             &["Clip"],
             r#"{"items":[id]?,"name":str?,"method":"in|out|timecode|marker|audio","ignoreHours":bool?,"marker":str?,"offset":frames?,"audio":"camera1|all|switch","cameraNames":"clip|track|metadata","processedBin":bool?,"reference":item?}"#,
@@ -569,7 +569,7 @@ fn merge_clips(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 fn create_multicam(s: &mut Session, p: &Value) -> Result<Value> {
-    let cmd = "clip.createMulticam";
+    let cmd = "clip.addMulticam";
     let method = method_p(p, cmd)?;
     let mut clips = sync_items(s, &items_p(s, p), cmd)?;
     let has_v = |s: &Session, c: &SyncClip| s.project.item(c.item).is_some_and(|i| i.has_video());

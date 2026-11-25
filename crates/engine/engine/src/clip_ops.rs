@@ -58,9 +58,9 @@ macro_rules! label_cmd {
 pub(crate) fn commands() -> Vec<CommandSpec> {
     vec![
         // ---------------- File ----------------
-        spec("file.newSequenceFromClip", "Sequence From Clip", &["File", "New"], None, r#"{"items":[id]?}"#, has_clip_items, sequence_from_clip),
+        spec("sequence.newFromClip", "Sequence From Clip", &["File", "New"], None, r#"{"items":[id]?}"#, has_clip_items, sequence_from_clip),
         spec(
-            "file.newBinFromSelection",
+            "bin.addFromSelection",
             "Bin From Selection",
             &["File", "New"],
             Some("Shift+B"),
@@ -69,7 +69,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
             bin_from_selection,
         ),
         spec(
-            "file.newOfflineFile",
+            "item.newOfflineFile",
             "Offline File…",
             &["File", "New"],
             None,
@@ -147,7 +147,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
             audio_channels,
         ),
         spec(
-            "clip.modifyTimecode",
+            "clip.setTimecode",
             "Timecode…",
             &["Clip", "Modify"],
             None,
@@ -282,8 +282,8 @@ pub(crate) fn apply_layout(v: &mut Vec<CommandSpec>) {
     edit_tail.extend(LABEL_IDS);
     edit_tail.extend(["edit.removeUnused", "edit.consolidateDuplicates"]);
     let layout: Vec<(At, Vec<&'static str>)> = vec![
-        (At::After("file.newSequence"), vec!["file.newSequenceFromClip"]),
-        (At::After("file.newBin"), vec!["file.newBinFromSelection", "file.newOfflineFile"]),
+        (At::After("sequence.new"), vec!["sequence.newFromClip"]),
+        (At::After("bin.add"), vec!["bin.addFromSelection", "item.newOfflineFile"]),
         (At::Before("file.save"), vec!["file.closeProject"]),
         (At::After("file.saveCopy"), vec!["file.saveAll"]),
         (At::After("edit.pasteInsert"), vec!["edit.pasteAttributes", "edit.removeAttributes"]),
@@ -296,7 +296,7 @@ pub(crate) fn apply_layout(v: &mut Vec<CommandSpec>) {
                 "clip.editSubclip",
                 "clip.audioChannels",
                 "clip.interpretFootage",
-                "clip.modifyTimecode",
+                "clip.setTimecode",
                 "clip.frameHoldOptions",
                 "clip.frameHold",
                 "clip.insertFrameHoldSegment",
@@ -662,8 +662,8 @@ fn retime_effect(e: &mut kition_film_project::EffectInstance, from: &TrackItem, 
 
 fn sequence_from_clip(s: &mut Session, p: &Value) -> Result<Value> {
     let items: Vec<ItemId> = items_p(s, p).into_iter().filter(|i| is_clip_item(&s.project, *i)).collect();
-    let first = *items.first().ok_or_else(|| bad("file.newSequenceFromClip", "select a clip in the Project panel"))?;
-    let pi = s.project.item(first).ok_or_else(|| bad("file.newSequenceFromClip", "no such item"))?.clone();
+    let first = *items.first().ok_or_else(|| bad("sequence.newFromClip", "select a clip in the Project panel"))?;
+    let pi = s.project.item(first).ok_or_else(|| bad("sequence.newFromClip", "no such item"))?.clone();
     let mut settings = match &pi.kind {
         ItemKind::Sequence(q) => q.settings.clone(),
         _ => media_root(&s.project, first).map(|(_, m, _)| crate::commands::default_seq_settings_for(&m.info)).unwrap_or_default(),
@@ -744,7 +744,7 @@ pub(crate) fn item_range(p: &Project, id: ItemId, still: Tick) -> Option<TimeRan
 fn bin_from_selection(s: &mut Session, p: &Value) -> Result<Value> {
     let items = items_p(s, p);
     if items.is_empty() {
-        return Err(bad("file.newBinFromSelection", "select items in the Project panel"));
+        return Err(bad("bin.addFromSelection", "select items in the Project panel"));
     }
     let parent = s.project.root.parent_of(items[0]).filter(|b| *b != s.project.root.id);
     let name = match str_p(p, "name") {
@@ -781,7 +781,7 @@ fn offline_file(s: &mut Session, p: &Value) -> Result<Value> {
     let has_v = bool_p(p, "video").unwrap_or(true);
     let has_a = bool_p(p, "audio").unwrap_or(true);
     if !has_v && !has_a {
-        return Err(bad("file.newOfflineFile", "an offline file needs video or audio"));
+        return Err(bad("item.newOfflineFile", "an offline file needs video or audio"));
     }
     let rate = f64_p(p, "fps").map(FrameRate::from_f64).unwrap_or(st.frame_rate);
     let width = u64_p(p, "width").map(|v| v as u32).unwrap_or(st.width);
@@ -789,7 +789,7 @@ fn offline_file(s: &mut Session, p: &Value) -> Result<Value> {
     let secs = f64_p(p, "seconds").unwrap_or(10.0).max(rate.frame_duration().seconds());
     let duration = rate.snap_nearest(Tick::from_seconds_f64(secs)).max(rate.frame_duration());
     let start_tc = match str_p(p, "timecode") {
-        Some(tc) => Some(parse_timecode(tc, rate, false, 0).map_err(|e| bad("file.newOfflineFile", format!("timecode: {e:?}")))?),
+        Some(tc) => Some(parse_timecode(tc, rate, false, 0).map_err(|e| bad("item.newOfflineFile", format!("timecode: {e:?}")))?),
         None => None,
     };
     let file_name = str_p(p, "fileName").map(str::to_string).filter(|n| !n.is_empty()).unwrap_or_else(|| "Offline.mov".into());
@@ -1369,25 +1369,25 @@ fn audio_channels(s: &mut Session, p: &Value) -> Result<Value> {
 fn modify_timecode(s: &mut Session, p: &Value) -> Result<Value> {
     let item = item_p(p, "item")
         .or_else(|| s.state.project_selection.iter().copied().find(|i| s.project.item(*i).and_then(|it| it.as_media()).is_some()))
-        .ok_or_else(|| bad("clip.modifyTimecode", "select a clip"))?;
-    let m = s.project.item(item).and_then(|i| i.as_media()).ok_or_else(|| bad("clip.modifyTimecode", "not a media clip"))?;
+        .ok_or_else(|| bad("clip.setTimecode", "select a clip"))?;
+    let m = s.project.item(item).and_then(|i| i.as_media()).ok_or_else(|| bad("clip.setTimecode", "not a media clip"))?;
     let rate = m.frame_rate();
     let reset = bool_p(p, "reset").unwrap_or(false);
     let frame = if let Some(tc) = str_p(p, "timecode") {
-        Some(parse_timecode(tc, rate, false, 0).map_err(|e| bad("clip.modifyTimecode", format!("timecode: {e:?}")))?)
+        Some(parse_timecode(tc, rate, false, 0).map_err(|e| bad("clip.setTimecode", format!("timecode: {e:?}")))?)
     } else {
         p.get("frame").and_then(Value::as_i64)
     };
     let tape = str_p(p, "tapeName").map(str::to_string);
     if frame.is_none() && tape.is_none() && !reset {
-        return Err(bad("clip.modifyTimecode", "need `timecode`, `frame`, `tapeName` or `reset`"));
+        return Err(bad("clip.setTimecode", "need `timecode`, `frame`, `tapeName` or `reset`"));
     }
     if frame.is_some_and(|f| f < 0) {
-        return Err(bad("clip.modifyTimecode", "timecode must not be negative"));
+        return Err(bad("clip.setTimecode", "timecode must not be negative"));
     }
     const FILE_TC: &str = "File Timecode";
     let r = s.edit("Modify Timecode", |pr, _| {
-        let it = pr.item_mut(item).ok_or_else(|| bad("clip.modifyTimecode", "no such item"))?;
+        let it = pr.item_mut(item).ok_or_else(|| bad("clip.setTimecode", "no such item"))?;
         let cur = it.as_media().and_then(|m| m.info.start_timecode);
         if reset {
             // back to the file's own timecode ("none" = the file had none)

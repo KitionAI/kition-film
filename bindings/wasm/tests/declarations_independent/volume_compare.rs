@@ -38,12 +38,12 @@ fn leaf(id: u64, fields: impl IntoIterator<Item = impl Into<String>>) -> Premise
 fn keyboard_volume_compares_all_shortcuts_link_modes_recipient_kinds_and_animation() {
     for animated in [false, true] {
         let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
-        let item = doc.execute("file.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
+        let item = doc.execute("item.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
         let first = doc.execute("timeline.place", json!({"item":item,"track":"V1","time":254_016_000_000i64})).unwrap()["clips"].clone();
         let second = doc.execute("timeline.place", json!({"item":item,"track":"V2","audioTrack":"A2","time":0})).unwrap()["clips"].clone();
         if animated {
-            doc.execute("effects.addKeyframe", json!({"clip":first[1],"effect":"volume","param":"level","mediaTime":0,"value":-3})).unwrap();
-            doc.execute("effects.addKeyframe", json!({"clip":first[1],"effect":"volume","param":"level","mediaTime":254_016_000_000i64,"value":-6})).unwrap();
+            doc.execute("effect.addKeyframe", json!({"clip":first[1],"effect":"volume","param":"level","mediaTime":0,"value":-3})).unwrap();
+            doc.execute("effect.addKeyframe", json!({"clip":first[1],"effect":"volume","param":"level","mediaTime":254_016_000_000i64,"value":-6})).unwrap();
         }
         let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
         let project = kition_film_format::decode(&doc.save(None).unwrap()).unwrap().project;

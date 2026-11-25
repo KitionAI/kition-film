@@ -7,8 +7,8 @@ import { test, expect, clips, editState } from './fixtures.mjs'
 test('F36 Audio Gain preview cancels cleanly; committed +6 dB survives history/reopen and changes exported stereo samples', async ({ film, page }, testInfo) => {
   await film.open()
   await film.command('file.newProject', { name: 'Original gain comparison' })
-  await film.command('file.newSequence', { name: 'Gain', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
-  const { item } = await film.command('file.newBarsAndTone', { seconds: 0.5 })
+  await film.command('sequence.new', { name: 'Gain', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
+  const { item } = await film.command('item.newBarsAndTone', { seconds: 0.5 })
   await film.command('timeline.place', { item, seconds: 0 })
   const before = await film.sequence()
   const audio = clips(before, 'audio')[0].clip

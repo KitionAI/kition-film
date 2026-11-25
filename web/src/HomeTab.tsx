@@ -70,7 +70,7 @@ export function HomeTab({ tool, onTool, onInvoke }: { tool: string; onTool: (id:
         <TakeoverButton command="file.import" icon={FileInput} onInvoke={onInvoke} size="large" primary />
         {/* Upstream's rows read "Sequence…" and "Media" under File ▸ New and File ▸ Export; on their own they need the verb. */}
         <RibbonStack>
-          {small('file.newSequence', Clapperboard, t('home.newSequence'))}
+          {small('sequence.new', Clapperboard, t('home.newSequence'))}
           <TakeoverButton command="file.exportMedia" label={t('home.exportMedia')} icon={Download} onInvoke={onInvoke} />
         </RibbonStack>
       </RibbonGroup>
@@ -103,10 +103,10 @@ export function HomeTab({ tool, onTool, onInvoke }: { tool: string; onTool: (id:
       </RibbonGroup>
 
       <RibbonGroup label={p('Markers')} icon={MapPin}>
-        {big('markers.add', MapPin)}
+        {big('marker.add', MapPin)}
         <RibbonStack>
-          {small('markers.markIn', ArrowRightToLine)}
-          {small('markers.markOut', ArrowLeftToLine)}
+          {small('marker.markIn', ArrowRightToLine)}
+          {small('marker.markOut', ArrowLeftToLine)}
         </RibbonStack>
       </RibbonGroup>
 

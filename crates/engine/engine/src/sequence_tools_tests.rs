@@ -13,8 +13,8 @@ fn demo() -> Session {
 /// An empty 23.976 sequence and a 20 s Bars and Tone item (video + audio).
 fn fresh() -> (Session, u64) {
     let mut s = Session::default();
-    s.execute("file.newSequence", json!({"name": "Test"})).unwrap();
-    let item = s.execute("file.newBarsAndTone", json!({"seconds": 20.0})).unwrap()["item"].as_u64().unwrap();
+    s.execute("sequence.new", json!({"name": "Test"})).unwrap();
+    let item = s.execute("item.newBarsAndTone", json!({"seconds": 20.0})).unwrap()["item"].as_u64().unwrap();
     (s, item)
 }
 
@@ -43,17 +43,17 @@ fn commands_are_registered_in_premiere_menu_order() {
     assert!(after("sequence.matchFrame", "sequence.reverseMatchFrame"));
     assert!(after("sequence.closeGap", "sequence.goToNextGap"));
     assert!(after("sequence.addTracks", "sequence.deleteTracks"));
-    assert!(after("markers.markSelection", "markers.markSplitVideoIn"));
-    assert!(after("markers.goToOut", "markers.goToSplitVideoIn"));
-    assert!(after("markers.add", "markers.addRange"));
+    assert!(after("marker.markSelection", "marker.markSplitVideoIn"));
+    assert!(after("marker.goToOut", "marker.goToSplitVideoIn"));
+    assert!(after("marker.add", "marker.addRange"));
     let gap = find_command("sequence.goToPrevGap").unwrap();
     assert_eq!(gap.menu, &["Sequence", "Go to Gap"]);
     assert_eq!(gap.label, "Previous in Sequence");
-    assert_eq!(find_command("markers.clearAll").unwrap().label, "Clear Markers");
+    assert_eq!(find_command("marker.clearAll").unwrap().label, "Clear Markers");
     assert_eq!(s.shortcuts.primary("sequence.reverseMatchFrame").as_deref(), Some("Shift+R"));
     assert_eq!(s.shortcuts.primary("sequence.goToNextGap").as_deref(), Some("Shift+;"));
     assert_eq!(s.shortcuts.primary("sequence.makeSubsequence").as_deref(), Some("Shift+U"));
-    assert_eq!(s.shortcuts.primary("markers.addRangeInOut").as_deref(), Some("Ctrl+M"));
+    assert_eq!(s.shortcuts.primary("marker.addRangeInOut").as_deref(), Some("Ctrl+M"));
     // every id is unique
     let mut sorted = all.clone();
     sorted.sort_unstable();
@@ -64,7 +64,7 @@ fn commands_are_registered_in_premiere_menu_order() {
 #[test]
 fn go_to_gap_in_sequence_and_in_track() {
     let (mut s, bars) = fresh();
-    let matte = s.execute("file.newColorMatte", json!({"seconds": 20.0})).unwrap()["item"].as_u64().unwrap();
+    let matte = s.execute("item.newColorMatte", json!({"seconds": 20.0})).unwrap()["item"].as_u64().unwrap();
     place(&mut s, bars, "V1", 0, 0, 48); // V1/A1 0–48
     place(&mut s, bars, "V1", 96, 0, 48); // V1/A1 96–144
     s.execute("timeline.place", json!({"item": matte, "track": "V2", "frame": 48, "duration": f(&s, 24).0})).unwrap(); // V2 48–72
@@ -148,8 +148,8 @@ fn make_subsequence_from_in_out_and_from_selection() {
     let seq = s.state.active_sequence.unwrap();
     let orig = s.active_sequence().unwrap().clone();
     assert!(s.execute("sequence.makeSubsequence", json!({})).is_err(), "needs In/Out or a selection");
-    s.execute("markers.markIn", json!({"frame": 30})).unwrap();
-    s.execute("markers.markOut", json!({"frame": 77})).unwrap();
+    s.execute("marker.markIn", json!({"frame": 30})).unwrap();
+    s.execute("marker.markOut", json!({"frame": 77})).unwrap();
     let r = s.execute("sequence.makeSubsequence", json!({})).unwrap();
     let sub = ItemId(r["sequence"].as_u64().unwrap());
     assert_eq!(r["name"], json!("Main Edit_Sub_01"));
@@ -175,7 +175,7 @@ fn make_subsequence_from_in_out_and_from_selection() {
         assert_eq!(a, b, "source sequence untouched");
     }
     // from a selection (no In/Out): the clips, starting at 0
-    s.execute("markers.clearInOut", json!({})).unwrap();
+    s.execute("marker.clearInOut", json!({})).unwrap();
     let c = orig.video_tracks[0].items[2].clone();
     s.execute("timeline.select", json!({"clips": [c.id.0]})).unwrap();
     let r = s.execute("sequence.makeSubsequence", json!({"name": "Shot 3"})).unwrap();
@@ -319,33 +319,33 @@ fn delete_tracks_empty_and_specific() {
 fn split_points_on_the_sequence() {
     let (mut s, bars) = fresh();
     place(&mut s, bars, "V1", 0, 0, 240);
-    s.execute("markers.markIn", json!({"frame": 10})).unwrap();
-    s.execute("markers.markOut", json!({"frame": 100})).unwrap();
-    assert!(!s.is_enabled("markers.goToSplitVideoIn"), "no split yet");
-    s.execute("markers.markSplitAudioIn", json!({"frame": 20})).unwrap();
-    s.execute("markers.markSplitVideoOut", json!({"frame": 90})).unwrap();
+    s.execute("marker.markIn", json!({"frame": 10})).unwrap();
+    s.execute("marker.markOut", json!({"frame": 100})).unwrap();
+    assert!(!s.is_enabled("marker.goToSplitVideoIn"), "no split yet");
+    s.execute("marker.markSplitAudioIn", json!({"frame": 20})).unwrap();
+    s.execute("marker.markSplitVideoOut", json!({"frame": 90})).unwrap();
     let q = s.active_sequence().unwrap();
     assert_eq!(q.split.audio_in, Some(f(&s, 20)));
     assert_eq!(q.split.video_out, Some(f(&s, 90)));
     // go to: split points, or the ordinary In/Out for the other channel
-    s.execute("markers.goToSplitAudioIn", json!({})).unwrap();
+    s.execute("marker.goToSplitAudioIn", json!({})).unwrap();
     assert_eq!(s.playhead(), f(&s, 20));
-    s.execute("markers.goToSplitVideoIn", json!({})).unwrap();
+    s.execute("marker.goToSplitVideoIn", json!({})).unwrap();
     assert_eq!(s.playhead(), f(&s, 10));
-    s.execute("markers.goToSplitVideoOut", json!({})).unwrap();
+    s.execute("marker.goToSplitVideoOut", json!({})).unwrap();
     assert_eq!(s.playhead(), f(&s, 90));
-    s.execute("markers.goToSplitAudioOut", json!({})).unwrap();
+    s.execute("marker.goToSplitAudioOut", json!({})).unwrap();
     assert_eq!(s.playhead(), f(&s, 100));
     // a split Out before a split In clears the In of that channel
-    s.execute("markers.markSplitAudioOut", json!({"frame": 15})).unwrap();
+    s.execute("marker.markSplitAudioOut", json!({"frame": 15})).unwrap();
     assert_eq!(s.active_sequence().unwrap().split.audio_in, None);
     // Mark In replaces the In splits; Clear In and Out clears everything
-    s.execute("markers.markSplitAudioIn", json!({"frame": 5})).unwrap();
-    s.execute("markers.markIn", json!({"frame": 12})).unwrap();
+    s.execute("marker.markSplitAudioIn", json!({"frame": 5})).unwrap();
+    s.execute("marker.markIn", json!({"frame": 12})).unwrap();
     let sp = s.active_sequence().unwrap().split;
     assert_eq!((sp.video_in, sp.audio_in), (None, None));
     assert!(sp.video_out.is_some());
-    s.execute("markers.clearInOut", json!({})).unwrap();
+    s.execute("marker.clearInOut", json!({})).unwrap();
     assert!(s.active_sequence().unwrap().split.is_empty());
     s.execute("edit.undo", json!({})).unwrap();
     assert!(!s.active_sequence().unwrap().split.is_empty(), "split points are undoable");
@@ -358,9 +358,9 @@ fn source_split_points_make_l_and_j_cuts() {
     let r = s.sequence_rate();
     s.execute("project.setMarks", json!({"item": bars, "in": r.tick_of(48).0, "out": r.tick_of(95).0})).unwrap();
     // J-cut: audio starts 12 frames before the picture
-    s.execute("markers.markSplitAudioIn", json!({"target": "source", "time": r.tick_of(36).0})).unwrap();
+    s.execute("marker.markSplitAudioIn", json!({"target": "source", "time": r.tick_of(36).0})).unwrap();
     assert_eq!(s.project.item(ItemId(bars)).unwrap().split.audio_in, Some(r.tick_of(36)));
-    s.execute("markers.goToSplitAudioIn", json!({"target": "source"})).unwrap();
+    s.execute("marker.goToSplitAudioIn", json!({"target": "source"})).unwrap();
     assert_eq!(s.state.source_playhead, r.tick_of(36));
     s.execute("playhead.set", json!({"frame": 0})).unwrap();
     s.execute("source.overwrite", json!({})).unwrap();
@@ -373,7 +373,7 @@ fn source_split_points_make_l_and_j_cuts() {
     assert_eq!(v.source_time_at(r.tick_of(30)), a.source_time_at(r.tick_of(30)), "in sync");
     assert_eq!(s.playhead(), r.tick_of(60));
     // an ordinary In clears the source split In
-    s.execute("markers.markIn", json!({"target": "source", "time": r.tick_of(40).0})).unwrap();
+    s.execute("marker.markIn", json!({"target": "source", "time": r.tick_of(40).0})).unwrap();
     assert!(s.project.item(ItemId(bars)).unwrap().split.audio_in.is_none());
 }
 
@@ -381,48 +381,48 @@ fn source_split_points_make_l_and_j_cuts() {
 fn range_and_chapter_markers() {
     let mut s = demo();
     s.execute("playhead.set", json!({"frame": 24})).unwrap();
-    let id = s.execute("markers.addRange", json!({})).unwrap()["marker"].as_u64().unwrap();
+    let id = s.execute("marker.addRange", json!({})).unwrap()["marker"].as_u64().unwrap();
     let m = s.active_sequence().unwrap().markers.iter().find(|m| m.id.0 == id).unwrap().clone();
     assert_eq!((m.start, m.duration), (f(&s, 24), f(&s, 24)), "one second");
-    s.execute("markers.addRange", json!({"durationFrames": 10, "color": "Rose"})).unwrap();
-    assert!(!s.is_enabled("markers.addRangeInOut"));
-    s.execute("markers.markIn", json!({"frame": 48})).unwrap();
-    s.execute("markers.markOut", json!({"frame": 71})).unwrap();
-    let id = s.execute("markers.addRangeInOut", json!({"name": "Scene"})).unwrap()["marker"].as_u64().unwrap();
+    s.execute("marker.addRange", json!({"durationFrames": 10, "color": "Rose"})).unwrap();
+    assert!(!s.is_enabled("marker.addRangeInOut"));
+    s.execute("marker.markIn", json!({"frame": 48})).unwrap();
+    s.execute("marker.markOut", json!({"frame": 71})).unwrap();
+    let id = s.execute("marker.addRangeInOut", json!({"name": "Scene"})).unwrap()["marker"].as_u64().unwrap();
     let m = s.active_sequence().unwrap().markers.iter().find(|m| m.id.0 == id).unwrap().clone();
     assert_eq!((m.start, m.duration, m.name.as_str()), (f(&s, 48), f(&s, 24), "Scene"));
-    let id = s.execute("markers.addChapter", json!({"frame": 100})).unwrap()["marker"].as_u64().unwrap();
+    let id = s.execute("marker.addChapter", json!({"frame": 100})).unwrap()["marker"].as_u64().unwrap();
     let m = s.active_sequence().unwrap().markers.iter().find(|m| m.id.0 == id).unwrap().clone();
     assert_eq!((m.kind, m.name.as_str(), m.start), (MarkerKind::Chapter, "Chapter 1", f(&s, 100)));
     // colour filter + Show All Marker Colors
-    assert!(!s.is_enabled("markers.showAllMarkerColors"));
-    s.execute("markers.filterColors", json!({"color": "Rose", "visible": false})).unwrap();
+    assert!(!s.is_enabled("marker.showAllMarkerColors"));
+    s.execute("marker.filterColors", json!({"color": "Rose", "visible": false})).unwrap();
     assert_eq!(s.state.hidden_marker_colors, vec![Label::Rose]);
-    s.execute("markers.showAllMarkerColors", json!({})).unwrap();
+    s.execute("marker.showAllMarkerColors", json!({})).unwrap();
     assert!(s.state.hidden_marker_colors.is_empty());
-    assert!(s.execute("markers.filterColors", json!({"hidden": ["Nope"]})).is_err());
-    s.execute("markers.clearAll", json!({})).unwrap();
+    assert!(s.execute("marker.filterColors", json!({"hidden": ["Nope"]})).is_err());
+    s.execute("marker.clearAll", json!({})).unwrap();
     assert!(s.active_sequence().unwrap().markers.is_empty());
 }
 
 #[test]
 fn ripple_sequence_markers_follow_ripple_edits() {
     let mut s = demo();
-    s.execute("markers.clearAll", json!({})).unwrap();
+    s.execute("marker.clearAll", json!({})).unwrap();
     let mk = |s: &mut Session, frame: i64| {
-        s.execute("markers.add", json!({"frame": frame})).unwrap()["marker"].as_u64().unwrap();
+        s.execute("marker.add", json!({"frame": frame})).unwrap()["marker"].as_u64().unwrap();
     };
     mk(&mut s, 30);
     mk(&mut s, 200);
     let starts = |s: &Session| s.active_sequence().unwrap().markers.iter().map(|m| m.start).collect::<Vec<_>>();
     // off: extract leaves markers alone
-    s.execute("markers.markIn", json!({"frame": 24})).unwrap();
-    s.execute("markers.markOut", json!({"frame": 47})).unwrap();
+    s.execute("marker.markIn", json!({"frame": 24})).unwrap();
+    s.execute("marker.markOut", json!({"frame": 47})).unwrap();
     s.execute("sequence.extract", json!({})).unwrap();
     assert_eq!(starts(&s), vec![f(&s, 30), f(&s, 200)]);
     s.execute("edit.undo", json!({})).unwrap();
     // on: the marker inside goes, the later one moves left
-    assert_eq!(s.execute("markers.rippleSequenceMarkers", json!({})).unwrap()["rippleSequenceMarkers"], json!(true));
+    assert_eq!(s.execute("marker.rippleSequenceMarkers", json!({})).unwrap()["rippleSequenceMarkers"], json!(true));
     s.execute("sequence.extract", json!({})).unwrap();
     assert_eq!(starts(&s), vec![f(&s, 176)]);
     s.execute("edit.undo", json!({})).unwrap();
@@ -431,7 +431,7 @@ fn ripple_sequence_markers_follow_ripple_edits() {
     s.execute("source.open", json!({"item": item.0})).unwrap();
     let r = s.sequence_rate();
     s.execute("project.setMarks", json!({"item": item.0, "in": r.tick_of(0).0, "out": r.tick_of(11).0})).unwrap();
-    s.execute("markers.clearInOut", json!({})).unwrap();
+    s.execute("marker.clearInOut", json!({})).unwrap();
     s.execute("playhead.set", json!({"frame": 100})).unwrap();
     s.execute("source.insert", json!({})).unwrap();
     assert_eq!(starts(&s), vec![f(&s, 30), f(&s, 212)]);
@@ -446,16 +446,16 @@ fn ripple_sequence_markers_follow_ripple_edits() {
 #[test]
 fn copy_paste_includes_sequence_markers() {
     let mut s = demo();
-    s.execute("markers.clearAll", json!({})).unwrap();
+    s.execute("marker.clearAll", json!({})).unwrap();
     let first = s.active_sequence().unwrap().video_tracks[0].items[0].clone();
-    s.execute("markers.add", json!({"frame": 10, "name": "a"})).unwrap();
+    s.execute("marker.add", json!({"frame": 10, "name": "a"})).unwrap();
     s.execute("timeline.select", json!({"clips": [first.id.0]})).unwrap();
     s.execute("edit.copy", json!({})).unwrap();
     s.execute("playhead.set", json!({"frame": 500})).unwrap();
     s.execute("edit.paste", json!({})).unwrap();
     assert_eq!(s.active_sequence().unwrap().markers.len(), 1, "off: markers stay behind");
     s.execute("edit.undo", json!({})).unwrap();
-    s.execute("markers.copyPasteIncludesSequenceMarkers", json!({"on": true})).unwrap();
+    s.execute("marker.copyPasteIncludesSequenceMarkers", json!({"on": true})).unwrap();
     s.execute("timeline.select", json!({"clips": [first.id.0]})).unwrap();
     s.execute("edit.copy", json!({})).unwrap();
     s.execute("playhead.set", json!({"frame": 500})).unwrap();
@@ -492,15 +492,15 @@ fn go_to_in_out_without_marks_go_to_the_sequence_ends() {
     let end = s.active_sequence().unwrap().duration();
     let mid = kition_film_time::Tick(end.0 / 2);
     s.execute("playhead.set", json!({"time": mid.0})).unwrap();
-    s.execute("markers.goToIn", json!({})).unwrap();
+    s.execute("marker.goToIn", json!({})).unwrap();
     assert_eq!(s.playhead(), kition_film_time::Tick::ZERO, "the start");
-    s.execute("markers.goToOut", json!({})).unwrap();
+    s.execute("marker.goToOut", json!({})).unwrap();
     assert_eq!(s.playhead(), end, "the end");
     // with marks, the marks
     let at = kition_film_time::Tick(end.0 / 4);
     s.execute("playhead.set", json!({"time": at.0})).unwrap();
-    s.execute("markers.markIn", json!({})).unwrap();
+    s.execute("marker.markIn", json!({})).unwrap();
     s.execute("playhead.set", json!({"time": mid.0})).unwrap();
-    s.execute("markers.goToIn", json!({})).unwrap();
+    s.execute("marker.goToIn", json!({})).unwrap();
     assert_eq!(s.playhead(), s.active_sequence().unwrap().mark_in.unwrap());
 }

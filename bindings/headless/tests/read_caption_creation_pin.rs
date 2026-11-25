@@ -6,11 +6,11 @@ use serde_json::json;
 #[tokio::test(flavor = "multi_thread")]
 async fn caption_creation_retains_the_track_membership_it_uses() {
     let mut missing = Vec::new();
-    for command in ["captions.newTrack", "captions.add"] {
+    for command in ["caption.newTrack", "caption.add"] {
         let f = Fixture::new(0);
         let (_, basis) = f.inspect().await;
-        f.colleague(&[("captions.newTrack", json!({"name":"Outside C1"}))]);
-        let params = if command == "captions.newTrack" { json!({"name":"Mine"}) } else { json!({"text":"Mine","time":0}) };
+        f.colleague(&[("caption.newTrack", json!({"name":"Outside C1"}))]);
+        let params = if command == "caption.newTrack" { json!({"name":"Mine"}) } else { json!({"text":"Mine","time":0}) };
         let result = f.call("run", json!({"basis":basis,"steps":[{"command":command,"params":params}]})).await;
         match result {
             Err(error) => assert_eq!(error["error"]["code"], "conflict", "{command}: {error}"),

@@ -13,7 +13,7 @@ async fn deleting_a_clip_holds_owner_lock_but_not_owner_name() {
         let clip = v1(&seq)[1];
         let track = seq["video"][0]["id"].as_u64().unwrap();
         f.colleague(&[("timeline.setTrack", if related { json!({"track":track,"locked":true}) } else { json!({"track":track,"name":"Other"}) })]);
-        let result = f.call("run", json!({"basis":basis,"steps":[{"command":"edit.clear","params":{"clips":[clip]}}]})).await;
+        let result = f.call("run", json!({"basis":basis,"steps":[{"command":"edit.delete","params":{"clips":[clip]}}]})).await;
         if related {
             assert_eq!(result.expect_err("owner lock changes deletion eligibility")["error"]["code"], "conflict");
         } else {
@@ -95,10 +95,10 @@ async fn program_mark_assignment_holds_its_field_but_not_other_markers() {
         let f = Fixture::new(4);
         let (_, basis) = f.inspect().await;
         f.colleague(&[(
-            if related { "markers.markIn" } else { "markers.add" },
+            if related { "marker.markIn" } else { "marker.add" },
             if related { json!({"seconds":0.5}) } else { json!({"seconds":0.5,"name":"Other"}) },
         )]);
-        let result = f.call("run", json!({"basis":basis,"steps":[{"command":"markers.markIn","params":{"seconds":2.5}}]})).await;
+        let result = f.call("run", json!({"basis":basis,"steps":[{"command":"marker.markIn","params":{"seconds":2.5}}]})).await;
         if related {
             assert_eq!(result.expect_err("same-field mark assignment")["error"]["code"], "conflict");
         } else {

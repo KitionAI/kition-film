@@ -141,7 +141,7 @@ export const EFFECT_ALIASES: Readonly<Record<string, readonly string[]>> = {
   'control:effects.stopwatch': ['effectControls.{}.{}.stopwatch'],
   'control:effects.text': ['effectControls.text.{}.{}'],
   'control:effects.keyframe': ['effectControls.{}.{}.keyframe.{}'],
-  'control:effects.addKeyframe': ['effectControls.{}.{}.addKeyframe', 'properties.motion.{}.addKeyframe', 'properties.opacity.opacity.addKeyframe', 'properties.crop.{}.addKeyframe', 'properties.volume.level.addKeyframe'],
+  'control:effect.addKeyframe': ['effectControls.{}.{}.addKeyframe', 'properties.motion.{}.addKeyframe', 'properties.opacity.opacity.addKeyframe', 'properties.crop.{}.addKeyframe', 'properties.volume.level.addKeyframe'],
   'control:effects.prevKeyframe': ['effectControls.{}.{}.prevKeyframe', 'properties.motion.{}.prevKeyframe', 'properties.opacity.opacity.prevKeyframe', 'properties.crop.{}.prevKeyframe', 'properties.volume.level.prevKeyframe'],
   'control:effects.nextKeyframe': ['effectControls.{}.{}.nextKeyframe', 'properties.motion.{}.nextKeyframe', 'properties.opacity.opacity.nextKeyframe', 'properties.crop.{}.nextKeyframe', 'properties.volume.level.nextKeyframe'],
   'control:effects.lane': ['effectControls.lane'],
@@ -158,7 +158,7 @@ const EFFECT_LABELS: Readonly<Record<string, string>> = {
   'control:effects.stopwatch': 'Toggle animation',
   'control:effects.text': 'Text',
   'control:effects.keyframe': 'keyframe',
-  'control:effects.addKeyframe': 'Add/Remove Keyframe',
+  'control:effect.addKeyframe': 'Add/Remove Keyframe',
   'control:effects.prevKeyframe': 'Go to previous keyframe',
   'control:effects.nextKeyframe': 'Go to next keyframe',
   'control:effects.lane': 'keyframe lane',
@@ -200,12 +200,12 @@ const EFFECTS_PANEL_UNREGISTERED: readonly KitUiItem[] = [
 
 /**
  * The controls upstream draws in Effect Controls and Properties without registering an id: an
- * effect's `fx` switch and reset (Properties' section resets are the same `effects.reset`), every
+ * effect's `fx` switch and reset (Properties' section resets are the same `effect.reset`), every
  * parameter's value, and Properties' section folds.
  */
 const EFFECTS_UNREGISTERED: readonly KitUiItem[] = [
   { id: 'control:effects.enabled', label: 'Toggle Effect' },
-  { id: 'control:effects.reset', label: 'Reset Effect' },
+  { id: 'control:effect.reset', label: 'Reset Effect' },
   { id: 'control:effects.value', label: 'Value' },
   // An effect's menu: move it up or down among the standard effects (effects.move; upstream has no such row).
   { id: 'control:effects.effect.moveUp', label: 'Move Effect Up' },

@@ -66,9 +66,9 @@ async fn generator_defaults_hold_sequence_size_but_not_sequence_markers() {
         if related {
             f.colleague(&[("sequence.settings", json!({"width":640}))]);
         } else {
-            f.colleague(&[("markers.add", json!({"seconds":3,"name":"unrelated"}))]);
+            f.colleague(&[("marker.add", json!({"seconds":3,"name":"unrelated"}))]);
         }
-        let result = f.call("run", json!({"basis":basis,"steps":[{"command":"file.newColorMatte","params":{"color":"#557799","seconds":1}}]})).await;
+        let result = f.call("run", json!({"basis":basis,"steps":[{"command":"item.newColorMatte","params":{"color":"#557799","seconds":1}}]})).await;
         if related {
             assert_eq!(result.expect_err("inherited width changed")["error"]["code"], "conflict");
         } else {

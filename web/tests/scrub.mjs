@@ -82,7 +82,7 @@ try {
     return route.fulfill({ status: 206, headers: { ...headers, 'content-range': `bytes ${start}-${end}/${bytes.length}` }, body: bytes.subarray(start, end + 1) })
   })
   await page.evaluate(([p, b]) => window.devHost.files.set(p, { bytes: new Uint8Array(b).buffer, version: 1 }), [path, Array.from(bytes)])
-  await person('file.newSequence', { name: 'Long GOP', width: 1280, height: 720, fps: 30, video: 1, audio: 0 })
+  await person('sequence.new', { name: 'Long GOP', width: 1280, height: 720, fps: 30, video: 1, audio: 0 })
   const imported = await person('file.import', { paths: [`../${path}`] })
   assert.deepEqual(imported.errors, [], 'the fixture imports')
   await person('timeline.place', { item: imported.items[0], track: 'V1', time: 0 })

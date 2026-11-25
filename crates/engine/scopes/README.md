@@ -2,7 +2,7 @@
 
 Video scope maths for the Scopes panel (layer L3; depends only on `kition-film-color` and
 `serde`; no UI, builds for wasm32). The UI (`crates/ui-egui/src/panels/scopes.rs`) draws what this
-crate computes; `scopes.read` (`crates/engine/engine/src/scopes.rs`) returns it as numbers for agents.
+crate computes; `scope.read` (`crates/engine/engine/src/scopes.rs`) returns it as numbers for agents.
 
 | Item | What |
 |---|---|

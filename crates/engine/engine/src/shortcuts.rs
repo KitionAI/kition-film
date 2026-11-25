@@ -1108,15 +1108,15 @@ fn list(s: &Session, p: &Value) -> Value {
     json!(rows)
 }
 
-/// `shortcuts.registerExternal {commands}`: the frontend's own commands (tools, transport, panels),
+/// `shortcut.registerExternal {commands}`: the frontend's own commands (tools, transport, panels),
 /// as a native frontend calls [`Shortcuts::register_external`] at startup, for a frontend that
 /// reaches the session only through commands (the web editor). Their default keys and the panel
 /// tables' bindings of them then take part in the shortcut set, and they can be rebound.
 fn register_external_cmd(s: &mut Session, p: &Value) -> crate::Result<Value> {
-    let arr = p.get("commands").and_then(Value::as_array).ok_or_else(|| bad("shortcuts.registerExternal", "need `commands`"))?;
+    let arr = p.get("commands").and_then(Value::as_array).ok_or_else(|| bad("shortcut.registerExternal", "need `commands`"))?;
     let mut cmds = Vec::new();
     for c in arr {
-        let id = str_p(c, "id").filter(|id| !id.is_empty()).ok_or_else(|| bad("shortcuts.registerExternal", "every command needs an `id`"))?;
+        let id = str_p(c, "id").filter(|id| !id.is_empty()).ok_or_else(|| bad("shortcut.registerExternal", "every command needs an `id`"))?;
         let label = str_p(c, "label").unwrap_or(id);
         let menu: Vec<&str> = c.get("menu").and_then(Value::as_array).map(|m| m.iter().filter_map(Value::as_str).collect()).unwrap_or_default();
         cmds.push(CommandInfo::new(id, label, &menu, str_p(c, "shortcut")));
@@ -1134,49 +1134,49 @@ pub fn commands() -> Vec<CommandSpec> {
     }
     vec![
         sc!(
-            "shortcuts.registerExternal",
+            "shortcut.registerExternal",
             "Register Frontend Commands",
             r#"{"commands":[{"id":str,"label":str,"menu":[str]?,"shortcut":str?}]}"#,
             false,
             register_external_cmd
         ),
-        sc!("shortcuts.list", "List Keyboard Shortcuts", r#"{"query":str?,"panel":str?,"assigned":bool?,"platform":"mac|windows|linux"?}"#, false, |s, p| Ok(
+        sc!("shortcut.list", "List Keyboard Shortcuts", r#"{"query":str?,"panel":str?,"assigned":bool?,"platform":"mac|windows|linux"?}"#, false, |s, p| Ok(
             list(s, p)
         )),
-        sc!("shortcuts.get", "Get Shortcuts of a Command", r#"{"command":id,"platform":str?}"#, false, |s, p| {
-            let id = str_p(p, "command").ok_or_else(|| bad("shortcuts.get", "need `command`"))?;
-            let c = s.shortcuts.command(id).ok_or_else(|| bad("shortcuts.get", format!("unknown command `{id}`")))?;
+        sc!("shortcut.get", "Get Shortcuts of a Command", r#"{"command":id,"platform":str?}"#, false, |s, p| {
+            let id = str_p(p, "command").ok_or_else(|| bad("shortcut.get", "need `command`"))?;
+            let c = s.shortcuts.command(id).ok_or_else(|| bad("shortcut.get", format!("unknown command `{id}`")))?;
             let plat = platform_p(p);
             let bs: Vec<Value> = s.shortcuts.for_command(id).into_iter().map(|b| s.shortcuts.binding_json(b, plat)).collect();
             Ok(json!({"id": c.id, "label": c.label, "category": c.category, "shortcuts": bs}))
         }),
-        sc!("shortcuts.set", "Assign Shortcut", r#"{"command":id,"keys":"Cmd+Shift+K","panel":str?,"add":bool?,"keepConflicts":bool?}"#, true, |s, p| {
-            let id = str_p(p, "command").ok_or_else(|| bad("shortcuts.set", "need `command`"))?;
-            let keys = str_p(p, "keys").ok_or_else(|| bad("shortcuts.set", "need `keys`"))?;
+        sc!("shortcut.set", "Assign Shortcut", r#"{"command":id,"keys":"Cmd+Shift+K","panel":str?,"add":bool?,"keepConflicts":bool?}"#, true, |s, p| {
+            let id = str_p(p, "command").ok_or_else(|| bad("shortcut.set", "need `command`"))?;
+            let keys = str_p(p, "keys").ok_or_else(|| bad("shortcut.set", "need `keys`"))?;
             let r = s
                 .shortcuts
                 .set(id, keys, str_p(p, "panel"), bool_p(p, "add").unwrap_or(false), bool_p(p, "keepConflicts").unwrap_or(false))
-                .map_err(err("shortcuts.set"))?;
+                .map_err(err("shortcut.set"))?;
             let plat = Platform::current();
             let conflicts: Vec<Value> = s.shortcuts.conflicts(plat).into_iter().map(|(c, k, v)| json!({"context": c, "keys": k, "commands": v})).collect();
             Ok(json!({"keys": normalize(keys).unwrap_or_default(), "reassigned": r, "conflicts": conflicts}))
         }),
-        sc!("shortcuts.clear", "Clear Shortcut", r#"{"command":id,"keys":str?,"panel":str?}"#, true, |s, p| {
-            let id = str_p(p, "command").ok_or_else(|| bad("shortcuts.clear", "need `command`"))?;
-            let n = s.shortcuts.clear(id, str_p(p, "keys"), str_p(p, "panel")).map_err(err("shortcuts.clear"))?;
+        sc!("shortcut.clear", "Clear Shortcut", r#"{"command":id,"keys":str?,"panel":str?}"#, true, |s, p| {
+            let id = str_p(p, "command").ok_or_else(|| bad("shortcut.clear", "need `command`"))?;
+            let n = s.shortcuts.clear(id, str_p(p, "keys"), str_p(p, "panel")).map_err(err("shortcut.clear"))?;
             Ok(json!({"removed": n}))
         }),
-        sc!("shortcuts.undo", "Undo Shortcut Change", "{}", true, |s, _| Ok(json!({"undone": s.shortcuts.undo()}))),
-        sc!("shortcuts.redo", "Redo Shortcut Change", "{}", true, |s, _| Ok(json!({"redone": s.shortcuts.redo()}))),
-        sc!("shortcuts.conflicts", "Shortcut Conflicts", r#"{"platform":"mac|windows|linux"?}"#, false, |s, p| {
+        sc!("shortcut.undo", "Undo Shortcut Change", "{}", true, |s, _| Ok(json!({"undone": s.shortcuts.undo()}))),
+        sc!("shortcut.redo", "Redo Shortcut Change", "{}", true, |s, _| Ok(json!({"redone": s.shortcuts.redo()}))),
+        sc!("shortcut.conflicts", "Shortcut Conflicts", r#"{"platform":"mac|windows|linux"?}"#, false, |s, p| {
             let plat = platform_p(p);
             let c: Vec<Value> = s.shortcuts.conflicts(plat).into_iter().map(|(c, k, v)| json!({"context": c, "keys": k, "commands": v})).collect();
             let o: Vec<Value> =
                 s.shortcuts.overrides(plat).into_iter().map(|(pn, k, cmd, app)| json!({"panel": pn, "keys": k, "command": cmd, "overrides": app})).collect();
             Ok(json!({"conflicts": c, "panelOverrides": o}))
         }),
-        sc!("shortcuts.forKey", "Shortcuts on a Key", r#"{"key":"K","platform":str?}"#, false, |s, p| {
-            let k = str_p(p, "key").ok_or_else(|| bad("shortcuts.forKey", "need `key`"))?;
+        sc!("shortcut.forKey", "Shortcuts on a Key", r#"{"key":"K","platform":str?}"#, false, |s, p| {
+            let k = str_p(p, "key").ok_or_else(|| bad("shortcut.forKey", "need `key`"))?;
             let plat = platform_p(p);
             Ok(json!(
                 s.shortcuts
@@ -1186,41 +1186,41 @@ pub fn commands() -> Vec<CommandSpec> {
                     .collect::<Vec<_>>()
             ))
         }),
-        sc!("shortcuts.resolve", "Resolve Shortcut", r#"{"keys":str,"panel":str?,"platform":str?}"#, false, |s, p| {
-            let keys = str_p(p, "keys").ok_or_else(|| bad("shortcuts.resolve", "need `keys`"))?;
-            let c = Chord::parse(keys).map_err(err("shortcuts.resolve"))?;
-            let panel = check_panel(str_p(p, "panel")).map_err(err("shortcuts.resolve"))?;
+        sc!("shortcut.resolve", "Resolve Shortcut", r#"{"keys":str,"panel":str?,"platform":str?}"#, false, |s, p| {
+            let keys = str_p(p, "keys").ok_or_else(|| bad("shortcut.resolve", "need `keys`"))?;
+            let c = Chord::parse(keys).map_err(err("shortcut.resolve"))?;
+            let panel = check_panel(str_p(p, "panel")).map_err(err("shortcut.resolve"))?;
             Ok(s.shortcuts.resolve(&c, panel, platform_p(p)).map(|b| json!({"command": b.command, "panel": b.panel})).unwrap_or(Value::Null))
         }),
-        sc!("shortcuts.presets", "Keyboard Shortcut Presets", "{}", false, |s, _| Ok(presets_json(s))),
-        sc!("shortcuts.loadPreset", "Load Shortcut Preset", r#"{"name":str}"#, true, |s, p| {
-            let n = str_p(p, "name").ok_or_else(|| bad("shortcuts.loadPreset", "need `name`"))?;
-            s.shortcuts.load_preset(n).map_err(err("shortcuts.loadPreset"))?;
+        sc!("shortcut.presets", "Keyboard Shortcut Presets", "{}", false, |s, _| Ok(presets_json(s))),
+        sc!("shortcut.loadPreset", "Load Shortcut Preset", r#"{"name":str}"#, true, |s, p| {
+            let n = str_p(p, "name").ok_or_else(|| bad("shortcut.loadPreset", "need `name`"))?;
+            s.shortcuts.load_preset(n).map_err(err("shortcut.loadPreset"))?;
             Ok(presets_json(s))
         }),
-        sc!("shortcuts.savePreset", "Save Shortcut Preset As", r#"{"name":str}"#, true, |s, p| {
-            let n = str_p(p, "name").ok_or_else(|| bad("shortcuts.savePreset", "need `name`"))?;
-            let path = s.shortcuts.save_preset(n).map_err(err("shortcuts.savePreset"))?;
+        sc!("shortcut.savePreset", "Save Shortcut Preset As", r#"{"name":str}"#, true, |s, p| {
+            let n = str_p(p, "name").ok_or_else(|| bad("shortcut.savePreset", "need `name`"))?;
+            let path = s.shortcuts.save_preset(n).map_err(err("shortcut.savePreset"))?;
             Ok(json!({"path": path, "presets": presets_json(s)}))
         }),
-        sc!("shortcuts.deletePreset", "Delete Shortcut Preset", r#"{"name":str}"#, true, |s, p| {
-            let n = str_p(p, "name").ok_or_else(|| bad("shortcuts.deletePreset", "need `name`"))?;
-            s.shortcuts.delete_preset(n).map_err(err("shortcuts.deletePreset"))?;
+        sc!("shortcut.deletePreset", "Delete Shortcut Preset", r#"{"name":str}"#, true, |s, p| {
+            let n = str_p(p, "name").ok_or_else(|| bad("shortcut.deletePreset", "need `name`"))?;
+            s.shortcuts.delete_preset(n).map_err(err("shortcut.deletePreset"))?;
             Ok(presets_json(s))
         }),
-        sc!("shortcuts.export", "Export Keyboard Shortcuts", r#"{"path":str}"#, true, |s, p| {
-            let path = str_p(p, "path").ok_or_else(|| bad("shortcuts.export", "need `path`"))?;
-            s.need_file_system("shortcuts.export (it writes a file by path)")?;
-            s.shortcuts.export(Path::new(path)).map_err(err("shortcuts.export"))?;
+        sc!("shortcut.export", "Export Keyboard Shortcuts", r#"{"path":str}"#, true, |s, p| {
+            let path = str_p(p, "path").ok_or_else(|| bad("shortcut.export", "need `path`"))?;
+            s.need_file_system("shortcut.export (it writes a file by path)")?;
+            s.shortcuts.export(Path::new(path)).map_err(err("shortcut.export"))?;
             Ok(json!({"path": path, "bindings": s.shortcuts.bindings.len()}))
         }),
-        sc!("shortcuts.import", "Import Keyboard Shortcuts", r#"{"path":str,"activate":bool=true}"#, true, |s, p| {
-            let path = str_p(p, "path").ok_or_else(|| bad("shortcuts.import", "need `path`"))?;
-            s.need_file_system("shortcuts.import (it reads a file by path)")?;
-            let name = s.shortcuts.import(Path::new(path), bool_p(p, "activate").unwrap_or(true)).map_err(err("shortcuts.import"))?;
+        sc!("shortcut.import", "Import Keyboard Shortcuts", r#"{"path":str,"activate":bool=true}"#, true, |s, p| {
+            let path = str_p(p, "path").ok_or_else(|| bad("shortcut.import", "need `path`"))?;
+            s.need_file_system("shortcut.import (it reads a file by path)")?;
+            let name = s.shortcuts.import(Path::new(path), bool_p(p, "activate").unwrap_or(true)).map_err(err("shortcut.import"))?;
             Ok(json!({"name": name, "presets": presets_json(s)}))
         }),
-        sc!("shortcuts.audit", "Shortcut Audit", "{}", false, |s, _| {
+        sc!("shortcut.audit", "Shortcut Audit", "{}", false, |s, _| {
             let a = s.shortcuts.audit();
             Ok(json!({"count": a.len(), "assigned": a}))
         }),

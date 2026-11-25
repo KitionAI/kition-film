@@ -192,7 +192,7 @@ pub fn start_job(s: &mut Session, label: String, work: Vec<(ItemId, String, &'st
     let mut inputs = Vec::new();
     let mut total = 0;
     for (item, out, pr) in work {
-        let (clip, _, name) = media_path(&s.project, item).ok_or_else(|| bad("media.createProxies", format!("item {} is not file media", item.0)))?;
+        let (clip, _, name) = media_path(&s.project, item).ok_or_else(|| bad("media.addProxies", format!("item {} is not file media", item.0)))?;
         let src = s.media.full_res_source(&s.project, item, &*s.services).ok_or_else(|| EngineError::Other(format!("{name}: no source")))?;
         if s.media.offline_status(item).is_some() {
             return Err(EngineError::Other(format!("{name} is offline; link it first")));
@@ -368,10 +368,10 @@ pub fn proxy_dir(media: &str, dest: Option<&str>) -> PathBuf {
     }
 }
 
-/// `media.createProxies {items?, preset?, destination?, wait?}`.
+/// `media.addProxies {items?, preset?, destination?, wait?}`.
 pub fn create(s: &mut Session, p: &Value) -> Result<Value> {
     s.need_file_system("Create Proxies (it writes proxy files into a folder)")?;
-    let pr = preset(str_p(p, "preset").unwrap_or(DEFAULT_PROXY_PRESET)).ok_or_else(|| bad("media.createProxies", "unknown preset (see media.proxyPresets)"))?;
+    let pr = preset(str_p(p, "preset").unwrap_or(DEFAULT_PROXY_PRESET)).ok_or_else(|| bad("media.addProxies", "unknown preset (see media.proxyPresets)"))?;
     let items = items_param(s, p);
     // default: Project Settings ▸ Scratch Disks ▸ Captured and Generated, else next to the media
     let dest = str_p(p, "destination")
@@ -478,7 +478,7 @@ pub fn ingest(s: &mut Session, items: &[ItemId]) -> Result<Value> {
 pub fn commands() -> Vec<CommandSpec> {
     vec![
         CommandSpec {
-            id: "media.createProxies",
+            id: "media.addProxies",
             label: "Create Proxies…",
             menu: &["Clip", "Proxy"],
             shortcut: None,

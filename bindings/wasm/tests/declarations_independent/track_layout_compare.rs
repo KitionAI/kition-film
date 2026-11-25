@@ -24,11 +24,11 @@ fn leaf(id: u64, fields: impl IntoIterator<Item = impl Into<String>>) -> Premise
 
 fn fixture(populated: bool, lanes: usize) -> (FilmDocument, u64) {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
-    doc.execute("file.newSequence", json!({"name":"Layout","video":lanes,"audio":lanes})).unwrap();
+    doc.execute("sequence.new", json!({"name":"Layout","video":lanes,"audio":lanes})).unwrap();
     let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
     doc.execute("sequence.addTracks", json!({"video":0,"submix":2})).unwrap();
     if populated {
-        let item = doc.execute("file.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
+        let item = doc.execute("item.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
         doc.execute("timeline.place", json!({"item":item,"track":"V1","time":0})).unwrap();
     }
     (doc, sequence)

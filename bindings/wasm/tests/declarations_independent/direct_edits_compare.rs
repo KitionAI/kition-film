@@ -126,7 +126,7 @@ fn expected(project: &Project, seq: u64, command: &str, selected: &[u64], linked
 fn direct_edits_compare_implicit_operands_links_source_bounds_neighbours_and_ripple_windows() {
     let mut doc = FilmDocument::create("Direct.kfilm", 64, 36).unwrap();
     let seq = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let item = doc.execute("file.newBarsAndTone", json!({"seconds":6})).unwrap()["item"].clone();
+    let item = doc.execute("item.newBarsAndTone", json!({"seconds":6})).unwrap()["item"].clone();
     let first = doc.execute("timeline.place", json!({"item":item,"track":"V1","time":0})).unwrap()["clips"][0].as_u64().unwrap();
     let second = doc.execute("timeline.razor", json!({"clip":first,"time":254_016_000_000i64})).unwrap()["clips"][0].as_u64().unwrap();
     let third = doc.execute("timeline.razor", json!({"clip":second,"time":2*254_016_000_000i64})).unwrap()["clips"][0].as_u64().unwrap();
@@ -134,7 +134,7 @@ fn direct_edits_compare_implicit_operands_links_source_bounds_neighbours_and_rip
     for linked in [false, true] {
         doc.execute("sequence.linkedSelection", json!({"on":linked})).unwrap();
         for markers in [false, true] {
-            doc.execute("markers.rippleSequenceMarkers", json!({"on":markers})).unwrap();
+            doc.execute("marker.rippleSequenceMarkers", json!({"on":markers})).unwrap();
             for selected in [vec![second], vec![third], vec![second, third]] {
                 doc.execute("timeline.select", json!({"clips":selected,"linked":false})).unwrap();
                 for command in ["clip.speedDuration", "timeline.trim", "timeline.roll", "timeline.slide"] {

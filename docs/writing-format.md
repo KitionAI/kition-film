@@ -31,24 +31,24 @@ Commands by namespace (the part of the id before the first dot):
 | --- | ---: | ---: | ---: | --- |
 | `audio` | 5 | 5 | 5 | `audio.voiceover.settings`, `audio.voiceover.start`, `audio.voiceover.sync` |
 | `audioMixing` | 9 | 8 | 9 | `audioMixing.inspect`, `audioMixing.setType`, `audioMixing.clearType` |
-| `captions` | 22 | 21 | 22 | `captions.newTrack`, `captions.deleteTrack`, `captions.setTrack` |
+| `captions` | 22 | 21 | 22 | `caption.newTrack`, `caption.deleteTrack`, `caption.setTrack` |
 | `clip` | 57 | 54 | 57 | `clip.rename`, `clip.makeSubclip`, `clip.editSubclip` |
 | `clipMixer` | 4 | 2 | 4 | `clipMixer.set`, `clipMixer.setMode`, `clipMixer.touch` |
 | `color` | 8 | 5 | 8 | `color.spaces`, `color.presets`, `color.applyPreset` |
 | `command` | 1 | 0 | 1 | `command.list` |
 | `edit` | 37 | 36 | 37 | `edit.undo`, `edit.redo`, `edit.cut` |
-| `effects` | 13 | 12 | 13 | `effects.apply`, `effects.remove`, `effects.setParam` |
-| `events` | 2 | 1 | 2 | `events.list`, `events.clear` |
+| `effects` | 13 | 12 | 13 | `effect.apply`, `effect.remove`, `effect.setParam` |
+| `events` | 2 | 1 | 2 | `event.list`, `event.clear` |
 | `export` | 19 | 13 | 19 | `export.presets.list`, `export.presets.get`, `export.presets.save` |
-| `file` | 56 | 49 | 56 | `file.newProject`, `file.openDemoProject`, `file.newSequence` |
-| `fonts` | 1 | 0 | 1 | `fonts.list` |
+| `file` | 56 | 49 | 56 | `file.newProject`, `file.openDemoProject`, `sequence.new` |
+| `fonts` | 1 | 0 | 1 | `font.list` |
 | `graphics` | 82 | 77 | 82 | `graphics.newText`, `graphics.newShape`, `graphics.setText` |
 | `help` | 1 | 0 | 1 | `help.systemReport` |
 | `history` | 1 | 0 | 1 | `history.list` |
-| `jobs` | 2 | 1 | 2 | `jobs.list`, `jobs.cancel` |
+| `jobs` | 2 | 1 | 2 | `job.list`, `job.cancel` |
 | `lut` | 4 | 2 | 4 | `lut.import`, `lut.list`, `lut.remove` |
-| `markers` | 31 | 31 | 31 | `markers.markIn`, `markers.markOut`, `markers.markClip` |
-| `masks` | 11 | 9 | 11 | `masks.add`, `masks.remove`, `masks.set` |
+| `markers` | 31 | 31 | 31 | `marker.markIn`, `marker.markOut`, `marker.markClip` |
+| `masks` | 11 | 9 | 11 | `mask.add`, `mask.remove`, `mask.set` |
 | `media` | 16 | 8 | 16 | `media.colorInfo`, `media.findMissing`, `media.status` |
 | `mediaBrowser` | 10 | 7 | 10 | `mediaBrowser.roots`, `mediaBrowser.list`, `mediaBrowser.navigate` |
 | `mediaCache` | 2 | 1 | 2 | `mediaCache.info`, `mediaCache.clean` |
@@ -58,11 +58,11 @@ Commands by namespace (the part of the id before the first dot):
 | `perf` | 1 | 0 | 1 | `perf.stats` |
 | `playhead` | 14 | 14 | 14 | `playhead.set`, `playhead.step`, `playhead.stepForward` |
 | `prefs` | 4 | 2 | 4 | `prefs.get`, `prefs.set`, `prefs.reset` |
-| `presets` | 7 | 5 | 7 | `presets.list`, `presets.save`, `presets.apply` |
+| `presets` | 7 | 5 | 7 | `preset.list`, `preset.save`, `preset.apply` |
 | `project` | 39 | 30 | 39 | `project.matteColor`, `project.select`, `project.delete` |
-| `scopes` | 1 | 0 | 1 | `scopes.read` |
+| `scopes` | 1 | 0 | 1 | `scope.read` |
 | `sequence` | 44 | 41 | 44 | `sequence.revealInProject`, `sequence.open`, `sequence.close` |
-| `shortcuts` | 17 | 9 | 17 | `shortcuts.registerExternal`, `shortcuts.list`, `shortcuts.get` |
+| `shortcuts` | 17 | 9 | 17 | `shortcut.registerExternal`, `shortcut.list`, `shortcut.get` |
 | `source` | 5 | 4 | 5 | `source.open`, `source.setPlayhead`, `source.inspect` |
 | `state` | 1 | 0 | 1 | `state.inspect` |
 | `timeline` | 55 | 55 | 55 | `timeline.place`, `timeline.select`, `timeline.move` |
@@ -83,13 +83,13 @@ Commands by namespace (the part of the id before the first dot):
 ### Time and addressing
 
 - **Ticks:** times in the project are ticks, 254,016,000,000 per second. Many commands take
-  `"seconds"` instead (`timeline.place { "seconds": 2 }`, `file.newColorMatte { "seconds": 2 }`);
+  `"seconds"` instead (`timeline.place { "seconds": 2 }`, `item.newColorMatte { "seconds": 2 }`);
   use seconds where the schema offers them. Times in diagnostics and their fixes are ticks: pass
   them on unchanged.
 - **Tracks** are named `V1`, `V2`, … and `A1`, `A2`, … in commands, counted from 1. Their display
   names ("Video 1") are not accepted.
 - **Ids:** items and clips have numeric ids. Commands answer the ids they make
-  (`file.newColorMatte` → `{ "item": 8 }`, `timeline.place` → `{ "clips": [9] }`).
+  (`item.newColorMatte` → `{ "item": 8 }`, `timeline.place` → `{ "clips": [9] }`).
 
 ## Text writing format
 
@@ -264,9 +264,9 @@ schema says which.
 
 | Parameter | Values | Used by |
 | --- | --- | --- |
-| `align` | `left`, `center`, `right` | `captions.setStyle` |
+| `align` | `left`, `center`, `right` | `caption.setStyle` |
 | `align` | `left`, `hcenter`, `right`, `top`, `vcenter`, `bottom` | `graphics.align` |
-| `anchor` | `top`, `middle`, `bottom` | `captions.setStyle` |
+| `anchor` | `top`, `middle`, `bottom` | `caption.setStyle` |
 | `audioFormat` | `wav`, `aiff`, `mxf` | `file.exportAaf` |
 | `audioFormat` | `wav`, `aiff` | `file.exportOmf` |
 | `audioType` | `standard`, `5.1`, `adaptive`, `mono` | `sequence.addTracks` |
@@ -275,22 +275,22 @@ schema says which.
 | `captionSidecar` | `srt`, `vtt` | `file.exportMedia` |
 | `captureFormat` | `DV`, `HDV` | `file.projectSettings.general` |
 | `direction` | `forward`, `reverse` | `trim.shuttle` |
-| `direction` | `forward`, `backward` | `masks.track` |
+| `direction` | `forward`, `backward` | `mask.track` |
 | `effect` | `volume`, `panner` | `clipMixer.set` |
-| `effect` | `constant_power`, `constant_gain`, `exponential_fade`, `<video transition>` | `effects.setDefaultTransition` |
+| `effect` | `constant_power`, `constant_gain`, `exponential_fade`, `<video transition>` | `effect.setDefaultTransition` |
 | `fileTypes` | `all`, `video`, `audio`, `image`, `project`, `caption`, `<ext>` | `mediaBrowser.settings` |
 | `fontSize` | `small`, `medium`, `large`, `extraLarge` | `project.view.set` |
 | `format` | `edl`, `xml`, `fcpxml`, `otio`, `aaf`, `omf` | `file.exportInterchange` |
 | `format` | `h264`, `hevc`, `prores`, `dnxhr`, `apv`, `mjpeg`, `mxf-op1a`, `mxf-opatom`, `png`, `tiff`, `bmp`, `gif`, `wav`, `aiff` | `file.exportMedia` |
 | `format` | `mono`, `stereo`, `5.1`, `adaptive` | `clip.audioChannels` |
-| `format` | `Subtitle`, `CEA-608`, `CEA-708`, `Teletext` | `captions.newTrack` |
-| `format` | `srt`, `vtt`, `scc`, `mcc`, `stl`, `ttml`, `dfxp` | `captions.export` |
+| `format` | `Subtitle`, `CEA-608`, `CEA-708`, `Teletext` | `caption.newTrack` |
+| `format` | `srt`, `vtt`, `scc`, `mcc`, `stl`, `ttml`, `dfxp` | `caption.export` |
 | `format` | `cube`, `3dl` | `lut.export` |
 | `format` | `png`, `jpeg`, `tiff`, `bmp` | `file.exportFrame` |
 | `kind` | `text`, `color`, `slider`, `checkbox`, `font`, `position` | `file.exportGraphicsTemplate`, `graphics.template.export` |
 | `kind` | `trim`, `ripple`, `roll` | `trim.selectEditPoint` |
 | `kind` | `rippleIn`, `rippleOut`, `roll`, `trimIn`, `trimOut` | `trim.selectNearest` |
-| `kind` | `Video`, `Audio`, `VideoTransition`, `AudioTransition` | `effects.list` |
+| `kind` | `Video`, `Audio`, `VideoTransition`, `AudioTransition` | `effect.list` |
 | `layout` | `auto`, `2x2`, `3x3`, `4x4` | `multicam.gridLayout` |
 | `mixdownFormat` | `mov`, `mxf` | `file.exportAaf` |
 | `mode` | `Off`, `Read`, `Latch`, `Touch`, `Write` | `clipMixer.setMode`, `mixer.setStrip` |
@@ -298,17 +298,17 @@ schema says which.
 | `mode` | `regular`, `ripple` | `timeline.trim` |
 | `mode` | `off`, `roll`, `crawlLeft`, `crawlRight` | `graphics.setRoll` |
 | `mode` | `collect`, `consolidate` | `file.projectManager` |
-| `mode` | `none`, `add`, `subtract`, `intersect`, `lighten`, `darken`, `difference` | `masks.set` |
+| `mode` | `none`, `add`, `subtract`, `intersect`, `lighten`, `darken`, `difference` | `mask.set` |
 | `mode` | `frameSampling`, `frameBlending`, `opticalFlow` | `clip.setTimeInterpolation` |
-| `paradeType` | `rgb`, `yuv`, `rgbWhite` | `scopes.read` |
-| `preset` | `prores_proxy_quarter`, `prores_proxy_half`, `prores_lt_half`, `h264_quarter`, `h264_half` | `media.createProxies` |
+| `paradeType` | `rgb`, `yuv`, `rgbWhite` | `scope.read` |
+| `preset` | `prores_proxy_quarter`, `prores_proxy_half`, `prores_lt_half`, `h264_quarter`, `h264_half` | `media.addProxies` |
 | `shape` | `rectangle`, `ellipse`, `polygon`, `path` | `graphics.newShape` |
-| `shape` | `ellipse`, `polygon`, `bezier` | `masks.add` |
+| `shape` | `ellipse`, `polygon`, `bezier` | `mask.add` |
 | `submixType` | `stereo`, `5.1`, `adaptive`, `mono` | `sequence.addTracks` |
-| `trackType` | `Standard`, `Mono`, `5.1`, `Adaptive` | `file.newSequence` |
+| `trackType` | `Standard`, `Mono`, `5.1`, `Adaptive` | `sequence.new` |
 | `type` | `dialogue`, `music`, `sfx`, `ambience` | `audioMixing.applyPreset`, `audioMixing.deletePreset`, `audioMixing.setType` |
 | `type` | `point`, `paragraph` | `graphics.setTextType` |
-| `waveformType` | `rgb`, `luma`, `yc`, `ycNoChroma` | `scopes.read` |
+| `waveformType` | `rgb`, `luma`, `yc`, `ycNoChroma` | `scope.read` |
 
 ## Examples
 
@@ -317,7 +317,7 @@ schema says which.
 On a new project, `film_check` answers `film.empty-sequence` for `Sequence 01` (`sequence:7`).
 
 ```json
-film_run { "path": "edit.kfilm", "steps": [{ "command": "file.newColorMatte", "params": { "color": "#1f4e8c", "seconds": 2 } }] }
+film_run { "path": "edit.kfilm", "steps": [{ "command": "item.newColorMatte", "params": { "color": "#1f4e8c", "seconds": 2 } }] }
 ```
 
 It answers `{ "item": 8 }`. Place that item:

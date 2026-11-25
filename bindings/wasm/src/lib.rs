@@ -240,7 +240,7 @@ impl FilmDocument {
     /// finished, as upstream's frame loop does (`Session::poll_persistence`: a job's result is its
     /// own history step, recorded in the replica). Answers `{pending, revision, job}`: whether work
     /// is left, the engine's revision now (the page refreshes when it moved), and the running job
-    /// (`jobs.list`'s shape: id, label, progress, etaSeconds, …; the newest unfinished one, as
+    /// (`job.list`'s shape: id, label, progress, etaSeconds, …; the newest unfinished one, as
     /// upstream's status bar shows it) or null.
     pub fn jobs_step(&mut self, budget_ms: u32) -> Value {
         self.session.pump_jobs(std::time::Duration::from_millis(u64::from(budget_ms.clamp(1, 1_000))));
@@ -353,7 +353,7 @@ impl KitDocument for FilmDocument {
         let mut session = Session::for_host(services.clone());
         let title = std::path::Path::new(name).file_stem().map_or_else(|| "Untitled".to_owned(), |stem| stem.to_string_lossy().into_owned());
         session.execute("file.newProject", json!({ "name": title })).map_err(|error| error.to_string())?;
-        session.execute("file.newSequence", json!({ "name": "Sequence 01", "width": width, "height": height })).map_err(|error| error.to_string())?;
+        session.execute("sequence.new", json!({ "name": "Sequence 01", "width": width, "height": height })).map_err(|error| error.to_string())?;
         session.saved_revision = session.revision;
         let mut doc = Self { session, name: name.to_owned(), services };
         doc.threadless();
@@ -594,7 +594,7 @@ impl KitDocument for FilmDocument {
             if matches!(command, "file.closeProject" | "file.closeAllProjects") {
                 return Ok(Some(kition_kit::Under::default()));
             }
-            if command == "file.newBin" && params.get("name").and_then(Value::as_str).is_some() {
+            if command == "bin.add" && params.get("name").and_then(Value::as_str).is_some() {
                 let parent = params.get("parent").and_then(Value::as_u64).unwrap_or(self.session.project.root.id.0);
                 return Ok(Some(kition_kit::Under {
                     premises: vec![kition_kit::Premise::on(json!(parent)).fields(Vec::<String>::new()).positions(Vec::<String>::new())],
@@ -758,10 +758,10 @@ impl KitDocument for FilmDocument {
                     | "sequence.addEditAllTracks"
                     | "clip.automateToSequence"
                     | "timeline.place"
-                    | "markers.add"
-                    | "markers.addRange"
-                    | "markers.addChapter"
-                    | "markers.addFlashCue"
+                    | "marker.add"
+                    | "marker.addRange"
+                    | "marker.addChapter"
+                    | "marker.addFlashCue"
             ) {
                 // Independently reopened lists can pair a replacement with its former occupant.
                 // Its immutable id changing means the place now contains another clip.
@@ -1243,7 +1243,7 @@ pub mod web {
             self.0.item_frame(id(item, "item")?, seconds, max_width).map_err(error)
         }
 
-        /// Scopes as numbers at `seconds`: what `scopes.read` answers for `params`, as
+        /// Scopes as numbers at `seconds`: what `scope.read` answers for `params`, as
         /// JSON (see [`FilmDocument::scopes`]).
         pub fn scopes(&self, seconds: f64, params: &str) -> Result<String, JsError> {
             let params = kition_kit::parse_params(params).map_err(error)?;
@@ -1670,7 +1670,7 @@ pub(crate) mod tests {
     #[test]
     fn an_editor_state_change_moves_what_inspect_answers() {
         let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
-        let matte = doc.execute("file.newColorMatte", json!({ "color": "#ff0000", "seconds": 4.0 })).unwrap();
+        let matte = doc.execute("item.newColorMatte", json!({ "color": "#ff0000", "seconds": 4.0 })).unwrap();
         doc.execute("project.select", json!({ "items": [] })).unwrap();
         let before = doc.inspect().unwrap();
         let revision = doc.session.revision;
@@ -1682,7 +1682,7 @@ pub(crate) mod tests {
     /// A 64 × 36 project with a red colour matte on the timeline: no media files needed.
     pub(crate) fn fixture() -> Vec<u8> {
         let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
-        let matte = doc.execute("file.newColorMatte", json!({ "color": "#ff0000", "seconds": 4.0 })).unwrap();
+        let matte = doc.execute("item.newColorMatte", json!({ "color": "#ff0000", "seconds": 4.0 })).unwrap();
         doc.execute("timeline.place", json!({ "item": matte["item"], "track": "V1", "seconds": 0.0 })).unwrap();
         doc.save(None).unwrap()
     }
@@ -1694,14 +1694,14 @@ pub(crate) mod tests {
         let Ok(bytes) = std::fs::read(font) else { return };
         assert!(add_font(&bytes) > 0);
         let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
-        let families = doc.execute("fonts.list", json!({ "system": false })).unwrap();
+        let families = doc.execute("font.list", json!({ "system": false })).unwrap();
         assert!(families.as_array().unwrap().iter().any(|f| f["family"] == "Droid Sans Fallback"), "{families}");
     }
 
     #[test]
     fn keeps_the_kit_contract() {
         check_contract::<FilmDocument>(&fixture(), "Edit.kfilm", |doc| {
-            let matte = doc.execute("file.newColorMatte", json!({ "color": "#0000ff", "seconds": 2.0 }))?;
+            let matte = doc.execute("item.newColorMatte", json!({ "color": "#0000ff", "seconds": 2.0 }))?;
             doc.execute("timeline.place", json!({ "item": matte["item"], "track": "V2", "seconds": 0.0 })).map(|_| ())
         })
         .unwrap();
@@ -1810,7 +1810,7 @@ pub(crate) mod tests {
     fn jobs_step_runs_the_documents_scene_detection_and_replicates_its_one_step() {
         let mut doc = FilmDocument::create("Edit.kfilm", 640, 360).unwrap();
         doc.session.step_jobs = true;
-        let leader = doc.execute("file.newCountingLeader", json!({})).unwrap()["item"].as_u64().unwrap();
+        let leader = doc.execute("item.newCountingLeader", json!({})).unwrap()["item"].as_u64().unwrap();
         doc.execute("timeline.place", json!({ "item": leader, "track": "V1", "seconds": 0.0 })).unwrap();
         let clip = doc.inspect().unwrap()["sequence"]["video"][0]["items"][0]["clip"].as_u64().unwrap();
         let version = doc.version().unwrap();
@@ -1838,11 +1838,11 @@ pub(crate) mod tests {
         assert_ne!(doc.version().unwrap(), version, "the replica records the step");
         let markers = doc.session.project.item(kition_film_engine::project::ItemId(leader)).unwrap().as_media().unwrap().markers.len();
         assert!(markers >= 3, "{markers}");
-        // jobs.cancel mid-job: nothing changes.
+        // job.cancel mid-job: nothing changes.
         let revision = doc.session.revision;
         let again = doc.execute("clip.sceneEditDetection", json!({ "clips": [clip], "applyCuts": true })).unwrap();
         assert_eq!(doc.jobs_step(1)["pending"], true);
-        doc.execute("jobs.cancel", json!({ "job": again["job"] })).unwrap();
+        doc.execute("job.cancel", json!({ "job": again["job"] })).unwrap();
         for _ in 0..1_000 {
             if doc.jobs_step(1)["pending"] == false {
                 break;

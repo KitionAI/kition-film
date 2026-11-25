@@ -7,7 +7,7 @@ use serde_json::json;
 async fn following_navigation_preserves_the_lane_order_used_by_implicit_recipients() {
     for reordered in [false, true] {
         let f = Fixture::new(1);
-        let item = f.colleague(&[("file.newColorMatte", json!({"seconds":1}))])[0]["item"].clone();
+        let item = f.colleague(&[("item.newColorMatte", json!({"seconds":1}))])[0]["item"].clone();
         f.colleague(&[("timeline.place", json!({"item":item,"track":"V2","time":0}))]);
         let view = f.kits.open(kition_kits::Caller::User, FILE).await.unwrap();
         f.kits
@@ -82,8 +82,8 @@ async fn navigation_retains_timebase_and_sequence_geometry() {
                 vec![]
             }
             "start" => f.colleague(&[("timeline.move", json!({"moves":[{"clip":v1(&seen)[1],"time":4*SECOND,"track":"V1"}]}))]),
-            "membership" => f.colleague(&[("edit.clear", json!({"clips":[v1(&seen)[1]]}))]),
-            _ => f.colleague(&[("file.newColorMatte", json!({"seconds":1}))]),
+            "membership" => f.colleague(&[("edit.delete", json!({"clips":[v1(&seen)[1]]}))]),
+            _ => f.colleague(&[("item.newColorMatte", json!({"seconds":1}))]),
         };
         let before = std::fs::read(f.file()).unwrap();
         let result =
@@ -106,13 +106,13 @@ async fn navigation_allows_unconsumed_looks_and_unselected_track_geometry() {
         let clip = v1(&seen)[0];
         f.colleague(&[("timeline.setTargeting", json!({"track":"V2","targeted":false}))]);
         let (_, basis) = f.inspect().await;
-        f.colleague(&[("effects.setParam", json!({"clip":clip,"effect":"opacity","param":"opacity","value":25}))]);
+        f.colleague(&[("effect.setParam", json!({"clip":clip,"effect":"opacity","param":"opacity","value":25}))]);
         let params = if command == "playhead.step" { json!({"frames":1}) } else { json!({}) };
         f.ok("run", json!({"basis":basis,"steps":[{"command":command,"params":params}]})).await;
         f.shutdown().await;
     }
     let f = Fixture::new(2);
-    let item = f.colleague(&[("file.newColorMatte", json!({"seconds":1}))])[0]["item"].clone();
+    let item = f.colleague(&[("item.newColorMatte", json!({"seconds":1}))])[0]["item"].clone();
     let distant = f.colleague(&[("timeline.place", json!({"item":item,"track":"V2","time":0}))])[0]["clips"][0].clone();
     f.colleague(&[("timeline.setTargeting", json!({"track":"V2","targeted":false}))]);
     let (_, basis) = f.inspect().await;
@@ -135,22 +135,22 @@ async fn navigation_allows_unconsumed_looks_and_unselected_track_geometry() {
 async fn marker_and_source_navigation_retain_their_destination_inputs() {
     let mut missing = Vec::new();
     for (command, source) in
-        [("markers.goToIn", false), ("markers.goToOut", false), ("markers.goNext", false), ("source.setPlayhead", true), ("markers.goToOut", true)]
+        [("marker.goToIn", false), ("marker.goToOut", false), ("marker.goNext", false), ("source.setPlayhead", true), ("marker.goToOut", true)]
     {
         let f = Fixture::new(2);
         let (seen, _) = f.inspect().await;
         let item = seen["id"].clone();
-        f.colleague(&[("markers.markIn", json!({"time":0})), ("markers.markOut", json!({"time":SECOND})), ("markers.add", json!({"time":SECOND}))]);
+        f.colleague(&[("marker.markIn", json!({"time":0})), ("marker.markOut", json!({"time":SECOND})), ("marker.add", json!({"time":SECOND}))]);
         let (_, basis) = f.inspect().await;
         match command {
-            "markers.goToIn" => {
-                f.colleague(&[("markers.markIn", json!({"time":SECOND/2}))]);
+            "marker.goToIn" => {
+                f.colleague(&[("marker.markIn", json!({"time":SECOND/2}))]);
             }
-            "markers.goToOut" => {
-                f.colleague(&[("markers.markOut", json!({"time":SECOND*3/2}))]);
+            "marker.goToOut" => {
+                f.colleague(&[("marker.markOut", json!({"time":SECOND*3/2}))]);
             }
-            "markers.goNext" => {
-                f.colleague(&[("markers.clearAll", json!({}))]);
+            "marker.goNext" => {
+                f.colleague(&[("marker.clearAll", json!({}))]);
             }
             _ => {
                 f.colleague(&[("sequence.settings", json!({"fps":30}))]);
@@ -182,11 +182,11 @@ async fn marker_and_source_navigation_retain_their_destination_inputs() {
 #[tokio::test(flavor = "multi_thread")]
 async fn source_marker_routes_retain_bounds_and_destination_timebases() {
     let mut missing = Vec::new();
-    for command in ["markers.goNext", "markers.goPrev", "markers.add", "markers.edit"] {
+    for command in ["marker.goNext", "marker.goPrev", "marker.add", "marker.edit"] {
         let f = Fixture::new(2);
         let (seen, _) = f.inspect().await;
         let source = seen["id"].clone();
-        let marker = f.colleague(&[("markers.add", json!({"time":SECOND}))])[0]["marker"].clone();
+        let marker = f.colleague(&[("marker.add", json!({"time":SECOND}))])[0]["marker"].clone();
         let (_, basis) = f.inspect().await;
         if command.starts_with("markers.go") {
             f.colleague(&[("sequence.settings", json!({"fps":30}))]);
@@ -197,12 +197,12 @@ async fn source_marker_routes_retain_bounds_and_destination_timebases() {
             });
         }
         let params = match command {
-            "markers.edit" => json!({"target":"source","marker":marker,"durationFrames":12}),
-            "markers.add" => json!({"target":"source","time":0}),
+            "marker.edit" => json!({"target":"source","marker":marker,"durationFrames":12}),
+            "marker.add" => json!({"target":"source","time":0}),
             _ => json!({"target":"source"}),
         };
         let mut steps = vec![json!({"command":"source.open","params":{"item":source}})];
-        if command == "markers.goPrev" {
+        if command == "marker.goPrev" {
             steps.push(json!({"command":"source.setPlayhead","params":{"time":SECOND*3/2}}));
         }
         steps.push(json!({"command":command,"params":params}));
@@ -218,11 +218,11 @@ async fn source_marker_routes_retain_bounds_and_destination_timebases() {
 #[tokio::test(flavor = "multi_thread")]
 async fn marking_clip_and_selection_preserves_same_field_protection() {
     let mut missing = Vec::new();
-    for command in ["markers.markClip", "markers.markSelection"] {
+    for command in ["marker.markClip", "marker.markSelection"] {
         let f = Fixture::new(2);
         let (seen, basis) = f.inspect().await;
-        f.colleague(&[("markers.markIn", json!({"time":SECOND/2}))]);
-        let step = if command == "markers.markSelection" { json!({"command":command,"on":[v1(&seen)[0]]}) } else { json!({"command":command}) };
+        f.colleague(&[("marker.markIn", json!({"time":SECOND/2}))]);
+        let step = if command == "marker.markSelection" { json!({"command":command,"on":[v1(&seen)[0]]}) } else { json!({"command":command}) };
         match f.call("run", json!({"basis":basis,"steps":[step]})).await {
             Err(error) => assert_eq!(error["error"]["code"], "conflict", "{command}: {error}"),
             Ok(_) => missing.push(command),

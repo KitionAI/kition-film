@@ -42,8 +42,8 @@ fn clip_of(v: &Value) -> ClipId {
 
 fn history_fixture(edits: usize) -> (Session, Value) {
     let mut s = Session::default();
-    s.execute("file.newSequence", json!({"width": 64, "height": 36, "fps": 24})).unwrap();
-    let matte = s.execute("file.newColorMatte", json!({"seconds": 0.5})).unwrap()["item"].clone();
+    s.execute("sequence.new", json!({"width": 64, "height": 36, "fps": 24})).unwrap();
+    let matte = s.execute("item.newColorMatte", json!({"seconds": 0.5})).unwrap()["item"].clone();
     for n in 0..edits {
         s.execute("clip.rename", json!({"item": matte, "name": format!("Take {n}")})).unwrap();
     }
@@ -112,8 +112,8 @@ fn n48_invalid_template_properties_restore_content_context_and_redo() {
 fn n49_caption_upgrade_is_one_complete_step_at_history_capacity() {
     for edits in [0, 205] {
         let (mut s, _) = history_fixture(edits);
-        s.execute("captions.add", json!({"text": "First", "seconds": 0, "durationSeconds": 1})).unwrap();
-        s.execute("captions.add", json!({"text": "Second", "seconds": 2, "durationSeconds": 1})).unwrap();
+        s.execute("caption.add", json!({"text": "First", "seconds": 0, "durationSeconds": 1})).unwrap();
+        s.execute("caption.add", json!({"text": "Second", "seconds": 2, "durationSeconds": 1})).unwrap();
         let captions: Vec<_> = s.active_sequence().unwrap().caption_tracks[0].captions.iter().map(|c| c.id.0).collect();
         let before = s.project.clone();
         let out = s.execute("graphics.upgradeCaption", json!({"captions": captions})).unwrap();
@@ -131,9 +131,9 @@ fn n49_caption_upgrade_is_one_complete_step_at_history_capacity() {
 fn n50_locked_caption_upgrade_refuses_without_leaving_graphics_or_losing_redo() {
     for edits in [0, 205] {
         let (mut s, matte) = history_fixture(edits);
-        s.execute("captions.add", json!({"text": "Locked caption", "seconds": 0, "durationSeconds": 1})).unwrap();
+        s.execute("caption.add", json!({"text": "Locked caption", "seconds": 0, "durationSeconds": 1})).unwrap();
         let caption = s.active_sequence().unwrap().caption_tracks[0].captions[0].id;
-        s.execute("captions.setTrack", json!({"track": "C1", "locked": true})).unwrap();
+        s.execute("caption.setTrack", json!({"track": "C1", "locked": true})).unwrap();
         s.execute("clip.rename", json!({"item": matte, "name": "Redo survives"})).unwrap();
         s.execute("edit.undo", json!({})).unwrap();
         let before = refusal_snapshot(&s);
@@ -141,7 +141,7 @@ fn n50_locked_caption_upgrade_refuses_without_leaving_graphics_or_losing_redo() 
         assert!(refusal_snapshot(&s) == before, "refusing a locked caption left a graphic or changed history");
         s.execute("edit.redo", json!({})).unwrap();
         assert_eq!(s.project.item(kition_film_project::ItemId(matte.as_u64().unwrap())).unwrap().name, "Redo survives");
-        s.execute("captions.setTrack", json!({"track": "C1", "locked": false})).unwrap();
+        s.execute("caption.setTrack", json!({"track": "C1", "locked": false})).unwrap();
         assert_eq!(s.execute("graphics.upgradeCaption", json!({"captions": [caption.0]})).unwrap()["upgraded"], 1);
     }
 }
@@ -432,8 +432,8 @@ fn character_styles_follow_edits() {
 #[test]
 fn upgrade_caption_to_graphic() {
     let mut s = demo("gt-caption");
-    s.execute("captions.add", json!({"text": "Hello <i>there</i>", "seconds": 600, "durationSeconds": 2})).unwrap();
-    let caps = s.execute("captions.list", json!({})).unwrap()["tracks"][0]["captions"].clone();
+    s.execute("caption.add", json!({"text": "Hello <i>there</i>", "seconds": 600, "durationSeconds": 2})).unwrap();
+    let caps = s.execute("caption.list", json!({})).unwrap()["tracks"][0]["captions"].clone();
     let before = caps.as_array().unwrap().len();
     let cap = caps.as_array().unwrap().iter().find(|c| c["text"] == "Hello <i>there</i>").unwrap().clone();
     let r = s.execute("graphics.upgradeCaption", json!({})).unwrap();
@@ -445,11 +445,11 @@ fn upgrade_caption_to_graphic() {
     assert_eq!(it.end().0, cap["end"].as_i64().unwrap());
     let ex = it.effects.iter().find(|e| e.effect == "graphic_text").unwrap().layer.as_ref().unwrap();
     assert_eq!((ex.runs[0].start, ex.runs[0].end, ex.runs[0].style.faux_italic), (6, 11, Some(true)));
-    let after = s.execute("captions.list", json!({})).unwrap()["tracks"][0]["captions"].as_array().unwrap().len();
+    let after = s.execute("caption.list", json!({})).unwrap()["tracks"][0]["captions"].as_array().unwrap().len();
     assert_eq!(after, before - 1, "the caption became a graphic");
     s.execute("edit.undo", json!({})).unwrap();
     assert!(s.active_sequence().unwrap().find_item(c).is_none());
-    assert_eq!(s.execute("captions.list", json!({})).unwrap()["tracks"][0]["captions"].as_array().unwrap().len(), before);
+    assert_eq!(s.execute("caption.list", json!({})).unwrap()["tracks"][0]["captions"].as_array().unwrap().len(), before);
 }
 
 #[test]
@@ -496,17 +496,17 @@ fn replace_fonts_in_project() {
 #[test]
 fn caption_formats_through_the_engine() {
     let mut s = demo("gt-capfmt");
-    s.execute("captions.add", json!({"text": "One", "seconds": 1, "durationSeconds": 2})).unwrap();
-    s.execute("captions.add", json!({"text": "Two\nlines", "seconds": 4, "durationSeconds": 1})).unwrap();
+    s.execute("caption.add", json!({"text": "One", "seconds": 1, "durationSeconds": 2})).unwrap();
+    s.execute("caption.add", json!({"text": "Two\nlines", "seconds": 4, "durationSeconds": 1})).unwrap();
     let d = tmp_dir("gt-capfmt-files");
-    let want = s.execute("captions.list", json!({})).unwrap()["tracks"][0]["captions"].clone();
+    let want = s.execute("caption.list", json!({})).unwrap()["tracks"][0]["captions"].clone();
     for ext in ["mcc", "stl", "ttml", "dfxp"] {
         let path = d.join(format!("caps.{ext}")).to_string_lossy().to_string();
-        let r = s.execute("captions.export", json!({"path": path})).unwrap();
+        let r = s.execute("caption.export", json!({"path": path})).unwrap();
         assert_eq!(r["captions"], 2, "{ext}");
-        let imp = s.execute("captions.import", json!({"path": path})).unwrap();
+        let imp = s.execute("caption.import", json!({"path": path})).unwrap();
         assert_eq!(imp["captions"], 2, "{ext}: {imp}");
-        let got = s.execute("captions.list", json!({"track": "C1"})).unwrap()["tracks"][0]["captions"].clone();
+        let got = s.execute("caption.list", json!({"track": "C1"})).unwrap()["tracks"][0]["captions"].clone();
         for i in 0..2 {
             assert_eq!(got[i]["text"], want[i]["text"], "{ext}");
             assert_eq!(got[i]["in"], want[i]["in"], "{ext}");

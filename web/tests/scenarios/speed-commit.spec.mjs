@@ -4,8 +4,8 @@ for (const action of ['OK', 'Cancel', 'drag away']) {
   test(`F32 ${action} handles the speed field that still has focus without losing the click or submitting early`, async ({ film, page }) => {
     await film.open()
     await film.command('file.newProject', { name: 'Speed commit' })
-    await film.command('file.newSequence', { name: 'Speed', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
-    const { item } = await film.command('file.newBarsAndTone', { seconds: 0.5 })
+    await film.command('sequence.new', { name: 'Speed', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
+    const { item } = await film.command('item.newBarsAndTone', { seconds: 0.5 })
     await film.command('timeline.place', { item, seconds: 0 })
     const history = await film.history()
     await film.menu('clip.speedDuration')

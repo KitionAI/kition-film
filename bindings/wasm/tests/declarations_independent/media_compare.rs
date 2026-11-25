@@ -33,11 +33,11 @@ pub const MODE_COMMANDS: &[&str] = &[
     "mediaBrowser.clearRecent",
     "mediaBrowser.settings",
     "mediaBrowser.import",
-    "presets.save",
-    "presets.apply",
-    "presets.delete",
-    "presets.rename",
-    "presets.import",
+    "preset.save",
+    "preset.apply",
+    "preset.delete",
+    "preset.rename",
+    "preset.import",
 ];
 
 // media_browser.rs:254-356,418,467 and project_tools.rs:107 consume browser
@@ -82,8 +82,8 @@ pub const DOCUMENT_LESS: &[(&str, &str, &str)] = &[
     ("project.view.set", "metadata-key column eligibility", "project_panel.rs:915-964"),
     ("project.columns.set", "metadata-key column eligibility", "project_panel.rs:966-1000"),
     ("project.sort", "metadata-key column eligibility", "project_panel.rs:1018-1027"),
-    ("presets.save", "source dimensions through clip_size", "presets.rs:433-435,461"),
-    ("presets.apply", "source dimensions for geometric preset", "presets.rs:311-340,484"),
+    ("preset.save", "source dimensions through clip_size", "presets.rs:433-435,461"),
+    ("preset.apply", "source dimensions for geometric preset", "presets.rs:311-340,484"),
     ("metadata.set", "clip parameter resolves to source Item", "panels.rs:163-175,284-339"),
 ];
 
@@ -98,8 +98,8 @@ pub const DOCUMENT_MORE: &[(&str, &str, &str)] = &[
         "whole explicit Item and unused Program part/time",
         "baseline keyboard.rs:668-685 computes snapping but clear discards it; raw blind row correctly omits Part/Time",
     ),
-    ("presets.save", "whole Clip holds unrelated name", "presets.rs:437-470; acts::targets default"),
-    ("presets.apply", "whole Clip holds unrelated name", "presets.rs:473-507; acts::targets default"),
+    ("preset.save", "whole Clip holds unrelated name", "presets.rs:437-470; acts::targets default"),
+    ("preset.apply", "whole Clip holds unrelated name", "presets.rs:473-507; acts::targets default"),
     ("media.detachProxies", "whole Item holds unrelated metadata/name", "proxies.rs:508-525; acts::targets default"),
     ("metadata.set", "explicit Item Description patch holds unrelated Scene", "panels.rs:284-339; acts::objects default"),
 ];
@@ -141,7 +141,7 @@ fn project_setting_patch_paths_match_the_blind_assigned_field_reading() {
 #[test]
 fn metadata_clip_parameter_holds_the_item_it_resolves() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
-    let item = doc.execute("file.newColorMatte", json!({"color":"#557799","seconds":1})).unwrap()["item"].clone();
+    let item = doc.execute("item.newColorMatte", json!({"color":"#557799","seconds":1})).unwrap()["item"].clone();
     let clip = doc.execute("timeline.place", json!({"item":item,"track":"V1","seconds":0})).unwrap()["clips"][0].clone();
     let held = doc.under("metadata.set", &json!({"clip":clip,"field":"Description","value":"mine"})).unwrap().unwrap();
     let item_need = held.premises.iter().find(|need| need.id == item).expect("resolved source Item");
@@ -154,7 +154,7 @@ fn metadata_clip_parameter_holds_the_item_it_resolves() {
 #[test]
 fn poster_projection_holds_the_physical_item_metadata_key() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
-    let item = doc.execute("file.newColorMatte", json!({"seconds":1})).unwrap()["item"].clone();
+    let item = doc.execute("item.newColorMatte", json!({"seconds":1})).unwrap()["item"].clone();
     for command in ["clip.setPosterFrame", "clip.clearPosterFrame"] {
         let under = doc.under(command, &json!({"item":item})).unwrap().unwrap();
         let held = under.premises.iter().find(|held| held.id == item).unwrap();

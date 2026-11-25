@@ -24,7 +24,7 @@ fn workspace(name: &str) -> (std::path::PathBuf, HostFolder) {
     let root = std::fs::canonicalize(root).unwrap();
     let mut doc = FilmDocument::create("Edit.kfilm", 320, 180).unwrap();
     for (color, seconds) in [("#ff0000", 0), ("#0000ff", 1)] {
-        let matte = doc.execute("file.newColorMatte", json!({ "color": color, "seconds": 1 })).unwrap();
+        let matte = doc.execute("item.newColorMatte", json!({ "color": color, "seconds": 1 })).unwrap();
         doc.execute("timeline.place", json!({ "item": matte["item"], "track": "V1", "seconds": seconds })).unwrap();
     }
     std::fs::write(root.join("Edit.kfilm"), doc.save(None).unwrap()).unwrap();

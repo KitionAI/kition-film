@@ -28,13 +28,13 @@ fn history_and_off_disk_cache_paths_compare_empty_and_populated_sequences() {
         let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
         let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
         if populated {
-            let source = doc.execute("file.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
+            let source = doc.execute("item.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
             doc.execute("timeline.place", json!({"item":source,"track":"V1","time":0})).unwrap();
         }
         for marks in [false, true] {
             if marks {
-                doc.execute("markers.markIn", json!({"time":0})).unwrap();
-                doc.execute("markers.markOut", json!({"time":254_016_000_000i64})).unwrap();
+                doc.execute("marker.markIn", json!({"time":0})).unwrap();
+                doc.execute("marker.markOut", json!({"time":254_016_000_000i64})).unwrap();
             }
             let project = kition_film_format::decode(&doc.save(None).unwrap()).unwrap().project;
             for at in [0, 254_016_000_000i64, 762_048_000_000i64] {

@@ -6,7 +6,7 @@ use serde_json::json;
 async fn timeline_footage_interpretation_refuses_changed_source_assignment_but_allows_names() {
     for related in [false, true] {
         let f = Fixture::new(0);
-        let source = f.colleague(&[("file.newBarsAndTone", json!({"seconds":2}))])[0]["item"].as_u64().unwrap();
+        let source = f.colleague(&[("item.newBarsAndTone", json!({"seconds":2}))])[0]["item"].as_u64().unwrap();
         let clip = f.colleague(&[("timeline.place", json!({"item":source,"track":"V1","time":0}))])[0]["clips"][0].as_u64().unwrap();
         f.ok(
             "run",

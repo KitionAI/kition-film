@@ -18,7 +18,7 @@ async fn a_forced_close_omits_document_and_never_saves_over_the_colleague() {
             // exercise terminal completion's notRun accounting for trailing steps too.
             let mut steps = vec![json!({"command":command,"params":{"force":true}})];
             if tail {
-                steps.push(json!({"command":"file.newBin","params":{"name":"Must not run"}}));
+                steps.push(json!({"command":"bin.add","params":{"name":"Must not run"}}));
             }
             let mut input = json!({"steps":steps});
             if !tail {

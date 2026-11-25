@@ -92,7 +92,7 @@ fn sequence_copy_paths_compare_selection_range_settings_layout_transitions_and_f
         for marked in [false, true] {
             let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
             let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-            let source = doc.execute("file.newBarsAndTone", json!({"seconds":4})).unwrap()["item"].clone();
+            let source = doc.execute("item.newBarsAndTone", json!({"seconds":4})).unwrap()["item"].clone();
             let mut clips = Vec::new();
             for time in [0i64, 1_270_080_000_000] {
                 clips.extend(
@@ -106,8 +106,8 @@ fn sequence_copy_paths_compare_selection_range_settings_layout_transitions_and_f
             doc.execute("sequence.applyVideoTransition", json!({"clip":clips[0],"edge":"in","frames":8})).unwrap();
             doc.execute("sequence.linkedSelection", json!({"on":linked})).unwrap();
             if marked {
-                doc.execute("markers.markIn", json!({"time":254_016_000_000i64})).unwrap();
-                doc.execute("markers.markOut", json!({"time":762_048_000_000i64})).unwrap();
+                doc.execute("marker.markIn", json!({"time":254_016_000_000i64})).unwrap();
+                doc.execute("marker.markOut", json!({"time":762_048_000_000i64})).unwrap();
             }
             let project = kition_film_format::decode(&doc.save(None).unwrap()).unwrap().project;
             for selected in [vec![], vec![clips[0]], vec![clips[2]], clips.clone()] {

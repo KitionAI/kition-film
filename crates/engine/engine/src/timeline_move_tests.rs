@@ -27,7 +27,7 @@ fn last_pair(s: &Session) -> (TrackId, TrackItem, TrackId, TrackItem) {
 
 /// An empty sequence with one linked picture + sound pair placed at `seconds`: (V1, picture, A1, sound).
 fn pair_in_an_empty_sequence(s: &mut Session, seconds: f64) -> (TrackId, TrackItem, TrackId, TrackItem) {
-    s.execute("file.newSequence", json!({"name": "Moves", "video": 2, "audio": 2})).unwrap();
+    s.execute("sequence.new", json!({"name": "Moves", "video": 2, "audio": 2})).unwrap();
     let item = s.project.items.values().find(|i| i.has_video() && i.has_audio() && i.as_media().is_some()).map(|i| i.id).unwrap();
     s.execute("timeline.place", json!({"item": item.0, "seconds": seconds})).unwrap();
     let q = s.active_sequence().unwrap();

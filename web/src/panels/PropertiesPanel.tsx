@@ -70,7 +70,7 @@ export function textLayerOf(effects: ClipEffects, chosen: readonly number[]): Cl
   return (texts.find((each) => chosen.includes(each.layer)) ?? texts[0])?.effect ?? null
 }
 
-/** The font families the engine has (`fonts.list`), read once per document. */
+/** The font families the engine has (`font.list`), read once per document. */
 const fontLists = new WeakMap<object, Promise<string[]>>()
 function useFontFamilies(doc: KitEngine | null, invoke: Invoke, wanted: boolean): string[] {
   const [families, setFamilies] = useState<string[]>([])
@@ -78,7 +78,7 @@ function useFontFamilies(doc: KitEngine | null, invoke: Invoke, wanted: boolean)
     if (!doc || !wanted) return undefined
     let list = fontLists.get(doc)
     if (!list) {
-      list = Promise.resolve(invoke('fonts.list', {}))
+      list = Promise.resolve(invoke('font.list', {}))
         .then((answer) => {
           const rows = typeof answer === 'string' ? (JSON.parse(answer) as unknown) : answer
           return Array.isArray(rows) ? rows.map((row) => (row as { family?: unknown })?.family).filter((family): family is string => typeof family === 'string') : []
@@ -145,7 +145,7 @@ export function PropertiesPanel({ film, doc, revision, playback, labels, invoke,
       let pending = applying.current.get(key)
       if (!pending) {
         pending = (async () => {
-          await invoke('effects.apply', { clips: [clip], effect })
+          await invoke('effect.apply', { clips: [clip], effect })
           const now = doc ? await readClipEffects(doc, clip, `apply:${key}:${Date.now()}`) : null
           const ok = now != null && effectOf(now, effect) != null
           if (!ok) applying.current.delete(key)
@@ -181,7 +181,7 @@ export function PropertiesPanel({ film, doc, revision, playback, labels, invoke,
             <span>{phrase(name)}</span>
           </button>
           {reset ? (
-            <button type="button" className="film-props-reset" title={phrase('Reset Effect')} aria-label={`${phrase('Reset Effect')}: ${phrase(name)}`} data-kit-ui-id="control:effects.reset" data-testid={`film-props-${name.toLowerCase()}-reset`} onClick={() => void invoke('effects.reset', { clip: clip.id, index: reset.index })}>
+            <button type="button" className="film-props-reset" title={phrase('Reset Effect')} aria-label={`${phrase('Reset Effect')}: ${phrase(name)}`} data-kit-ui-id="control:effect.reset" data-testid={`film-props-${name.toLowerCase()}-reset`} onClick={() => void invoke('effect.reset', { clip: clip.id, index: reset.index })}>
               <RotateCcw size={12} aria-hidden="true" />
             </button>
           ) : null}
@@ -291,7 +291,7 @@ const PropRow = memo(function PropRow({ row, clip, param, applied, mediaTime, ti
           phrase={phrase}
           testId={`${testId}-nav`}
           onToggle={() => {
-            void ensure(clip, row.effect).then((ok) => (ok ? invoke('effects.addKeyframe', { clip, effect: row.effect, param: row.param }) : null))
+            void ensure(clip, row.effect).then((ok) => (ok ? invoke('effect.addKeyframe', { clip, effect: row.effect, param: row.param }) : null))
           }}
         />
       ) : (
@@ -328,7 +328,7 @@ type TextStyleProps = {
 /**
  * The Text section for a graphic's text layer (upstream `graphics/properties.rs`'s Text rows):
  * Font (the engine's families), Font Size, Fill colour, Alignment, and Faux Bold and Italic. Each
- * is the layer's own parameter, set through Effect Controls' edit (`effects.setParam` on the
+ * is the layer's own parameter, set through Effect Controls' edit (`effect.setParam` on the
  * layer's effect): a size scrub or a colour drag is one history step, a click another.
  */
 function TextStyle({ clip, layer, families, edit, phrase }: TextStyleProps) {

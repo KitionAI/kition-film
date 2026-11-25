@@ -12,14 +12,14 @@ use serde_json::{Value, json};
 #[test]
 fn native_scalar_id_spellings_have_identical_premises() {
     let mut doc = FilmDocument::create("Edit.kfilm", 320, 180).unwrap();
-    let source = doc.execute("file.newColorMatte", json!({"name":"Target","seconds":1})).unwrap()["item"].as_u64().unwrap();
+    let source = doc.execute("item.newColorMatte", json!({"name":"Target","seconds":1})).unwrap()["item"].as_u64().unwrap();
     let clip = doc.execute("timeline.place", json!({"item":source,"track":"V1","seconds":0})).unwrap()["clips"][0].as_u64().unwrap();
-    let other = doc.execute("file.newColorMatte", json!({"name":"Other","seconds":1})).unwrap()["item"].as_u64().unwrap();
+    let other = doc.execute("item.newColorMatte", json!({"name":"Other","seconds":1})).unwrap()["item"].as_u64().unwrap();
     let other_clip = doc.execute("timeline.place", json!({"item":other,"track":"V1","seconds":1})).unwrap()["clips"][0].as_u64().unwrap();
     doc.execute("timeline.select", json!({"clips":[other_clip],"linked":false})).unwrap();
-    let bin = doc.execute("file.newBin", json!({"name":"Another bin"})).unwrap()["bin"].as_u64().unwrap();
+    let bin = doc.execute("bin.add", json!({"name":"Another bin"})).unwrap()["bin"].as_u64().unwrap();
     let cases = [
-        ("file.newSequence", "fromItem", source, json!({"name":"New"})),
+        ("sequence.new", "fromItem", source, json!({"name":"New"})),
         ("project.setMarks", "item", source, json!({"in":0})),
         ("project.matteColor", "item", source, json!({"color":"#000000"})),
         ("source.open", "item", source, json!({})),
@@ -29,7 +29,7 @@ fn native_scalar_id_spellings_have_identical_premises() {
         ("clip.timeInterpolation.frameSampling", "clip", clip, json!({})),
         ("clip.timeInterpolation.frameBlending", "clip", clip, json!({})),
         ("clip.timeInterpolation.opticalFlow", "clip", clip, json!({})),
-        ("presets.save", "clip", clip, json!({"name":"New"})),
+        ("preset.save", "clip", clip, json!({"name":"New"})),
         ("color.applyMatch", "clip", clip, json!({"referenceSeconds":1.5})),
         ("project.freeform.stack", "item", source, json!({})),
         ("project.freeform.unstack", "item", source, json!({})),

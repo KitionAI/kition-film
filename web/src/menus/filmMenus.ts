@@ -11,11 +11,11 @@ const VIEW_MENUS = ['View', 'Window', 'Help']
 
 /** The rows each menu tab shows in Single line's row (Premiere's most-used), by menu; `kit:` rows keep their prefix. */
 const FILM_PRIMARY: Record<string, readonly string[]> = {
-  File: ['kit:file.import', 'file.newSequence', 'kit:file.exportMedia', 'file.newBin'],
-  Edit: ['edit.undo', 'edit.redo', 'edit.cut', 'edit.copy', 'edit.paste', 'edit.rippleDelete', 'edit.clear', 'edit.duplicate'],
+  File: ['kit:file.import', 'sequence.new', 'kit:file.exportMedia', 'bin.add'],
+  Edit: ['edit.undo', 'edit.redo', 'edit.cut', 'edit.copy', 'edit.paste', 'edit.rippleDelete', 'edit.delete', 'edit.duplicate'],
   Clip: ['source.insert', 'source.overwrite'],
   Sequence: ['sequence.addEdit', 'sequence.applyVideoTransition', 'sequence.applyAudioTransition', 'sequence.lift', 'sequence.extract', 'sequence.snap'],
-  Markers: ['markers.add', 'markers.markIn', 'markers.markOut', 'markers.markClip', 'markers.goNext', 'markers.goPrev'],
+  Markers: ['marker.add', 'marker.markIn', 'marker.markOut', 'marker.markClip', 'marker.goNext', 'marker.goPrev'],
   'Graphics and Titles': ['graphics.newText', 'graphics.newRectangle', 'graphics.newEllipse'],
 }
 

@@ -13,10 +13,10 @@ pub fn complete(session: &Session, command: &str, params: &Value, under: Option<
     let under = marker_timebase(session, command, params, under);
     let under = cut_inputs(session, command, params, under);
     let under = super::rests_navigation::source_marker_inputs(session, command, params, under);
-    let under = if matches!(command, "markers.markClip" | "markers.markSelection") {
+    let under = if matches!(command, "marker.markClip" | "marker.markSelection") {
         let mut answer = under.unwrap_or_default();
         if let Some(sequence) = session.state.active_sequence {
-            if command == "markers.markClip" {
+            if command == "marker.markClip" {
                 answer
                     .premises
                     .push(Premise::on(json!(sequence.0)).fields(["~videoTrackOrder", "~audioTrackOrder", "~submixTrackOrder"]).positions(Vec::<String>::new()));
@@ -28,7 +28,7 @@ pub fn complete(session: &Session, command: &str, params: &Value, under: Option<
             );
         }
         if let Some(q) = session.active_sequence() {
-            let selected = if command == "markers.markSelection" {
+            let selected = if command == "marker.markSelection" {
                 session.state.selection.clone()
             } else {
                 let targeted = session.targeting().targeted;
@@ -76,7 +76,7 @@ pub fn complete(session: &Session, command: &str, params: &Value, under: Option<
     } else {
         under
     };
-    let under = if command == "file.newSequenceFromClip" {
+    let under = if command == "sequence.newFromClip" {
         let sources: Vec<_> = kition_film_engine::clip_ops::items_p(session, params)
             .into_iter()
             .filter(|id| kition_film_engine::clip_ops::is_clip_item(&session.project, *id))
@@ -92,7 +92,7 @@ pub fn complete(session: &Session, command: &str, params: &Value, under: Option<
                 continue;
             }
             // Placement reads the same bounded media route and dimensions as
-            // file.newSequence. Unlike that command, this wrapper inherits
+            // sequence.new. Unlike that command, this wrapper inherits
             // first-source settings through the media parent (clip_ops:665-673).
             let inputs = new_sequence(session, &json!({"fromItem":source.0}));
             answer.premises.extend(inputs.premises);
@@ -110,7 +110,7 @@ pub fn complete(session: &Session, command: &str, params: &Value, under: Option<
     } else {
         under
     };
-    let under = if command == "file.newSequence" && params.get("name").and_then(Value::as_str).is_none() {
+    let under = if command == "sequence.new" && params.get("name").and_then(Value::as_str).is_none() {
         let mut answer = under.unwrap_or_default();
         answer.premises.push(Premise::on(json!("project")).fields(["~sequenceCount"]).positions(Vec::<String>::new()));
         Some(answer)
@@ -124,7 +124,7 @@ pub fn complete(session: &Session, command: &str, params: &Value, under: Option<
     let follows = selection
         || matches!(
             command,
-            "edit.clear"
+            "edit.delete"
                 | "edit.rippleDelete"
                 | "clip.speedDuration"
                 | "clip.enable"
@@ -215,16 +215,16 @@ fn cut_inputs(session: &Session, command: &str, params: &Value, under: Option<Un
 }
 
 fn marker_timebase(session: &Session, command: &str, params: &Value, under: Option<Under>) -> Option<Under> {
-    let add = matches!(command, "markers.add" | "markers.addRange" | "markers.addChapter" | "markers.addFlashCue");
-    let mark = matches!(command, "markers.markIn" | "markers.markOut") || command.starts_with("markers.markSplit");
-    if !add && !mark && command != "markers.edit" {
+    let add = matches!(command, "marker.add" | "marker.addRange" | "marker.addChapter" | "marker.addFlashCue");
+    let mark = matches!(command, "marker.markIn" | "marker.markOut") || command.starts_with("markers.markSplit");
+    if !add && !mark && command != "marker.edit" {
         return under;
     }
-    let duration = matches!(command, "markers.add" | "markers.addRange" | "markers.edit")
-        && !(command == "markers.addRange" && params.get("duration").and_then(Value::as_i64).is_some())
+    let duration = matches!(command, "marker.add" | "marker.addRange" | "marker.edit")
+        && !(command == "marker.addRange" && params.get("duration").and_then(Value::as_i64).is_some())
         && (params.get("durationFrames").is_some() || params.get("durationSeconds").is_some());
     if params.get("target").and_then(Value::as_str) == Some("source") {
-        if !matches!(command, "markers.add" | "markers.edit") || params.get("durationFrames").is_none() {
+        if !matches!(command, "marker.add" | "marker.edit") || params.get("durationFrames").is_none() {
             return under;
         }
         let Some(source) = session.state.source_item else { return under };
@@ -249,7 +249,7 @@ fn marker_timebase(session: &Session, command: &str, params: &Value, under: Opti
     let seconds = !ticks && !frames && params.get("seconds").and_then(Value::as_f64).is_some();
     let timecode = !ticks && !frames && !seconds && params.get("timecode").and_then(Value::as_str).is_some();
     let snapped_seconds = add && params.get("time").is_none() && params.get("frame").is_none() && seconds;
-    let default_range = command == "markers.addRange" && params.get("duration").and_then(Value::as_i64).is_none();
+    let default_range = command == "marker.addRange" && params.get("duration").and_then(Value::as_i64).is_none();
     if !(duration || default_range || ((add || mark) && (frames || timecode || snapped_seconds))) {
         return under;
     }
@@ -512,7 +512,7 @@ pub fn under(session: &Session, command: &str, params: &Value) -> Option<Under> 
     }
     if matches!(
         command,
-        "file.newAdjustmentLayer" | "file.newBarsAndTone" | "file.newBlackVideo" | "file.newColorMatte" | "file.newCountingLeader" | "file.newTransparentVideo"
+        "item.newAdjustmentLayer" | "item.newBarsAndTone" | "item.newBlackVideo" | "item.newColorMatte" | "item.newCountingLeader" | "item.newTransparentVideo"
     ) {
         // `seconds` is the new source's duration, not a Program address.
         return Some(Under {
@@ -527,13 +527,13 @@ pub fn under(session: &Session, command: &str, params: &Value) -> Option<Under> 
     if matches!(command, "clip.setPosterFrame" | "clip.clearPosterFrame") {
         return poster_dependencies(session, command, params);
     }
-    if command == "file.newSequence" {
+    if command == "sequence.new" {
         return Some(new_sequence(session, params));
     }
     if matches!(command, "file.newProject" | "file.openDemoProject" | "file.revert" | "file.saveAll" | "file.newProjectFromTemplate") {
         return Some(Under { premises: vec![Premise::on(json!("project"))], ..Default::default() });
     }
-    if command == "file.newOfflineFile" {
+    if command == "item.newOfflineFile" {
         let id = session.state.active_sequence?;
         let mut fields = Vec::new();
         if params.get("fps").and_then(Value::as_f64).is_none() {
@@ -554,13 +554,13 @@ pub fn under(session: &Session, command: &str, params: &Value) -> Option<Under> 
         return source_marks(session, id, params.get("in").is_some(), params.get("out").is_some());
     }
     if params.get("target").and_then(Value::as_str) == Some("source")
-        && matches!(command, "markers.markIn" | "markers.markOut" | "markers.clearIn" | "markers.clearOut" | "markers.clearInOut")
+        && matches!(command, "marker.markIn" | "marker.markOut" | "marker.clearIn" | "marker.clearOut" | "marker.clearInOut")
     {
         return source_marks(
             session,
             session.state.source_item?,
-            matches!(command, "markers.markIn" | "markers.clearIn" | "markers.clearInOut"),
-            matches!(command, "markers.markOut" | "markers.clearOut" | "markers.clearInOut"),
+            matches!(command, "marker.markIn" | "marker.clearIn" | "marker.clearInOut"),
+            matches!(command, "marker.markOut" | "marker.clearOut" | "marker.clearInOut"),
         );
     }
     if matches!(command, "clip.link" | "clip.group" | "clip.ungroup" | "clip.enable" | "clip.scaleToFrameSize" | "timeline.select") {
@@ -678,7 +678,7 @@ pub fn under(session: &Session, command: &str, params: &Value) -> Option<Under> 
     let sequence = session.project.sequence(view.media).is_some();
     let markers = if sequence { "sequence.markers" } else { "markers" };
     let fields = match command {
-        "markers.edit" => {
+        "marker.edit" => {
             let marker = params.get("marker").and_then(Value::as_u64)?;
             let prefix = format!("{markers}[id={marker}]");
             let mut fields = vec![format!("{prefix}.id")];
@@ -688,7 +688,7 @@ pub fn under(session: &Session, command: &str, params: &Value) -> Option<Under> 
             }
             fields
         }
-        "markers.clearAll" | "markers.clearCurrent" | "markers.goNext" | "markers.goPrev" => vec![markers.to_owned()],
+        "marker.clearAll" | "marker.clearCurrent" | "marker.goNext" | "marker.goPrev" => vec![markers.to_owned()],
         _ => return None,
     };
     answer.premises.push(Premise::on(json!(view.media.0)).fields(fields).positions(Vec::<String>::new()));

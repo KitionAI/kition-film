@@ -11,10 +11,10 @@ pub const PATHS: &[(&str, &str)] = &[
     ("sequence.linkedSelection", "editor-toggle"),
     ("sequence.nestSequences", "editor-toggle"),
     ("sequence.showThroughEdits", "on/toggle"),
-    ("markers.showAllMarkerColors", "editor"),
-    ("markers.filterColors", "editor"),
-    ("markers.rippleSequenceMarkers", "toggle/absolute"),
-    ("markers.copyPasteIncludesSequenceMarkers", "toggle/absolute"),
+    ("marker.showAllMarkerColors", "editor"),
+    ("marker.filterColors", "editor"),
+    ("marker.rippleSequenceMarkers", "toggle/absolute"),
+    ("marker.copyPasteIncludesSequenceMarkers", "toggle/absolute"),
     ("multicam.audioFollowsVideo", "editor"),
     ("multicam.selectionTopDown", "editor"),
     ("multicam.showPreviewMonitor", "editor"),
@@ -32,9 +32,9 @@ pub const PATHS: &[(&str, &str)] = &[
     ("mediaBrowser.favorite", "editor/prefs only"),
     ("mediaBrowser.clearRecent", "editor/prefs only"),
     ("mediaBrowser.settings", "editor/prefs only"),
-    ("presets.delete", "local library"),
-    ("presets.rename", "local library"),
-    ("presets.import", "local library"),
+    ("preset.delete", "local library"),
+    ("preset.rename", "local library"),
+    ("preset.import", "local library"),
 ];
 
 fn hash(source: &str) -> u64 {
@@ -73,11 +73,11 @@ pub fn more(command: &str) -> Vec<&'static str> {
 fn local_editor_paths_compare_eligibility_all_parameters_and_empty_document_holds() {
     for prepared in [false, true] {
         let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
-        let item = doc.execute("file.newColorMatte", json!({"seconds":1})).unwrap()["item"].clone();
+        let item = doc.execute("item.newColorMatte", json!({"seconds":1})).unwrap()["item"].clone();
         doc.execute("timeline.place", json!({"item":item,"track":"V1","seconds":0})).unwrap();
         if prepared {
             doc.execute("project.viewPreset.saveAs", json!({"slot":2,"name":"Working"})).unwrap();
-            doc.execute("markers.filterColors", json!({"hidden":["red"]})).unwrap();
+            doc.execute("marker.filterColors", json!({"hidden":["red"]})).unwrap();
         }
         let specs = doc.commands();
         for &(command, path) in PATHS {
@@ -91,7 +91,7 @@ fn local_editor_paths_compare_eligibility_all_parameters_and_empty_document_hold
                     | "project.viewPreset.restore"
                     | "project.viewPreset.rename"
                     | "project.viewPreset.delete"
-                    | "markers.showAllMarkerColors"
+                    | "marker.showAllMarkerColors"
             );
             assert_eq!(spec.enabled, !conditional || prepared, "{command}");
             assert!(spec.mutates && spec.targets.is_none() && spec.objects.is_empty() && spec.places.is_empty(), "{command}");

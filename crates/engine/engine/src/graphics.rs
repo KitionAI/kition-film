@@ -1,4 +1,4 @@
-//! Graphics commands (`graphics.*`, `fonts.list`): graphic clips with text and shape layers.
+//! Graphics commands (`graphics.*`, `font.list`): graphic clips with text and shape layers.
 //!
 //! A graphic clip's layers are the `graphic_text` / `graphic_shape` effect instances on the clip
 //! (see `kition_film_project::graphic`). Commands address a clip by `clip` (default: the first
@@ -1080,7 +1080,7 @@ pub fn commands() -> Vec<CommandSpec> {
             let clip = target_clip(s, p).ok_or_else(|| bad("graphics.list", "no graphic clip"))?;
             list_layers(s, clip)
         }),
-        query("fonts.list", "List Fonts", r#"{"system":bool=true (scan the system font folders)}"#, |_, p| {
+        query("font.list", "List Fonts", r#"{"system":bool=true (scan the system font folders)}"#, |_, p| {
             if p.get("system").and_then(Value::as_bool).unwrap_or(true) {
                 kition_film_text::fonts::scan_system();
             }

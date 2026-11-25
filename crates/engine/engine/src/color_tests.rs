@@ -119,7 +119,7 @@ fn export_builtin_and_library_luts() {
 fn set_param_fills_in_parameters_missing_from_old_instances() {
     let mut s = demo();
     let clip = pick_clip(&mut s);
-    s.execute("effects.apply", json!({"clips": [clip.0], "effect": "color"})).unwrap();
+    s.execute("effect.apply", json!({"clips": [clip.0], "effect": "color"})).unwrap();
     // simulate an instance saved before the section switches existed
     s.edit_sequence("strip", |q, _, _| {
         let (_, it) = q.find_item_mut(clip).unwrap();
@@ -128,7 +128,7 @@ fn set_param_fills_in_parameters_missing_from_old_instances() {
         Ok(())
     })
     .unwrap();
-    s.execute("effects.setParam", json!({"clip": clip.0, "effect": "color", "param": "vignette_on", "value": false})).unwrap();
+    s.execute("effect.setParam", json!({"clip": clip.0, "effect": "color", "param": "vignette_on", "value": false})).unwrap();
 }
 
 #[test]
@@ -231,12 +231,12 @@ fn hdr_color_and_mastering_metadata_through_commands() {
     let mut s = demo();
     let clip = pick_clip(&mut s);
     s.execute("sequence.colorSettings", json!({"workingSpace": "rec2100-pq"})).unwrap();
-    s.execute("effects.apply", json!({"clips": [clip.0], "effect": "color"})).unwrap();
+    s.execute("effect.apply", json!({"clips": [clip.0], "effect": "color"})).unwrap();
     let idx = s.active_sequence().unwrap().find_item(clip).unwrap().1.effects.iter().position(|e| e.effect == "color").unwrap();
     // +1 stop doubles the light of the (SDR) clip in the PQ working space: no clipping at
     // 203 cd/m², the HDR working output keeps the values above reference white
     let base = s.render_program_working(0.25).unwrap();
-    s.execute("effects.setParam", json!({"clip": clip.0, "effect": idx, "param": "exposure", "value": 1.0})).unwrap();
+    s.execute("effect.setParam", json!({"clip": clip.0, "effect": idx, "param": "exposure", "value": 1.0})).unwrap();
     let up = s.render_program_working(0.25).unwrap();
     let (m0, m1) = (mean(&base), mean(&up));
     for k in 0..3 {
@@ -244,9 +244,9 @@ fn hdr_color_and_mastering_metadata_through_commands() {
     }
     assert!(up.px.as_chunks::<4>().0.iter().any(|p| p[1] > 1.2), "values above reference white survive");
     // HDR White / HDR Specular / HDR Range are ordinary Color effect parameters
-    s.execute("effects.setParam", json!({"clip": clip.0, "effect": idx, "param": "hdr_white", "value": 2000.0})).unwrap();
-    s.execute("effects.setParam", json!({"clip": clip.0, "effect": idx, "param": "hdr_specular", "value": -50.0})).unwrap();
-    s.execute("effects.setParam", json!({"clip": clip.0, "effect": idx, "param": "curves_hdr_range", "value": 4000.0})).unwrap();
+    s.execute("effect.setParam", json!({"clip": clip.0, "effect": idx, "param": "hdr_white", "value": 2000.0})).unwrap();
+    s.execute("effect.setParam", json!({"clip": clip.0, "effect": idx, "param": "hdr_specular", "value": -50.0})).unwrap();
+    s.execute("effect.setParam", json!({"clip": clip.0, "effect": idx, "param": "curves_hdr_range", "value": 4000.0})).unwrap();
     let it = s.active_sequence().unwrap().find_item(clip).unwrap().1.clone();
     assert_eq!(it.effects[idx].param("hdr_white").unwrap().value, ParamValue::Float(2000.0));
     // media.colorInfo reports the HDR metadata (none for the demo's generated media)

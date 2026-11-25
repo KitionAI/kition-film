@@ -171,7 +171,7 @@ pub struct CommandSpec {
 ```
 
 - All commands are in `crates/engine/engine/src/commands.rs` (`cmd!` for actions, `query!` for read-only
-  queries such as `project.inspect`, `sequence.inspect`, `effects.list`, `jobs.list`). Ids follow
+  queries such as `file.inspect`, `sequence.inspect`, `effect.list`, `job.list`). Ids follow
   the menu structure: `file.*`, `edit.*`, `clip.*`, `sequence.*`, `markers.*`, `timeline.*`,
   `effects.*`…
 - `Session::execute(id, params)` finds the spec, checks `enabled`, runs it and appends it to the
@@ -188,7 +188,7 @@ pub struct CommandSpec {
 - **Event log** (`Session::log`, `engine::panels`): every failed top-level command (an error; a
   disabled one is a warning), messages and error toasts, auto-save errors, and background jobs
   starting, finishing, failing or being cancelled. Repeats of the newest entry bump its count. The
-  Events panel shows it; `events.list {level?, since?}` and `events.clear` reach it headless.
+  Events panel shows it; `event.list {level?, since?}` and `event.clear` reach it headless.
 - **UI-only commands** (tools, playback, zoom, panels, workspaces) belong to the editor:
   `web/src/session/invoke.ts` sends each of them to the part of the editor that owns it and every
   other id to the engine session, for menus and shortcuts alike. The editor's menu bar
@@ -327,7 +327,7 @@ stereo / mono track ──5.1 panner───┼─► 5.1 submix / 5.1 Mix ─�
 
 - **Model.** `Track::channels` (Standard = Stereo, Mono, 5.1, Adaptive) and
   `SequenceSettings::audio_master` (the Mix: Stereo, Mono, 5.1, Adaptive) are the model;
-  `file.newSequence {mix, trackType}` and `sequence.settings {mix}` set them, `mixer.setStrip
+  `sequence.new {mix, trackType}` and `sequence.settings {mix}` set them, `mixer.setStrip
   {channels}` / `mixer.addSubmix {channels}` per strip. The 5.1 panner is four lanes in
   `MixerStrip::lanes` (`pan51.x`, `pan51.y` −100…100, `pan51.center` 0…100 %, `pan51.lfe` dB): a
   lane without keyframes stores the static value, so the panner needs no project fields of its own
@@ -427,11 +427,11 @@ with different vertex counts hold). Feather, Opacity and Expansion are ordinary 
   removeVertex / toggleVertexSmooth / select / list); keyframe commands take `"mask": n`. The
   Program monitor overlay drags vertices, Bézier handles, the whole mask and the feather /
   expansion handles; drags merge into one undo step.
-- **Tracking** (`render::track`, `masks.track`): Shi–Tomasi features inside the mask, pyramidal
+- **Tracking** (`render::track`, `mask.track`): Shi–Tomasi features inside the mask, pyramidal
   Lucas–Kanade (4 levels, 15×15 window) with a forward–backward check, then RANSAC + least squares
   for Position / Position & Rotation / Position, Scale & Rotation (2D Procrustes). Each frame's
   transform moves the path, written as Mask Path keyframes while the background job runs (one undo
-  step per run; `jobs.cancel` stops and keeps what was tracked). Frames are tracked at ≤ 960 px
+  step per run; `job.cancel` stops and keeps what was tracked). Frames are tracked at ≤ 960 px
   wide. On synthetic footage with known similarity motion the path stays within 0.3 px over 20 frames.
 
 ### 5.4 Colour management
@@ -492,7 +492,7 @@ frame (Y'CbCr/RGB + metadata) ─► source colour space: Interpret Footage over
 clips ──sync (in | out | timecode[±hours] | marker | audio)──► anchors (media time ↔ common instant)
   ├─ clip.synchronize        moves selected timeline clips (link groups together) onto the reference
   ├─ clip.mergeClips         video + ≤16 audio clips → a merged-clip sequence
-  └─ clip.createMulticam     cameras → a multi-camera source sequence (one video track per angle)
+  └─ clip.addMulticam     cameras → a multi-camera source sequence (one video track per angle)
 multi-camera clip = nested source + TrackItem::multicam {enabled, angle}
   render: only the angle's video track · audio: camera 1 | all | the angle (Switch Audio)
 ```
@@ -545,7 +545,7 @@ file.exportMedia {path, preset?, settings?, format?, range?, …}     export.qui
   → export: per output frame render (output rate) → fit into the output frame → overlays → limiter
             → encode in order → mux; audio mixed at the output rate, folded to mono/stereo,
             loudness-normalized (measuring pass + gain + true-peak limiter) per batch
-  → jobs.list shows progress; jobs.cancel sets the shared cancel flag
+  → job.list shows progress; job.cancel sets the shared cancel flag
 ```
 
 | Format | Encoder | Container |
@@ -611,10 +611,10 @@ Both run the engine's commands by the same ids.
   (`web/src/filmUi.ts`, for example `control:source.drag.video`).
 - **UI state** that is not project data (tool, workspace, zoom, scroll, monitor settings) belongs
   to the editor (for example `web/src/monitors/monitorView.ts`), not to the engine.
-- **Panels with engine data**: Scopes (`scopes.read` returns the same
+- **Panels with engine data**: Scopes (`scope.read` returns the same
   scopes as numbers), Metadata (`metadata.get` / `metadata.set`, one undo step per edit, stored in
-  `ProjectItem::metadata`), Events (`events.list` / `events.clear`), Progress (`jobs.list` /
-  `jobs.cancel`).
+  `ProjectItem::metadata`), Events (`event.list` / `event.clear`), Progress (`job.list` /
+  `job.cancel`).
 - **Project panel and Media Browser**. View settings (List / Icon / Freeform, thumbnail
   and font size, Preview Area, Hover Scrub), the List view's columns, widths and sort, and ten view
   presets are preferences (`Preferences::project_panel`; `project.view.*`, `project.columns.*`,

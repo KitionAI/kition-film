@@ -3,7 +3,7 @@
 //!
 //! | Id | Menu |
 //! |---|---|
-//! | `file.newSearchBin` | File ▸ New ▸ Search Bin (`project.searchBins`, `project.searchBinItems`, `project.editSearchBin`, `project.deleteSearchBin`) |
+//! | `bin.addSearch` | File ▸ New ▸ Search Bin (`project.searchBins`, `project.searchBinItems`, `project.editSearchBin`, `project.deleteSearchBin`) |
 //! | `file.close` | File ▸ Close (⌘W): closes the active sequence |
 //! | `file.closeAllProjects` / `file.closeAllOtherProjects` | File ▸ Close All Projects / Close All Other Projects |
 //! | `file.saveAsTemplate` | File ▸ Save as Template… (`file.templates`, `file.newProjectFromTemplate`) |
@@ -65,7 +65,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
     vec![
         // ---------------- File ----------------
         spec(
-            "file.newSearchBin",
+            "bin.addSearch",
             "Search Bin",
             &["File", "New"],
             None,
@@ -224,7 +224,7 @@ pub(crate) fn apply_layout(v: &mut Vec<CommandSpec>) {
         c.menu = &["File", "Project Settings"];
     }
     let layout: Vec<(At, Vec<&'static str>)> = vec![
-        (At::After("file.newBinFromSelection"), vec!["file.newSearchBin"]),
+        (At::After("bin.addFromSelection"), vec!["bin.addSearch"]),
         (At::Before("file.closeProject"), vec!["file.close"]),
         (At::After("file.closeProject"), vec!["file.closeAllProjects", "file.closeAllOtherProjects"]),
         (At::After("file.saveCopy"), vec!["file.saveAsTemplate"]),
@@ -250,8 +250,8 @@ pub(crate) fn apply_layout(v: &mut Vec<CommandSpec>) {
         (At::After("sequence.applyAudioTransition"), vec!["trim.applyDefaultTransition"]),
         (At::After("sequence.showThroughEdits"), vec!["sequence.normalizeMixTrack"]),
         (At::After("sequence.makeSubsequence"), vec!["sequence.transcribe", "sequence.simplify"]),
-        (At::After("captions.showAll"), vec!["captions.showActiveOnly"]),
-        (At::After("markers.addChapter"), vec!["markers.addFlashCue"]),
+        (At::After("caption.showAll"), vec!["caption.showActiveOnly"]),
+        (At::After("marker.addChapter"), vec!["marker.addFlashCue"]),
         (At::Before("file.close"), vec!["file.open"]),
         (At::After("media.makeOffline"), vec!["file.importFromMediaBrowser", "file.import", "file.importImageSequence"]),
     ];
@@ -455,9 +455,9 @@ fn search_bin_json(p: &Project, b: &SearchBin) -> Value {
 }
 
 fn new_search_bin(s: &mut Session, p: &Value) -> Result<Value> {
-    let q = query_p(p, "file.newSearchBin")?;
+    let q = query_p(p, "bin.addSearch")?;
     if q.is_empty() {
-        return Err(bad("file.newSearchBin", "enter text to search for"));
+        return Err(bad("bin.addSearch", "enter text to search for"));
     }
     let name = str_p(p, "name").map(str::to_string).unwrap_or_else(|| q.rows.iter().find(|r| !r.text.is_empty()).map(|r| r.text.clone()).unwrap_or_default());
     let b = s.edit("New Search Bin", |pr, _| {

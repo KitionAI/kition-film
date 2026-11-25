@@ -9,15 +9,15 @@ use serde_json::json;
 async fn merge_holds_the_reference_parent_but_not_its_sibling_index() {
     for move_source in [true, false] {
         let mut doc = FilmDocument::create(FILE, 64, 36).unwrap();
-        let video = doc.execute("file.newOfflineFile", json!({"name":"Video","seconds":2,"audio":false})).unwrap()["item"].clone();
-        let audio = doc.execute("file.newOfflineFile", json!({"name":"Audio","seconds":2,"video":false})).unwrap()["item"].clone();
-        let bin = doc.execute("file.newBin", json!({"name":"Destination"})).unwrap()["bin"].clone();
+        let video = doc.execute("item.newOfflineFile", json!({"name":"Video","seconds":2,"audio":false})).unwrap()["item"].clone();
+        let audio = doc.execute("item.newOfflineFile", json!({"name":"Audio","seconds":2,"video":false})).unwrap()["item"].clone();
+        let bin = doc.execute("bin.add", json!({"name":"Destination"})).unwrap()["bin"].clone();
         let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
         let (_, basis) = f.inspect().await;
         if move_source {
             f.colleague(&[("project.moveToBin", json!({"items":[video],"bin":bin}))]);
         } else {
-            f.colleague(&[("file.newColorMatte", json!({"name":"Sibling","seconds":1}))]);
+            f.colleague(&[("item.newColorMatte", json!({"name":"Sibling","seconds":1}))]);
         }
         let before = std::fs::read(f.file()).unwrap();
         let result = f.call("run", json!({"basis":basis,"steps":[{"command":"clip.mergeClips","params":{"items":[video,audio],"method":"in"}}]})).await;

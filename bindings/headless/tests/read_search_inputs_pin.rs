@@ -7,11 +7,11 @@ use serde_json::json;
 
 #[tokio::test(flavor = "multi_thread")]
 async fn search_bin_writes_hold_matching_columns_and_allow_unused_labels() {
-    for command in ["file.newSearchBin", "project.editSearchBin"] {
+    for command in ["bin.addSearch", "project.editSearchBin"] {
         for change in ["name", "add", "label"] {
             let mut doc = FilmDocument::open(FILE, &project(1)).unwrap();
-            let item = doc.execute("file.newColorMatte", json!({"name":"Needle","seconds":1})).unwrap()["item"].clone();
-            let bin = doc.execute("file.newSearchBin", json!({"name":"Saved","column":"Name","text":"Needle"})).unwrap()["bin"].clone();
+            let item = doc.execute("item.newColorMatte", json!({"name":"Needle","seconds":1})).unwrap()["item"].clone();
+            let bin = doc.execute("bin.addSearch", json!({"name":"Saved","column":"Name","text":"Needle"})).unwrap()["bin"].clone();
             let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
             let (_, basis) = f.inspect().await;
             match change {
@@ -19,13 +19,13 @@ async fn search_bin_writes_hold_matching_columns_and_allow_unused_labels() {
                     f.colleague(&[("clip.rename", json!({"item":item,"name":"Absent"}))]);
                 }
                 "add" => {
-                    f.colleague(&[("file.newColorMatte", json!({"name":"Needle added","seconds":1}))]);
+                    f.colleague(&[("item.newColorMatte", json!({"name":"Needle added","seconds":1}))]);
                 }
                 _ => {
                     f.colleague(&[("edit.label.blue", json!({"items":[item]}))]);
                 }
             }
-            let p = if command == "file.newSearchBin" { json!({"name":"Agent","column":"Name","text":"Needle"}) } else { json!({"bin":bin,"name":"Agent"}) };
+            let p = if command == "bin.addSearch" { json!({"name":"Agent","column":"Name","text":"Needle"}) } else { json!({"bin":bin,"name":"Agent"}) };
             let result = f.call("run", json!({"basis":basis,"steps":[{"command":command,"params":p}]})).await;
             if change == "label" {
                 assert!(result.is_ok(), "unused label: {command}: {result:?}");

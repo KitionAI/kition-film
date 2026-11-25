@@ -125,8 +125,8 @@ fn winner(project: &Project, sequence: u64, time: i64, targeted: &[u64], top_dow
 fn fixture(explicit: bool) -> (FilmDocument, u64, u64, Vec<u64>) {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
     let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let source = doc.execute("file.newSequence", json!({"name":"Cameras","video":9,"audio":2})).unwrap()["sequence"].as_u64().unwrap();
-    let bars = doc.execute("file.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
+    let source = doc.execute("sequence.new", json!({"name":"Cameras","video":9,"audio":2})).unwrap()["sequence"].as_u64().unwrap();
+    let bars = doc.execute("item.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
     doc.execute("timeline.place", json!({"item":bars,"track":"V1","time":0})).unwrap();
     doc.execute("sequence.open", json!({"item":sequence})).unwrap();
     let clips = doc.execute("timeline.place", json!({"item":source,"track":"V1","time":0,"duration":508_032_000_000i64})).unwrap()["clips"]
@@ -139,7 +139,7 @@ fn fixture(explicit: bool) -> (FilmDocument, u64, u64, Vec<u64>) {
         doc.execute("timeline.place", json!({"item":source,"track":"V2","audio":false,"time":0,"duration":508_032_000_000i64})).unwrap()["clips"][0].clone();
     doc.execute("clip.multicamEnable", json!({"clips":clips,"enabled":true})).unwrap();
     doc.execute("clip.multicamEnable", json!({"clips":[second],"enabled":true})).unwrap();
-    let ordinary = doc.execute("file.newColorMatte", json!({"seconds":2})).unwrap()["item"].clone();
+    let ordinary = doc.execute("item.newColorMatte", json!({"seconds":2})).unwrap()["item"].clone();
     doc.execute("timeline.place", json!({"item":ordinary,"track":"V3","time":0})).unwrap();
     if explicit {
         let mut loaded = kition_film_format::decode(&doc.save(None).unwrap()).unwrap();

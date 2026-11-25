@@ -13,7 +13,7 @@ async fn field_pairs(commands: &[&str], explicit: bool) {
         for change in ["none", "video-track", "audio-track", "sequence", "track-sequence", "label"] {
             let mut doc = FilmDocument::open(FILE, &project(1)).unwrap();
             let sequence = ItemId(doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap());
-            let other = ItemId(doc.execute("file.newSequence", json!({"name":"Another sequence"})).unwrap()["sequence"].as_u64().unwrap());
+            let other = ItemId(doc.execute("sequence.new", json!({"name":"Another sequence"})).unwrap()["sequence"].as_u64().unwrap());
             doc.execute("sequence.open", json!({"item":sequence.0})).unwrap();
             let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
             let (q, _) = f.inspect().await;

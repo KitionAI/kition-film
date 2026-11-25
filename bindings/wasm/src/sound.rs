@@ -527,10 +527,10 @@ mod tests {
     fn a_parametric_eqs_response_is_its_dsps() {
         with_tone(|doc| {
             let clip = doc.inspect().unwrap()["sequence"]["audio"][0]["items"][0]["clip"].as_u64().unwrap();
-            doc.execute("effects.apply", json!({ "clips": [clip], "effect": "parametric_eq" })).unwrap();
+            doc.execute("effect.apply", json!({ "clips": [clip], "effect": "parametric_eq" })).unwrap();
             let effects = doc.clip_effects(clip).unwrap();
             let index = effects["effects"].as_array().unwrap().iter().position(|e| e["id"] == "parametric_eq").unwrap();
-            doc.execute("effects.setParam", json!({ "clip": clip, "effect": index, "param": "mid_gain", "value": 6.0 })).unwrap();
+            doc.execute("effect.setParam", json!({ "clip": clip, "effect": index, "param": "mid_gain", "value": 6.0 })).unwrap();
             let before = state(doc);
             let target = json!({ "clip": clip, "index": index });
             let curve = doc.fx_response(&target, 241, &Value::Null).unwrap();
@@ -653,16 +653,16 @@ mod tests {
         // The tone at 1 s: its media time is the timeline's less one second.
         with_tone_at(1.0, |doc| {
             let clip = doc.inspect().unwrap()["sequence"]["audio"][0]["items"][0]["clip"].as_u64().unwrap();
-            doc.execute("effects.apply", json!({ "clips": [clip], "effect": "parametric_eq" })).unwrap();
+            doc.execute("effect.apply", json!({ "clips": [clip], "effect": "parametric_eq" })).unwrap();
             let effects = doc.clip_effects(clip).unwrap();
             let index = effects["effects"].as_array().unwrap().iter().position(|e| e["id"] == "parametric_eq").unwrap();
             let key = json!({ "clip": clip, "effect": index, "param": "mid_gain" });
             // mid_gain 0 dB at media 0 s and +12 dB at media 0.9 s.
             doc.execute("playhead.set", json!({ "seconds": 1.0 })).unwrap();
-            doc.execute("effects.addKeyframe", key.clone()).unwrap();
+            doc.execute("effect.addKeyframe", key.clone()).unwrap();
             doc.execute("playhead.set", json!({ "seconds": 1.9 })).unwrap();
-            doc.execute("effects.addKeyframe", key.clone()).unwrap();
-            doc.execute("effects.setParam", json!({ "clip": clip, "effect": index, "param": "mid_gain", "value": 12.0 })).unwrap();
+            doc.execute("effect.addKeyframe", key.clone()).unwrap();
+            doc.execute("effect.setParam", json!({ "clip": clip, "effect": index, "param": "mid_gain", "value": 12.0 })).unwrap();
             let target = json!({ "clip": clip, "index": index });
             let at_1k = |curve: &Value| {
                 let frequencies = curve["frequencies"].as_array().unwrap();
@@ -717,7 +717,7 @@ mod tests {
             let mut out = Vec::new();
             with_tone(|doc| {
                 let clip = doc.inspect().unwrap()["sequence"]["audio"][0]["items"][0]["clip"].as_u64().unwrap();
-                doc.execute("effects.apply", json!({ "clips": [clip], "effect": "studio_reverb" })).unwrap();
+                doc.execute("effect.apply", json!({ "clips": [clip], "effect": "studio_reverb" })).unwrap();
                 if preview_first {
                     // Clip gain applies after clip effects, so the preview changes what the
                     // reverb hears with the speed instead.

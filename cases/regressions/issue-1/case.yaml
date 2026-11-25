@@ -2,7 +2,7 @@ format: 1
 id: regressions/issue-1
 feature: film.effects.basics
 intent: >-
-  masks.add, masks.set, masks.moveVertex, masks.translate, masks.addVertex and masks.list take and
+  mask.add, mask.set, mask.moveVertex, mask.translate, mask.addVertex and mask.list take and
   answer mask geometry in frame pixels, where the mask is seen: a mask asked for at a frame point
   lands there even when Motion moves or scales the clip (1920x1080 footage in a 1280x720 sequence
   put the mask at the wrong place).

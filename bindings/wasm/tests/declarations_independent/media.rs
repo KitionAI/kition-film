@@ -233,7 +233,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "file.newSearchBin",
+        command: "bin.addSearch",
         path: "new",
         resolves: "query from params; default name from first nonempty query row",
         reads: "nonempty query; no existing document facts",
@@ -573,7 +573,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "media.createProxies",
+        command: "media.addProxies",
         path: "start then attach async",
         resolves: "items IDs else item ID else project selection; media must be file Movie+video; preset name builtin; destination else project scratch captured else media sibling",
         reads: "any file-media eligibility; selected source media/identity/info/interpret/proxy; source not offline; settings.scratch.captured default; poll compares original epoch/media/identity/info/interpret/proxy before attach",
@@ -633,7 +633,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "presets.save",
+        command: "preset.save",
         path: "keyframes retained",
         resolves: "clip ID else first selected video clip else first selected; effects indices else nonIntrinsic/nonLayer/nonAudioMixing; preset name local library",
         reads: "active seq; clip exists; chosen effect stack positions/types and full selected effects/keys/masks; clip source_in,duration,speed; source item dimensions fallback seq dimensions; library assigned same name",
@@ -643,7 +643,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "presets.save",
+        command: "preset.save",
         path: "keyframes none",
         resolves: "same clip/effect resolution",
         reads: "as retained plus sampled key interpolation at clip source_time_at(clamped playhead),clip start and frame_hold",
@@ -653,7 +653,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "presets.apply",
+        command: "preset.apply",
         path: "library preset",
         resolves: "preset string else name string in local library; clips IDs else selection; filter track audio vs video matching all effects",
         reads: "nonempty clips; active seq; compatible target kind; clip source_in,duration,speed; target source dimensions/subclip parent fallback seq dimensions; effect stack effect IDs/intrinsic classification and overwritten intrinsic effects; local preset definitions/keys/masks",
@@ -663,7 +663,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "presets.delete",
+        command: "preset.delete",
         path: "local library",
         resolves: "name local preset",
         reads: "user preset exists; builtin deletion disallowed",
@@ -673,7 +673,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "presets.rename",
+        command: "preset.rename",
         path: "local library",
         resolves: "name local preset",
         reads: "source exists; destination name not already user preset",
@@ -683,7 +683,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "presets.import",
+        command: "preset.import",
         path: "local library",
         resolves: "path host file",
         reads: "preset format/version/effects validity; same-name local presets assigned",
@@ -693,7 +693,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "presets.export",
+        command: "preset.export",
         path: "query with external write",
         resolves: "names local presets else user presets",
         reads: "chosen definitions; all names exist; nonempty",
@@ -1653,7 +1653,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "shortcuts.set",
+        command: "shortcut.set",
         path: "local prefs/editor",
         resolves: "command string + chord/context",
         reads: "command known; valid panel/chord; current bindings for replaced command/context and conflict chord; add/keepConflicts flags",
@@ -1663,7 +1663,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "shortcuts.clear",
+        command: "shortcut.clear",
         path: "local prefs/editor",
         resolves: "command string + optional chord/context",
         reads: "matching bindings",
@@ -1673,7 +1673,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "shortcuts.undo",
+        command: "shortcut.undo",
         path: "local prefs/editor",
         resolves: "last undo snapshot",
         reads: "undo stack nonempty",
@@ -1683,7 +1683,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "shortcuts.redo",
+        command: "shortcut.redo",
         path: "local prefs/editor",
         resolves: "last redo snapshot",
         reads: "redo stack nonempty",
@@ -1693,7 +1693,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "shortcuts.loadPreset",
+        command: "shortcut.loadPreset",
         path: "local prefs/editor",
         resolves: "builtin name else user preset path",
         reads: "valid preset file/version/platform conversion",
@@ -1703,7 +1703,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "shortcuts.savePreset",
+        command: "shortcut.savePreset",
         path: "local prefs/editor",
         resolves: "name user preset path",
         reads: "not builtin; valid name; data dir exists; current bindings",
@@ -1713,7 +1713,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "shortcuts.deletePreset",
+        command: "shortcut.deletePreset",
         path: "local prefs/editor",
         resolves: "name user preset path",
         reads: "not builtin; file removable; current name equality",
@@ -1723,7 +1723,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "shortcuts.export",
+        command: "shortcut.export",
         path: "local prefs/editor",
         resolves: "path",
         reads: "host filesystem available; current bindings/preset",
@@ -1733,7 +1733,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "shortcuts.import",
+        command: "shortcut.import",
         path: "local prefs/editor",
         resolves: "path preset JSON",
         reads: "filesystem allowed; file/version/platform; known command filtering; builtin-name rename; activate",
@@ -1743,7 +1743,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "shortcuts.registerExternal",
+        command: "shortcut.registerExternal",
         path: "query with session mutation",
         resolves: "commands id strings",
         reads: "valid frontend entries",
@@ -1773,7 +1773,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "events.clear",
+        command: "event.clear",
         path: "session log",
         resolves: "none",
         reads: "log len only receipt",

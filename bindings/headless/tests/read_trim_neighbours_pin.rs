@@ -9,7 +9,7 @@ use serde_json::json;
 async fn regular_head_trim_holds_the_previous_clip_across_an_empty_gap() {
     for change in ["boundary", "name"] {
         let mut doc = FilmDocument::open(FILE, &project(0)).unwrap();
-        let item = doc.execute("file.newColorMatte", json!({"seconds":4})).unwrap()["item"].clone();
+        let item = doc.execute("item.newColorMatte", json!({"seconds":4})).unwrap()["item"].clone();
         let first = doc.execute("timeline.place", json!({"item":item,"track":"V1","time":0})).unwrap()["clips"][0].clone();
         let second = doc.execute("timeline.razor", json!({"clip":first,"time":SECOND})).unwrap()["clips"][0].clone();
         assert!(second.is_number(), "razor result must name its new clip");
@@ -35,7 +35,7 @@ async fn regular_head_trim_holds_the_previous_clip_across_an_empty_gap() {
 #[tokio::test(flavor = "multi_thread")]
 async fn rolling_a_cut_retains_the_transition_start_it_assigns() {
     let mut doc = FilmDocument::open(FILE, &project(0)).unwrap();
-    let item = doc.execute("file.newColorMatte", json!({"seconds":4})).unwrap()["item"].clone();
+    let item = doc.execute("item.newColorMatte", json!({"seconds":4})).unwrap()["item"].clone();
     let left = doc.execute("timeline.place", json!({"item":item,"track":"V1","time":0})).unwrap()["clips"][0].clone();
     let right = doc.execute("timeline.razor", json!({"clip":left,"time":SECOND})).unwrap()["clips"][0].clone();
     doc.execute("sequence.applyVideoTransition", json!({"clip":right,"edge":"in","frames":8})).unwrap();
@@ -56,8 +56,8 @@ async fn rolling_a_cut_retains_the_transition_start_it_assigns() {
 #[tokio::test(flavor = "multi_thread")]
 async fn a_trim_retains_the_kind_that_made_its_source_unbounded() {
     let mut doc = FilmDocument::open(FILE, &project(0)).unwrap();
-    let item = doc.execute("file.newAdjustmentLayer", json!({"seconds":4})).unwrap()["item"].as_u64().unwrap();
-    let replacement = doc.execute("file.newOfflineFile", json!({"name":"Finite","seconds":1,"audio":false})).unwrap()["item"].as_u64().unwrap();
+    let item = doc.execute("item.newAdjustmentLayer", json!({"seconds":4})).unwrap()["item"].as_u64().unwrap();
+    let replacement = doc.execute("item.newOfflineFile", json!({"name":"Finite","seconds":1,"audio":false})).unwrap()["item"].as_u64().unwrap();
     let clip = doc.execute("timeline.place", json!({"item":item,"track":"V1","time":0,"duration":4*SECOND})).unwrap()["clips"][0].clone();
     let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
     let (_, basis) = f.inspect().await;

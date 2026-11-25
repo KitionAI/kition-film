@@ -354,9 +354,9 @@ fn audio_gain_reports_the_clamped_stored_gain() {
 #[test]
 fn default_audio_transition_is_used_by_apply() {
     let mut s = demo();
-    s.execute("effects.setDefaultTransition", json!({"effect": "Exponential Fade"})).unwrap();
+    s.execute("effect.setDefaultTransition", json!({"effect": "Exponential Fade"})).unwrap();
     assert_eq!(s.state.default_audio_transition, "exponential_fade");
-    assert!(s.execute("effects.setDefaultTransition", json!({"effect": "amplify"})).is_err());
+    assert!(s.execute("effect.setDefaultTransition", json!({"effect": "amplify"})).is_err());
     let clip = a1(&s).items[1].id.0;
     s.execute("sequence.applyAudioTransition", json!({"clip": clip})).unwrap();
     let tr = &a1(&s).transitions;
@@ -513,10 +513,10 @@ fn surround_sequence_settings_and_panner_lanes() {
     assert_eq!(r["writing"], 4);
     s.execute("mixer.recordStop", json!({"time": sec(1.0)})).unwrap();
     // New Sequence with a 5.1 Mix and 5.1 tracks
-    s.execute("file.newSequence", json!({"name": "surround", "mix": "5.1", "trackType": "5.1", "audio": 2})).unwrap();
+    s.execute("sequence.new", json!({"name": "surround", "mix": "5.1", "trackType": "5.1", "audio": 2})).unwrap();
     let q = s.active_sequence().unwrap();
     assert_eq!(q.settings.audio_master, kition_film_project::AudioChannels::Surround51);
     assert!(q.audio_tracks.iter().all(|t| t.channels == kition_film_project::AudioChannels::Surround51));
-    assert!(s.execute("file.newSequence", json!({"mix": "7.1"})).is_err());
-    s.execute("file.newSequence", json!({"trackType": "Standard"})).unwrap();
+    assert!(s.execute("sequence.new", json!({"mix": "7.1"})).is_err());
+    s.execute("sequence.new", json!({"trackType": "Standard"})).unwrap();
 }

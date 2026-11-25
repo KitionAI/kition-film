@@ -14,7 +14,7 @@ fn range(s: &Session, c: ClipId) -> (Tick, Tick) {
 /// Four 48-frame clips in a row, pictures on V1 and their linked sounds on A1: [(picture, sound); 4].
 fn four_clips(s: &mut Session) -> [(ClipId, ClipId); 4] {
     s.execute("file.openDemoProject", json!({})).unwrap();
-    s.execute("file.newSequence", json!({"name": "Split edits", "video": 1, "audio": 1})).unwrap();
+    s.execute("sequence.new", json!({"name": "Split edits", "video": 1, "audio": 1})).unwrap();
     let rate = s.sequence_rate();
     let item = s.project.items.values().find(|i| i.has_video() && i.has_audio() && i.as_media().is_some()).map(|i| i.id).unwrap();
     for n in 0..4 {
@@ -45,7 +45,7 @@ fn ripple_delete_of_a_j_cut_clip_closes_one_gap() {
     trim_sound(&mut s, sound2, "in", -12);
     assert_eq!((range(&s, picture2).0, range(&s, sound2).0), (f48, f36), "the sound leads by 12 frames");
     s.state.ripple_sequence_markers = true;
-    let marker = s.execute("markers.add", json!({"time": f120.0, "name": "Later"})).unwrap()["marker"].clone();
+    let marker = s.execute("marker.add", json!({"time": f120.0, "name": "Later"})).unwrap()["marker"].clone();
     let before = s.project.clone();
 
     s.execute("edit.rippleDelete", json!({"clips": [picture2.0]})).unwrap();
@@ -120,7 +120,7 @@ fn ripple_delete_of_two_neighbours_with_a_split_edit_between_them() {
 fn ripple_delete_of_two_neighbours_with_sounds_on_alternating_tracks() {
     let mut s = Session::default();
     s.execute("file.openDemoProject", json!({})).unwrap();
-    s.execute("file.newSequence", json!({"name": "Alternating", "video": 1, "audio": 2})).unwrap();
+    s.execute("sequence.new", json!({"name": "Alternating", "video": 1, "audio": 2})).unwrap();
     let rate = s.sequence_rate();
     let item = s.project.items.values().find(|i| i.has_video() && i.has_audio() && i.as_media().is_some()).map(|i| i.id).unwrap();
     let mut pictures = Vec::new();

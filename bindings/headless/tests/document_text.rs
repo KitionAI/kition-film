@@ -33,9 +33,9 @@ fn titled() -> FilmDocument {
     let first = clip(&run(&mut doc, "graphics.newText", json!({ "text": "Opening Title", "time": 0 })));
     run(&mut doc, "graphics.newShape", json!({ "shape": "rectangle", "clip": first, "position": [400, 920], "size": [500, 150] }));
     run(&mut doc, "graphics.newText", json!({ "text": "A film by Ana", "clip": first }));
-    run(&mut doc, "captions.newTrack", json!({ "format": "Subtitle", "name": "Subtitles" }));
-    run(&mut doc, "captions.add", json!({ "text": "Hello <b>world</b>", "seconds": 1, "durationSeconds": 1 }));
-    run(&mut doc, "captions.add", json!({ "text": "Second line\nwraps", "seconds": 3, "durationSeconds": 1 }));
+    run(&mut doc, "caption.newTrack", json!({ "format": "Subtitle", "name": "Subtitles" }));
+    run(&mut doc, "caption.add", json!({ "text": "Hello <b>world</b>", "seconds": 1, "durationSeconds": 1 }));
+    run(&mut doc, "caption.add", json!({ "text": "Second line\nwraps", "seconds": 3, "durationSeconds": 1 }));
     doc
 }
 

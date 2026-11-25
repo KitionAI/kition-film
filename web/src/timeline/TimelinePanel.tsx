@@ -76,7 +76,7 @@ const FADE_IN = fade(Math.sin)
 type Prefs = { autoScroll: string; mouseScrolling: string; still: StillDuration; rollRipple: boolean; transitions: TransitionDurations }
 const DEFAULT_PREFS: Prefs = { autoScroll: 'pageScroll', mouseScrolling: 'vertical', still: { amount: 5, unit: 'seconds' }, rollRipple: false, transitions: { video: { duration: 30, unit: 'frames' }, audio: { duration: 1, unit: 'seconds' } } }
 
-/** Transition names by effect id, and which effects are audio transitions (the engine's `effects.list`). */
+/** Transition names by effect id, and which effects are audio transitions (the engine's `effect.list`). */
 type Transitions = { names: Record<string, string>; audio: ReadonlySet<string> }
 
 export type TimelinePanelProps = {
@@ -613,7 +613,7 @@ export function TimelinePanel(props: TimelinePanelProps) {
       const names: Record<string, string> = {}
       const audio = new Set<string>()
       for (const kind of ['VideoTransition', 'AudioTransition']) {
-        const list = (await query('effects.list', { kind })) as Array<{ id?: string; name?: string; kind?: string }> | { effects?: Array<{ id?: string; name?: string; kind?: string }> } | null
+        const list = (await query('effect.list', { kind })) as Array<{ id?: string; name?: string; kind?: string }> | { effects?: Array<{ id?: string; name?: string; kind?: string }> } | null
         for (const effect of Array.isArray(list) ? list : (list?.effects ?? [])) {
           if (!effect.id) continue
           if (effect.name) names[effect.id] = effect.name
@@ -661,10 +661,10 @@ export function TimelinePanel(props: TimelinePanelProps) {
   // The ruler by hand: its In and Out marks dragged (one Mark In or Mark Out there), a marker double-clicked (its dialog), its menu.
   const fps = documentFilm?.fps ?? 30
   const tpsNow = documentFilm?.ticksPerSecond ?? 0
-  const onMark = useCallback((which: 'in' | 'out', seconds: number) => void invoke(which === 'in' ? 'markers.markIn' : 'markers.markOut', { time: rulerTicks(seconds, fps, tpsNow) }), [invoke, fps, tpsNow])
-  const onEditMarker = useCallback((marker: number) => void invoke('markers.edit', { marker }), [invoke])
-  // A marker dragged along the ruler: one markers.edit with its new time, one undo step.
-  const onMoveMarker = useCallback((marker: number, seconds: number) => void invoke('markers.edit', { marker, time: rulerTicks(seconds, fps, tpsNow) }), [invoke, fps, tpsNow])
+  const onMark = useCallback((which: 'in' | 'out', seconds: number) => void invoke(which === 'in' ? 'marker.markIn' : 'marker.markOut', { time: rulerTicks(seconds, fps, tpsNow) }), [invoke, fps, tpsNow])
+  const onEditMarker = useCallback((marker: number) => void invoke('marker.edit', { marker }), [invoke])
+  // A marker dragged along the ruler: one marker.edit with its new time, one undo step.
+  const onMoveMarker = useCallback((marker: number, seconds: number) => void invoke('marker.edit', { marker, time: rulerTicks(seconds, fps, tpsNow) }), [invoke, fps, tpsNow])
   const [rulerMenu, setRulerMenu] = useState<{ at: { x: number; y: number }; seconds: number; marker: number | null } | null>(null)
   const onRulerMenu = useCallback((at: { x: number; y: number }, seconds: number, marker: number | null) => setRulerMenu({ at, seconds, marker }), [])
   const closeRulerMenu = useCallback(() => setRulerMenu(null), [])
@@ -835,7 +835,7 @@ export function TimelinePanel(props: TimelinePanelProps) {
             <Link size={14} aria-hidden="true" />
           </ToolbarButton>
           {/* Upstream's Caption track options is not drawn: it has no action (caption tracks are not built). */}
-          <ToolbarButton id="control:timeline.toggle.marker" label={phrase('Add Marker (M)')} onPress={() => run('markers.add', {})} testId="film-timeline-marker">
+          <ToolbarButton id="control:timeline.toggle.marker" label={phrase('Add Marker (M)')} onPress={() => run('marker.add', {})} testId="film-timeline-marker">
             <Bookmark size={14} aria-hidden="true" />
           </ToolbarButton>
           <TimelineSettings view={view} store={store} showThroughEdits={showThroughEdits} run={run} phrase={phrase} />

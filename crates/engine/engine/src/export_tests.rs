@@ -426,8 +426,8 @@ fn jobs_and_queue_items_report_the_time_they_have_left() {
     assert!((items[0]["etaSeconds"].as_f64().expect("encoding") - 15.0).abs() < 0.5, "{}", items[0]);
     assert_eq!(items[0]["status"], "encoding");
     assert!(items[1]["etaSeconds"].is_null(), "{}", items[1]);
-    // and `jobs.list` carries it too
-    let jobs = s.execute("jobs.list", json!({})).unwrap();
+    // and `job.list` carries it too
+    let jobs = s.execute("job.list", json!({})).unwrap();
     let listed = jobs["jobs"].as_array().or(jobs.as_array()).expect("a list of jobs").iter().find(|j| j["id"] == 77).cloned().expect("the job is listed");
     assert!(listed["etaSeconds"].as_f64().is_some(), "{listed}");
 }
@@ -457,7 +457,7 @@ fn queue_exports_several_sequences_and_ranges() {
     let mut s = demo();
     let dir = Scratch::new("queue-many");
     let first = s.state.active_sequence.unwrap();
-    let second = s.execute("file.newSequence", json!({"name": "Second Cut", "width": 640, "height": 360, "fps": 25})).unwrap()["sequence"].as_u64().unwrap();
+    let second = s.execute("sequence.new", json!({"name": "Second Cut", "width": 640, "height": 360, "fps": 25})).unwrap()["sequence"].as_u64().unwrap();
     let r = s
         .execute(
             "export.queue.add",
@@ -488,7 +488,7 @@ fn queue_exports_several_sequences_and_ranges() {
 fn queue_folder_paths_expand_home_and_take_either_separator() {
     let mut s = demo();
     let first = s.state.active_sequence.unwrap();
-    let second = s.execute("file.newSequence", json!({"name": "Second Cut", "width": 640, "height": 360, "fps": 25})).unwrap()["sequence"].as_u64().unwrap();
+    let second = s.execute("sequence.new", json!({"name": "Second Cut", "width": 640, "height": 360, "fps": 25})).unwrap()["sequence"].as_u64().unwrap();
     let preset = "Waveform Audio 48 kHz 16-bit";
     // a folder that does not exist yet, named by a trailing `\`: each sequence keeps its own name
     s.execute("export.queue.add", json!({"preset": preset, "path": "not-yet-made\\", "sequences": [first.0, second]})).unwrap();
@@ -528,8 +528,8 @@ fn ranges_resolve_and_sidecar_captions_are_written() {
     let whole = frames(&mut s, json!({"preset": "PNG Sequence", "range": "entire"}));
     let dur = s.active_sequence().unwrap().duration();
     assert_eq!(whole, (dur.seconds() * fps).ceil() as i64);
-    s.execute("markers.markIn", json!({"seconds": 1.0})).unwrap();
-    s.execute("markers.markOut", json!({"seconds": 2.0})).unwrap();
+    s.execute("marker.markIn", json!({"seconds": 1.0})).unwrap();
+    s.execute("marker.markOut", json!({"seconds": 2.0})).unwrap();
     let io = frames(&mut s, json!({"preset": "PNG Sequence", "range": "inOut"}));
     assert!((24..=26).contains(&io), "{io}");
     assert_eq!(frames(&mut s, json!({"preset": "PNG Sequence"})), io, "In/Out is the default");
@@ -543,7 +543,7 @@ fn ranges_resolve_and_sidecar_captions_are_written() {
     assert!(res["summary"]["video"].as_str().unwrap().contains("3840x2160"));
     assert!(res["summary"]["estimated_bytes"].as_u64().unwrap() > 1_000_000);
     // caption sidecar next to the output
-    s.execute("captions.add", json!({"seconds": 1.5, "durationSeconds": 1.0, "text": "Hello sidecar"})).unwrap();
+    s.execute("caption.add", json!({"seconds": 1.5, "durationSeconds": 1.0, "text": "Hello sidecar"})).unwrap();
     let out = dir.path("cap.wav");
     s.execute("file.exportMedia", json!({"preset": "Waveform Audio 48 kHz 16-bit", "path": out, "captionSidecar": "srt", "wait": true})).unwrap();
     let srt = std::fs::read_to_string(dir.path("cap.srt")).unwrap();

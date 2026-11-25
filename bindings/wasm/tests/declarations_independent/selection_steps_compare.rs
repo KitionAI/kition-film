@@ -95,7 +95,7 @@ fn expected(sequence: u64, q: &Sequence, selected: &[u64], target_mode: u8, link
 fn selection_steps_compare_empty_and_multiple_anchors_track_orders_point_targets_and_links() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
     let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let source = doc.execute("file.newBarsAndTone", json!({"seconds":1})).unwrap()["item"].clone();
+    let source = doc.execute("item.newBarsAndTone", json!({"seconds":1})).unwrap()["item"].clone();
     let mut ids = Vec::new();
     for (track, audio) in [("V1", "A1"), ("V2", "A2")] {
         for t in [0, 2, 4] {

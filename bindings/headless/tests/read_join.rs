@@ -56,7 +56,7 @@ async fn a_through_join_holds_neighbour_shape_deleted_content_and_owner_lock_and
 async fn a_named_through_join_replays_the_adjacent_member_that_was_deleted() {
     let (f, left, right, _, _) = through();
     let (_, basis) = f.inspect().await;
-    f.colleague(&[("edit.clear", json!({"clips":[right]}))]);
+    f.colleague(&[("edit.delete", json!({"clips":[right]}))]);
     let answer = f.call("run", json!({"basis":basis,"steps":[{"command":"sequence.joinThroughEdits","params":{"clips":[left]}}]})).await;
     assert_eq!(answer.expect_err("observed adjacent member was deleted")["error"]["code"], "conflict");
     f.shutdown().await;
@@ -68,7 +68,7 @@ async fn deleting_a_non_through_neighbour_does_not_refuse_the_join() {
         let (f, left, _, _, _) = through();
         let (sequence, basis) = f.inspect().await;
         let clips = v1(&sequence);
-        f.colleague(&[("edit.clear", json!({"clips":[clips[index]]}))]);
+        f.colleague(&[("edit.delete", json!({"clips":[clips[index]]}))]);
         f.ok("run", json!({"basis":basis,"steps":[{"command":"sequence.joinThroughEdits","params":{"clips":[left]}}]})).await;
         f.shutdown().await;
     }

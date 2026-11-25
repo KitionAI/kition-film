@@ -155,8 +155,8 @@ fn joins_compare_predicate_short_circuits_selection_links_chains_locks_and_fallb
     for scenario in ["through", "gap", "source", "speed", "reverse", "camera", "hold", "large"] {
         let mut doc = FilmDocument::create("Join.kfilm", 64, 36).unwrap();
         let seq = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-        let item = doc.execute("file.newColorMatte", json!({"seconds":200})).unwrap()["item"].clone();
-        let alternate = doc.execute("file.newColorMatte", json!({"seconds":200,"color":"#448844"})).unwrap()["item"].as_u64().unwrap();
+        let item = doc.execute("item.newColorMatte", json!({"seconds":200})).unwrap()["item"].clone();
+        let alternate = doc.execute("item.newColorMatte", json!({"seconds":200,"color":"#448844"})).unwrap()["item"].as_u64().unwrap();
         let first =
             doc.execute("timeline.place", json!({"item":item,"track":"V1","time":0,"duration":200*254_016_000_000i64})).unwrap()["clips"][0].as_u64().unwrap();
         let mut ids = vec![first];

@@ -94,10 +94,10 @@ fn create_attach_toggle_renders_the_same_picture() {
     add_effects(&mut s);
     let full = frame_rgba(&mut s, 5, 1.0);
     let full_half = frame_rgba(&mut s, 5, 0.5);
-    let r = s.execute("media.createProxies", json!({"items": [items[0].0], "preset": "prores_proxy_half", "wait": true})).unwrap();
+    let r = s.execute("media.addProxies", json!({"items": [items[0].0], "preset": "prores_proxy_half", "wait": true})).unwrap();
     let out = r["outputs"][0]["path"].as_str().unwrap().to_string();
     assert!(std::path::Path::new(&out).ends_with(std::path::Path::new("Proxies").join("a_Proxy.mov")), "{out}");
-    let job = s.execute("jobs.list", json!({})).unwrap();
+    let job = s.execute("job.list", json!({})).unwrap();
     assert_eq!(job[0]["finished"], json!(true), "{job}");
     let m = s.project.item(items[0]).unwrap().as_media().unwrap().clone();
     assert_eq!(m.proxy, Some(kition_film_project::MediaRef::File { path: out.clone() }), "attached when the job finished");
@@ -138,7 +138,7 @@ fn attach_checks_duration_and_export_ignores_proxies() {
     assert!(psnr(&frame_rgba(&mut s, 4, 1.0).2, &full.2) < 20.0, "monitors show the (different) proxy");
     let png = root.join("out.png").to_string_lossy().into_owned();
     s.execute("file.exportMedia", json!({"path": png, "format": "png", "wait": true})).unwrap();
-    let jobs = s.execute("jobs.list", json!({})).unwrap();
+    let jobs = s.execute("job.list", json!({})).unwrap();
     assert!(jobs.as_array().unwrap().iter().all(|j| j["result"].get("error").is_none()), "{jobs}");
     let f = image::open(root.join("out004.png")).unwrap().to_rgba8();
     assert_eq!(psnr(f.as_raw(), &full.2), f64::INFINITY, "export renders full-resolution media");
@@ -243,7 +243,7 @@ fn proxy_playback_perf_4k() {
     eprintln!("4K H.264, full res: decode {:.1} ms/frame; CPU composite {:.1} ms/frame at 1/2, {:.1} at 1/4", full.0, full.1, full.2);
     for preset in ["prores_proxy_quarter", "h264_quarter"] {
         let t0 = std::time::Instant::now();
-        s.execute("media.createProxies", json!({"items": [items[0].0], "preset": preset, "wait": true})).unwrap();
+        s.execute("media.addProxies", json!({"items": [items[0].0], "preset": preset, "wait": true})).unwrap();
         let make = t0.elapsed().as_secs_f64();
         s.execute("media.toggleProxies", json!({"enabled": true})).unwrap();
         let px = measure(&mut s);

@@ -47,7 +47,7 @@ fn metadata(key: &str) -> String {
 #[test]
 fn column_paths_compare_canonical_lookups_and_branches_without_metadata_reads() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
-    let item = doc.execute("file.newColorMatte", json!({"seconds":1})).unwrap()["item"].clone();
+    let item = doc.execute("item.newColorMatte", json!({"seconds":1})).unwrap()["item"].clone();
     doc.execute("timeline.place", json!({"item":item,"time":0,"track":"V1"})).unwrap();
     for command in ["project.view.set", "project.columns.set", "project.sort"] {
         assert!(PATHS.iter().any(|&(id, path)| command == id && compared_path(id, path)));
@@ -87,9 +87,9 @@ fn column_paths_compare_canonical_lookups_and_branches_without_metadata_reads() 
 fn metadata_paths_compare_every_target_precedence_literal_key_and_read_only_family() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
     let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let media = doc.execute("file.newOfflineFile", json!({"seconds":1})).unwrap()["item"].as_u64().unwrap();
+    let media = doc.execute("item.newOfflineFile", json!({"seconds":1})).unwrap()["item"].as_u64().unwrap();
     let subclip = doc.execute("clip.makeSubclip", json!({"item":media,"start":0,"end":254_016_000_000i64})).unwrap()["item"].as_u64().unwrap();
-    let adjustment = doc.execute("file.newAdjustmentLayer", json!({})).unwrap()["item"].as_u64().unwrap();
+    let adjustment = doc.execute("item.newAdjustmentLayer", json!({})).unwrap()["item"].as_u64().unwrap();
     let clips = doc.execute("timeline.place", json!({"item":media,"track":"V1","time":0})).unwrap()["clips"].as_array().unwrap().clone();
     let clip = clips[0].clone();
     let spec = doc.commands().into_iter().find(|spec| spec.id == "metadata.set").unwrap();

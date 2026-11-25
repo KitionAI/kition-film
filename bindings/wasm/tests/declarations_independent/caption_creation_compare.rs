@@ -6,13 +6,13 @@ use kition_film_kit::FilmDocument;
 use kition_kit::{EditorState, KitDocument, Premise, Under};
 use serde_json::{Value, json};
 
-pub const PATHS: &[(&str, &str)] = &[("captions.newTrack", "append"), ("captions.add", "automatic C1")];
+pub const PATHS: &[(&str, &str)] = &[("caption.newTrack", "append"), ("caption.add", "automatic C1")];
 pub fn compared_path(command: &str, path: &str) -> bool {
     let hash = |s: &str| s.bytes().fold(0xcbf29ce484222325u64, |h, b| (h ^ u64::from(b)).wrapping_mul(0x100000001b3));
     PATHS.contains(&(command, path)) && hash(include_str!("../../../../crates/engine/engine/src/captions.rs")) == 0xd8332e1b444fc431
 }
 pub fn more(command: &str) -> Vec<&'static str> {
-    if command == "captions.add" { vec!["unconsumed-program-material", "unused-caption-playhead"] } else { vec![] }
+    if command == "caption.add" { vec!["unconsumed-program-material", "unused-caption-playhead"] } else { vec![] }
 }
 fn leaf(sequence: u64, fields: &[&str]) -> Under {
     Under { premises: vec![Premise::on(json!(sequence)).fields(fields.iter().copied()).positions(Vec::<String>::new())], ..Default::default() }
@@ -23,7 +23,7 @@ fn caption_creation_compares_append_counts_automatic_destinations_formats_and_ti
         let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
         let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
         if populated {
-            let source = doc.execute("file.newColorMatte", json!({"seconds":4})).unwrap()["item"].clone();
+            let source = doc.execute("item.newColorMatte", json!({"seconds":4})).unwrap()["item"].clone();
             doc.execute("timeline.place", json!({"item":source,"track":"V1","time":0})).unwrap();
         }
         let project = kition_film_format::decode(&doc.save(None).unwrap()).unwrap().project;
@@ -59,12 +59,12 @@ fn caption_creation_compares_append_counts_automatic_destinations_formats_and_ti
                         0
                     };
                     super::marks_compare::program_material(q, at, &mut want);
-                    assert_eq!(normalized(doc.under("captions.add", &params).unwrap().unwrap()), normalized(want), "automatic/{params}");
+                    assert_eq!(normalized(doc.under("caption.add", &params).unwrap().unwrap()), normalized(want), "automatic/{params}");
                 }
             }
         }
         for count in 0..4 {
-            let command = "captions.newTrack";
+            let command = "caption.newTrack";
             let spec = doc.commands().into_iter().find(|s| s.id == command).unwrap();
             assert!(
                 spec.enabled && spec.mutates && spec.targets.is_none() && spec.objects.is_empty() && spec.object_types.is_empty() && spec.places.is_empty()

@@ -9,9 +9,9 @@ use serde_json::json;
 fn cameras() -> (Fixture, u64, u64, u64) {
     let mut doc = FilmDocument::open(FILE, &project(1)).unwrap();
     let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let source = doc.execute("file.newSequence", json!({"name":"Cameras","video":2,"audio":1})).unwrap()["sequence"].as_u64().unwrap();
+    let source = doc.execute("sequence.new", json!({"name":"Cameras","video":2,"audio":1})).unwrap()["sequence"].as_u64().unwrap();
     for track in ["V1", "V2"] {
-        let item = doc.execute("file.newColorMatte", json!({"seconds":2})).unwrap()["item"].clone();
+        let item = doc.execute("item.newColorMatte", json!({"seconds":2})).unwrap()["item"].clone();
         doc.execute("timeline.place", json!({"item":item,"track":track,"time":0})).unwrap();
     }
     doc.execute("sequence.open", json!({"item":sequence})).unwrap();

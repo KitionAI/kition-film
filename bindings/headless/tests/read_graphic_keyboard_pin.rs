@@ -15,7 +15,7 @@ async fn mixed_selection_nudges_hold_each_motion_position_and_allow_unrelated_op
             let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
             let (_, basis) = f.inspect().await;
             f.colleague(&[(
-                "effects.setParam",
+                "effect.setParam",
                 if changed_position {
                     json!({"clip":clip,"effect":"motion","param":"position","value":[30,40]})
                 } else {
@@ -65,7 +65,7 @@ async fn text_layer_creation_holds_graphics_defaults() {
 #[tokio::test(flavor = "multi_thread")]
 async fn motion_nudge_holds_the_lane_kind_of_skipped_audio_clips() {
     let mut doc = FilmDocument::create(FILE, 320, 180).unwrap();
-    let source = doc.execute("file.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
+    let source = doc.execute("item.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
     doc.execute("timeline.place", json!({"item":source,"track":"V1","audioTrack":"A1","time":0})).unwrap();
     let loaded = kition_film_format::decode(&doc.save(None).unwrap()).unwrap();
     let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
@@ -89,7 +89,7 @@ async fn motion_nudge_holds_the_lane_kind_of_skipped_audio_clips() {
 #[tokio::test(flavor = "multi_thread")]
 async fn motion_nudge_retains_video_recipients_that_moved_to_audio() {
     let mut doc = FilmDocument::create(FILE, 320, 180).unwrap();
-    let source = doc.execute("file.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
+    let source = doc.execute("item.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
     let first = doc.execute("timeline.place", json!({"item":source,"track":"V1","audioTrack":"A1","time":0})).unwrap()["clips"][0].clone();
     let second = doc.execute("timeline.place", json!({"item":source,"track":"V2","audioTrack":"A2","time":0})).unwrap()["clips"][0].clone();
     let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();

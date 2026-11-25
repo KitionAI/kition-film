@@ -27,10 +27,10 @@ fn dist(a: [f32; 4], b: [f32; 4]) -> f32 {
 fn masked_effect_applies_only_inside_the_mask() {
     let (mut s, clip) = demo();
     let plain = s.render_program(0.25).unwrap();
-    s.execute("effects.apply", json!({"effect": "invert"})).unwrap();
+    s.execute("effect.apply", json!({"effect": "invert"})).unwrap();
     let inverted = s.render_program(0.25).unwrap();
     // ellipse mask on Invert, in the left half of the frame
-    let r = s.execute("masks.add", json!({"effect": "invert", "shape": "ellipse", "center": [480, 540], "size": [600, 600]})).unwrap();
+    let r = s.execute("mask.add", json!({"effect": "invert", "shape": "ellipse", "center": [480, 540], "size": [600, 600]})).unwrap();
     assert_eq!(r["name"], "Mask (1)");
     assert_eq!(r["mask"], 0);
     let masked = s.render_program(0.25).unwrap();
@@ -39,7 +39,7 @@ fn masked_effect_applies_only_inside_the_mask() {
     assert!(dist(px(&masked, 0.8, 0.5), px(&plain, 0.8, 0.5)) < 1e-4);
     assert!(dist(px(&plain, 0.25, 0.5), px(&inverted, 0.25, 0.5)) > 0.05, "invert changes the picture");
     // inverted mask swaps the regions
-    s.execute("masks.set", json!({"clip": clip.0, "effect": "invert", "mask": 0, "inverted": true})).unwrap();
+    s.execute("mask.set", json!({"clip": clip.0, "effect": "invert", "mask": 0, "inverted": true})).unwrap();
     let inv = s.render_program(0.25).unwrap();
     assert!(dist(px(&inv, 0.25, 0.5), px(&plain, 0.25, 0.5)) < 1e-4);
     assert!(dist(px(&inv, 0.8, 0.5), px(&inverted, 0.8, 0.5)) < 1e-4);
@@ -55,13 +55,13 @@ fn masked_effect_applies_only_inside_the_mask() {
 fn opacity_mask_cuts_out_the_clip() {
     let (mut s, clip) = demo();
     // V1 only: an opacity mask leaves black outside
-    s.execute("masks.add", json!({"clip": clip.0, "shape": "polygon", "center": [960, 540], "size": [960, 540]})).unwrap();
-    s.execute("masks.set", json!({"feather": 0})).unwrap();
+    s.execute("mask.add", json!({"clip": clip.0, "shape": "polygon", "center": [960, 540], "size": [960, 540]})).unwrap();
+    s.execute("mask.set", json!({"feather": 0})).unwrap();
     let img = s.render_program(0.25).unwrap();
     assert!(px(&img, 0.5, 0.5)[3] > 0.99, "inside opaque");
     let corner = px(&img, 0.05, 0.05);
     assert!(corner[0] + corner[1] + corner[2] < 1e-4, "outside cut: {corner:?}");
-    let list = s.execute("masks.list", json!({})).unwrap();
+    let list = s.execute("mask.list", json!({})).unwrap();
     let m = &list["masks"][0];
     assert_eq!(m["effectId"], "opacity");
     assert_eq!(m["path"]["vertices"].as_array().unwrap().len(), 4);
@@ -73,57 +73,57 @@ fn keyframed_mask_path_interpolates() {
     let (mut s, clip) = demo();
     let it = s.active_sequence().unwrap().find_item(clip).unwrap().1.clone();
     s.set_playhead(it.start);
-    s.execute("masks.add", json!({"effect": "opacity", "shape": "polygon", "center": [400, 400], "size": [200, 200]})).unwrap();
-    s.execute("effects.toggleAnimation", json!({"clip": clip.0, "effect": "opacity", "mask": 0, "param": "path"})).unwrap();
+    s.execute("mask.add", json!({"effect": "opacity", "shape": "polygon", "center": [400, 400], "size": [200, 200]})).unwrap();
+    s.execute("effect.toggleAnimation", json!({"clip": clip.0, "effect": "opacity", "mask": 0, "param": "path"})).unwrap();
     let rate = s.active_sequence().unwrap().settings.frame_rate;
     let t1 = it.start + rate.tick_of(10);
     s.set_playhead(t1);
-    s.execute("masks.translate", json!({"delta": [100, -50]})).unwrap();
+    s.execute("mask.translate", json!({"delta": [100, -50]})).unwrap();
     // feather keyframes too, through the generic keyframe command
-    s.execute("effects.toggleAnimation", json!({"clip": clip.0, "effect": "opacity", "mask": 0, "param": "feather"})).unwrap();
-    s.execute("effects.setParam", json!({"clip": clip.0, "effect": "opacity", "mask": 0, "param": "feather", "value": 30.0})).unwrap();
+    s.execute("effect.toggleAnimation", json!({"clip": clip.0, "effect": "opacity", "mask": 0, "param": "feather"})).unwrap();
+    s.execute("effect.setParam", json!({"clip": clip.0, "effect": "opacity", "mask": 0, "param": "feather", "value": 30.0})).unwrap();
     let mid = it.start + rate.tick_of(5);
-    let l = s.execute("masks.list", json!({"time": mid.0})).unwrap();
+    let l = s.execute("mask.list", json!({"time": mid.0})).unwrap();
     let v0 = &l["masks"][0]["path"]["vertices"][0]["p"];
     assert!((v0[0].as_f64().unwrap() - 350.0).abs() < 1e-6, "{v0}");
     assert!((v0[1].as_f64().unwrap() - 275.0).abs() < 1e-6, "{v0}");
     assert_eq!(l["masks"][0]["pathKeyframes"].as_array().unwrap().len(), 2);
-    let end = s.execute("masks.list", json!({"time": t1.0})).unwrap();
+    let end = s.execute("mask.list", json!({"time": t1.0})).unwrap();
     assert_eq!(end["masks"][0]["feather"], 30.0);
     // vertex edit at a keyframe replaces that keyframe; handles mirror unless broken
-    s.execute("masks.moveVertex", json!({"vertex": 1, "handle": "out", "delta": [0, 40]})).unwrap();
-    let e = s.execute("masks.list", json!({})).unwrap();
+    s.execute("mask.moveVertex", json!({"vertex": 1, "handle": "out", "delta": [0, 40]})).unwrap();
+    let e = s.execute("mask.list", json!({})).unwrap();
     let v1 = &e["masks"][0]["path"]["vertices"][1];
     assert_eq!(v1["out"], json!([0.0, 40.0]));
     assert_eq!(v1["in"], json!([-0.0, -40.0]));
     assert_eq!(e["masks"][0]["pathKeyframes"].as_array().unwrap().len(), 2);
     // add / remove vertices keep all keyframes interpolable
-    s.execute("masks.addVertex", json!({"after": 0, "at": [500, 220]})).unwrap();
-    let a = s.execute("masks.list", json!({"time": mid.0})).unwrap();
+    s.execute("mask.addVertex", json!({"after": 0, "at": [500, 220]})).unwrap();
+    let a = s.execute("mask.list", json!({"time": mid.0})).unwrap();
     assert_eq!(a["masks"][0]["path"]["vertices"].as_array().unwrap().len(), 5);
-    s.execute("masks.removeVertex", json!({"vertex": 1})).unwrap();
-    let a = s.execute("masks.list", json!({"time": mid.0})).unwrap();
+    s.execute("mask.removeVertex", json!({"vertex": 1})).unwrap();
+    let a = s.execute("mask.list", json!({"time": mid.0})).unwrap();
     assert_eq!(a["masks"][0]["path"]["vertices"].as_array().unwrap().len(), 4);
 }
 
 #[test]
 fn merged_drag_is_one_undo_step_and_project_round_trips() {
     let (mut s, _) = demo();
-    s.execute("effects.apply", json!({"effect": "gaussian_blur"})).unwrap();
-    s.execute("masks.add", json!({"effect": "gaussian_blur", "shape": "ellipse"})).unwrap();
+    s.execute("effect.apply", json!({"effect": "gaussian_blur"})).unwrap();
+    s.execute("mask.add", json!({"effect": "gaussian_blur", "shape": "ellipse"})).unwrap();
     let n = s.history.undo.len();
     for _ in 0..5 {
-        s.execute("masks.translate", json!({"delta": [3, 1], "merge": "drag-1"})).unwrap();
+        s.execute("mask.translate", json!({"delta": [3, 1], "merge": "drag-1"})).unwrap();
     }
     assert_eq!(s.history.undo.len(), n + 1);
-    s.execute("masks.set", json!({"mode": "subtract", "trackMethod": "position", "expansion": -4})).unwrap();
+    s.execute("mask.set", json!({"mode": "subtract", "trackMethod": "position", "expansion": -4})).unwrap();
     let bytes = kition_film_format::encode(&s.project, false);
     let back = kition_film_format::decode(&bytes).unwrap().project;
     assert_eq!(&back, &*s.project);
-    let l = s.execute("masks.list", json!({})).unwrap();
+    let l = s.execute("mask.list", json!({})).unwrap();
     assert_eq!(l["masks"][0]["mode"], "Subtract");
     assert_eq!(l["masks"][0]["trackMethod"], "Position");
-    assert!(s.execute("masks.add", json!({"effect": "motion"})).is_err(), "Motion has no masks");
+    assert!(s.execute("mask.add", json!({"effect": "motion"})).is_err(), "Motion has no masks");
 }
 
 #[test]
@@ -131,22 +131,22 @@ fn hostile_vertex_index_and_mask_name_counters_do_not_panic() {
     use std::panic::{AssertUnwindSafe, catch_unwind};
     let mut panics = Vec::new();
     let (mut s, clip) = demo();
-    s.execute("masks.add", json!({"clip":clip.0,"shape":"polygon"})).unwrap();
+    s.execute("mask.add", json!({"clip":clip.0,"shape":"polygon"})).unwrap();
     let result = catch_unwind(AssertUnwindSafe(|| {
-        (crate::commands::find("masks.addVertex").unwrap().run)(&mut s, &json!({"clip":clip.0,"effect":"opacity","mask":0,"after":u64::MAX,"at":[500,220]}))
+        (crate::commands::find("mask.addVertex").unwrap().run)(&mut s, &json!({"clip":clip.0,"effect":"opacity","mask":0,"after":u64::MAX,"at":[500,220]}))
     }));
     if let Ok(result) = result {
         result.expect("out-of-range indices append, as ordinary large indices do");
-        let list = s.execute("masks.list", json!({"clip":clip.0})).unwrap();
+        let list = s.execute("mask.list", json!({"clip":clip.0})).unwrap();
         assert_eq!(list["masks"][0]["path"]["vertices"].as_array().unwrap().len(), 5);
     } else {
         panics.push("untrusted insertion index");
     }
     let (mut s, clip) = demo();
-    s.execute("masks.add", json!({"clip":clip.0,"shape":"polygon"})).unwrap();
-    s.execute("masks.set", json!({"clip":clip.0,"effect":"opacity","mask":0,"name":format!("Mask ({})",usize::MAX)})).unwrap();
+    s.execute("mask.add", json!({"clip":clip.0,"shape":"polygon"})).unwrap();
+    s.execute("mask.set", json!({"clip":clip.0,"effect":"opacity","mask":0,"name":format!("Mask ({})",usize::MAX)})).unwrap();
     let before = s.project.clone();
-    let result = catch_unwind(AssertUnwindSafe(|| (crate::commands::find("masks.add").unwrap().run)(&mut s, &json!({"clip":clip.0,"shape":"polygon"}))));
+    let result = catch_unwind(AssertUnwindSafe(|| (crate::commands::find("mask.add").unwrap().run)(&mut s, &json!({"clip":clip.0,"shape":"polygon"}))));
     if let Ok(result) = result {
         assert!(result.is_err(), "an exhausted generated-name counter reports an error");
         assert_eq!(s.project, before, "a refused mask allocation preserves the project");
@@ -161,8 +161,8 @@ fn an_empty_animated_mask_path_reports_an_error_without_panicking() {
     use kition_film_project::{MaskPath, ParamValue};
     use std::panic::{AssertUnwindSafe, catch_unwind};
     let (mut s, clip) = demo();
-    s.execute("masks.add", json!({"clip":clip.0,"shape":"polygon"})).unwrap();
-    s.execute("effects.toggleAnimation", json!({"clip":clip.0,"effect":"opacity","mask":0,"param":"path"})).unwrap();
+    s.execute("mask.add", json!({"clip":clip.0,"shape":"polygon"})).unwrap();
+    s.execute("effect.toggleAnimation", json!({"clip":clip.0,"effect":"opacity","mask":0,"param":"path"})).unwrap();
     let seq = s.state.active_sequence.unwrap();
     let p = std::sync::Arc::make_mut(&mut s.project);
     let item = p.sequence_mut(seq).unwrap().find_item_mut(clip).unwrap().1;
@@ -175,7 +175,7 @@ fn an_empty_animated_mask_path_reports_an_error_without_panicking() {
     mask.path.keyframes.push(later);
     let before = s.project.clone();
     let result = catch_unwind(AssertUnwindSafe(|| {
-        (crate::commands::find("masks.addVertex").unwrap().run)(&mut s, &json!({"clip":clip.0,"effect":"opacity","mask":0,"after":0,"at":[500,220]}))
+        (crate::commands::find("mask.addVertex").unwrap().run)(&mut s, &json!({"clip":clip.0,"effect":"opacity","mask":0,"after":0,"at":[500,220]}))
     }));
     assert!(result.is_ok(), "a malformed animated path must never underflow or index an empty vector");
     assert!(result.unwrap().is_err());
@@ -185,9 +185,9 @@ fn an_empty_animated_mask_path_reports_an_error_without_panicking() {
 #[test]
 fn a_zero_duration_clip_cannot_panic_mask_commands() {
     use std::panic::{AssertUnwindSafe, catch_unwind};
-    for command in ["masks.set", "masks.list"] {
+    for command in ["mask.set", "mask.list"] {
         let (mut s, clip) = demo();
-        s.execute("masks.add", json!({"clip":clip.0,"shape":"polygon"})).unwrap();
+        s.execute("mask.add", json!({"clip":clip.0,"shape":"polygon"})).unwrap();
         let seq = s.state.active_sequence.unwrap();
         std::sync::Arc::make_mut(&mut s.project).sequence_mut(seq).unwrap().find_item_mut(clip).unwrap().1.duration = Tick::ZERO;
         let before = s.project.clone();
@@ -308,9 +308,9 @@ fn pending_mask_tracking_does_not_edit_a_reopened_project() {
     let rate = kition_film_time::FrameRate::FPS_24;
     s.set_playhead(rate.tick_of(10));
     let center = truth(10.0).apply(kition_film_geom::Vec2::ZERO);
-    s.execute("masks.add", json!({"effect": "opacity", "shape": "ellipse", "center": [center.x, center.y], "size": [90, 90]})).unwrap();
+    s.execute("mask.add", json!({"effect": "opacity", "shape": "ellipse", "center": [center.x, center.y], "size": [90, 90]})).unwrap();
     s.execute("file.saveAs", json!({"path": project.to_string_lossy()})).unwrap();
-    let started = s.execute("masks.track", json!({"direction": "forward", "frames": 3})).unwrap();
+    let started = s.execute("mask.track", json!({"direction": "forward", "frames": 3})).unwrap();
     let job = s.jobs.iter().find(|job| json!(job.id) == started["job"]).unwrap();
     let deadline = Instant::now() + Duration::from_secs(30);
     while !job.progress.finished.load(Ordering::Relaxed) || job.result.lock().unwrap().is_none() {
@@ -337,9 +337,9 @@ fn n27_pending_tracking_cannot_write_into_a_mask_that_reused_its_index() {
     use std::time::{Duration, Instant};
     let (mut s, clip) = tracking_session();
     let center = truth(0.0).apply(kition_film_geom::Vec2::ZERO);
-    s.execute("masks.add", json!({"effect": "opacity", "shape": "ellipse", "center": [center.x, center.y], "size": [90, 90]})).unwrap();
-    s.execute("masks.add", json!({"effect": "opacity", "shape": "rectangle", "center": [200, 100], "size": [30, 40]})).unwrap();
-    let started = s.execute("masks.track", json!({"clip": clip.0, "effect": "opacity", "mask": 0, "direction": "forward", "frames": 3})).unwrap();
+    s.execute("mask.add", json!({"effect": "opacity", "shape": "ellipse", "center": [center.x, center.y], "size": [90, 90]})).unwrap();
+    s.execute("mask.add", json!({"effect": "opacity", "shape": "rectangle", "center": [200, 100], "size": [30, 40]})).unwrap();
+    let started = s.execute("mask.track", json!({"clip": clip.0, "effect": "opacity", "mask": 0, "direction": "forward", "frames": 3})).unwrap();
     let job = s.jobs.iter().find(|job| json!(job.id) == started["job"]).unwrap();
     let deadline = Instant::now() + Duration::from_secs(30);
     while !job.progress.finished.load(Ordering::Relaxed) || job.result.lock().unwrap().is_none() {
@@ -348,12 +348,12 @@ fn n27_pending_tracking_cannot_write_into_a_mask_that_reused_its_index() {
     }
     assert!(job.result.lock().unwrap().as_ref().unwrap().is_ok());
     assert_eq!(s.mask_jobs[0].keys.lock().unwrap().len(), 4);
-    s.execute("masks.remove", json!({"clip": clip.0, "effect": "opacity", "mask": 0})).unwrap();
-    let before = s.execute("masks.list", json!({})).unwrap();
+    s.execute("mask.remove", json!({"clip": clip.0, "effect": "opacity", "mask": 0})).unwrap();
+    let before = s.execute("mask.list", json!({})).unwrap();
     assert_eq!(before["masks"].as_array().unwrap().len(), 1);
     let history = s.history.undo.len();
     s.poll_persistence();
-    assert_eq!(s.execute("masks.list", json!({})).unwrap(), before, "removing the tracked mask must not redirect its paths into the next mask");
+    assert_eq!(s.execute("mask.list", json!({})).unwrap(), before, "removing the tracked mask must not redirect its paths into the next mask");
     assert_eq!(s.history.undo.len(), history);
     assert!(s.mask_jobs.is_empty());
 }
@@ -365,24 +365,24 @@ fn tracking_follows_known_motion_forward_and_backward() {
     s.set_playhead(rate.tick_of(10));
     // a circle of radius 45 inside the disc at frame 10
     let c = truth(10.0).apply(kition_film_geom::Vec2::ZERO);
-    s.execute("masks.add", json!({"effect": "opacity", "shape": "ellipse", "center": [c.x, c.y], "size": [90, 90]})).unwrap();
-    let path0 = s.execute("masks.list", json!({})).unwrap()["masks"][0]["path"].clone();
+    s.execute("mask.add", json!({"effect": "opacity", "shape": "ellipse", "center": [c.x, c.y], "size": [90, 90]})).unwrap();
+    let path0 = s.execute("mask.list", json!({})).unwrap()["masks"][0]["path"].clone();
     let p0 = crate::masks::path_from_json(&path0).unwrap();
     // object coordinates of the mask vertices (they ride on the disc)
     let inv10 = truth(10.0).inverse().unwrap();
     let obj: Vec<kition_film_geom::Vec2> = p0.vertices.iter().map(|v| inv10.apply(v.p)).collect();
-    let r = s.execute("masks.track", json!({"direction": "forward", "frames": 12, "wait": true})).unwrap();
+    let r = s.execute("mask.track", json!({"direction": "forward", "frames": 12, "wait": true})).unwrap();
     assert_eq!(r["frames"], 12, "{r}");
     assert!(s.mask_jobs.is_empty());
-    let r = s.execute("masks.track", json!({"direction": "backward", "frames": 8, "wait": true, "method": "positionScaleRotation"})).unwrap();
+    let r = s.execute("mask.track", json!({"direction": "backward", "frames": 8, "wait": true, "method": "positionScaleRotation"})).unwrap();
     assert_eq!(r["frames"], 8);
-    let l = s.execute("masks.list", json!({})).unwrap();
+    let l = s.execute("mask.list", json!({})).unwrap();
     let keys: Vec<i64> = l["masks"][0]["pathKeyframes"].as_array().unwrap().iter().map(|v| v.as_i64().unwrap()).collect();
     assert_eq!(keys.len(), 21, "frames 2..=22: {keys:?}");
     let mut worst = 0.0f64;
     for f in [2i64, 6, 10, 14, 18, 22] {
         let t = rate.tick_of(f);
-        let m = s.execute("masks.list", json!({"time": t.0})).unwrap();
+        let m = s.execute("mask.list", json!({"time": t.0})).unwrap();
         let path = crate::masks::path_from_json(&m["masks"][0]["path"]).unwrap();
         for (v, o) in path.vertices.iter().zip(&obj) {
             worst = worst.max((v.p - truth(f as f64).apply(*o)).length());
@@ -400,24 +400,24 @@ fn tracking_follows_known_motion_forward_and_backward() {
 fn tracking_runs_in_the_background_and_can_be_cancelled() {
     let (mut s, _) = tracking_session();
     let c = truth(0.0).apply(kition_film_geom::Vec2::ZERO);
-    s.execute("masks.add", json!({"effect": "opacity", "shape": "ellipse", "center": [c.x, c.y], "size": [90, 90]})).unwrap();
-    let r = s.execute("masks.track", json!({"direction": "forward"})).unwrap();
+    s.execute("mask.add", json!({"effect": "opacity", "shape": "ellipse", "center": [c.x, c.y], "size": [90, 90]})).unwrap();
+    let r = s.execute("mask.track", json!({"direction": "forward"})).unwrap();
     let job = r["job"].as_u64().unwrap();
     assert_eq!(r["frames"], 47);
-    assert!(s.execute("masks.track", json!({})).is_err(), "one job per mask");
-    s.execute("jobs.cancel", json!({"job": job})).unwrap();
+    assert!(s.execute("mask.track", json!({})).is_err(), "one job per mask");
+    s.execute("job.cancel", json!({"job": job})).unwrap();
     let t0 = std::time::Instant::now();
     while !s.mask_jobs.is_empty() && t0.elapsed().as_secs() < 60 {
         s.poll_persistence();
         std::thread::sleep(std::time::Duration::from_millis(5));
     }
     assert!(s.mask_jobs.is_empty());
-    let jobs = s.execute("jobs.list", json!({})).unwrap();
+    let jobs = s.execute("job.list", json!({})).unwrap();
     let j = jobs.as_array().unwrap().iter().find(|j| j["id"] == job).unwrap().clone();
     assert_eq!(j["finished"], true);
-    let n = s.execute("masks.list", json!({})).unwrap()["masks"][0]["pathKeyframes"].as_array().unwrap().len();
+    let n = s.execute("mask.list", json!({})).unwrap()["masks"][0]["pathKeyframes"].as_array().unwrap().len();
     assert!(n < 48, "stopped early ({n} keyframes)");
-    assert!(s.execute("masks.track", json!({"direction": "backward"})).is_err(), "nothing before the first frame");
+    assert!(s.execute("mask.track", json!({"direction": "backward"})).is_err(), "nothing before the first frame");
 }
 
 /// A background tracking job's keyframes are written by `poll_persistence`, outside any
@@ -427,15 +427,15 @@ fn tracking_runs_in_the_background_and_can_be_cancelled() {
 fn background_tracking_survives_the_next_commands_undo() {
     let (mut s, _) = tracking_session();
     let c = truth(0.0).apply(kition_film_geom::Vec2::ZERO);
-    s.execute("masks.add", json!({"effect": "opacity", "shape": "ellipse", "center": [c.x, c.y], "size": [90, 90]})).unwrap();
+    s.execute("mask.add", json!({"effect": "opacity", "shape": "ellipse", "center": [c.x, c.y], "size": [90, 90]})).unwrap();
     assert!(s.kdm().is_some(), "replica-backed");
-    s.execute("masks.track", json!({"direction": "forward", "frames": 12})).unwrap();
+    s.execute("mask.track", json!({"direction": "forward", "frames": 12})).unwrap();
     let t0 = std::time::Instant::now();
     while !s.mask_jobs.is_empty() && t0.elapsed().as_secs() < 60 {
         s.poll_persistence();
         std::thread::sleep(std::time::Duration::from_millis(5));
     }
-    let keys = |s: &mut Session| s.execute("masks.list", json!({})).unwrap()["masks"][0]["pathKeyframes"].as_array().map_or(0, Vec::len);
+    let keys = |s: &mut Session| s.execute("mask.list", json!({})).unwrap()["masks"][0]["pathKeyframes"].as_array().map_or(0, Vec::len);
     let tracked = keys(&mut s);
     assert!(tracked > 1, "tracked ({tracked} keyframes)");
     s.execute("timeline.setTrack", json!({"track": "V1", "name": "Zed"})).unwrap();
@@ -445,8 +445,8 @@ fn background_tracking_survives_the_next_commands_undo() {
     assert!(keys(&mut s) < tracked, "its own undo takes it back");
 }
 
-/// `masks.add` takes frame pixels, so a mask lands where it is asked for even when
-/// Motion moves and scales the clip; `masks.list` answers the same frame pixels.
+/// `mask.add` takes frame pixels, so a mask lands where it is asked for even when
+/// Motion moves and scales the clip; `mask.list` answers the same frame pixels.
 #[test]
 fn masks_are_placed_in_frame_pixels() {
     let (mut s, clip) = demo();
@@ -454,22 +454,22 @@ fn masks_are_placed_in_frame_pixels() {
     let (fw, fh) = (seq.width as f64, seq.height as f64);
     // the clip at half size, its centre a quarter of the way into the frame
     let (cx, cy) = (fw * 0.25, fh * 0.25);
-    s.execute("effects.setParam", json!({"clip": clip.0, "effect": "motion", "param": "scale", "value": 50.0})).unwrap();
-    s.execute("effects.setParam", json!({"clip": clip.0, "effect": "motion", "param": "position", "value": [cx, cy]})).unwrap();
-    s.execute("masks.add", json!({"clip": clip.0, "shape": "polygon", "center": [cx, cy], "size": [fw * 0.1, fh * 0.1]})).unwrap();
-    s.execute("masks.set", json!({"feather": 0})).unwrap();
+    s.execute("effect.setParam", json!({"clip": clip.0, "effect": "motion", "param": "scale", "value": 50.0})).unwrap();
+    s.execute("effect.setParam", json!({"clip": clip.0, "effect": "motion", "param": "position", "value": [cx, cy]})).unwrap();
+    s.execute("mask.add", json!({"clip": clip.0, "shape": "polygon", "center": [cx, cy], "size": [fw * 0.1, fh * 0.1]})).unwrap();
+    s.execute("mask.set", json!({"feather": 0})).unwrap();
     let img = s.render_program(0.25).unwrap();
     assert!(px(&img, 0.25, 0.25)[3] > 0.99, "the mask's centre shows the clip: {:?}", px(&img, 0.25, 0.25));
     let off = px(&img, 0.15, 0.15);
     assert!(off[0] + off[1] + off[2] < 1e-4, "outside the frame-pixel mask the clip is cut: {off:?}");
-    let list = s.execute("masks.list", json!({})).unwrap();
+    let list = s.execute("mask.list", json!({})).unwrap();
     let vs = list["masks"][0]["path"]["vertices"].as_array().unwrap();
     let (mx, my) = vs.iter().fold((0.0, 0.0), |(x, y), v| (x + v["p"][0].as_f64().unwrap() / 4.0, y + v["p"][1].as_f64().unwrap() / 4.0));
-    assert!((mx - cx).abs() < 1e-6 && (my - cy).abs() < 1e-6, "masks.list answers frame pixels: ({mx}, {my})");
+    assert!((mx - cx).abs() < 1e-6 && (my - cy).abs() < 1e-6, "mask.list answers frame pixels: ({mx}, {my})");
     // moving a vertex and the mask is in frame pixels too
-    s.execute("masks.translate", json!({"delta": [10, 20]})).unwrap();
-    s.execute("masks.moveVertex", json!({"vertex": 0, "to": [cx - 100.0, cy - 100.0]})).unwrap();
-    let list = s.execute("masks.list", json!({})).unwrap();
+    s.execute("mask.translate", json!({"delta": [10, 20]})).unwrap();
+    s.execute("mask.moveVertex", json!({"vertex": 0, "to": [cx - 100.0, cy - 100.0]})).unwrap();
+    let list = s.execute("mask.list", json!({})).unwrap();
     let v0 = &list["masks"][0]["path"]["vertices"][0]["p"];
     assert!((v0[0].as_f64().unwrap() - (cx - 100.0)).abs() < 1e-6 && (v0[1].as_f64().unwrap() - (cy - 100.0)).abs() < 1e-6, "{v0}");
     let v2 = &list["masks"][0]["path"]["vertices"][2]["p"];

@@ -66,11 +66,11 @@ fn seed(row: &str) -> Vec<u8> {
         doc.execute("sequence.applyVideoTransition", json!({"clip":clip,"edge":"in","frames":6})).unwrap();
     }
     for t in [1.5, 4.5, 8.5] {
-        doc.execute("markers.add", json!({"seconds":t,"name":format!("M{t}")})).unwrap();
-        doc.execute("captions.add", json!({"seconds":t-0.5,"durationSeconds":1,"text":format!("C{t}")})).unwrap();
+        doc.execute("marker.add", json!({"seconds":t,"name":format!("M{t}")})).unwrap();
+        doc.execute("caption.add", json!({"seconds":t-0.5,"durationSeconds":1,"text":format!("C{t}")})).unwrap();
     }
-    doc.execute("markers.markIn", json!({"seconds":4})).unwrap();
-    doc.execute("markers.markOut", json!({"seconds":5})).unwrap();
+    doc.execute("marker.markIn", json!({"seconds":4})).unwrap();
+    doc.execute("marker.markOut", json!({"seconds":5})).unwrap();
     let mut loaded = kition_film_format::decode(&doc.save(None).unwrap()).unwrap();
     let id = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
     // An empty track above the addressed track makes insertion/removal-above meaningful.
@@ -199,13 +199,13 @@ fn step(row: &str, q: &Value) -> Value {
         "point-automate" => {
             json!({"command":"clip.automateToSequence","at":{"time":4.5},"params":{"items":[item],"method":"overwrite","videoTransition":false,"audioTransition":false}})
         }
-        "point-marker" => command("markers.add", json!({"seconds":4.5,"name":"Mine"})),
+        "point-marker" => command("marker.add", json!({"seconds":4.5,"name":"Mine"})),
         "range-lift" => command("sequence.lift", json!({})),
         "range-extract" => command("sequence.extract", json!({})),
-        "caption-id" => command("captions.setText", json!({"caption":q["captionTracks"][0]["captions"][1]["id"],"text":"Mine"})),
-        "caption-time" => json!({"command":"captions.setText","at":{"time":4.5},"params":{"text":"Mine"}}),
-        "marker-id" => command("markers.edit", json!({"marker":q["markers"][1]["id"],"comment":"Mine"})),
-        "marker-time" => json!({"command":"markers.clearCurrent","at":{"time":4.5}}),
+        "caption-id" => command("caption.setText", json!({"caption":q["captionTracks"][0]["captions"][1]["id"],"text":"Mine"})),
+        "caption-time" => json!({"command":"caption.setText","at":{"time":4.5},"params":{"text":"Mine"}}),
+        "marker-id" => command("marker.edit", json!({"marker":q["markers"][1]["id"],"comment":"Mine"})),
+        "marker-time" => json!({"command":"marker.clearCurrent","at":{"time":4.5}}),
         "track-id" => command("timeline.setTrack", json!({"track":q["video"][1]["id"],"name":"Mine"})),
         "track-index" => command("timeline.setTrack", json!({"track":"V2","name":"Mine"})),
         "transition-id" => command("sequence.setTransition", json!({"transition":q["video"][lane]["transitions"][0]["id"],"reverse":true})),
@@ -227,7 +227,7 @@ async fn dense_time_matrix() {
             let f = Fixture::from_bytes(&bytes, Default::default());
             let (mut q, basis) = f.inspect().await;
             let mut doc = FilmDocument::open(FILE, &bytes).unwrap();
-            q["captionTracks"] = doc.execute("captions.list", json!({})).unwrap()["tracks"].clone();
+            q["captionTracks"] = doc.execute("caption.list", json!({})).unwrap()["tracks"].clone();
             let write = step(row, &q);
             let want = expected[col];
             println!("EXPECT film/{row}/{kind} {want}");
@@ -309,7 +309,7 @@ async fn caption_and_marker_before_at_after_matrix() {
                 let bytes = seed(form);
                 let f = Fixture::from_bytes(&bytes, Default::default());
                 let (mut q, basis) = f.inspect().await;
-                q["captionTracks"] = FilmDocument::open(FILE, &bytes).unwrap().execute("captions.list", json!({})).unwrap()["tracks"].clone();
+                q["captionTracks"] = FilmDocument::open(FILE, &bytes).unwrap().execute("caption.list", json!({})).unwrap()["tracks"].clone();
                 let write = step(form, &q);
                 println!("EXPECT film/{route}/{form}/{edit} {want}");
                 rewrite(&f.file(), |p| {
@@ -877,7 +877,7 @@ async fn strictly_after_time_matrix() {
             let f = Fixture::from_bytes(&bytes, Default::default());
             let (mut q, basis) = f.inspect().await;
             let mut doc = FilmDocument::open(FILE, &bytes).unwrap();
-            q["captionTracks"] = doc.execute("captions.list", json!({})).unwrap()["tracks"].clone();
+            q["captionTracks"] = doc.execute("caption.list", json!({})).unwrap()["tracks"].clone();
             let input = if raw { json!({"basis":basis,"ops":model_clip_ops(&f,&q,row).await}) } else { json!({"basis":basis,"steps":[step(row,&q)]}) };
             change_after(&f, q["id"].as_u64().unwrap(), kind);
             let saved = std::fs::read(f.file()).unwrap();
@@ -1038,7 +1038,7 @@ fn merged(row: &str, kind: &str, basis: &[u8], theirs: &[u8], result: &[u8]) -> 
             let added = markers.remove(mine);
             // Where the same marker lands when added to the agent's own document (on a frame).
             let mut alone = FilmDocument::open(FILE, basis).unwrap();
-            alone.execute("markers.add", json!({"seconds":4.5,"name":"Mine"})).unwrap();
+            alone.execute("marker.add", json!({"seconds":4.5,"name":"Mine"})).unwrap();
             let at = sequence_of(&alone.save(None).unwrap()).markers.iter().find(|m| m.name == "Mine").unwrap().start.0;
             same("marker time", &at, &added.start.0)?;
             same("markers", &theirs.markers, &markers)?;

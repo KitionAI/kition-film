@@ -15,7 +15,7 @@ fn run(doc: &mut FilmDocument, command: &str, params: Value) -> Value {
 
 fn fixture() -> FilmDocument {
     let mut doc = FilmDocument::create("Keys.kfilm", 1280, 720).unwrap();
-    run(&mut doc, "file.newSequence", json!({ "name": "Edit", "width": 1280, "height": 720, "fps": 24, "video": 2, "audio": 1 }));
+    run(&mut doc, "sequence.new", json!({ "name": "Edit", "width": 1280, "height": 720, "fps": 24, "video": 2, "audio": 1 }));
     doc
 }
 
@@ -26,15 +26,15 @@ fn effects(doc: &FilmDocument, track: usize) -> Value {
 #[test]
 fn a_keyframe_at_the_clip_end_stays_there() {
     let mut doc = fixture();
-    let item = run(&mut doc, "file.newColorMatte", json!({ "color": "#203040", "seconds": 6 }))["item"].clone();
+    let item = run(&mut doc, "item.newColorMatte", json!({ "color": "#203040", "seconds": 6 }))["item"].clone();
     let clip = run(&mut doc, "timeline.place", json!({ "item": item, "track": "V1", "seconds": 0 }))["clips"][0].clone();
-    run(&mut doc, "effects.setParam", json!({ "clip": clip, "effect": "opacity", "param": "opacity", "value": 100, "seconds": 0 }));
-    run(&mut doc, "effects.setParam", json!({ "clip": clip, "effect": "opacity", "param": "opacity", "value": 0, "seconds": 6 }));
+    run(&mut doc, "effect.setParam", json!({ "clip": clip, "effect": "opacity", "param": "opacity", "value": 100, "seconds": 0 }));
+    run(&mut doc, "effect.setParam", json!({ "clip": clip, "effect": "opacity", "param": "opacity", "value": 0, "seconds": 6 }));
     let keys = effects(&doc, 0)[1]["params"]["opacity"]["keyframes"].clone();
     assert_eq!(keys[1]["time"], json!(6 * SECOND), "{keys}");
     assert_eq!(keys[1]["mediaTime"], json!(6 * SECOND), "{keys}");
     // Past the end is still the end.
-    run(&mut doc, "effects.setParam", json!({ "clip": clip, "effect": "opacity", "param": "opacity", "value": 50, "seconds": 9 }));
+    run(&mut doc, "effect.setParam", json!({ "clip": clip, "effect": "opacity", "param": "opacity", "value": 50, "seconds": 9 }));
     let keys = effects(&doc, 0)[1]["params"]["opacity"]["keyframes"].clone();
     assert_eq!(keys.as_array().unwrap().len(), 2, "{keys}");
     assert_eq!(keys[1]["value"], json!(50.0), "{keys}");
@@ -47,7 +47,7 @@ fn text_keyframes_hold_and_path_points_read_back_as_given() {
     let clip = made["clip"].clone();
     let text_effect = effects(&doc, 0).as_array().unwrap().len() - 1;
     for (at, text) in ["3", "2", "1"].iter().enumerate() {
-        run(&mut doc, "effects.setParam", json!({ "clip": clip, "effect": text_effect, "param": "text", "value": text, "seconds": at }));
+        run(&mut doc, "effect.setParam", json!({ "clip": clip, "effect": text_effect, "param": "text", "value": text, "seconds": at }));
     }
     let keys = effects(&doc, 0)[text_effect]["params"]["text"]["keyframes"].clone();
     assert_eq!(keys.as_array().unwrap().len(), 3, "{keys}");

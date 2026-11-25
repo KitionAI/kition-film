@@ -34,19 +34,19 @@ pub const DIALOG_DEFAULTS: &[&str] = &[
     "clip.makeSubclip",
     "clip.editSubclip",
     "clip.audioChannels",
-    "clip.modifyTimecode",
-    "file.newOfflineFile",
+    "clip.setTimecode",
+    "item.newOfflineFile",
     "clip.editOffline",
     "clip.synchronize",
     "clip.mergeClips",
     // Task 13: Sequence Settings, New Sequence, and Sequence ▸ Color Management
     "sequence.settings",
-    "file.newSequence",
+    "sequence.new",
     "sequence.colorSettings",
     // Task 14: Add Tracks, Simplify Sequence, New Color Matte, and Color Matte Color
     "sequence.addTracks",
     "sequence.simplify",
-    "file.newColorMatte",
+    "item.newColorMatte",
     "project.matteColor",
     // Task 15: Find and Automate to Sequence
     "edit.find",
@@ -77,17 +77,17 @@ impl FilmDocument {
     /// - `clip.audioChannels`: the first selected item with audio, its `format` and `clips` (its
     ///   own map, else stereo pairs), `info` `{channels, items: true}`; else `{channels: [0, 1]}`
     ///   for the timeline's audio clips, `info` `{channels: 2, items: false}`.
-    /// - `clip.modifyTimecode`: the first selected media item's start `timecode` and `tapeName`.
-    /// - `file.newOfflineFile`: upstream's file, the active sequence's size and rate, 10 s.
+    /// - `clip.setTimecode`: the first selected media item's start `timecode` and `tapeName`.
+    /// - `item.newOfflineFile`: upstream's file, the active sequence's size and rate, 10 s.
     /// - `clip.editOffline`: the first selected item, its `mediaName` and offline fields.
     /// - `clip.synchronize` and `clip.mergeClips`: upstream's `SyncDraft` (`items` the Project
     ///   selection, `name` `"<first> - Merged"` for Merge, `method` `"audio"`, …); `info`
     ///   `{names}`, the items' names.
-    /// - `sequence.settings` and `file.newSequence` (upstream `sequence_settings.rs` `open` and
+    /// - `sequence.settings` and `sequence.new` (upstream `sequence_settings.rs` `open` and
     ///   `open_new`): the draft `{tab, name, newSequence, video, audio, fpsNum, fpsDen, width,
     ///   height, scaleMotion, dropFrame, mix, sampleRate, maxRenderQuality, workingSpace,
     ///   wideGamut, autoToneMap}` of the active sequence (New Sequence: the default settings,
-    ///   named as `file.newSequence` names one); `info` is what `show()` compares the draft with
+    ///   named as `sequence.new` names one); `info` is what `show()` compares the draft with
     ///   (`current`: the same keys and the name, blank for New Sequence) and what the greyed rows
     ///   show (`par`, `previewCodec`, `maxBitDepth`, `audioDisplaySamples`), with the
     ///   `timebases` (`{num, den, label, dropFrame}`, upstream's 15 and the draft's own rate
@@ -104,7 +104,7 @@ impl FilmDocument {
     /// - `sequence.simplify` (upstream `menu_dialogs.rs` `defaults`): `name` `"<sequence>
     ///   (Simplified)"` (blank without one) and upstream's remove options, `keep` `"both"`; `info`
     ///   `{current: {name}}`.
-    /// - `file.newColorMatte`: black, named "Color Matte", the active sequence's size (the
+    /// - `item.newColorMatte`: black, named "Color Matte", the active sequence's size (the
     ///   default settings' without one), 5 s; `info` is null.
     /// - `project.matteColor`: the one Color Matte selected in the Project panel, `{item, color}`
     ///   (`#rrggbb`); `info` `{current: {color}}`. With anything else selected it is upstream's
@@ -138,15 +138,15 @@ impl FilmDocument {
             }
             "clip.editSubclip" => edit_subclip(s),
             "clip.audioChannels" => audio_channels(s),
-            "clip.modifyTimecode" => (modify_timecode(s), Value::Null),
-            "file.newOfflineFile" => (offline_file(s), Value::Null),
+            "clip.setTimecode" => (modify_timecode(s), Value::Null),
+            "item.newOfflineFile" => (offline_file(s), Value::Null),
             "clip.editOffline" => (edit_offline(s), Value::Null),
             "clip.synchronize" | "clip.mergeClips" => sync_draft(s, command == "clip.mergeClips"),
-            "sequence.settings" | "file.newSequence" => sequence_settings(s, command == "file.newSequence"),
+            "sequence.settings" | "sequence.new" => sequence_settings(s, command == "sequence.new"),
             "sequence.colorSettings" => colour_settings(s),
             "sequence.addTracks" => add_tracks(s),
             "sequence.simplify" => simplify(s),
-            "file.newColorMatte" => new_color_matte(s),
+            "item.newColorMatte" => new_color_matte(s),
             "project.matteColor" => matte_color(s)?,
             "edit.find" => (find(s), json!({})),
             "clip.automateToSequence" => automate(s),
@@ -489,7 +489,7 @@ mod tests {
         std::fs::write(dir.join("tone.wav"), tone_wav()).unwrap();
         kition_kit::host::set_root(Some(dir.clone()));
         let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
-        let matte = doc.execute("file.newColorMatte", json!({ "color": "#ff0000", "seconds": 4.0 })).unwrap();
+        let matte = doc.execute("item.newColorMatte", json!({ "color": "#ff0000", "seconds": 4.0 })).unwrap();
         doc.execute("timeline.place", json!({ "item": matte["item"], "track": "V1", "seconds": 0.0 })).unwrap();
         let imported = doc.execute("file.import", json!({ "paths": ["tone.wav"] })).unwrap();
         doc.execute("timeline.place", json!({ "item": imported["items"][0], "track": "A1", "seconds": 0.0 })).unwrap();
@@ -504,7 +504,7 @@ mod tests {
     #[test]
     fn paste_attributes_offers_the_copied_clips_kinds_and_standard_effects() {
         with_clips(|doc, video, _| {
-            doc.execute("effects.apply", json!({ "clips": [video], "effect": "gaussian_blur" })).unwrap();
+            doc.execute("effect.apply", json!({ "clips": [video], "effect": "gaussian_blur" })).unwrap();
             doc.execute("timeline.select", json!({ "clips": [video], "linked": false })).unwrap();
             doc.execute("edit.copy", json!({})).unwrap();
             let before = state(doc);
@@ -537,7 +537,7 @@ mod tests {
     #[test]
     fn remove_attributes_reads_the_selected_clips_without_scale_times() {
         with_clips(|doc, video, audio| {
-            doc.execute("effects.apply", json!({ "clips": [audio], "effect": "parametric_eq" })).unwrap();
+            doc.execute("effect.apply", json!({ "clips": [audio], "effect": "parametric_eq" })).unwrap();
             doc.execute("timeline.select", json!({ "clips": [audio], "linked": false })).unwrap();
             let shown = doc.dialog_defaults("edit.removeAttributes").unwrap();
             assert_eq!(shown["params"]["volume"], true);
@@ -660,8 +660,8 @@ mod tests {
             let tone = tone_item(doc, audio);
             doc.execute("project.select", json!({ "items": [tone] })).unwrap();
             let before = state(doc);
-            assert_eq!(doc.dialog_defaults("clip.modifyTimecode").unwrap(), json!({ "params": { "timecode": "00:00:00:00", "tapeName": "" }, "info": null }));
-            let offline = doc.dialog_defaults("file.newOfflineFile").unwrap();
+            assert_eq!(doc.dialog_defaults("clip.setTimecode").unwrap(), json!({ "params": { "timecode": "00:00:00:00", "tapeName": "" }, "info": null }));
+            let offline = doc.dialog_defaults("item.newOfflineFile").unwrap();
             assert_eq!(state(doc), before, "a read changes nothing");
             let params = &offline["params"];
             assert_eq!(
@@ -673,7 +673,7 @@ mod tests {
                 (json!(true), json!(true), json!(64), json!(36))
             );
             assert!(params["fps"].as_f64().unwrap() > 0.0);
-            let lost = doc.execute("file.newOfflineFile", json!({ "name": "Lost", "tapeName": "T1" })).unwrap()["item"].as_u64().unwrap();
+            let lost = doc.execute("item.newOfflineFile", json!({ "name": "Lost", "tapeName": "T1" })).unwrap()["item"].as_u64().unwrap();
             doc.execute("project.select", json!({ "items": [lost] })).unwrap();
             let edit = doc.dialog_defaults("clip.editOffline").unwrap();
             assert_eq!(
@@ -770,7 +770,7 @@ mod tests {
         with_clips(|doc, _, _| {
             doc.execute("sequence.settings", json!({ "width": 1280, "height": 720 })).unwrap();
             let before = state(doc);
-            let shown = doc.dialog_defaults("file.newSequence").unwrap();
+            let shown = doc.dialog_defaults("sequence.new").unwrap();
             assert_eq!(state(doc), before, "a read changes nothing");
             let count = doc.session.project.sequences().count();
             assert_eq!(
@@ -787,7 +787,7 @@ mod tests {
             assert_eq!((shown["info"]["current"]["width"].clone(), shown["info"]["current"]["mix"].clone()), (json!(1920), json!("Stereo")));
             assert_eq!(shown["info"]["timebases"].as_array().unwrap().len(), 15);
             // The name is the one the command gives with no name.
-            let made = doc.execute("file.newSequence", json!({})).unwrap()["sequence"].as_u64().unwrap();
+            let made = doc.execute("sequence.new", json!({})).unwrap()["sequence"].as_u64().unwrap();
             assert_eq!(doc.session.project.item(kition_film_engine::project::ItemId(made)).unwrap().name, shown["params"]["name"].as_str().unwrap());
         });
     }
@@ -865,7 +865,7 @@ mod tests {
     #[test]
     fn new_color_matte_opens_black_at_the_sequence_size() {
         with_clips(|doc, _, _| {
-            let shown = doc.dialog_defaults("file.newColorMatte").unwrap();
+            let shown = doc.dialog_defaults("item.newColorMatte").unwrap();
             assert_eq!(shown["params"], json!({ "color": "#000000", "name": "Color Matte", "width": 64, "height": 36, "seconds": 5.0 }));
         });
     }

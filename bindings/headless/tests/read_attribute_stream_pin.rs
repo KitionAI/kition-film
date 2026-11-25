@@ -14,7 +14,7 @@ async fn paste_attributes_refuses_a_changed_target_stream_and_allows_unused_name
         f.ok(
             "run",
             json!({"steps":[
-                {"command":"effects.setParam","params":{"clip":clips[0],"effect":"opacity","param":"opacity","value":27.0}},
+                {"command":"effect.setParam","params":{"clip":clips[0],"effect":"opacity","param":"opacity","value":27.0}},
                 {"command":"edit.copy","on":[clips[0]]}
             ]}),
         )

@@ -17,7 +17,7 @@ fn project(clips: usize) -> (FilmDocument, Vec<u64>, u64) {
     let mut ids = Vec::new();
     let mut item = 0;
     for n in 0..clips {
-        let matte = doc.execute("file.newColorMatte", json!({ "color": "#336699", "seconds": 1 })).unwrap();
+        let matte = doc.execute("item.newColorMatte", json!({ "color": "#336699", "seconds": 1 })).unwrap();
         item = matte["item"].as_u64().unwrap();
         let placed = doc.execute("timeline.place", json!({ "item": item, "track": "V1", "seconds": n })).unwrap();
         ids.push(placed["clips"][0].as_u64().unwrap());
@@ -105,10 +105,10 @@ fn an_overwrite_names_every_clip_it_covers_and_an_insert_the_one_it_splits() {
 #[test]
 fn a_marker_names_what_is_under_its_time_and_a_playhead_move_nothing() {
     let (mut doc, clips, _) = project(3);
-    let (objects, within) = under(&doc, "markers.add", json!({ "seconds": 1.25 }));
+    let (objects, within) = under(&doc, "marker.add", json!({ "seconds": 1.25 }));
     assert_eq!(objects, [json!(clips[1])]);
     assert!(within.len() >= 2, "every track: {within:?}");
-    let (objects, within) = under(&doc, "markers.add", json!({ "target": "source", "seconds": 1.25 }));
+    let (objects, within) = under(&doc, "marker.add", json!({ "target": "source", "seconds": 1.25 }));
     assert!(objects.is_empty() && within.is_empty(), "a source marker has no place in the sequence");
     doc.execute("playhead.set", json!({ "seconds": 0.5 })).unwrap();
     let (objects, within) = under(&doc, "playhead.set", json!({ "seconds": 2.5 }));

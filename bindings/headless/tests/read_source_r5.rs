@@ -24,7 +24,7 @@ async fn source_selected_by_a_prior_step() {
     for command in ["source.insert", "source.overwrite"] {
         for related in [true, false] {
             let mut doc = FilmDocument::open(FILE, &project(4)).unwrap();
-            let source = doc.execute("file.newOfflineFile", json!({"name":"Source","seconds":1,"audio":false})).unwrap()["item"].clone();
+            let source = doc.execute("item.newOfflineFile", json!({"name":"Source","seconds":1,"audio":false})).unwrap()["item"].clone();
             let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
             let (q, basis) = f.inspect().await;
             if related {
@@ -57,7 +57,7 @@ async fn source_placement_holds_copied_identity_geometry_and_program_in() {
     for command in ["source.insert", "source.overwrite"] {
         for field in ["label", "source-size", "split", "program-in", "sequence-size", "lock", "metadata"] {
             let mut doc = FilmDocument::open(FILE, &project(4)).unwrap();
-            let source = doc.execute("file.newOfflineFile", json!({"name":"Source","seconds":1,"audio":false})).unwrap()["item"].as_u64().unwrap();
+            let source = doc.execute("item.newOfflineFile", json!({"name":"Source","seconds":1,"audio":false})).unwrap()["item"].as_u64().unwrap();
             let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
             open_source(&f, source).await;
             let (q, basis) = f.inspect().await;
@@ -99,7 +99,7 @@ async fn source_placement_holds_the_live_sources_marked_range() {
     for command in ["source.insert", "source.overwrite"] {
         for related in [true, false] {
             let mut doc = FilmDocument::open(FILE, &project(4)).unwrap();
-            let source = doc.execute("file.newOfflineFile", json!({"name":"Source","seconds":1,"audio":false})).unwrap()["item"].as_u64().unwrap();
+            let source = doc.execute("item.newOfflineFile", json!({"name":"Source","seconds":1,"audio":false})).unwrap()["item"].as_u64().unwrap();
             let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
             open_source(&f, source).await;
             let (q, basis) = f.inspect().await;
@@ -146,7 +146,7 @@ async fn source_sequences_hold_copied_material_and_each_destination() {
             let before = doc.inspect().unwrap()["sequence"].clone();
             let destination = before["id"].as_u64().unwrap();
             let media = before["video"][0]["items"][0]["item"].clone();
-            let source = doc.execute("file.newSequence", json!({"name":"Source sequence","video":2,"audio":0})).unwrap()["sequence"].as_u64().unwrap();
+            let source = doc.execute("sequence.new", json!({"name":"Source sequence","video":2,"audio":0})).unwrap()["sequence"].as_u64().unwrap();
             let first = doc.execute("timeline.place", json!({"item":media,"track":"V1","time":0})).unwrap()["clips"][0].as_u64().unwrap();
             let last = doc.execute("timeline.place", json!({"item":media,"track":"V1","time":SECOND})).unwrap()["clips"][0].as_u64().unwrap();
             if change == "deleted-transition" {
@@ -252,7 +252,7 @@ async fn split_media_source_holds_secondary_destinations_and_new_track_templates
         ] {
             let mut doc = FilmDocument::open(FILE, &project(4)).unwrap();
             let source =
-                doc.execute("file.newOfflineFile", json!({"name":"Split Source","seconds":1,"video":false,"audio":true})).unwrap()["item"].as_u64().unwrap();
+                doc.execute("item.newOfflineFile", json!({"name":"Split Source","seconds":1,"video":false,"audio":true})).unwrap()["item"].as_u64().unwrap();
             doc.execute("timeline.place", json!({"item":source,"track":"A2","time":0})).unwrap();
             let q = doc.inspect().unwrap()["sequence"].clone();
             let qid = ItemId(q["id"].as_u64().unwrap());

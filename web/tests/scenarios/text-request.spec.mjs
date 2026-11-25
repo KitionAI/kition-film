@@ -3,7 +3,7 @@ import { test, expect, holdWorkerCall } from './fixtures.mjs'
 test('F24 permission interruption cancels pending Begin Text Editing', async ({ film, page }) => {
   await film.open()
   await film.command('file.newProject', { name: 'Pending text editing' })
-  await film.command('file.newSequence', { name: 'Title', width: 640, height: 360, fps: 24, video: 1, audio: 0 })
+  await film.command('sequence.new', { name: 'Title', width: 640, height: 360, fps: 24, video: 1, audio: 0 })
   const { clip } = await film.command('graphics.newText', { text: 'Keep this title', position: [160, 100], size: 40 })
   await film.command('timeline.select', { clips: [clip] })
   // Opening and closing a real editing session also drains its initial layer reads.

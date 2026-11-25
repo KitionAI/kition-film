@@ -56,7 +56,7 @@ fn collect_files_copies_used_media_and_opens() {
     assert_eq!(dry["originalBytes"].as_u64().unwrap(), size("a.mov") + size("b.mov"));
     assert!(!dest.exists(), "a dry run writes nothing");
     let r = s.execute("file.projectManager", json!({"destination": dest.to_string_lossy(), "wait": true})).unwrap();
-    let jobs = s.execute("jobs.list", json!({})).unwrap();
+    let jobs = s.execute("job.list", json!({})).unwrap();
     assert!(jobs[0]["result"].get("error").is_none(), "{jobs}");
     // the copy opens with its media next to it, and plays the same frames
     drop(s); // Windows does not allow renaming a directory while decoder files are open.
@@ -90,7 +90,7 @@ fn consolidate_trims_to_used_ranges_with_handles() {
     assert_eq!(trim["start"], json!(rate.tick_of(16).0), "used from frame 20, 4 handle frames: {r}");
     assert_eq!(trim["end"], json!(rate.tick_of(36).0), "used through frame 31, 4 handles: {r}");
     assert!(r["resultBytes"].as_u64().unwrap() > 0);
-    let jobs = s.execute("jobs.list", json!({})).unwrap();
+    let jobs = s.execute("job.list", json!({})).unwrap();
     assert!(jobs[0]["result"].get("error").is_none(), "{jobs}");
     let mut t = opened(r["project"].as_str().unwrap());
     let a = t.project.item(items[0]).unwrap().as_media().unwrap().clone();

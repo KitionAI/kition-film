@@ -179,7 +179,7 @@ stream is cut into blocks (there are tests for this).
    with `cards`. Audio crossfade curves go in `transitions::audio_gains`. The property tests run over
    every transition automatically; re-bless `expected_fingerprints.txt` (see [testing/README.md](testing/README.md) §3).
 3. It can then be applied with `sequence.applyVideoTransition {"effect": "<id or name>", "params":
-   {...}, "reverse": bool}` and edited with `sequence.setTransition`; `effects.list {"folder":
+   {...}, "reverse": bool}` and edited with `sequence.setTransition`; `effect.list {"folder":
    "Video Transitions/Wipe", "detail": true}` lists it with its parameters.
 
 ### A codec or container crate

@@ -1,5 +1,5 @@
 {
- "captions.list": {
+ "caption.list": {
   "additionalProperties": true,
   "properties": {
    "selection": {
@@ -148,7 +148,7 @@
   },
   "type": "object"
  },
- "effects.list": {
+ "effect.list": {
   "items": {
    "additionalProperties": true,
    "properties": {
@@ -340,7 +340,7 @@
   },
   "type": "object"
  },
- "events.list": {
+ "event.list": {
   "additionalProperties": true,
   "properties": {
    "counts": {
@@ -876,7 +876,7 @@
   },
   "type": "array"
  },
- "fonts.list": {
+ "font.list": {
   "items": {
    "additionalProperties": true,
    "properties": {
@@ -1092,7 +1092,7 @@
   },
   "type": "object"
  },
- "jobs.list": {
+ "job.list": {
   "items": {
    "type": "json"
   },
@@ -1192,7 +1192,7 @@
   },
   "type": "object"
  },
- "masks.list": {
+ "mask.list": {
   "additionalProperties": true,
   "properties": {
    "masks": {
@@ -2628,11 +2628,11 @@
   },
   "type": "object"
  },
- "presets.export": {
+ "preset.export": {
   "description": "The command's answer",
   "type": "json"
  },
- "presets.list": {
+ "preset.list": {
   "additionalProperties": true,
   "properties": {
    "presets": {
@@ -2755,7 +2755,7 @@
   },
   "type": "object"
  },
- "project.inspect": {
+ "file.inspect": {
   "additionalProperties": true,
   "properties": {
    "activeSequence": {
@@ -3149,7 +3149,7 @@
   },
   "type": "object"
  },
- "scopes.read": {
+ "scope.read": {
   "additionalProperties": true,
   "properties": {
    "clamp": {
@@ -3767,7 +3767,7 @@
   },
   "type": "array"
  },
- "shortcuts.audit": {
+ "shortcut.audit": {
   "additionalProperties": true,
   "properties": {
    "assigned": {
@@ -3791,7 +3791,7 @@
   },
   "type": "object"
  },
- "shortcuts.conflicts": {
+ "shortcut.conflicts": {
   "additionalProperties": true,
   "properties": {
    "conflicts": {
@@ -3824,15 +3824,15 @@
   },
   "type": "object"
  },
- "shortcuts.forKey": {
+ "shortcut.forKey": {
   "description": "The command's answer",
   "type": "json"
  },
- "shortcuts.get": {
+ "shortcut.get": {
   "description": "The command's answer",
   "type": "json"
  },
- "shortcuts.list": {
+ "shortcut.list": {
   "items": {
    "additionalProperties": true,
    "properties": {
@@ -3874,7 +3874,7 @@
   },
   "type": "array"
  },
- "shortcuts.presets": {
+ "shortcut.presets": {
   "additionalProperties": true,
   "properties": {
    "active": {
@@ -3904,11 +3904,11 @@
   },
   "type": "object"
  },
- "shortcuts.registerExternal": {
+ "shortcut.registerExternal": {
   "description": "The command's answer",
   "type": "json"
  },
- "shortcuts.resolve": {
+ "shortcut.resolve": {
   "description": "The command's answer",
   "type": "json"
  },

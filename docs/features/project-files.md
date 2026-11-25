@@ -245,7 +245,7 @@ badge (`project.item.<id>.proxy`).
 
 | Command | Menu | |
 |---|---|---|
-| `media.createProxies {items?, preset?, destination?, attach?=true, wait?}` | Clip ▸ Proxy ▸ Create Proxies… | background job; attaches when done |
+| `media.addProxies {items?, preset?, destination?, attach?=true, wait?}` | Clip ▸ Proxy ▸ Create Proxies… | background job; attaches when done |
 | `media.attachProxies {item, path}` / `{items, paths}` | Attach Proxies… | duration within one frame and the same frame rate are required; size and aspect may differ |
 | `media.detachProxies {items?}` | Detach Proxies | |
 | `media.reconnectFullRes {item, path}` | Reconnect Full Resolution Media… | link the full-resolution file of a clip that has a proxy |
@@ -259,7 +259,7 @@ The presets use our own encoders:
 - `h264_quarter`, `h264_half`: H.264 + AAC in MP4.
 
 Proxies go to `<media folder>/Proxies/<name>_Proxy.<ext>`, or to the chosen folder. Job progress is
-in `jobs.list`. `Session::poll_persistence`, which the kit calls from `jobsStep`, attaches
+in `job.list`. `Session::poll_persistence`, which the kit calls from `jobsStep`, attaches
 finished proxies. The editor does not show Create Proxies…: its job writes the proxy files into a
 local folder, which the web engine cannot write.
 
@@ -330,7 +330,7 @@ The editor does not show Project Manager: it copies into a local folder.
 
 Effect presets (Effects panel ▸ Presets; Effect Controls ▸ right-click an effect ▸ Save Preset…) are
 not part of the project. Built-in presets are defined in code (`kition_film_engine::presets`); user
-presets live in `<data dir>/effect-presets.json`, and `presets.export` / `presets.import` read and
+presets live in `<data dir>/effect-presets.json`, and `preset.export` / `preset.import` read and
 write the same JSON format:
 
 ```json

@@ -10,8 +10,8 @@ use serde_json::json;
 fn split_source() -> (Vec<u8>, u64, u64, ClipId, ClipId) {
     let mut doc = FilmDocument::open(FILE, &project(0)).unwrap();
     let destination = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let source = doc.execute("file.newSequence", json!({"name":"Split Source","video":1,"audio":1,"fps":25})).unwrap()["sequence"].as_u64().unwrap();
-    let media = doc.execute("file.newOfflineFile", json!({"name":"Four seconds","seconds":4,"audio":true})).unwrap()["item"].clone();
+    let source = doc.execute("sequence.new", json!({"name":"Split Source","video":1,"audio":1,"fps":25})).unwrap()["sequence"].as_u64().unwrap();
+    let media = doc.execute("item.newOfflineFile", json!({"name":"Four seconds","seconds":4,"audio":true})).unwrap()["item"].clone();
     doc.execute("timeline.place", json!({"item":media,"track":"V1","time":0,"duration":SECOND,"audio":false})).unwrap();
     let outside = ClipId(
         doc.execute("timeline.place", json!({"item":media,"track":"A1","time":0,"sourceIn":0,"duration":SECOND})).unwrap()["clips"][0].as_u64().unwrap(),

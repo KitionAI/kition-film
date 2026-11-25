@@ -16,7 +16,7 @@ fn demo() -> Session {
 #[test]
 fn naming_a_missing_track_is_an_error_not_a_default() {
     let mut s = demo();
-    let seq = s.execute("file.newSequence", json!({"name": "One of each", "video": 1, "audio": 1})).unwrap();
+    let seq = s.execute("sequence.new", json!({"name": "One of each", "video": 1, "audio": 1})).unwrap();
     let q = s.active_sequence().unwrap();
     assert_eq!((q.video_tracks.len(), q.audio_tracks.len()), (1, 1), "{seq}");
     let (v1, a1) = (q.video_tracks[0].id, q.audio_tracks[0].id);
@@ -67,7 +67,7 @@ fn naming_a_missing_track_is_an_error_not_a_default() {
 #[test]
 fn place_on_an_audio_track_places_the_sound_there_and_nothing_else() {
     let mut s = demo();
-    s.execute("file.newSequence", json!({"name": "Sound tracks", "video": 1, "audio": 3})).unwrap();
+    s.execute("sequence.new", json!({"name": "Sound tracks", "video": 1, "audio": 3})).unwrap();
     let a3 = s.active_sequence().unwrap().audio_tracks[2].id;
     let with_picture = s.project.items.values().find(|i| i.has_video() && i.has_audio() && i.as_media().is_some()).map(|i| i.id).unwrap();
     let sound_only = s.project.items.values().find(|i| !i.has_video() && i.has_audio() && i.as_media().is_some()).map(|i| i.id).unwrap();

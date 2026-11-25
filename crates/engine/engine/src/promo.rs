@@ -361,7 +361,7 @@ fn cut_effect(name: &str, cmd: &str) -> Result<(Option<&'static kition_film_proj
         _ => (name, 8),
     };
     let def = kition_film_project::vtransition::find_transition(id, EffectKind::VideoTransition)
-        .ok_or_else(|| bad(cmd, format!("unknown transition `{name}` (whip, flash, push, crossZoom, cut, or any video transition id from effects.list)")))?;
+        .ok_or_else(|| bad(cmd, format!("unknown transition `{name}` (whip, flash, push, crossZoom, cut, or any video transition id from effect.list)")))?;
     Ok((Some(def), frames))
 }
 
@@ -403,7 +403,7 @@ fn beat_cut(s: &mut Session, p: &Value) -> Result<Value> {
         effects.push((n.clone(), inst, frames));
     }
     if let Some(k) = params.keys().find(|k| !used.contains(k)) {
-        return Err(bad(CMD, format!("none of the effects has a param `{k}` (effects.list {{\"effect\": …}} lists them)")));
+        return Err(bad(CMD, format!("none of the effects has a param `{k}` (effect.list {{\"effect\": …}} lists them)")));
     }
     let frames = p.get("frames").and_then(Value::as_i64);
     if frames.is_some_and(|f| !(1..=600).contains(&f)) {

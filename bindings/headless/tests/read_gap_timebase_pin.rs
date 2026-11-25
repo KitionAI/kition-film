@@ -28,7 +28,7 @@ async fn gap_navigation_holds_the_linked_selection_at_its_destination() {
         let f = Fixture::new(2);
         let (seen, _) = f.inspect().await;
         f.colleague(&[("timeline.move", json!({"moves":[{"clip":v1(&seen)[1],"time":3*SECOND,"track":"V1"}]}))]);
-        let item = f.colleague(&[("file.newBarsAndTone", json!({"seconds":3}))])[0]["item"].clone();
+        let item = f.colleague(&[("item.newBarsAndTone", json!({"seconds":3}))])[0]["item"].clone();
         let placed = f.colleague(&[("timeline.place", json!({"item":item,"track":"V2","audioTrack":"A2","time":0}))])[0].clone();
         let picture = placed["clips"][0].as_u64().unwrap();
         let sound = placed["clips"][1].as_u64().unwrap();
@@ -48,7 +48,7 @@ async fn gap_navigation_holds_the_linked_selection_at_its_destination() {
                 project.sequence_mut(id).unwrap().find_item_mut(ClipId(sound)).unwrap().1.link = None;
             });
         } else {
-            f.colleague(&[("effects.setParam", json!({"clip":picture,"effect":"opacity","param":"opacity","value":25}))]);
+            f.colleague(&[("effect.setParam", json!({"clip":picture,"effect":"opacity","param":"opacity","value":25}))]);
         }
         let result = f.call("run", json!({"basis":basis,"steps":[{"command":"sequence.goToNextGapInTrack","params":{"track":"V1"},"at":{"time":0}}]})).await;
         if change == "link" {
@@ -67,7 +67,7 @@ async fn enabling_playhead_selection_holds_the_group_it_will_select() {
     for params in [json!({"on":true}), json!({})] {
         for change in ["link", "opacity"] {
             let f = Fixture::new(1);
-            let item = f.colleague(&[("file.newBarsAndTone", json!({"seconds":3}))])[0]["item"].clone();
+            let item = f.colleague(&[("item.newBarsAndTone", json!({"seconds":3}))])[0]["item"].clone();
             let placed = f.colleague(&[("timeline.place", json!({"item":item,"track":"V2","audioTrack":"A2","time":0}))])[0].clone();
             let picture = placed["clips"][0].as_u64().unwrap();
             let sound = placed["clips"][1].as_u64().unwrap();
@@ -85,7 +85,7 @@ async fn enabling_playhead_selection_holds_the_group_it_will_select() {
                     project.sequence_mut(id).unwrap().find_item_mut(ClipId(sound)).unwrap().1.link = None;
                 });
             } else {
-                f.colleague(&[("effects.setParam", json!({"clip":picture,"effect":"opacity","param":"opacity","value":25}))]);
+                f.colleague(&[("effect.setParam", json!({"clip":picture,"effect":"opacity","param":"opacity","value":25}))]);
             }
             let result = f.call("run", json!({"basis":basis,"steps":[{"command":"sequence.selectionFollowsPlayhead","params":params,"at":{"time":0}}]})).await;
             if change == "link" {

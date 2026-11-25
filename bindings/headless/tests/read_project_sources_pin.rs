@@ -9,7 +9,7 @@ use serde_json::json;
 async fn subclip_defaults_refuse_changed_timeline_names_and_allow_other_clip_names() {
     for related in [false, true] {
         let mut doc = FilmDocument::create(FILE, 64, 36).unwrap();
-        let item = doc.execute("file.newBarsAndTone", json!({"seconds":3})).unwrap()["item"].clone();
+        let item = doc.execute("item.newBarsAndTone", json!({"seconds":3})).unwrap()["item"].clone();
         let first = doc.execute("timeline.place", json!({"item":item,"track":"V1","time":5*SECOND})).unwrap()["clips"][0].clone();
         let other = doc.execute("timeline.place", json!({"item":item,"track":"V1","time":0})).unwrap()["clips"][0].clone();
         let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
@@ -29,15 +29,15 @@ async fn subclip_defaults_refuse_changed_timeline_names_and_allow_other_clip_nam
 async fn unnamed_bins_refuse_changed_name_candidates_and_allow_unread_media_names() {
     for related in [false, true] {
         let mut doc = FilmDocument::create(FILE, 64, 36).unwrap();
-        let item = doc.execute("file.newColorMatte", json!({"seconds":3})).unwrap()["item"].clone();
+        let item = doc.execute("item.newColorMatte", json!({"seconds":3})).unwrap()["item"].clone();
         let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
         let (_, basis) = f.inspect().await;
         if related {
-            f.colleague(&[("file.newBin", json!({"name":"Bin 01"}))]);
+            f.colleague(&[("bin.add", json!({"name":"Bin 01"}))]);
         } else {
             f.colleague(&[("clip.rename", json!({"item":item,"name":"Unread name"}))]);
         }
-        let result = f.call("run", json!({"basis":basis,"steps":[{"command":"file.newBinFromSelection","params":{"items":[item]}}]})).await;
+        let result = f.call("run", json!({"basis":basis,"steps":[{"command":"bin.addFromSelection","params":{"items":[item]}}]})).await;
         if related {
             assert_eq!(result.expect_err("changed free-name candidates must refuse")["error"]["code"], "conflict");
         } else {
@@ -51,16 +51,16 @@ async fn unnamed_bins_refuse_changed_name_candidates_and_allow_unread_media_name
 async fn sequences_from_clips_hold_source_defaults_and_allow_existing_timeline_appearance() {
     for related in [true, false] {
         let mut doc = FilmDocument::create(FILE, 64, 36).unwrap();
-        let item = doc.execute("file.newBarsAndTone", json!({"seconds":3})).unwrap()["item"].clone();
+        let item = doc.execute("item.newBarsAndTone", json!({"seconds":3})).unwrap()["item"].clone();
         let clip = doc.execute("timeline.place", json!({"item":item,"track":"V1","time":0})).unwrap()["clips"][0].clone();
         let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
         let (_, basis) = f.inspect().await;
         if related {
             f.colleague(&[("clip.rename", json!({"item":item,"name":"Copied name"}))]);
         } else {
-            f.colleague(&[("effects.setParam", json!({"clip":clip,"effect":"opacity","param":"opacity","value":45}))]);
+            f.colleague(&[("effect.setParam", json!({"clip":clip,"effect":"opacity","param":"opacity","value":45}))]);
         }
-        let result = f.call("run", json!({"basis":basis,"steps":[{"command":"file.newSequenceFromClip","params":{"items":[item]}}]})).await;
+        let result = f.call("run", json!({"basis":basis,"steps":[{"command":"sequence.newFromClip","params":{"items":[item]}}]})).await;
         if related {
             assert_eq!(result.expect_err("changed copied source must refuse")["error"]["code"], "conflict");
         } else {

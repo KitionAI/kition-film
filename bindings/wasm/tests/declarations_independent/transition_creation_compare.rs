@@ -10,7 +10,7 @@ use kition_film_kit::FilmDocument;
 use kition_kit::{KitDocument, Premise, TimeSpan, Under, Within};
 use serde_json::{Value, json};
 pub const PATHS: &[(&str, &str)] =
-    &[("sequence.applyVideoTransition", "transition-cut"), ("sequence.applyAudioTransition", "transition-cut"), ("effects.apply", "transition")];
+    &[("sequence.applyVideoTransition", "transition-cut"), ("sequence.applyAudioTransition", "transition-cut"), ("effect.apply", "transition")];
 pub fn compared_path(command: &str, path: &str) -> bool {
     PATHS.contains(&(command, path))
 }
@@ -104,7 +104,7 @@ fn expected(project: &Project, seq: u64, kind: TrackKind, at: i64, p: &Value) ->
 fn transition_creation_compares_explicit_and_implicit_cuts_edges_kinds_locks_and_duration_timebases() {
     let mut doc = FilmDocument::create("Transition.kfilm", 64, 36).unwrap();
     let seq = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let item = doc.execute("file.newBarsAndTone", json!({"seconds":3})).unwrap()["item"].clone();
+    let item = doc.execute("item.newBarsAndTone", json!({"seconds":3})).unwrap()["item"].clone();
     let clips = doc.execute("timeline.place", json!({"item":item,"track":"V1","audioTrack":"A1","time":0})).unwrap()["clips"].as_array().unwrap().clone();
     let first = clips.iter().filter_map(Value::as_u64).collect::<Vec<_>>();
     for id in &first {
@@ -143,13 +143,13 @@ fn transition_creation_compares_explicit_and_implicit_cuts_edges_kinds_locks_and
                         {
                             let mut p = json!({"frames":6,"effect":if kind==TrackKind::Video{"cross_dissolve"}else{"constant_power"}});
                             if explicit {
-                                p[if command == "effects.apply" { "clips" } else { "clip" }] = if command == "effects.apply" { json!([id]) } else { json!(id) };
+                                p[if command == "effect.apply" { "clips" } else { "clip" }] = if command == "effect.apply" { json!([id]) } else { json!(id) };
                             }
                             if let Some(edge) = edge {
                                 p["edge"] = json!(edge);
                             }
-                            // effects.apply takes no alignment
-                            if let Some(align) = align.filter(|_| command != "effects.apply") {
+                            // effect.apply takes no alignment
+                            if let Some(align) = align.filter(|_| command != "effect.apply") {
                                 p["align"] = json!(align);
                             }
                             assert_eq!(

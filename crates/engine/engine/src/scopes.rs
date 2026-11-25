@@ -1,4 +1,4 @@
-//! `scopes.read`: Scopes as numbers (M8.9), so agents can check colour without looking.
+//! `scope.read`: Scopes as numbers (M8.9), so agents can check colour without looking.
 //! It renders the active sequence at the playhead (or `time`), computes the scopes with
 //! `kition-film-scopes` and returns levels in percent (per channel and per column range), histogram
 //! bins, and the densest vectorscope spots with their angle and saturation.
@@ -46,14 +46,14 @@ fn scopes_read(s: &mut Session, p: &Value) -> Result<Value> {
     read(s, p)
 }
 
-/// What `scopes.read` answers for `p`, without the command path: it reads the session and
+/// What `scope.read` answers for `p`, without the command path: it reads the session and
 /// changes nothing (the web editor's `scopes` extra calls it).
 pub fn read(s: &Session, p: &Value) -> Result<Value> {
     let seq = s.active_sequence().ok_or(crate::EngineError::NoSequence)?;
     let hdr_seq = seq.settings.color.working.is_hdr();
     let rate = seq.settings.frame_rate;
     let space = match str_p(p, "colorSpace") {
-        Some(c) => ColorSpace::from_name(c).ok_or_else(|| bad("scopes.read", format!("unknown colorSpace `{c}` (auto, 601, 709, 2100)")))?,
+        Some(c) => ColorSpace::from_name(c).ok_or_else(|| bad("scope.read", format!("unknown colorSpace `{c}` (auto, 601, 709, 2100)")))?,
         None => ColorSpace::Auto,
     }
     .resolve(hdr_seq);
@@ -62,18 +62,17 @@ pub fn read(s: &Session, p: &Value) -> Result<Value> {
     let scale = p.get("scale").and_then(Value::as_f64).unwrap_or(0.5).clamp(1.0 / 32.0, 1.0) as f32;
     let params = Params { matrix: space.matrix(), clamp: bool_p(p, "clamp").unwrap_or(true), ..Params::default() };
     let wt = match str_p(p, "waveformType") {
-        Some(n) => WaveformType::from_name(n).ok_or_else(|| bad("scopes.read", format!("unknown waveformType `{n}`")))?,
+        Some(n) => WaveformType::from_name(n).ok_or_else(|| bad("scope.read", format!("unknown waveformType `{n}`")))?,
         None => WaveformType::Rgb,
     };
     let pt = match str_p(p, "paradeType") {
-        Some(n) => ParadeType::from_name(n).ok_or_else(|| bad("scopes.read", format!("unknown paradeType `{n}`")))?,
+        Some(n) => ParadeType::from_name(n).ok_or_else(|| bad("scope.read", format!("unknown paradeType `{n}`")))?,
         None => ParadeType::Rgb,
     };
     let kinds: Vec<ScopeKind> = match p.get("scopes").and_then(Value::as_array) {
-        Some(a) => a
-            .iter()
-            .map(|v| v.as_str().and_then(ScopeKind::from_name).ok_or_else(|| bad("scopes.read", format!("unknown scope {v}"))))
-            .collect::<Result<_>>()?,
+        Some(a) => {
+            a.iter().map(|v| v.as_str().and_then(ScopeKind::from_name).ok_or_else(|| bad("scope.read", format!("unknown scope {v}")))).collect::<Result<_>>()?
+        }
         None => ScopeKind::ALL.to_vec(),
     };
     let columns = u64_p(p, "columns").unwrap_or(8).clamp(1, 512) as usize;
@@ -126,7 +125,7 @@ pub fn read(s: &Session, p: &Value) -> Result<Value> {
 
 pub(crate) fn commands() -> Vec<CommandSpec> {
     vec![CommandSpec {
-        id: "scopes.read",
+        id: "scope.read",
         label: "Read Scopes",
         menu: &[],
         shortcut: None,

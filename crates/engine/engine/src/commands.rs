@@ -301,7 +301,7 @@ pub(crate) fn marker_duration_p(s: &Session, p: &Value, cmd: &str) -> Result<Opt
     Ok(None)
 }
 
-/// `markers.edit`'s new place for a sequence marker: `time` (ticks), at or after zero.
+/// `marker.edit`'s new place for a sequence marker: `time` (ticks), at or after zero.
 pub(crate) fn marker_move_p(p: &Value, cmd: &str) -> Result<Option<Tick>> {
     match p.get("time").filter(|v| !v.is_null()) {
         None => Ok(None),
@@ -957,7 +957,7 @@ fn build() -> Vec<CommandSpec> {
             Ok(json!({"sequence": seq.0}))
         }),
         cmd!(
-            "file.newSequence",
+            "sequence.new",
             "Sequence…",
             ["File", "New"],
             Some("Cmd+N"),
@@ -968,35 +968,35 @@ fn build() -> Vec<CommandSpec> {
                 if let Some(from) = item_p(p, "fromItem").and_then(|i| s.project.item(i)).and_then(|i| i.as_media()) {
                     st = default_seq_settings_for(&from.info);
                 }
-                if let Some(w) = checked_u32_p(p, "width", "file.newSequence")? {
+                if let Some(w) = checked_u32_p(p, "width", "sequence.new")? {
                     st.width = w;
                 }
-                if let Some(h) = checked_u32_p(p, "height", "file.newSequence")? {
+                if let Some(h) = checked_u32_p(p, "height", "sequence.new")? {
                     st.height = h;
                 }
-                if let Some(fps) = fps_p(p, "file.newSequence")? {
+                if let Some(fps) = fps_p(p, "sequence.new")? {
                     st.frame_rate = fps;
                 }
-                if let Some(sr) = checked_u32_p(p, "sampleRate", "file.newSequence")? {
+                if let Some(sr) = checked_u32_p(p, "sampleRate", "sequence.new")? {
                     st.sample_rate = sr;
                 }
                 if let Some(m) = str_p(p, "mix") {
                     st.audio_master =
-                        crate::mixer::channels_from(m).ok_or_else(|| bad("file.newSequence", format!("unknown mix `{m}` (Stereo, Mono, 5.1, Adaptive)")))?;
+                        crate::mixer::channels_from(m).ok_or_else(|| bad("sequence.new", format!("unknown mix `{m}` (Stereo, Mono, 5.1, Adaptive)")))?;
                 }
                 let track_type = match str_p(p, "trackType") {
                     Some(t) => Some(
                         crate::mixer::channels_from(t)
-                            .ok_or_else(|| bad("file.newSequence", format!("unknown track type `{t}` (Standard, Mono, 5.1, Adaptive)")))?,
+                            .ok_or_else(|| bad("sequence.new", format!("unknown track type `{t}` (Standard, Mono, 5.1, Adaptive)")))?,
                     ),
                     None => None,
                 };
                 st.preset = format!("{}x{} {}", st.width, st.height, st.frame_rate.label());
-                st.validate().map_err(|e| bad("file.newSequence", e))?;
-                let nv = checked_u32_p(p, "video", "file.newSequence")?.unwrap_or(3);
-                let na = checked_u32_p(p, "audio", "file.newSequence")?.unwrap_or(3);
+                st.validate().map_err(|e| bad("sequence.new", e))?;
+                let nv = checked_u32_p(p, "video", "sequence.new")?.unwrap_or(3);
+                let na = checked_u32_p(p, "audio", "sequence.new")?.unwrap_or(3);
                 if nv > 256 || na > 256 {
-                    return Err(bad("file.newSequence", "at most 256 video and 256 audio tracks are supported"));
+                    return Err(bad("sequence.new", "at most 256 video and 256 audio tracks are supported"));
                 }
                 let n = s.project.sequences().count() + 1;
                 let name = str_p(p, "name").map(str::to_string).unwrap_or_else(|| format!("Sequence {n:02}"));
@@ -1035,13 +1035,13 @@ fn build() -> Vec<CommandSpec> {
                 Ok(json!({"sequence": id.0}))
             }
         ),
-        cmd!("file.newBin", "Bin", ["File", "New"], Some("Cmd+B"), r#"{"name":str,"parent":binId?}"#, always, |s, p| {
+        cmd!("bin.add", "Bin", ["File", "New"], Some("Cmd+B"), r#"{"name":str,"parent":binId?}"#, always, |s, p| {
             let n = str_p(p, "name").unwrap_or("New Bin").to_string();
             let parent = u64_p(p, "parent").map(kition_film_project::BinId);
             let id = s.edit("New Bin", |pr, _| Ok(pr.add_bin(&n, parent)))?;
             Ok(json!({"bin": id.0}))
         }),
-        cmd!("file.newAdjustmentLayer", "Adjustment Layer…", ["File", "New"], None, r#"{"seconds":f64=5}"#, always, |s, p| {
+        cmd!("item.newAdjustmentLayer", "Adjustment Layer…", ["File", "New"], None, r#"{"seconds":f64=5}"#, always, |s, p| {
             let st = s.active_sequence().map(|q| q.settings.clone()).unwrap_or_default();
             let secs = f64_p(p, "seconds").unwrap_or(5.0);
             let id = s.edit("New Adjustment Layer", |pr, st2| {
@@ -1056,33 +1056,33 @@ fn build() -> Vec<CommandSpec> {
             })?;
             Ok(json!({"item": id.0}))
         }),
-        cmd!("file.newBarsAndTone", "Bars and Tone…", ["File", "New"], None, r#"{"seconds":f64=10}"#, always, |s, p| new_generator(
+        cmd!("item.newBarsAndTone", "Bars and Tone…", ["File", "New"], None, r#"{"seconds":f64=10}"#, always, |s, p| new_generator(
             s,
             Generator::BarsAndTone,
             "Bars and Tone",
             Label::Lavender,
             p
         )),
-        cmd!("file.newBlackVideo", "Black Video…", ["File", "New"], None, r#"{"seconds":f64}"#, always, |s, p| new_generator(
+        cmd!("item.newBlackVideo", "Black Video…", ["File", "New"], None, r#"{"seconds":f64}"#, always, |s, p| new_generator(
             s,
             Generator::BlackVideo,
             "Black Video",
             Label::Lavender,
             p
         )),
-        cmd!("file.newColorMatte", "Color Matte…", ["File", "New"], None, r##"{"color":"#rrggbb","seconds":f64}"##, always, |s, p| {
+        cmd!("item.newColorMatte", "Color Matte…", ["File", "New"], None, r##"{"color":"#rrggbb","seconds":f64}"##, always, |s, p| {
             let c = str_p(p, "color").and_then(kition_film_color::parse_hex).unwrap_or([0.1, 0.1, 0.1, 1.0]);
             new_generator(s, Generator::ColorMatte { color: c }, "Color Matte", Label::Lavender, p)
         }),
         cmd!("project.matteColor", "Color Matte Color…", [], None, r##"{"item":id?,"color":"#rrggbb"}"##, always, set_matte_color),
-        cmd!("file.newCountingLeader", "Universal Counting Leader…", ["File", "New"], None, "{}", always, |s, p| new_generator(
+        cmd!("item.newCountingLeader", "Universal Counting Leader…", ["File", "New"], None, "{}", always, |s, p| new_generator(
             s,
             Generator::CountingLeader,
             "Universal Counting Leader",
             Label::Lavender,
             p
         )),
-        cmd!("file.newTransparentVideo", "Transparent Video…", ["File", "New"], None, "{}", always, |s, p| new_generator(
+        cmd!("item.newTransparentVideo", "Transparent Video…", ["File", "New"], None, "{}", always, |s, p| new_generator(
             s,
             Generator::TransparentVideo,
             "Transparent Video",
@@ -1396,11 +1396,11 @@ fn build() -> Vec<CommandSpec> {
             has_seq,
             crate::export_tools::export_media
         ),
-        query!("jobs.list", "List Jobs", "{}", |s, _| Ok(Value::Array(s.jobs.iter().map(crate::Job::to_json).collect()))),
+        query!("job.list", "List Jobs", "{}", |s, _| Ok(Value::Array(s.jobs.iter().map(crate::Job::to_json).collect()))),
         query!("perf.stats", "Performance Statistics", "{}", |s, _| Ok(crate::perf::stats(s))),
-        cmd!("jobs.cancel", "Cancel Job", [], None, r#"{"job":id}"#, always, |s, p| {
-            let id = u64_p(p, "job").ok_or_else(|| bad("jobs.cancel", "need `job`"))?;
-            let j = s.jobs.iter().find(|j| j.id == id).ok_or_else(|| bad("jobs.cancel", "no such job"))?;
+        cmd!("job.cancel", "Cancel Job", [], None, r#"{"job":id}"#, always, |s, p| {
+            let id = u64_p(p, "job").ok_or_else(|| bad("job.cancel", "need `job`"))?;
+            let j = s.jobs.iter().find(|j| j.id == id).ok_or_else(|| bad("job.cancel", "no such job"))?;
             j.progress.cancel.store(true, std::sync::atomic::Ordering::Relaxed);
             Ok(Value::Null)
         }),
@@ -1430,7 +1430,7 @@ fn build() -> Vec<CommandSpec> {
         }),
         cmd!("edit.paste", "Paste", ["Edit"], Some("Cmd+V"), "{}", has_clipboard, |s, _| paste(s, false)),
         cmd!("edit.pasteInsert", "Paste Insert", ["Edit"], Some("Cmd+Shift+V"), "{}", has_clipboard, |s, _| paste(s, true)),
-        cmd!("edit.clear", "Clear", ["Edit"], Some("Backspace"), r#"{"clips":[id]?}"#, has_any_selection, |s, p| {
+        cmd!("edit.delete", "Clear", ["Edit"], Some("Backspace"), r#"{"clips":[id]?}"#, has_any_selection, |s, p| {
             if p.get("clips").is_none() && p.get("clip").is_none() && s.state.selection.is_empty() {
                 let caps = s.state.caption_selection.clone();
                 return crate::captions::delete(s, &caps, false);
@@ -1963,7 +1963,7 @@ fn build() -> Vec<CommandSpec> {
         }),
         // ================= Markers =================
         cmd!(
-            "markers.markIn",
+            "marker.markIn",
             "Mark In",
             ["Markers"],
             Some("I"),
@@ -1972,7 +1972,7 @@ fn build() -> Vec<CommandSpec> {
             |s, p| mark(s, p, true)
         ),
         cmd!(
-            "markers.markOut",
+            "marker.markOut",
             "Mark Out",
             ["Markers"],
             Some("O"),
@@ -1980,7 +1980,7 @@ fn build() -> Vec<CommandSpec> {
             always,
             |s, p| mark(s, p, false)
         ),
-        cmd!("markers.markClip", "Mark Clip", ["Markers"], Some("X"), "{}", has_seq, |s, _| {
+        cmd!("marker.markClip", "Mark Clip", ["Markers"], Some("X"), "{}", has_seq, |s, _| {
             let t = s.playhead();
             let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;
             let tg = s.targeting().targeted;
@@ -1997,7 +1997,7 @@ fn build() -> Vec<CommandSpec> {
             })?;
             Ok(Value::Null)
         }),
-        cmd!("markers.markSelection", "Mark Selection", ["Markers"], Some("/"), "{}", has_selection, |s, _| {
+        cmd!("marker.markSelection", "Mark Selection", ["Markers"], Some("/"), "{}", has_selection, |s, _| {
             let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;
             let sel = s.state.selection.clone();
             let items: Vec<_> = sel.iter().filter_map(|c| seq.find_item(*c).map(|(_, i)| i.range())).collect();
@@ -2012,8 +2012,8 @@ fn build() -> Vec<CommandSpec> {
             Ok(Value::Null)
         }),
         // With no In / Out mark, like Premiere: the start / end of the sequence.
-        cmd!("markers.goToIn", "Go to In", ["Markers"], Some("Shift+I"), r#"{"target":"program|source"}"#, always, |s, p| {
-            if let Some(v) = crate::source_monitor::route(s, "markers.goToIn", p)? {
+        cmd!("marker.goToIn", "Go to In", ["Markers"], Some("Shift+I"), r#"{"target":"program|source"}"#, always, |s, p| {
+            if let Some(v) = crate::source_monitor::route(s, "marker.goToIn", p)? {
                 return Ok(v);
             }
             s.active_sequence().ok_or(EngineError::NoSequence)?;
@@ -2022,8 +2022,8 @@ fn build() -> Vec<CommandSpec> {
             }
             Ok(Value::Null)
         }),
-        cmd!("markers.goToOut", "Go to Out", ["Markers"], Some("Shift+O"), r#"{"target":"program|source"}"#, always, |s, p| {
-            if let Some(v) = crate::source_monitor::route(s, "markers.goToOut", p)? {
+        cmd!("marker.goToOut", "Go to Out", ["Markers"], Some("Shift+O"), r#"{"target":"program|source"}"#, always, |s, p| {
+            if let Some(v) = crate::source_monitor::route(s, "marker.goToOut", p)? {
                 return Ok(v);
             }
             s.active_sequence().ok_or(EngineError::NoSequence)?;
@@ -2032,8 +2032,8 @@ fn build() -> Vec<CommandSpec> {
             }
             Ok(Value::Null)
         }),
-        cmd!("markers.clearIn", "Clear In", ["Markers"], Some("Cmd+Shift+I"), r#"{"target":"program|source"}"#, always, |s, p| {
-            if let Some(v) = crate::source_monitor::route(s, "markers.clearIn", p)? {
+        cmd!("marker.clearIn", "Clear In", ["Markers"], Some("Cmd+Shift+I"), r#"{"target":"program|source"}"#, always, |s, p| {
+            if let Some(v) = crate::source_monitor::route(s, "marker.clearIn", p)? {
                 return Ok(v);
             }
             s.edit_sequence("Clear In", |q, _, _| {
@@ -2044,8 +2044,8 @@ fn build() -> Vec<CommandSpec> {
             })?;
             Ok(Value::Null)
         }),
-        cmd!("markers.clearOut", "Clear Out", ["Markers"], Some("Cmd+Shift+O"), r#"{"target":"program|source"}"#, always, |s, p| {
-            if let Some(v) = crate::source_monitor::route(s, "markers.clearOut", p)? {
+        cmd!("marker.clearOut", "Clear Out", ["Markers"], Some("Cmd+Shift+O"), r#"{"target":"program|source"}"#, always, |s, p| {
+            if let Some(v) = crate::source_monitor::route(s, "marker.clearOut", p)? {
                 return Ok(v);
             }
             s.edit_sequence("Clear Out", |q, _, _| {
@@ -2056,8 +2056,8 @@ fn build() -> Vec<CommandSpec> {
             })?;
             Ok(Value::Null)
         }),
-        cmd!("markers.clearInOut", "Clear In and Out", ["Markers"], Some("Cmd+Shift+X"), r#"{"target":"program|source"}"#, always, |s, p| {
-            if let Some(v) = crate::source_monitor::route(s, "markers.clearInOut", p)? {
+        cmd!("marker.clearInOut", "Clear In and Out", ["Markers"], Some("Cmd+Shift+X"), r#"{"target":"program|source"}"#, always, |s, p| {
+            if let Some(v) = crate::source_monitor::route(s, "marker.clearInOut", p)? {
                 return Ok(v);
             }
             s.edit_sequence("Clear In and Out", |q, _, _| {
@@ -2069,22 +2069,22 @@ fn build() -> Vec<CommandSpec> {
             Ok(Value::Null)
         }),
         cmd!(
-            "markers.add",
+            "marker.add",
             "Add Marker",
             ["Markers"],
             Some("M"),
             r#"{"target":"program|source","time":ticks?,"frame":i64?,"seconds":f64?,"timecode":str?,"name":str?,"comment":str?,"color":label?,"durationFrames":i64?,"durationSeconds":f64?}"#,
             always,
             |s, p| {
-                if let Some(v) = crate::source_monitor::route(s, "markers.add", p)? {
+                if let Some(v) = crate::source_monitor::route(s, "marker.add", p)? {
                     return Ok(v);
                 }
                 let (_seq, ph) = marker_list_mut(s)?;
                 let t = marker_time_p(s, p).unwrap_or(ph);
                 let name = str_p(p, "name").unwrap_or("").to_string();
                 let comment = str_p(p, "comment").unwrap_or("").to_string();
-                let color = marker_color_p(p, "markers.add")?.unwrap_or(Label::Green);
-                let dur = marker_duration_p(s, p, "markers.add")?.unwrap_or_default();
+                let color = marker_color_p(p, "marker.add")?.unwrap_or(Label::Green);
+                let dur = marker_duration_p(s, p, "marker.add")?.unwrap_or_default();
                 let id = s.edit_sequence("Add Marker", |q, ctx, _| {
                     let id = MarkerId(ctx.alloc());
                     q.markers.push(Marker { id, start: t, duration: dur, name, comment, kind: MarkerKind::Comment, color });
@@ -2094,8 +2094,8 @@ fn build() -> Vec<CommandSpec> {
                 Ok(json!({"marker": id.0}))
             }
         ),
-        cmd!("markers.goNext", "Go to Next Marker", ["Markers"], Some("Shift+M"), r#"{"target":"program|source"}"#, always, |s, p| {
-            if let Some(v) = crate::source_monitor::route(s, "markers.goNext", p)? {
+        cmd!("marker.goNext", "Go to Next Marker", ["Markers"], Some("Shift+M"), r#"{"target":"program|source"}"#, always, |s, p| {
+            if let Some(v) = crate::source_monitor::route(s, "marker.goNext", p)? {
                 return Ok(v);
             }
             let t = s.playhead();
@@ -2105,8 +2105,8 @@ fn build() -> Vec<CommandSpec> {
             }
             Ok(Value::Null)
         }),
-        cmd!("markers.goPrev", "Go to Previous Marker", ["Markers"], Some("Cmd+Shift+M"), r#"{"target":"program|source"}"#, always, |s, p| {
-            if let Some(v) = crate::source_monitor::route(s, "markers.goPrev", p)? {
+        cmd!("marker.goPrev", "Go to Previous Marker", ["Markers"], Some("Cmd+Shift+M"), r#"{"target":"program|source"}"#, always, |s, p| {
+            if let Some(v) = crate::source_monitor::route(s, "marker.goPrev", p)? {
                 return Ok(v);
             }
             let t = s.playhead();
@@ -2116,8 +2116,8 @@ fn build() -> Vec<CommandSpec> {
             }
             Ok(Value::Null)
         }),
-        cmd!("markers.clearCurrent", "Clear Selected Marker", ["Markers"], Some("Cmd+Alt+M"), r#"{"target":"program|source"}"#, always, |s, p| {
-            if let Some(v) = crate::source_monitor::route(s, "markers.clearCurrent", p)? {
+        cmd!("marker.clearCurrent", "Clear Selected Marker", ["Markers"], Some("Cmd+Alt+M"), r#"{"target":"program|source"}"#, always, |s, p| {
+            if let Some(v) = crate::source_monitor::route(s, "marker.clearCurrent", p)? {
                 return Ok(v);
             }
             let t = s.playhead();
@@ -2127,8 +2127,8 @@ fn build() -> Vec<CommandSpec> {
             })?;
             Ok(Value::Null)
         }),
-        cmd!("markers.clearAll", "Clear Markers", ["Markers"], Some("Cmd+Alt+Shift+M"), r#"{"target":"program|source"}"#, always, |s, p| {
-            if let Some(v) = crate::source_monitor::route(s, "markers.clearAll", p)? {
+        cmd!("marker.clearAll", "Clear Markers", ["Markers"], Some("Cmd+Alt+Shift+M"), r#"{"target":"program|source"}"#, always, |s, p| {
+            if let Some(v) = crate::source_monitor::route(s, "marker.clearAll", p)? {
                 return Ok(v);
             }
             s.edit_sequence("Clear All Markers", |q, _, _| {
@@ -2138,14 +2138,14 @@ fn build() -> Vec<CommandSpec> {
             Ok(Value::Null)
         }),
         cmd!(
-            "markers.edit",
+            "marker.edit",
             "Edit Marker…",
             [],
             None,
             r#"{"target":"program|source","marker":id,"time":ticks?,"name":str?,"comment":str?,"color":label?,"durationFrames":i64?,"durationSeconds":f64?}"#,
             always,
             |s, p| {
-                const CMD: &str = "markers.edit";
+                const CMD: &str = "marker.edit";
                 // a new time moves a sequence marker (dragged along the ruler); a Source marker
                 // keeps its place in its clip
                 let time = marker_move_p(p, CMD)?;
@@ -2722,27 +2722,27 @@ fn build() -> Vec<CommandSpec> {
             Ok(Value::Null)
         }),
         // ================= Effects =================
-        cmd!("effects.apply", "Apply Effect", [], None, r#"{"clips":[id]?,"effect":"gaussian_blur|Gaussian Blur|…"}"#, has_seq, |s, p| {
-            let name = str_p(p, "effect").ok_or_else(|| bad("effects.apply", "need `effect`"))?;
-            let def = resolve_effect_name(s, p, name).ok_or_else(|| bad("effects.apply", format!("unknown effect `{name}`")))?;
+        cmd!("effect.apply", "Apply Effect", [], None, r#"{"clips":[id]?,"effect":"gaussian_blur|Gaussian Blur|…"}"#, has_seq, |s, p| {
+            let name = str_p(p, "effect").ok_or_else(|| bad("effect.apply", "need `effect`"))?;
+            let def = resolve_effect_name(s, p, name).ok_or_else(|| bad("effect.apply", format!("unknown effect `{name}`")))?;
             if kition_film_project::graphic::is_layer_id(def.id) {
-                return Err(bad("effects.apply", "graphic layers are added with graphics.newText / graphics.newShape"));
+                return Err(bad("effect.apply", "graphic layers are added with graphics.newText / graphics.newShape"));
             }
             if matches!(def.kind, kition_film_project::EffectKind::VideoTransition | kition_film_project::EffectKind::AudioTransition) {
                 let mut q = p.clone();
                 q["effect"] = json!(def.id);
                 if let Some(clips) = p.get("clips").and_then(Value::as_array) {
                     let [clip] = clips.as_slice() else {
-                        return Err(bad("effects.apply", "a transition effect takes exactly one clip in `clips`"));
+                        return Err(bad("effect.apply", "a transition effect takes exactly one clip in `clips`"));
                     };
-                    let clip = clip.as_u64().ok_or_else(|| bad("effects.apply", "a transition clip must be an id"))?;
+                    let clip = clip.as_u64().ok_or_else(|| bad("effect.apply", "a transition clip must be an id"))?;
                     q["clip"] = json!(clip);
                 }
                 return apply_transition(s, &q, if def.kind == kition_film_project::EffectKind::VideoTransition { TrackKind::Video } else { TrackKind::Audio });
             }
             let clips = clips_p(s, p);
             if clips.is_empty() {
-                return Err(bad("effects.apply", "select clips first"));
+                return Err(bad("effect.apply", "select clips first"));
             }
             let is_audio = def.kind == kition_film_project::EffectKind::Audio;
             let (fw, fh) = s.active_sequence().map(|q| (q.settings.width, q.settings.height)).unwrap_or((1920, 1080));
@@ -2767,9 +2767,9 @@ fn build() -> Vec<CommandSpec> {
             })?;
             Ok(Value::Null)
         }),
-        cmd!("effects.remove", "Remove Effect", [], None, r#"{"clip":id,"index":n}"#, has_seq, |s, p| {
-            let c = clip_p(p, "clip").ok_or_else(|| bad("effects.remove", "need `clip`"))?;
-            let idx = u64_p(p, "index").ok_or_else(|| bad("effects.remove", "need `index`"))? as usize;
+        cmd!("effect.remove", "Remove Effect", [], None, r#"{"clip":id,"index":n}"#, has_seq, |s, p| {
+            let c = clip_p(p, "clip").ok_or_else(|| bad("effect.remove", "need `clip`"))?;
+            let idx = u64_p(p, "index").ok_or_else(|| bad("effect.remove", "need `index`"))? as usize;
             s.edit_sequence("Remove Effect", |q, _, _| {
                 let (_, it) = q.find_item_mut(c).ok_or(kition_film_edit::EditError::NoItem(c))?;
                 if it.effects.get(idx).and_then(|e| e.def()).is_some_and(|d| d.intrinsic) {
@@ -2806,16 +2806,16 @@ fn build() -> Vec<CommandSpec> {
             Ok(json!({"clip": c.0, "index": to}))
         }),
         cmd!(
-            "effects.setParam",
+            "effect.setParam",
             "Set Effect Parameter",
             [],
             None,
             r##"{"clip":id,"effect":"motion"|index,"param":str,"mask":n?,"value":num|[x,y]|"#rrggbb"|bool|path,"time":ticks|"frame":i64|"seconds":f64?,"merge":bool|str?,"begin":bool?}"##,
             has_seq,
             |s, p| {
-                let c = clip_p(p, "clip").ok_or_else(|| bad("effects.setParam", "need `clip`"))?;
-                let pname = str_p(p, "param").ok_or_else(|| bad("effects.setParam", "need `param`"))?.to_string();
-                let val = p.get("value").cloned().ok_or_else(|| bad("effects.setParam", "need `value`"))?;
+                let c = clip_p(p, "clip").ok_or_else(|| bad("effect.setParam", "need `clip`"))?;
+                let pname = str_p(p, "param").ok_or_else(|| bad("effect.setParam", "need `param`"))?.to_string();
+                let val = p.get("value").cloned().ok_or_else(|| bad("effect.setParam", "need `value`"))?;
                 let eff = p.get("effect").cloned().unwrap_or(json!("motion"));
                 let ph = s.playhead();
                 // a `time` (or `frame`, `seconds`, `timecode`) asks for a keyframe there: a parameter
@@ -2827,7 +2827,7 @@ fn build() -> Vec<CommandSpec> {
                 let path_to_clip = if p.get("mask").is_some() && pname == "path" {
                     Some(
                         crate::masks::frame_to_clip(s, c, crate::masks::media_time(s, c, tl))
-                            .ok_or_else(|| bad("effects.setParam", "the clip's Motion scales it to nothing"))?,
+                            .ok_or_else(|| bad("effect.setParam", "the clip's Motion scales it to nothing"))?,
                     )
                 } else {
                     None
@@ -2844,14 +2844,14 @@ fn build() -> Vec<CommandSpec> {
                 s.edit_sequence_as("Change Effect Parameter", merge.as_deref(), |q, _, _| {
                     let (_, it) = q.find_item_mut(c).ok_or(kition_film_edit::EditError::NoItem(c))?;
                     let mt = key_time(it, tl, keyed.is_some());
-                    let ei = effect_position(&it.effects, &eff).ok_or_else(|| bad("effects.setParam", format!("no effect {eff} on the clip")))?;
+                    let ei = effect_position(&it.effects, &eff).ok_or_else(|| bad("effect.setParam", format!("no effect {eff} on the clip")))?;
                     let e = &mut it.effects[ei];
                     if e.effect == "opacity" || e.effect == "motion" {
                         e.enabled = true;
                     }
                     let pid = if pq.get("mask").is_some() { pname.clone() } else { param_id_of(e, &pname) };
                     if pq.get("mask").is_none() {
-                        check_scale_width(e, &pid, "effects.setParam")?;
+                        check_scale_width(e, &pid, "effect.setParam")?;
                     }
                     // instances saved before a parameter existed get it from the definition
                     if !e.params.contains_key(&pid)
@@ -2860,8 +2860,8 @@ fn build() -> Vec<CommandSpec> {
                         e.params.insert(pid.clone(), kition_film_project::Param::new(d.default.clone()));
                     }
                     let def = if pq.get("mask").is_some() { None } else { e.def().and_then(|d| d.param(&pid)) };
-                    let prm = crate::masks::target_param(e, &pq, &pid).ok_or_else(|| bad("effects.setParam", format!("no param `{pid}`")))?;
-                    let v = json_to_param_of(&prm.value, def, &val, "effects.setParam")?;
+                    let prm = crate::masks::target_param(e, &pq, &pid).ok_or_else(|| bad("effect.setParam", format!("no param `{pid}`")))?;
+                    let v = json_to_param_of(&prm.value, def, &val, "effect.setParam")?;
                     let v = match (v, &path_to_clip) {
                         (ParamValue::Path(path), Some(m)) => ParamValue::Path(path.transformed(m)),
                         (v, _) => v,
@@ -2877,15 +2877,15 @@ fn build() -> Vec<CommandSpec> {
             }
         ),
         cmd!(
-            "effects.toggleAnimation",
+            "effect.toggleAnimation",
             "Toggle Animation",
             [],
             None,
             r#"{"clip":id,"effect":str|index,"param":str,"mask":n?,"time":ticks|"frame":i64|"seconds":f64?}"#,
             has_seq,
             |s, p| {
-                let c = clip_p(p, "clip").ok_or_else(|| bad("effects.toggleAnimation", "need `clip`"))?;
-                let pid = str_p(p, "param").ok_or_else(|| bad("effects.toggleAnimation", "need `param`"))?.to_string();
+                let c = clip_p(p, "clip").ok_or_else(|| bad("effect.toggleAnimation", "need `clip`"))?;
+                let pid = str_p(p, "param").ok_or_else(|| bad("effect.toggleAnimation", "need `param`"))?.to_string();
                 let eff = p.get("effect").cloned().unwrap_or(json!("motion"));
                 // turning animation on keys the value at `time` (the playhead by default)
                 let asked = time_p(s, p, "");
@@ -2893,20 +2893,20 @@ fn build() -> Vec<CommandSpec> {
                 s.edit_sequence("Toggle Animation", |q, _, _| {
                     let (_, it) = q.find_item_mut(c).ok_or(kition_film_edit::EditError::NoItem(c))?;
                     let mt = key_time(it, ph, asked.is_some());
-                    let ei = effect_position(&it.effects, &eff).ok_or_else(|| bad("effects.toggleAnimation", format!("no effect {eff} on the clip")))?;
+                    let ei = effect_position(&it.effects, &eff).ok_or_else(|| bad("effect.toggleAnimation", format!("no effect {eff} on the clip")))?;
                     let e = &mut it.effects[ei];
                     let pid = if p.get("mask").is_some() { pid.clone() } else { param_id_of(e, &pid) };
                     if p.get("mask").is_none() {
-                        check_scale_width(e, &pid, "effects.toggleAnimation")?;
+                        check_scale_width(e, &pid, "effect.toggleAnimation")?;
                     }
-                    crate::masks::target_param(e, p, &pid).ok_or_else(|| bad("effects.toggleAnimation", "no such param"))?.toggle_animation(mt);
+                    crate::masks::target_param(e, p, &pid).ok_or_else(|| bad("effect.toggleAnimation", "no such param"))?.toggle_animation(mt);
                     Ok(())
                 })?;
                 Ok(Value::Null)
             }
         ),
-        cmd!("effects.toggleEnabled", "Toggle Effect", [], None, r#"{"clip":id,"index":n}"#, has_seq, |s, p| {
-            let c = clip_p(p, "clip").ok_or_else(|| bad("effects.toggleEnabled", "need `clip`"))?;
+        cmd!("effect.toggleEnabled", "Toggle Effect", [], None, r#"{"clip":id,"index":n}"#, has_seq, |s, p| {
+            let c = clip_p(p, "clip").ok_or_else(|| bad("effect.toggleEnabled", "need `clip`"))?;
             let idx = u64_p(p, "index").unwrap_or(0) as usize;
             s.edit_sequence("Toggle Effect", |q, _, _| {
                 let (_, it) = q.find_item_mut(c).ok_or(kition_film_edit::EditError::NoItem(c))?;
@@ -2917,8 +2917,8 @@ fn build() -> Vec<CommandSpec> {
             })?;
             Ok(Value::Null)
         }),
-        cmd!("effects.reset", "Reset Effect", [], None, r#"{"clip":id,"index":n}"#, has_seq, |s, p| {
-            let c = clip_p(p, "clip").ok_or_else(|| bad("effects.reset", "need `clip`"))?;
+        cmd!("effect.reset", "Reset Effect", [], None, r#"{"clip":id,"index":n}"#, has_seq, |s, p| {
+            let c = clip_p(p, "clip").ok_or_else(|| bad("effect.reset", "need `clip`"))?;
             let idx = u64_p(p, "index").unwrap_or(0) as usize;
             let (fw, fh) = s.active_sequence().map(|q| (q.settings.width, q.settings.height)).unwrap_or((1920, 1080));
             s.edit_sequence("Reset Effect", |q, _, _| {
@@ -2935,7 +2935,7 @@ fn build() -> Vec<CommandSpec> {
             Ok(Value::Null)
         }),
         cmd!(
-            "effects.addKeyframe",
+            "effect.addKeyframe",
             "Add/Remove Keyframe",
             [],
             None,
@@ -2944,7 +2944,7 @@ fn build() -> Vec<CommandSpec> {
             |s, p| { keyframe_op(s, p, "add") }
         ),
         cmd!(
-            "effects.deleteKeyframe",
+            "effect.deleteKeyframe",
             "Delete Keyframe",
             [],
             None,
@@ -2953,7 +2953,7 @@ fn build() -> Vec<CommandSpec> {
             |s, p| { keyframe_op(s, p, "delete") }
         ),
         cmd!(
-            "effects.moveKeyframe",
+            "effect.moveKeyframe",
             "Move Keyframe",
             [],
             None,
@@ -2962,7 +2962,7 @@ fn build() -> Vec<CommandSpec> {
             |s, p| keyframe_op(s, p, "move")
         ),
         cmd!(
-            "effects.setInterpolation",
+            "effect.setInterpolation",
             "Keyframe Interpolation",
             [],
             None,
@@ -2971,7 +2971,7 @@ fn build() -> Vec<CommandSpec> {
             |s, p| keyframe_op(s, p, "interp")
         ),
         cmd!(
-            "effects.setKeyframe",
+            "effect.setKeyframe",
             "Edit Keyframe",
             [],
             None,
@@ -3109,7 +3109,7 @@ fn build() -> Vec<CommandSpec> {
                     .collect(),
             ))
         }),
-        query!("project.inspect", "Inspect Project", "{}", |s, _| Ok(crate::commands::inspect_project(s))),
+        query!("file.inspect", "Inspect Project", "{}", |s, _| Ok(crate::commands::inspect_project(s))),
         query!("sequence.inspect", "Inspect Sequence", r#"{"item":id?}"#, |s, p| {
             let id = item_p(p, "item").or(s.state.active_sequence).ok_or(EngineError::NoSequence)?;
             let q = s.project.sequence(id).ok_or(EngineError::NoSequence)?;
@@ -3117,7 +3117,7 @@ fn build() -> Vec<CommandSpec> {
         }),
         query!("state.inspect", "Inspect Editor State", "{}", |s, _| Ok(serde_json::to_value(&s.state).unwrap_or_default())),
         query!(
-            "effects.list",
+            "effect.list",
             "List Effects",
             r#"{"kind":"Video"|"Audio"|"VideoTransition"|"AudioTransition"?,"folder":"Video Transitions/Wipe"?,"effect":"push"|"Push"?,"detail":bool?}"#,
             |_, p| Ok(list_effects(p))
@@ -3175,7 +3175,7 @@ fn keyframe_op(s: &mut Session, p: &Value, op: &str) -> Result<Value> {
             let key = |n: &str| n.chars().filter(|c| c.is_ascii_alphanumeric()).collect::<String>().to_ascii_lowercase();
             Some(kition_film_project::Interpolation::ALL.into_iter().find(|i| key(interpolation_name(*i)) == key(name)).ok_or_else(|| {
                 bad(
-                    "effects.setInterpolation",
+                    "effect.setInterpolation",
                     format!("unknown interpolation `{name}`: {}", kition_film_project::Interpolation::ALL.map(interpolation_name).join(", ")),
                 )
             })?)
@@ -3287,7 +3287,7 @@ fn mark(s: &mut Session, p: &Value, is_in: bool) -> Result<Value> {
         let item = s.state.source_item.ok_or_else(|| EngineError::Other("no source clip".into()))?;
         // Source marks are in the clip's media time: ticks or seconds.
         if p.get("frame").is_some() || p.get("timecode").is_some() {
-            return Err(bad(if is_in { "markers.markIn" } else { "markers.markOut" }, "a Source mark takes `time` or `seconds`"));
+            return Err(bad(if is_in { "marker.markIn" } else { "marker.markOut" }, "a Source mark takes `time` or `seconds`"));
         }
         let seconds = p.get("seconds").and_then(Value::as_f64).map(Tick::from_seconds_f64);
         let t = p.get("time").and_then(Value::as_i64).map(Tick).or(seconds).unwrap_or(s.state.source_playhead);
@@ -3667,7 +3667,7 @@ fn nest(s: &mut Session, p: &Value) -> Result<Value> {
     r.map(|(n, ids)| json!({"sequence": n.0, "clips": ids.iter().map(|c| c.0).collect::<Vec<_>>()}))
 }
 
-/// `effects.list`: every effect definition with its Effects-panel folder (optionally filtered by
+/// `effect.list`: every effect definition with its Effects-panel folder (optionally filtered by
 /// kind or folder prefix); `detail` adds each parameter's label, type, default and choices.
 fn list_effects(p: &Value) -> Value {
     let kind = str_p(p, "kind");
@@ -4059,7 +4059,7 @@ pub fn inspect_project(s: &Session) -> Value {
     })
 }
 
-/// A parameter value as the commands take it back (`effects.setParam` `value`): a number, `[x,
+/// A parameter value as the commands take it back (`effect.setParam` `value`): a number, `[x,
 /// y]` (an automatic coordinate is `null`), `"#rrggbb"` (`"#rrggbbaa"` when not opaque), a bool,
 /// a choice index, a string, curve points `[[x, y], …]`, or a mask path.
 pub fn param_json(value: &ParamValue) -> Value {
@@ -4076,7 +4076,7 @@ pub fn param_json(value: &ParamValue) -> Value {
     }
 }
 
-/// A keyframe's interpolation as `effects.setInterpolation` names it.
+/// A keyframe's interpolation as `effect.setInterpolation` names it.
 pub fn interpolation_name(interpolation: kition_film_project::Interpolation) -> &'static str {
     use kition_film_project::Interpolation;
     match interpolation {

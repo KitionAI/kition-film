@@ -1,5 +1,5 @@
 //! M5.11: every video effect is listed with its folder and badges, applies by id or name through
-//! `effects.apply` (undoable), takes parameters through `effects.setParam`, and renders.
+//! `effect.apply` (undoable), takes parameters through `effect.setParam`, and renders.
 
 use kition_film_project::{EffectKind, effect_defs};
 use serde_json::{Value, json};
@@ -23,7 +23,7 @@ fn video_effects() -> Vec<&'static kition_film_project::EffectDef> {
 #[test]
 fn effects_list_reports_folders_and_badges() {
     let mut s = demo();
-    let list = s.execute("effects.list", json!({})).unwrap();
+    let list = s.execute("effect.list", json!({})).unwrap();
     let arr = list.as_array().unwrap();
     let find = |id: &str| arr.iter().find(|e| e["id"] == id).cloned().unwrap_or_else(|| panic!("{id} not listed"));
     let wsz = find("warp_stabilizer");
@@ -43,7 +43,7 @@ fn every_video_effect_applies_by_id_and_name_and_renders() {
     let mut s = demo();
     let clip = first_v1_clip(&s);
     for d in video_effects() {
-        s.execute("effects.apply", json!({"clips": [clip], "effect": d.id})).unwrap_or_else(|e| panic!("{}: {e}", d.id));
+        s.execute("effect.apply", json!({"clips": [clip], "effect": d.id})).unwrap_or_else(|e| panic!("{}: {e}", d.id));
         let it = s.active_sequence().unwrap().find_item(kition_film_project::ClipId(clip)).unwrap().1.clone();
         let inst = it.effects.iter().find(|e| e.effect == d.id).unwrap_or_else(|| panic!("{} not on the clip", d.id));
         // auto points were resolved against the frame
@@ -59,7 +59,7 @@ fn every_video_effect_applies_by_id_and_name_and_renders() {
         s.execute("edit.undo", json!({})).unwrap();
         assert!(s.active_sequence().unwrap().find_item(kition_film_project::ClipId(clip)).unwrap().1.effects.iter().all(|e| e.effect != d.id), "{} undo", d.id);
         // by display name (MCP / CLI agents use either)
-        s.execute("effects.apply", json!({"clips": [clip], "effect": d.name})).unwrap_or_else(|e| panic!("{} by name: {e}", d.name));
+        s.execute("effect.apply", json!({"clips": [clip], "effect": d.name})).unwrap_or_else(|e| panic!("{} by name: {e}", d.name));
         s.execute("edit.undo", json!({})).unwrap();
     }
 }
@@ -68,13 +68,13 @@ fn every_video_effect_applies_by_id_and_name_and_renders() {
 fn new_effect_params_are_settable_and_keyframable() {
     let mut s = demo();
     let clip = first_v1_clip(&s);
-    s.execute("effects.apply", json!({"clips": [clip], "effect": "Turbulent Displace"})).unwrap();
-    s.execute("effects.setParam", json!({"clip": clip, "effect": "turbulent_displace", "param": "amount", "value": 120.0})).unwrap();
-    s.execute("effects.toggleAnimation", json!({"clip": clip, "effect": "turbulent_displace", "param": "evolution"})).unwrap();
-    s.execute("effects.apply", json!({"clips": [clip], "effect": "simple_text"})).unwrap();
-    s.execute("effects.setParam", json!({"clip": clip, "effect": "simple_text", "param": "text", "value": "Hello"})).unwrap();
-    s.execute("effects.apply", json!({"clips": [clip], "effect": "corner_pin"})).unwrap();
-    s.execute("effects.setParam", json!({"clip": clip, "effect": "corner_pin", "param": "upper_left", "value": [100.0, 50.0]})).unwrap();
+    s.execute("effect.apply", json!({"clips": [clip], "effect": "Turbulent Displace"})).unwrap();
+    s.execute("effect.setParam", json!({"clip": clip, "effect": "turbulent_displace", "param": "amount", "value": 120.0})).unwrap();
+    s.execute("effect.toggleAnimation", json!({"clip": clip, "effect": "turbulent_displace", "param": "evolution"})).unwrap();
+    s.execute("effect.apply", json!({"clips": [clip], "effect": "simple_text"})).unwrap();
+    s.execute("effect.setParam", json!({"clip": clip, "effect": "simple_text", "param": "text", "value": "Hello"})).unwrap();
+    s.execute("effect.apply", json!({"clips": [clip], "effect": "corner_pin"})).unwrap();
+    s.execute("effect.setParam", json!({"clip": clip, "effect": "corner_pin", "param": "upper_left", "value": [100.0, 50.0]})).unwrap();
     let it = s.active_sequence().unwrap().find_item(kition_film_project::ClipId(clip)).unwrap().1.clone();
     let td = it.effect("turbulent_displace").unwrap();
     assert_eq!(td.param("amount").unwrap().value.as_f64(), Some(120.0));

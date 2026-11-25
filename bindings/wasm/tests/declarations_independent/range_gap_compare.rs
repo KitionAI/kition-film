@@ -105,22 +105,22 @@ fn expected(project: &Project, seq: u64, command: &str, markers: bool, p: &Value
 fn range_and_gap_compare_marks_boundary_material_transitions_sync_flags_and_marker_assignments() {
     let mut doc = FilmDocument::create("Range.kfilm", 64, 36).unwrap();
     let seq = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let item = doc.execute("file.newColorMatte", json!({"seconds":1})).unwrap()["item"].clone();
+    let item = doc.execute("item.newColorMatte", json!({"seconds":1})).unwrap()["item"].clone();
     for at in [0, 2, 4] {
         let clip = doc.execute("timeline.place", json!({"item":item,"track":"V1","seconds":at})).unwrap()["clips"][0].clone();
         doc.execute("sequence.applyVideoTransition", json!({"clip":clip,"edge":"in","frames":6})).unwrap();
     }
     for markers in [false, true] {
-        doc.execute("markers.rippleSequenceMarkers", json!({"on":markers})).unwrap();
+        doc.execute("marker.rippleSequenceMarkers", json!({"on":markers})).unwrap();
         for locked in [false, true] {
             doc.execute("timeline.setTrack", json!({"track":"V1","locked":locked})).unwrap();
             for bounds in [(None, None), (Some(0), Some(3)), (Some(1), Some(2))] {
-                doc.execute("markers.clearInOut", json!({})).unwrap();
+                doc.execute("marker.clearInOut", json!({})).unwrap();
                 if let Some(at) = bounds.0 {
-                    doc.execute("markers.markIn", json!({"seconds":at})).unwrap();
+                    doc.execute("marker.markIn", json!({"seconds":at})).unwrap();
                 }
                 if let Some(at) = bounds.1 {
-                    doc.execute("markers.markOut", json!({"seconds":at})).unwrap();
+                    doc.execute("marker.markOut", json!({"seconds":at})).unwrap();
                 }
                 let project = kition_film_format::decode(&doc.save(None).unwrap()).unwrap().project;
                 for &(command, _) in PATHS {

@@ -18,7 +18,7 @@ async fn ordinary_effect_selection_is_independent_of_unselected_program_material
         .unwrap();
     let (_, basis) = f.inspect().await;
     f.colleague(&[("clip.rename", json!({"clip":clips[0],"name":"Independent"}))]);
-    f.call("run", json!({"basis":basis,"steps":[{"command":"effects.apply","params":{"effect":"gaussian_blur"}}]}))
+    f.call("run", json!({"basis":basis,"steps":[{"command":"effect.apply","params":{"effect":"gaussian_blur"}}]}))
         .await
         .unwrap_or_else(|error| panic!("the effect acts on the selection: {error}"));
     f.shutdown().await;
@@ -27,13 +27,13 @@ async fn ordinary_effect_selection_is_independent_of_unselected_program_material
 #[tokio::test(flavor = "multi_thread")]
 async fn effect_frame_addresses_hold_the_timebase_but_tick_addresses_do_not() {
     let mut failures = Vec::new();
-    for command in ["effects.setParam", "effects.toggleAnimation", "effects.addKeyframe"] {
+    for command in ["effect.setParam", "effect.toggleAnimation", "effect.addKeyframe"] {
         for frames in [true, false] {
             let f = Fixture::new(2);
             let (sequence, basis) = f.inspect().await;
             f.colleague(&[("sequence.settings", json!({"fps":30}))]);
             let mut params = json!({"clip":v1(&sequence)[0],"effect":"opacity","param":"opacity"});
-            if command == "effects.setParam" {
+            if command == "effect.setParam" {
                 params["value"] = json!(50);
             }
             params[if frames { "frame" } else { "time" }] = json!(if frames { 10 } else { SECOND / 2 });
@@ -58,7 +58,7 @@ async fn effect_mask_paths_hold_source_dimensions_and_conditional_frame_size() {
     for change in ["source-size", "sequence-size", "source-name", "sequence-name"] {
         let mut doc = FilmDocument::open(FILE, &project(2)).unwrap();
         let clip = doc.inspect().unwrap()["sequence"]["video"][0]["items"][0]["clip"].clone();
-        doc.execute("masks.add", json!({"clip":clip,"shape":"rectangle"})).unwrap();
+        doc.execute("mask.add", json!({"clip":clip,"shape":"rectangle"})).unwrap();
         doc.execute("timeline.select", json!({"clips":[clip]})).unwrap();
         doc.execute("clip.scaleToFrameSize", json!({})).unwrap();
         let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
@@ -80,7 +80,7 @@ async fn effect_mask_paths_hold_source_dimensions_and_conditional_frame_size() {
         let answer = f
             .call(
                 "run",
-                json!({"basis":basis,"steps":[{"command":"effects.setParam","params":{
+                json!({"basis":basis,"steps":[{"command":"effect.setParam","params":{
                     "clip":clip,"effect":"opacity","param":"path","mask":0,
                     "value":{"closed":true,"vertices":[{"p":[20,20]},{"p":[100,20]},{"p":[100,100]}]}
                 }}]}),

@@ -74,19 +74,19 @@ pub fn source_command(id: &str) -> bool {
         || id.starts_with("markers.goToSplit")
         || matches!(
             id,
-            "markers.markIn"
-                | "markers.markOut"
-                | "markers.goToIn"
-                | "markers.goToOut"
-                | "markers.clearIn"
-                | "markers.clearOut"
-                | "markers.clearInOut"
-                | "markers.add"
-                | "markers.goNext"
-                | "markers.goPrev"
-                | "markers.clearCurrent"
-                | "markers.clearAll"
-                | "markers.edit"
+            "marker.markIn"
+                | "marker.markOut"
+                | "marker.goToIn"
+                | "marker.goToOut"
+                | "marker.clearIn"
+                | "marker.clearOut"
+                | "marker.clearInOut"
+                | "marker.add"
+                | "marker.goNext"
+                | "marker.goPrev"
+                | "marker.clearCurrent"
+                | "marker.clearAll"
+                | "marker.edit"
         )
 }
 
@@ -111,7 +111,7 @@ pub(crate) fn route(s: &mut Session, id: &str, p: &Value) -> Result<Option<Value
     let view = source_view(s, item).ok_or_else(|| bad(id, "Source item is unavailable"))?;
     let cursor = s.state.source_playhead;
     match id {
-        "markers.goToIn" | "markers.goToOut" => {
+        "marker.goToIn" | "marker.goToOut" => {
             let time = if id.ends_with("In") {
                 view.mark_in.unwrap_or(view.start)
             } else {
@@ -119,17 +119,17 @@ pub(crate) fn route(s: &mut Session, id: &str, p: &Value) -> Result<Option<Value
             };
             s.execute("source.setPlayhead", json!({"time":time.0}))?;
         }
-        "markers.clearIn" | "markers.clearOut" | "markers.clearInOut" => {
+        "marker.clearIn" | "marker.clearOut" | "marker.clearInOut" => {
             let mut marks = json!({"item":item.0});
-            if id != "markers.clearOut" {
+            if id != "marker.clearOut" {
                 marks["in"] = Value::Null;
             }
-            if id != "markers.clearIn" {
+            if id != "marker.clearIn" {
                 marks["out"] = Value::Null;
             }
             s.execute("project.setMarks", marks)?;
         }
-        "markers.goNext" | "markers.goPrev" => {
+        "marker.goNext" | "marker.goPrev" => {
             let time = if id.ends_with("Next") {
                 view.markers.iter().map(|m| m.start).filter(|t| *t > cursor).min()
             } else {
@@ -139,7 +139,7 @@ pub(crate) fn route(s: &mut Session, id: &str, p: &Value) -> Result<Option<Value
                 s.execute("source.setPlayhead", json!({"time":t.0}))?;
             }
         }
-        "markers.add" => {
+        "marker.add" => {
             if p.get("frame").is_some() || p.get("timecode").is_some() || p.get("durationSeconds").is_some() {
                 return Err(bad(id, "a Source marker takes `time` (ticks) or `seconds` of the source, and `durationFrames`"));
             }
@@ -168,7 +168,7 @@ pub(crate) fn route(s: &mut Session, id: &str, p: &Value) -> Result<Option<Value
             })?;
             return Ok(Some(json!({"marker":marker.0})));
         }
-        "markers.clearCurrent" | "markers.clearAll" => {
+        "marker.clearCurrent" | "marker.clearAll" => {
             s.edit("Clear Source Markers", |pr, _| {
                 let list = marker_list(pr, view.media)?;
                 if id.ends_with("All") {
@@ -179,7 +179,7 @@ pub(crate) fn route(s: &mut Session, id: &str, p: &Value) -> Result<Option<Value
                 Ok(())
             })?;
         }
-        "markers.edit" => {
+        "marker.edit" => {
             let marker = MarkerId(p.get("marker").and_then(Value::as_u64).ok_or_else(|| bad(id, "need marker id"))?);
             let name = text(p, "name", id)?.map(str::to_string);
             let comment = text(p, "comment", id)?.map(str::to_string);
@@ -280,7 +280,7 @@ mod tests {
         let before_project = (*s.project).clone();
         let before = before_project.to_json();
         let qbefore = s.active_sequence().unwrap().clone();
-        let marker = s.execute("markers.add", json!({"target":"source","name":"Cue"})).unwrap()["marker"].as_u64().unwrap();
+        let marker = s.execute("marker.add", json!({"target":"source","name":"Cue"})).unwrap()["marker"].as_u64().unwrap();
         let v = source_view(&s, ItemId(5)).unwrap();
         assert_eq!(v.markers.len(), 1);
         assert_eq!(v.markers[0].start, cursor);
@@ -290,9 +290,9 @@ mod tests {
         // everything else must come back exactly.
         assert_eq!(crate::ignoring_next_id((*s.project).clone(), &before_project).to_json(), before);
         s.execute("edit.redo", json!({})).unwrap();
-        s.execute("markers.edit", json!({"target":"source","marker":marker,"name":"Changed"})).unwrap();
+        s.execute("marker.edit", json!({"target":"source","marker":marker,"name":"Changed"})).unwrap();
         assert_eq!(source_view(&s, ItemId(5)).unwrap().markers[0].name, "Changed");
-        s.execute("markers.clearCurrent", json!({"target":"source"})).unwrap();
+        s.execute("marker.clearCurrent", json!({"target":"source"})).unwrap();
         assert!(source_view(&s, ItemId(5)).unwrap().markers.is_empty());
     }
     #[test]
@@ -309,7 +309,7 @@ mod tests {
             json!({"target":"source","name":23}),
             json!({"target":"source","color":"unknown"}),
         ] {
-            assert!(s.execute("markers.add", p).is_err());
+            assert!(s.execute("marker.add", p).is_err());
             assert_eq!(s.project.to_json(), before);
         }
     }

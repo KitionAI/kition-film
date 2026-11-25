@@ -23,7 +23,7 @@ fn run(doc: &mut FilmDocument, command: &str, params: Value) -> Result<Value, St
 
 /// A colour matte of `seconds`, placed on V1 at `at` seconds: the clip's id.
 fn matte(doc: &mut FilmDocument, color: &str, seconds: f64, at: f64) -> Result<u64, String> {
-    let item = run(doc, "file.newColorMatte", json!({ "color": color, "seconds": seconds }))?;
+    let item = run(doc, "item.newColorMatte", json!({ "color": color, "seconds": seconds }))?;
     let placed = run(doc, "timeline.place", json!({ "item": item["item"], "track": "V1", "seconds": at }))?;
     clip_of(&placed).ok_or_else(|| format!("timeline.place answered no clip: {placed}"))
 }

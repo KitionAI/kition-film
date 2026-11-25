@@ -23,7 +23,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "file.newSequence",
+        command: "sequence.new",
         path: "plain",
         resolves: "fromItem absent",
         reads: "new name sequence count if omitted; label preference",
@@ -33,7 +33,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "file.newSequence",
+        command: "sequence.new",
         path: "from-item",
         resolves: "fromItem project id; resolved media through parent",
         reads: "source kind/info/interpret/duration/name/label/split/sourceGraphics; destination template track channels/volume/pan/effects; source sequence contents if flattening; media scaling preference",
@@ -43,7 +43,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "file.newBin",
+        command: "bin.add",
         path: "parent",
         resolves: "parent bin id else root; absent/missing parent falls back root",
         reads: "parent existence determines landing; parent name/content not consumed",
@@ -53,7 +53,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "file.newAdjustmentLayer",
+        command: "item.newAdjustmentLayer",
         path: "default-size",
         resolves: "active sequence optional",
         reads: "sequence.settings.width,height,frame_rate or defaults",
@@ -63,7 +63,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "file.newBarsAndTone",
+        command: "item.newBarsAndTone",
         path: "generator",
         resolves: "active sequence optional; width/height explicit else sequence",
         reads: "sequence.settings.width,height when omitted,frame_rate always",
@@ -73,7 +73,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "file.newBlackVideo",
+        command: "item.newBlackVideo",
         path: "generator",
         resolves: "active sequence optional; width/height explicit else sequence",
         reads: "sequence.settings.width,height when omitted,frame_rate always",
@@ -83,7 +83,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "file.newColorMatte",
+        command: "item.newColorMatte",
         path: "generator",
         resolves: "active sequence optional; width/height explicit else sequence",
         reads: "sequence.settings.width,height when omitted,frame_rate always",
@@ -93,7 +93,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "file.newCountingLeader",
+        command: "item.newCountingLeader",
         path: "generator",
         resolves: "active sequence optional; width/height explicit else sequence",
         reads: "sequence.settings.width,height when omitted,frame_rate always",
@@ -103,7 +103,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "file.newTransparentVideo",
+        command: "item.newTransparentVideo",
         path: "generator",
         resolves: "active sequence optional; width/height explicit else sequence",
         reads: "sequence.settings.width,height when omitted,frame_rate always",
@@ -233,7 +233,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "jobs.cancel",
+        command: "job.cancel",
         path: "job",
         resolves: "job id in jobs (not model object)",
         reads: "job existence",
@@ -303,7 +303,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "edit.clear",
+        command: "edit.delete",
         path: "clips",
         resolves: "clips ids else clip id else selection plus links",
         reads: "clip existence and link; owner track.locked; affected transition endpoints; same-field removed clip content",
@@ -323,7 +323,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "edit.clear",
+        command: "edit.delete",
         path: "captions",
         resolves: "caption selection when no clips/clip and timeline selection empty",
         reads: "caption track locked; caption intervals; ripple sync/locked and affected content",
@@ -743,7 +743,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.markIn",
+        command: "marker.markIn",
         path: "program",
         resolves: "program target; time syntax else playhead",
         reads: "assigned mark/split side; opposite mark eligibility may clear; sequence.frame_rate/drop_frame for conversion",
@@ -753,7 +753,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.markOut",
+        command: "marker.markOut",
         path: "program",
         resolves: "program target; time syntax else playhead",
         reads: "assigned mark/split side; opposite mark eligibility may clear; sequence.frame_rate/drop_frame for conversion",
@@ -763,7 +763,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.markIn",
+        command: "marker.markIn",
         path: "source",
         resolves: "source item editor id; media time else source_playhead",
         reads: "item kind and assigned mark/split side; frames/timecode invalid",
@@ -773,7 +773,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.markOut",
+        command: "marker.markOut",
         path: "source",
         resolves: "source item editor id; media time else source_playhead",
         reads: "item kind and assigned mark/split side; frames/timecode invalid",
@@ -783,7 +783,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.markClip",
+        command: "marker.markClip",
         path: "point",
         resolves: "first targeted track clip under playhead",
         reads: "clip.start/duration; sequence rate; assigned marks",
@@ -793,7 +793,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.markSelection",
+        command: "marker.markSelection",
         path: "selection",
         resolves: "timeline selection ids",
         reads: "selected start/duration extrema; rate; assigned mark_in/out",
@@ -803,7 +803,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.goToIn",
+        command: "marker.goToIn",
         path: "program",
         resolves: "active sequence marks else zero/end",
         reads: "mark_in/out; duration if Out missing",
@@ -813,7 +813,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.goToOut",
+        command: "marker.goToOut",
         path: "program",
         resolves: "active sequence marks else zero/end",
         reads: "mark_in/out; duration if Out missing",
@@ -823,7 +823,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.clearIn",
+        command: "marker.clearIn",
         path: "program",
         resolves: "active sequence",
         reads: "assigned mark/split sides",
@@ -833,7 +833,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.clearOut",
+        command: "marker.clearOut",
         path: "program",
         resolves: "active sequence",
         reads: "assigned mark/split sides",
@@ -843,7 +843,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.clearInOut",
+        command: "marker.clearInOut",
         path: "program",
         resolves: "active sequence",
         reads: "assigned mark/split sides",
@@ -853,7 +853,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.add",
+        command: "marker.add",
         path: "program",
         resolves: "time else playhead; current sequence",
         reads: "positional point names observed material; settings rate/dropFrame for frame/timecode/snapped seconds/duration",
@@ -863,7 +863,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.goNext",
+        command: "marker.goNext",
         path: "program",
         resolves: "markers by ordered start compared playhead",
         reads: "marker starts",
@@ -873,7 +873,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.goPrev",
+        command: "marker.goPrev",
         path: "program",
         resolves: "markers by ordered start compared playhead",
         reads: "marker starts",
@@ -883,7 +883,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.clearCurrent",
+        command: "marker.clearCurrent",
         path: "program",
         resolves: "all markers whose start equals playhead",
         reads: "marker.start selector and removed content",
@@ -893,7 +893,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.clearAll",
+        command: "marker.clearAll",
         path: "program",
         resolves: "all markers active sequence",
         reads: "whole markers assigned empty",
@@ -903,7 +903,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.edit",
+        command: "marker.edit",
         path: "program",
         resolves: "marker id within sequence markers",
         reads: "assigned name/comment/color/duration; rate for duration conversion; start not read by id",
@@ -1153,7 +1153,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "effects.apply",
+        command: "effect.apply",
         path: "standard",
         resolves: "clips/clip/selection; effect id/display name; ambiguous name chooses audio iff ALL target clips audio",
         reads: "clip owner track.kind; effect list intrinsic insertion index; sequence width/height resolve defaults",
@@ -1163,7 +1163,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "effects.apply",
+        command: "effect.apply",
         path: "transition",
         resolves: "effect kind transition routes apply_transition; clips list not forwarded to transition_point",
         reads: "transition cut/default/eligibility facts; clip singular else playhead/targeting; sequence rate",
@@ -1173,7 +1173,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "effects.remove",
+        command: "effect.remove",
         path: "effect-index",
         resolves: "clip id,index 0-based effect slot; toggle/reset default 0",
         reads: "effect identity at index; remove intrinsic eligibility; toggle enabled; reset effect type/defaults and sequence width/height",
@@ -1183,7 +1183,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "effects.toggleEnabled",
+        command: "effect.toggleEnabled",
         path: "effect-index",
         resolves: "clip id,index 0-based effect slot; toggle/reset default 0",
         reads: "effect identity at index; remove intrinsic eligibility; toggle enabled; reset effect type/defaults and sequence width/height",
@@ -1193,7 +1193,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "effects.reset",
+        command: "effect.reset",
         path: "effect-index",
         resolves: "clip id,index 0-based effect slot; toggle/reset default 0",
         reads: "effect identity at index; remove intrinsic eligibility; toggle enabled; reset effect type/defaults and sequence width/height",
@@ -1203,7 +1203,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "effects.setParam",
+        command: "effect.setParam",
         path: "parameter",
         resolves: "clip id; effect index/id/display name default motion; param id/label; mask numeric index when supplied",
         reads: "effect identity/parameter type,value and animated keys; intrinsic enables; uniform_scale eligibility for scale_width; key media-time mapping uses clip.start,duration,source_in,speed,reverse/frame_hold; sequence rate conversion",
@@ -1213,7 +1213,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "effects.setParam",
+        command: "effect.setParam",
         path: "mask-path",
         resolves: "as parameter plus mask.path in frame pixels",
         reads: "all parameter facts plus Motion evaluated at media time; source dimensions and sequence size for frame_to_clip; zero scale eligibility",
@@ -1223,7 +1223,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "effects.toggleAnimation",
+        command: "effect.toggleAnimation",
         path: "animated",
         resolves: "effect/param/mask same resolution; explicit time else playhead",
         reads: "parameter value and full key interpolation for evaluated value; clip media-time mapping; uniform_scale eligibility (add only); sequence rate conversion",
@@ -1233,7 +1233,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "effects.addKeyframe",
+        command: "effect.addKeyframe",
         path: "animated",
         resolves: "effect/param/mask same resolution; explicit time else playhead",
         reads: "parameter value and full key interpolation for evaluated value; clip media-time mapping; uniform_scale eligibility (add only); sequence rate conversion",
@@ -1243,7 +1243,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "effects.deleteKeyframe",
+        command: "effect.deleteKeyframe",
         path: "media-key",
         resolves: "effect/param/mask; mediaTime key address; interp defaults mapped playhead if absent",
         reads: "effect identity; addressed key value/type/influence/interpolation assigned; move also destination key same-field; set uniform_scale eligibility; no sequence position needed with explicit mediaTime",
@@ -1253,7 +1253,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "effects.moveKeyframe",
+        command: "effect.moveKeyframe",
         path: "media-key",
         resolves: "effect/param/mask; mediaTime key address; interp defaults mapped playhead if absent",
         reads: "effect identity; addressed key value/type/influence/interpolation assigned; move also destination key same-field; set uniform_scale eligibility; no sequence position needed with explicit mediaTime",
@@ -1263,7 +1263,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "effects.setInterpolation",
+        command: "effect.setInterpolation",
         path: "media-key",
         resolves: "effect/param/mask; mediaTime key address; interp defaults mapped playhead if absent",
         reads: "effect identity; addressed key value/type/influence/interpolation assigned; move also destination key same-field; set uniform_scale eligibility; no sequence position needed with explicit mediaTime",
@@ -1273,7 +1273,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "effects.setKeyframe",
+        command: "effect.setKeyframe",
         path: "media-key",
         resolves: "effect/param/mask; mediaTime key address; interp defaults mapped playhead if absent",
         reads: "effect identity; addressed key value/type/influence/interpolation assigned; move also destination key same-field; set uniform_scale eligibility; no sequence position needed with explicit mediaTime",

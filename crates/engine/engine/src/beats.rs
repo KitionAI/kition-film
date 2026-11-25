@@ -145,7 +145,7 @@ fn detect_beats(s: &mut Session, p: &Value) -> Result<Value> {
         out["frames"] = json!(times.iter().map(|t| rate.frame_at(*t)).collect::<Vec<_>>());
     }
     if markers {
-        // one undo step, the markers.add way: comment markers, sorted by time
+        // one undo step, the marker.add way: comment markers, sorted by time
         let name = str_p(p, "name").unwrap_or("Beat").to_string();
         let color = match str_p(p, "color") {
             Some(n) => Label::from_name(n).ok_or_else(|| bad(CMD, format!("unknown colour `{n}`")))?,

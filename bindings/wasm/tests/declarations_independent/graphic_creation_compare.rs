@@ -74,12 +74,12 @@ fn expected(p: &Project, seq: u64, command: &str) -> Under {
 fn graphic_creations_compare_duration_occupancy_source_reuse_caption_styles_and_post_dispatch() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
     let seq = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let matte = doc.execute("file.newColorMatte", json!({"seconds":2})).unwrap()["item"].clone();
+    let matte = doc.execute("item.newColorMatte", json!({"seconds":2})).unwrap()["item"].clone();
     doc.execute("timeline.place", json!({"item":matte,"track":"V1","time":0})).unwrap();
     let graphic = doc.execute("graphics.newText", json!({"newClip":true,"time":2_540_160_000_000i64,"text":"Shared"})).unwrap()["clip"].clone();
     doc.execute("graphics.upgradeToSourceGraphic", json!({"clip":graphic})).unwrap();
-    doc.execute("captions.newTrack", json!({})).unwrap();
-    let caption = doc.execute("captions.add", json!({"time":0,"text":"Caption","durationSeconds":1})).unwrap()["caption"].clone();
+    doc.execute("caption.newTrack", json!({})).unwrap();
+    let caption = doc.execute("caption.add", json!({"time":0,"text":"Caption","durationSeconds":1})).unwrap()["caption"].clone();
     let project = kition_film_format::decode(&doc.save(None).unwrap()).unwrap().project;
     for time in [0, 254_016_000_000i64, 1_270_080_000_000i64] {
         doc.execute("playhead.set", json!({"time":time})).unwrap();

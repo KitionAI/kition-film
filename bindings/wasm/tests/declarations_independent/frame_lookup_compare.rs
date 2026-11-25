@@ -68,8 +68,8 @@ fn expected(project: &kition_film_engine::project::Project, seq: u64, command: &
 fn frame_lookups_compare_source_routes_explicit_selection_empty_tracks_order_and_following_modes() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
     let seq = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let source = doc.execute("file.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].as_u64().unwrap();
-    let nested = doc.execute("file.newSequence", json!({"name":"Nested","fromItem":source})).unwrap()["sequence"].as_u64().unwrap();
+    let source = doc.execute("item.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].as_u64().unwrap();
+    let nested = doc.execute("sequence.new", json!({"name":"Nested","fromItem":source})).unwrap()["sequence"].as_u64().unwrap();
     doc.execute("timeline.place", json!({"item":source,"track":"V1","time":0})).unwrap();
     doc.execute("sequence.open", json!({"item":seq})).unwrap();
     let mut clips = Vec::new();

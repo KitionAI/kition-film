@@ -6,7 +6,7 @@ use serde_json::json;
 #[tokio::test(flavor = "multi_thread")]
 async fn frame_based_marks_hold_the_rate_while_tick_marks_do_not() {
     for command in
-        ["markers.markIn", "markers.markOut", "markers.markSplitVideoIn", "markers.markSplitVideoOut", "markers.markSplitAudioIn", "markers.markSplitAudioOut"]
+        ["marker.markIn", "marker.markOut", "marker.markSplitVideoIn", "marker.markSplitVideoOut", "marker.markSplitAudioIn", "marker.markSplitAudioOut"]
     {
         for frames in [true, false] {
             let f = Fixture::new(3);
@@ -32,7 +32,7 @@ async fn marker_duration_frames_hold_the_timebase() {
     let (_, basis) = f.inspect().await;
     f.colleague(&[("sequence.settings", json!({"fps":30}))]);
     let before = std::fs::read(f.file()).unwrap();
-    let answer = f.call("run", json!({"basis":basis,"steps":[{"command":"markers.add","params":{"time":0,"durationFrames":12,"name":"Assigned"}}]})).await;
+    let answer = f.call("run", json!({"basis":basis,"steps":[{"command":"marker.add","params":{"time":0,"durationFrames":12,"name":"Assigned"}}]})).await;
     assert_eq!(answer.expect_err("duration uses the observed rate")["error"]["code"], "conflict");
     assert_eq!(std::fs::read(f.file()).unwrap(), before);
     f.shutdown().await;

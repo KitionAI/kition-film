@@ -16,7 +16,7 @@ const fn r(
 
 pub const ROWS: &[Row] = &[
     r(
-        "file.newSequenceFromClip",
+        "sequence.newFromClip",
         "items/default selection",
         "items ids else item id else project_selection; filter clip kinds",
         "first item name,label,kind/settings,media info,interpret.audio_channels,source parent/bin; every item markIn,markOut,range,duration,rate,video/audio streams,source_graphic; prefs still duration,scaling; source nesting eligibility",
@@ -25,7 +25,7 @@ pub const ROWS: &[Row] = &[
         "clip_ops.rs:661; project/lib.rs:1503; commands.rs:738",
     ),
     r(
-        "file.newBinFromSelection",
+        "bin.addFromSelection",
         "items/default selection",
         "items ids else item id else project_selection; parent of first item",
         "first item parent/bin; unnamed bin scans all bin names; items membership",
@@ -34,7 +34,7 @@ pub const ROWS: &[Row] = &[
         "clip_ops.rs:742",
     ),
     r(
-        "file.newOfflineFile",
+        "item.newOfflineFile",
         "sequence defaults",
         "active sequence optional",
         "sequence settings.width,height,frame_rate when omitted; positive video/audio eligibility",
@@ -314,7 +314,7 @@ pub const ROWS: &[Row] = &[
         "clip_ops.rs:1323",
     ),
     r(
-        "clip.modifyTimecode",
+        "clip.setTimecode",
         "timecode/frame/tape/reset",
         "item id else selected first direct media",
         "media frame rate for timecode; old startTimecode copied to metadata File Timecode; reset reads/removes File Timecode; assigned Tape Name/startTimecode",
@@ -611,7 +611,7 @@ pub const ROWS: &[Row] = &[
         "engine/src/color.rs:436",
     ),
     r(
-        "masks.add",
+        "mask.add",
         "clip/effect/default path",
         "clip ID else selected_mask.clip else first selected video; effect index or effect id else opacity",
         "clip source mapping/start/duration; motion transform and source size/frame dimensions for inverse (eligibility noncollapsed even custom path); effect video kind and not motion; masks length/names for name/gap; source subclip parent dims",
@@ -620,7 +620,7 @@ pub const ROWS: &[Row] = &[
         "engine/src/masks.rs:128; engine/src/masks.rs:236",
     ),
     r(
-        "masks.remove",
+        "mask.remove",
         "index/default mask",
         "clip ID else selected_mask.clip else first selected video; effect index/id else selected effect then opacity; mask index or selected mask",
         "effect identity/order; mask index membership/existence; no source transform/time needed",
@@ -629,7 +629,7 @@ pub const ROWS: &[Row] = &[
         "engine/src/masks.rs:285",
     ),
     r(
-        "masks.set",
+        "mask.set",
         "metadata or parameter/path",
         "clip ID/default selectedMask/first video; effect index/id/default selected/opacity; mask index/default selectedMask",
         "motion transform/source dimensions and inverse eligibility always checked, even name-only; source mapping/time; assigned mask fields; params animation/key interpolation when set_at; mask/effect index membership",
@@ -638,7 +638,7 @@ pub const ROWS: &[Row] = &[
         "engine/src/masks.rs:205; engine/src/masks.rs:308",
     ),
     r(
-        "masks.moveVertex",
+        "mask.moveVertex",
         "path at time",
         "clip/default selectedMask/first video; effect index/id/default selected/opacity; mask index/default selected; vertex index",
         "motion/source/frame inverse noncollapsed; media mapping; mask path value and keys interpolation; vertex index and neighbours for smooth; writes path at mapped time",
@@ -647,7 +647,7 @@ pub const ROWS: &[Row] = &[
         "engine/src/masks.rs:205; engine/src/masks.rs:355; engine/src/masks.rs:397; engine/src/masks.rs:466",
     ),
     r(
-        "masks.translate",
+        "mask.translate",
         "path at time",
         "clip/default selectedMask/first video; effect index/id/default selected/opacity; mask index/default selected; vertex index",
         "motion/source/frame inverse noncollapsed; media mapping; mask path value and keys interpolation; vertex index and neighbours for smooth; writes path at mapped time",
@@ -656,7 +656,7 @@ pub const ROWS: &[Row] = &[
         "engine/src/masks.rs:205; engine/src/masks.rs:355; engine/src/masks.rs:397; engine/src/masks.rs:466",
     ),
     r(
-        "masks.toggleVertexSmooth",
+        "mask.toggleVertexSmooth",
         "path at time",
         "clip/default selectedMask/first video; effect index/id/default selected/opacity; mask index/default selected; vertex index",
         "motion/source/frame inverse noncollapsed; media mapping; mask path value and keys interpolation; vertex index and neighbours for smooth; writes path at mapped time",
@@ -665,7 +665,7 @@ pub const ROWS: &[Row] = &[
         "engine/src/masks.rs:205; engine/src/masks.rs:355; engine/src/masks.rs:397; engine/src/masks.rs:466",
     ),
     r(
-        "masks.addVertex",
+        "mask.addVertex",
         "topology all keys",
         "clip/effect/mask defaults; after vertex index",
         "mask path value/all keys topology; >=2 keys insert interpolated vertex in every key; current evaluated path then requested point; transform/source/time mapping; inverse eligibility",
@@ -674,7 +674,7 @@ pub const ROWS: &[Row] = &[
         "engine/src/masks.rs:408",
     ),
     r(
-        "masks.removeVertex",
+        "mask.removeVertex",
         "topology all keys",
         "clip/effect/mask defaults; vertex index",
         "mask evaluated path at time length >3 eligibility; path value and every key topology; transform/source/time mapping/inverse eligibility even unused",
@@ -683,7 +683,7 @@ pub const ROWS: &[Row] = &[
         "engine/src/masks.rs:437",
     ),
     r(
-        "masks.track",
+        "mask.track",
         "job/synchronous",
         "clip/default selectedMask/first video; effect/mask index/default selected; direction and frames",
         "full mask/path/method; source mapping/clip bounds; media video bytes/size/rate; same target not already tracking; source available; steps>0; job analysis input snapshot tracks source identity; assigned path keys",
@@ -2006,7 +2006,7 @@ pub const ROWS: &[Row] = &[
         "engine/src/mixer.rs:309",
     ),
     r(
-        "effects.setDefaultTransition",
+        "effect.setDefaultTransition",
         "editor default",
         "effect id or name against static registry",
         "transition kind eligibility",
@@ -2339,7 +2339,7 @@ pub const ROWS: &[Row] = &[
         "engine/src/transcript.rs:354; edit/src/transcript.rs:260",
     ),
     r(
-        "transcript.createCaptions",
+        "transcript.addCaptions",
         "derived words",
         "all sequence transcript words",
         "all sequence audio track order and clip item/enabled/reverse/frameHold/speed/sourceIn/start/duration; mapped transcript words start/end/speaker/text and overlapping higher-track claims; sequence frameRate; nonempty transcript eligibility; new caption-track insertion gap 0; no existing caption content read",

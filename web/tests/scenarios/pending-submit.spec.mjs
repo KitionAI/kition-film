@@ -3,7 +3,7 @@ import { test, expect, holdWorkerReply } from './fixtures.mjs'
 for (const interruption of ['replacement project', 'permissions', 'newer dialog']) {
   test(`F33 a dialog waiting to end its preview cannot submit after ${interruption}`, async ({ film }) => {
     await film.open()
-    await film.menu('file.newSequence')
+    await film.menu('sequence.new')
     await film.kit.getByTestId('film-dialog-sequenceSettings-name').fill('Old dialog must not create this')
     await expect.poll(() => film.frame().evaluate(async () => Boolean(await window.filmPreview.inspect()))).toBe(true)
     const gate = await holdWorkerReply(film, 'previewEnd')
@@ -12,7 +12,7 @@ for (const interruption of ['replacement project', 'permissions', 'newer dialog'
     // The person's dialog holds the document (a preview ending): the agent replaces the project.
     if (interruption === 'replacement project') await film.agent('file.newProject', { name: 'Replacement stays empty' })
     else if (interruption === 'permissions') {
-      await film.configure({ disable: ['command:file.newSequence'] })
+      await film.configure({ disable: ['command:sequence.new'] })
       await film.configure({ disable: [] })
     } else {
       await film.menu('sequence.settings')
@@ -32,9 +32,9 @@ for (const interruption of ['replacement project', 'permissions', 'newer dialog'
 
 test('F33 a fresh OK after permissions recover still submits the open draft', async ({ film }) => {
   await film.open()
-  await film.menu('file.newSequence')
+  await film.menu('sequence.new')
   await film.kit.getByTestId('film-dialog-sequenceSettings-name').fill('Fresh authorized sequence')
-  await film.configure({ disable: ['command:file.newSequence'] })
+  await film.configure({ disable: ['command:sequence.new'] })
   await film.configure({ disable: [] })
   const history = await film.history()
   await film.kit.getByTestId('film-dialog-ok').click()

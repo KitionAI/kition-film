@@ -6,20 +6,20 @@ use kition_kit::{KitDocument, Premise, Under};
 use serde_json::json;
 
 pub const PATHS: &[(&str, &str)] = &[
-    ("markers.goToIn", "program"),
-    ("markers.goToOut", "program"),
-    ("markers.goNext", "program"),
-    ("markers.goPrev", "program"),
-    ("markers.goToIn", "target=source"),
-    ("markers.goToOut", "target=source"),
-    ("markers.goToSplitVideoIn", "program"),
-    ("markers.goToSplitVideoIn", "source"),
-    ("markers.goToSplitVideoOut", "program"),
-    ("markers.goToSplitVideoOut", "source"),
-    ("markers.goToSplitAudioIn", "program"),
-    ("markers.goToSplitAudioIn", "source"),
-    ("markers.goToSplitAudioOut", "program"),
-    ("markers.goToSplitAudioOut", "source"),
+    ("marker.goToIn", "program"),
+    ("marker.goToOut", "program"),
+    ("marker.goNext", "program"),
+    ("marker.goPrev", "program"),
+    ("marker.goToIn", "target=source"),
+    ("marker.goToOut", "target=source"),
+    ("marker.goToSplitVideoIn", "program"),
+    ("marker.goToSplitVideoIn", "source"),
+    ("marker.goToSplitVideoOut", "program"),
+    ("marker.goToSplitVideoOut", "source"),
+    ("marker.goToSplitAudioIn", "program"),
+    ("marker.goToSplitAudioIn", "source"),
+    ("marker.goToSplitAudioOut", "program"),
+    ("marker.goToSplitAudioOut", "source"),
     ("source.setPlayhead", "navigation"),
 ];
 
@@ -41,7 +41,7 @@ pub fn more(command: &str, path: &str) -> Vec<&'static str> {
     if path != "program" && command != "source.setPlayhead" {
         out.push("source-only-part");
     }
-    if matches!(command, "markers.goNext" | "markers.goPrev") {
+    if matches!(command, "marker.goNext" | "marker.goPrev") {
         out.push("whole-marker-navigation");
     }
     out
@@ -56,16 +56,16 @@ fn marker_destinations_compare_program_source_split_and_missing_mark_fallbacks()
     for marked in [false, true] {
         let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
         let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-        let media = doc.execute("file.newColorMatte", json!({"seconds":3})).unwrap()["item"].as_u64().unwrap();
+        let media = doc.execute("item.newColorMatte", json!({"seconds":3})).unwrap()["item"].as_u64().unwrap();
         doc.execute("timeline.place", json!({"item":media,"track":"V1","time":0})).unwrap();
         if marked {
-            doc.execute("markers.markIn", json!({"time":254_016_000_000i64})).unwrap();
-            doc.execute("markers.markOut", json!({"time":508_032_000_000i64})).unwrap();
+            doc.execute("marker.markIn", json!({"time":254_016_000_000i64})).unwrap();
+            doc.execute("marker.markOut", json!({"time":508_032_000_000i64})).unwrap();
             for side in ["VideoIn", "VideoOut", "AudioIn", "AudioOut"] {
                 doc.execute(&format!("markers.markSplit{side}"), json!({"time":254_016_000_000i64})).unwrap();
             }
         }
-        doc.execute("markers.add", json!({"time":254_016_000_000i64,"name":"Cue"})).unwrap();
+        doc.execute("marker.add", json!({"time":254_016_000_000i64,"name":"Cue"})).unwrap();
         for source in [media, sequence] {
             doc.execute("source.open", json!({"item":source})).unwrap();
             let specs = doc.commands();
@@ -113,8 +113,8 @@ fn marker_destinations_compare_program_source_split_and_missing_mark_fallbacks()
                 } else {
                     let mut fields = vec!["sequence.settings.settings.frame_rate"];
                     match command {
-                        "markers.goToIn" => fields.push("sequence.settings.mark_in"),
-                        "markers.goToOut" => {
+                        "marker.goToIn" => fields.push("sequence.settings.mark_in"),
+                        "marker.goToOut" => {
                             fields.push("sequence.settings.mark_out");
                             if !marked {
                                 fields.push("sequence.duration");

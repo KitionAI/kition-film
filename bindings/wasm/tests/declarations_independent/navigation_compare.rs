@@ -140,7 +140,7 @@ fn navigation_compares_all_commands_parameters_selections_and_target_modes() {
     const SECOND: i64 = 254_016_000_000;
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
     let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let source = doc.execute("file.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
+    let source = doc.execute("item.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
     let mut clips = Vec::new();
     for (time, track) in [(0, "V1"), (3 * SECOND, "V2")] {
         clips.extend(

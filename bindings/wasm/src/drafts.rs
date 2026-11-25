@@ -191,7 +191,7 @@ mod tests {
         let mut doc = FilmDocument::open("Edit.kfilm", &fixture()).unwrap();
         let base = doc.version().unwrap();
         let mut draft = FilmDocument::open_with_replica("Edit.kfilm", &[], &doc.snapshot().unwrap(), &doc.blobs().unwrap()).unwrap();
-        draft.execute("file.newColorMatte", json!({ "color": "#00ff00", "seconds": 2.0 })).unwrap();
+        draft.execute("item.newColorMatte", json!({ "color": "#00ff00", "seconds": 2.0 })).unwrap();
         let changes = draft.export_changes(&base).unwrap();
         doc.execute("timeline.setTrack", json!({ "track": "V1", "name": "Meanwhile" })).unwrap();
         let before = items(&doc);
@@ -224,7 +224,7 @@ mod tests {
         doc.version().unwrap();
         let checkpoint = doc.snapshot().unwrap();
         let before = items(&doc);
-        doc.execute("file.newColorMatte", json!({ "color": "#0000ff", "seconds": 2.0 })).unwrap();
+        doc.execute("item.newColorMatte", json!({ "color": "#0000ff", "seconds": 2.0 })).unwrap();
         assert_eq!(items(&doc), before + 1);
         let damage = doc.restore_state(&checkpoint, &person()).unwrap();
         assert_ne!(damage, Damage::None);
@@ -299,7 +299,7 @@ mod tests {
         assert!(read["loaded"][0]["fields"].is_object(), "{read}");
         let before = items(&doc);
         let origin = json!({ "kind": "person", "principal": "person:local" });
-        doc.model_batch(&json!({ "origin": origin, "ops": [{ "op": "command", "id": "file.newColorMatte", "params": { "color": "#0000ff", "seconds": 2 } }] }))
+        doc.model_batch(&json!({ "origin": origin, "ops": [{ "op": "command", "id": "item.newColorMatte", "params": { "color": "#0000ff", "seconds": 2 } }] }))
             .unwrap();
         assert_eq!(items(&doc), before + 1, "the batch's command ran on the project");
         assert!(doc.undo().unwrap().0);

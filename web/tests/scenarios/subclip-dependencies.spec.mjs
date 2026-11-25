@@ -4,10 +4,10 @@ for (const removeBin of [false, true]) {
   test(`F57 deleting a subclip's ${removeBin ? 'parent bin' : 'parent source'} refuses atomically; explicit deletion and undo restore usable media`, async ({ film, page }) => {
     await film.open()
     await film.command('file.newProject', { name: 'Subclip dependencies' })
-    await film.command('file.newSequence', { name: 'Subclip', width: 64, height: 36, fps: 24, video: 1, audio: 0 })
-    const { item: parent } = await film.command('file.newColorMatte', { color: '#ff0000', seconds: 2 })
+    await film.command('sequence.new', { name: 'Subclip', width: 64, height: 36, fps: 24, video: 1, audio: 0 })
+    const { item: parent } = await film.command('item.newColorMatte', { color: '#ff0000', seconds: 2 })
     const { item: subclip } = await film.command('clip.makeSubclip', { item: parent, startFrame: 12, endFrame: 24, name: 'Half-second excerpt' })
-    const { bin } = await film.command('file.newBin', { name: 'Originals' })
+    const { bin } = await film.command('bin.add', { name: 'Originals' })
     await film.command('project.moveToBin', { items: [parent], bin })
     await film.command('timeline.place', { item: subclip, seconds: 0 })
     const timeline = editState(await film.sequence())

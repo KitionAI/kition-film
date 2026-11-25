@@ -11,7 +11,7 @@ test(`F14 an unfinished Pen path belongs to its original ${destination}`, async 
   }
   await expect(film.kit.getByTestId('film-program-graphics')).toHaveAttribute('data-pen-points', '3')
   if (destination === 'project') await film.command('file.newProject', { name: 'Empty replacement' })
-  await film.command('file.newSequence', { name: 'Empty sequence', width: 64, height: 36, fps: 24 })
+  await film.command('sequence.new', { name: 'Empty sequence', width: 64, height: 36, fps: 24 })
   const history = await film.history()
   const before = await film.details()
   await film.focus()
@@ -47,7 +47,7 @@ test('F15 revoking Type permission while its layer read waits closes the pending
 test('F23 Type accepts Unicode and multiline text; Escape restores shortcuts and undo/redo/reopen preserve content', async ({ film, page }) => {
   await film.open()
   await film.command('file.newProject', { name: 'Unicode title' })
-  await film.command('file.newSequence', { name: 'Title', width: 640, height: 360, fps: 24, video: 1, audio: 0 })
+  await film.command('sequence.new', { name: 'Title', width: 640, height: 360, fps: 24, video: 1, audio: 0 })
   const previous = new Set(clips(await film.sequence()).map(clip => clip.clip))
   await film.focus()
   await page.keyboard.press('t')

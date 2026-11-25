@@ -242,13 +242,13 @@ mod tests {
     /// A 64 x 36 project with a four-second red colour matte on V1 at 0s: no media files needed.
     fn fixture() -> Vec<u8> {
         let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
-        let matte = doc.execute("file.newColorMatte", json!({"color": "#ff0000", "seconds": 4.0})).unwrap();
+        let matte = doc.execute("item.newColorMatte", json!({"color": "#ff0000", "seconds": 4.0})).unwrap();
         doc.execute("timeline.place", json!({"item": matte["item"], "track": "V1", "seconds": 0.0})).unwrap();
         doc.save(None).unwrap()
     }
 
     fn extra_edit(doc: &mut FilmDocument) {
-        let matte = doc.execute("file.newColorMatte", json!({"color": "#0000ff", "seconds": 2.0})).unwrap();
+        let matte = doc.execute("item.newColorMatte", json!({"color": "#0000ff", "seconds": 2.0})).unwrap();
         doc.execute("timeline.place", json!({"item": matte["item"], "track": "V1", "seconds": 4.0})).unwrap();
     }
 
@@ -308,8 +308,8 @@ mod tests {
         let person = Origin::person("user:person");
         let agent = Origin::agent("agent:flow");
         let before = root_ids(&doc);
-        let tone = doc.execute_as("file.newOfflineFile", json!({ "name": "Tone", "video": false, "audio": true, "seconds": 3 }), &agent).unwrap();
-        doc.execute_as("file.newColorMatte", json!({ "color": "#00ff00", "seconds": 2.0 }), &person).unwrap();
+        let tone = doc.execute_as("item.newOfflineFile", json!({ "name": "Tone", "video": false, "audio": true, "seconds": 3 }), &agent).unwrap();
+        doc.execute_as("item.newColorMatte", json!({ "color": "#00ff00", "seconds": 2.0 }), &person).unwrap();
         doc.execute_as("edit.undo", json!({}), &person).unwrap();
         doc.execute_as("edit.undo", json!({}), &agent).unwrap();
         let after = root_ids(&doc);

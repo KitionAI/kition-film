@@ -25,53 +25,53 @@ pub fn description(id: &str) -> &'static str {
         "audio.voiceover.sync" => {
             "Tells the recorder that host playback actually started at `time`, so capture restarts there and the take lands sample-accurately. Call after audio.voiceover.start once playback runs."
         }
-        "captions.add" => {
+        "caption.add" => {
             "Adds a caption on a caption track at the playhead (or `time` ticks / `seconds`), `durationSeconds` long (3 by default) with `text`, its In and Out each on the frame that shows their time; creates track C1 if the sequence has none. `words` [{text, start, end} in sequence seconds] makes a karaoke caption spanning the words: each word gets a WebVTT timestamp, Chinese/Japanese/Korean words join without spaces, and burned-in captions draw the word being sung in the track's highlight colour and scale (a pause between words highlights nothing). Inline <b>, <i>, <u> are drawn. Answers the new caption."
         }
-        "captions.delete" => {
+        "caption.delete" => {
             "Deletes the listed `captions` (default: the caption selection). `ripple: true` also closes the gaps by moving later captions earlier. Answers {deleted}."
         }
-        "captions.deleteTrack" => "Removes a whole caption track (`track` id or \"C1\"…, default the first) and all its captions.",
-        "captions.export" => {
+        "caption.deleteTrack" => "Removes a whole caption track (`track` id or \"C1\"…, default the first) and all its captions.",
+        "caption.export" => {
             "Writes a caption track to a new file at `path`; `format` srt|vtt|scc|mcc|stl|ttml|dfxp defaults from the extension (else SRT); `dropFrame` applies to SCC/MCC timecode."
         }
-        "captions.goTo" => "Moves the playhead to the start of `caption` and selects it. Answers {time} in ticks.",
-        "captions.hideAll" => {
-            "Disables every caption track of the active sequence so none shows in the Program monitor or export; the captions stay. Reverse with captions.showAll."
+        "caption.goTo" => "Moves the playhead to the start of `caption` and selects it. Answers {time} in ticks.",
+        "caption.hideAll" => {
+            "Disables every caption track of the active sequence so none shows in the Program monitor or export; the captions stay. Reverse with caption.showAll."
         }
-        "captions.import" => {
+        "caption.import" => {
             "Reads a caption file at `path` (format detected from content and extension) into a new caption track of the active sequence; `name` names the track."
         }
-        "captions.list" => {
+        "caption.list" => {
             "Lists the caption tracks (or just `track`) with their captions' ids, times in ticks, text and speaker, plus the caption selection. Read before editing captions."
         }
-        "captions.merge" => {
+        "caption.merge" => {
             "Joins consecutive captions on one track into the first: it spans from the first start to the last end, texts joined with line breaks. Answers {caption}."
         }
-        "captions.move" => {
+        "caption.move" => {
             "Shifts `captions` (default: selected) by `delta` ticks or `deltaFrames`, clamped at zero and so they don't overlap captions that stay. Answers {applied} ticks."
         }
-        "captions.newTrack" => {
+        "caption.newTrack" => {
             "Adds a caption track of `format` Subtitle|CEA-608|CEA-708|Teletext (default Subtitle) with `name` and `language` (default en), after the existing caption tracks (C1, C2… keep their tracks). Answers the new track's id and label."
         }
-        "captions.next" => "Moves the playhead to the start of the next caption on enabled caption tracks and selects it. Answers {time, caption}.",
-        "captions.previous" => "Moves the playhead to the start of the previous caption on enabled caption tracks and selects it. Answers {time, caption}.",
-        "captions.select" => "Selects `captions` by id (ids not in the sequence are ignored); `add: true` adds to the current caption selection.",
-        "captions.setStyle" => {
+        "caption.next" => "Moves the playhead to the start of the next caption on enabled caption tracks and selects it. Answers {time, caption}.",
+        "caption.previous" => "Moves the playhead to the start of the previous caption on enabled caption tracks and selects it. Answers {time, caption}.",
+        "caption.select" => "Selects `captions` by id (ids not in the sequence are ignored); `add: true` adds to the current caption selection.",
+        "caption.setStyle" => {
             "Sets a caption track's look: font, size, color, background, align, anchor, margin (fraction of frame height, 0–0.45), line spacing, outline, and for karaoke captions `highlightColor` and `highlightScale` (0.25–4) of the word being sung; `reset` restores defaults. Applies to every caption on the track."
         }
-        "captions.setText" => "Changes the `text` and/or `speaker` (null clears it) of one caption (default: the selected one).",
-        "captions.setTimes" => {
+        "caption.setText" => "Changes the `text` and/or `speaker` (null clears it) of one caption (default: the selected one).",
+        "caption.setTimes" => {
             "Sets a caption's start and/or end, each as ticks (`startTime`), frames, seconds or timecode; default caption is the selected one."
         }
-        "captions.setTrack" => "Changes a caption track's name, format, language, enabled, locked or sync-lock settings.",
-        "captions.showActiveOnly" => "Enables only `track` (default the first) and disables the other caption tracks, so one language shows.",
-        "captions.showAll" => "Enables every caption track of the active sequence. Reverse with captions.hideAll.",
-        "captions.split" => {
+        "caption.setTrack" => "Changes a caption track's name, format, language, enabled, locked or sync-lock settings.",
+        "caption.showActiveOnly" => "Enables only `track` (default the first) and disables the other caption tracks, so one language shows.",
+        "caption.showAll" => "Enables every caption track of the active sequence. Reverse with caption.hideAll.",
+        "caption.split" => {
             "Splits `caption` at `time` (default: the playhead), or every caption under the playhead on unlocked caption tracks when no caption is given. Answers the new captions."
         }
-        "captions.trim" => {
-            "Moves the in or out `edge` of one caption by `delta` ticks or `deltaFrames`, without moving neighbours. Use captions.setTimes to set an absolute time."
+        "caption.trim" => {
+            "Moves the in or out `edge` of one caption by `delta` ticks or `deltaFrames`, without moving neighbours. Use caption.setTimes to set an absolute time."
         }
         "clip.audioChannels" => {
             "Sets how project `items`' audio channels map to clips: `format` mono|stereo|5.1|adaptive and which source `channels` each clip carries. Applies to clips made after; existing timeline clips keep theirs."
@@ -85,7 +85,7 @@ pub fn description(id: &str) -> &'static str {
         }
         "clip.breakoutToMono" => "Creates one mono project item per audio channel of each selected item with audio, in the same bin. Answers the new items.",
         "clip.clearPosterFrame" => "Clears the poster frame of a project `item` (default selected), so its thumbnail returns to the first frame.",
-        "clip.createMulticam" => {
+        "clip.addMulticam" => {
             "Builds a multi-camera source sequence from synchronized project `items` (aligned by in, out, timecode, marker or audio), with `audio` mode and camera names from clip, track or metadata."
         }
         "clip.editOffline" => "Edits the offline-file information of an offline `item`: media name, tape name, description, scene, shot and log note.",
@@ -128,7 +128,7 @@ pub fn description(id: &str) -> &'static str {
         "clip.mergeClips" => {
             "Merges one video item and audio items, aligned by in, out, timecode, marker or audio, into a new merged project item; `removeVideoAudio` drops the camera audio."
         }
-        "clip.modifyTimecode" => "Sets the start `timecode` (or `frame`) and `tapeName` of a media `item`; `reset` restores the file's own timecode.",
+        "clip.setTimecode" => "Sets the start `timecode` (or `frame`) and `tapeName` of a media `item`; `reset` restores the file's own timecode.",
         "clip.multicamEnable" => "Turns multi-camera behaviour of the selected nested clips on or off (`enabled`, toggles when omitted).",
         "clip.multicamFlatten" => "Replaces the selected multi-camera clips with the clips their active angles show; the result no longer switches angles.",
         "clip.nest" => {
@@ -200,7 +200,7 @@ pub fn description(id: &str) -> &'static str {
         }
         "color.spaces" => "Lists the color space ids that clip.interpretFootage and sequence color settings accept.",
         "command.list" => "Lists every command with id, title, menu path, shortcut, parameters and whether it is enabled now.",
-        "edit.clear" => {
+        "edit.delete" => {
             "Deletes the selected (or listed `clips`) timeline clips with their linked partners, leaving gaps; with no clip selected it deletes the selected captions. Use edit.rippleDelete to close the gaps."
         }
         "edit.consolidateDuplicates" => {
@@ -263,40 +263,40 @@ pub fn description(id: &str) -> &'static str {
         "edit.undo" => {
             "Undoes the last step in `scope` (person or agent; default the caller's own), so an agent's undo never takes back the person's edit. Answers {undone} with the step's label."
         }
-        "effects.addKeyframe" => {
+        "effect.addKeyframe" => {
             "Adds a keyframe of an effect parameter at `time` (sequence ticks, default playhead) with its current value, or removes it if one is there. `mask` targets a mask's parameter."
         }
-        "effects.apply" => {
-            "Adds `effect` (id like gaussian_blur or its name; see effects.list) to the selected or listed `clips`, at the end of each clip's effect stack."
+        "effect.apply" => {
+            "Adds `effect` (id like gaussian_blur or its name; see effect.list) to the selected or listed `clips`, at the end of each clip's effect stack."
         }
-        "effects.deleteKeyframe" => {
+        "effect.deleteKeyframe" => {
             "Deletes the keyframe of an effect parameter at `mediaTime` (ticks of the clip's media time, as sequence.inspect lists each keyframe's `mediaTime`). `mask` targets a mask's parameter."
         }
-        "effects.list" => {
+        "effect.list" => {
             "Lists available effects and transitions (filter by `kind` Video, Audio, VideoTransition, AudioTransition, `folder`, or one `effect` by id or name, the exact id first) with ids; `detail` (implied by `effect`) adds `paramInfo`: each parameter's id, type, default, min / max / unit, choice `options`, and `accepts` (the values it takes, e.g. booleans for an amount, left/right/up/down for a direction). Read to find effect ids and transition `params`."
         }
-        "effects.moveKeyframe" => {
+        "effect.moveKeyframe" => {
             "Moves the keyframe of an effect parameter at `mediaTime` to media time `to` (both clip media ticks), with a new `value` when given. `mask` targets a mask's parameter. `merge: true` makes a drag of the keyframe (each call naming where the last one left it) one undo step; `begin` starts a new one."
         }
-        "effects.remove" => "Removes the effect at `index` (0-based, as sequence.inspect lists a clip's effects; fixed effects can't be removed) from `clip`.",
-        "effects.reset" => "Resets every parameter of the effect at `index` of `clip` to its defaults.",
+        "effect.remove" => "Removes the effect at `index` (0-based, as sequence.inspect lists a clip's effects; fixed effects can't be removed) from `clip`.",
+        "effect.reset" => "Resets every parameter of the effect at `index` of `clip` to its defaults.",
         "effects.move" => {
             "Moves the standard effect at `index` of `clip` to index `to` (0-based, as sequence.inspect lists a clip's effects), changing the order it renders in; fixed effects (Motion, Opacity, Volume…) and graphic layers keep their places."
         }
-        "effects.setDefaultTransition" => {
+        "effect.setDefaultTransition" => {
             "Sets the default video or audio transition used by sequence.applyVideoTransition/applyAudioTransition and default-transition commands."
         }
-        "effects.setInterpolation" => {
+        "effect.setInterpolation" => {
             "Sets the interpolation of the keyframe at `mediaTime`: linear, bezier, autoBezier, continuousBezier, hold, easeIn or easeOut (an unknown name is refused). `mask` targets a mask's parameter."
         }
-        "effects.setKeyframe" => "Changes the keyframe at `mediaTime`: its `value` and bezier in/out influence (0–1). `mask` targets a mask's parameter.",
-        "effects.setParam" => {
+        "effect.setKeyframe" => "Changes the keyframe at `mediaTime`: its `value` and bezier in/out influence (0–1). `mask` targets a mask's parameter.",
+        "effect.setParam" => {
             "Sets `param` of `clip`'s `effect` (\"motion\", \"opacity\", a name or index) to `value`. With a `time` (sequence ticks; or `frame`, `seconds`, `timecode`) it sets a keyframe there, turning animation on if the parameter was static; without one it keys the playhead when the parameter is animated, else sets the static value. `param` is a parameter id or label, and a choice takes its option's name (any case) or index. `mask` targets a mask's parameter (a mask `path` in frame pixels). Motion's `scale_width` needs `uniform_scale` false (it is refused while Uniform Scale is on). `merge: true` makes a drag of this parameter one undo step; `merge` with a name makes every call with that name on the clip one undo step (a drag that changes several parameters); `begin` starts a new step."
         }
-        "effects.toggleAnimation" => {
+        "effect.toggleAnimation" => {
             "Turns keyframe animation of an effect parameter on (a keyframe at `time`, sequence ticks or `frame`/`seconds`, default the playhead) or off (removes its keyframes, keeping the value at that time)."
         }
-        "effects.toggleEnabled" => "Turns the effect at `index` of `clip` on or off without removing it.",
+        "effect.toggleEnabled" => "Turns the effect at `index` of `clip` on or off without removing it.",
         "audioMixing.applyPreset" => "Applies audio mixing `preset` to the selected or listed `clips` (for audio `type`).",
         "audioMixing.autoMatch" => "Sets the clip gain of the selected or listed dialogue `clips` so each measures `target` LUFS (default -23).",
         "audioMixing.clearType" => "Clears the audio type of the selected or listed `clips`, removing their audio mixing effects.",
@@ -314,8 +314,8 @@ pub fn description(id: &str) -> &'static str {
         "audioMixing.setType" => {
             "Sets the audio type of the selected or listed `clips`: dialogue, music, sfx or ambience, which decides the audio mixing controls."
         }
-        "events.clear" => "Clears every entry from the session's event log.",
-        "events.list" => "Lists the session's event log (warnings, errors, info) at or above `level`, newer than `since`.",
+        "event.clear" => "Clears every entry from the session's event log.",
+        "event.list" => "Lists the session's event log (warnings, errors, info) at or above `level`, newer than `since`.",
         "export.formats" => "Lists the export formats with their codecs, containers and supported options.",
         "export.presets.delete" => "Deletes user export preset `name`.",
         "export.presets.export" => "Writes user export presets (`names`, default all) to a preset file at `path`.",
@@ -382,28 +382,26 @@ pub fn description(id: &str) -> &'static str {
         "file.listAutoSaves" => "Lists the auto-save files of the current project, newest first, with their folder.",
         "file.mediaProperties" => "Reads media file properties (codec, size, frame rate, streams, duration, timecode) of the selected or listed `items`.",
         "file.mediaPropertiesFile" => "Reads media file properties of the file at `path` without importing it.",
-        "file.newAdjustmentLayer" => {
+        "item.newAdjustmentLayer" => {
             "Creates an Adjustment Layer project item `seconds` long (default 5) at the active sequence's frame size; effects on it apply to the tracks below."
         }
-        "file.newBarsAndTone" => "Creates an SMPTE bars and 1 kHz tone generator item `seconds` long (default 10).",
-        "file.newBin" => "Creates a bin `name` (default New Bin) in bin `parent` (default root). Answers the new bin id.",
-        "file.newBinFromSelection" => "Creates a bin named `name` and moves the selected or listed `items` into it.",
-        "file.newBlackVideo" => "Creates a black video generator item `seconds` long.",
-        "file.newColorMatte" => "Creates a solid Color Matte item of `color` #rrggbb, `seconds` long.",
-        "file.newCountingLeader" => "Creates a Universal Counting Leader generator item (an 8-second countdown).",
-        "file.newOfflineFile" => {
+        "item.newBarsAndTone" => "Creates an SMPTE bars and 1 kHz tone generator item `seconds` long (default 10).",
+        "bin.add" => "Creates a bin `name` (default New Bin) in bin `parent` (default root). Answers the new bin id.",
+        "bin.addFromSelection" => "Creates a bin named `name` and moves the selected or listed `items` into it.",
+        "item.newBlackVideo" => "Creates a black video generator item `seconds` long.",
+        "item.newColorMatte" => "Creates a solid Color Matte item of `color` #rrggbb, `seconds` long.",
+        "item.newCountingLeader" => "Creates a Universal Counting Leader generator item (an 8-second countdown).",
+        "item.newOfflineFile" => {
             "Creates an offline placeholder item with name, file and tape names, video/audio format, timecode and duration, to relink later."
         }
         "file.newProject" => "Replaces the current project with a new empty one named `name`; unsaved changes are not kept.",
         "file.newProjectFromTemplate" => "Creates a new project from `template` (a saved template name or path) named `name`.",
-        "file.newSearchBin" => "Creates a search bin `name` that live-matches items by `column`/`operator`/`text` (or `rows` with `matchAll`).",
-        "file.newSequence" => {
+        "bin.addSearch" => "Creates a search bin `name` that live-matches items by `column`/`operator`/`text` (or `rows` with `matchAll`).",
+        "sequence.new" => {
             "Creates a sequence `name` (default 1920×1080, 23.976 fps, 48 kHz, 3 video and 3 audio tracks, or from `item`'s format) and opens it. Answers the new sequence id."
         }
-        "file.newSequenceFromClip" => {
-            "Creates a sequence matching the format of each selected or listed clip `items` with that clip placed on it, and opens it."
-        }
-        "file.newTransparentVideo" => "Creates a Transparent Video generator item (an empty clip for effects that draw their own content).",
+        "sequence.newFromClip" => "Creates a sequence matching the format of each selected or listed clip `items` with that clip placed on it, and opens it.",
+        "item.newTransparentVideo" => "Creates a Transparent Video generator item (an empty clip for effects that draw their own content).",
         "file.open" => "Opens the project file at `path`, replacing the current project.",
         "file.openDemoProject" => "Replaces the current project with the built-in demo project and opens its sequence.",
         "file.projectManager" => {
@@ -423,7 +421,7 @@ pub fn description(id: &str) -> &'static str {
         "file.saveAsTemplate" => "Saves the project as a reusable template `name` (or at `path`).",
         "file.saveCopy" => "Writes a copy of the project to `path`; the project keeps its own file.",
         "file.templates" => "Lists the saved project templates.",
-        "fonts.list" => "Lists the available font families and styles (bundled plus system fonts when `system`).",
+        "font.list" => "Lists the available font families and styles (bundled plus system fonts when `system`).",
         "graphics.align" => {
             "Aligns graphic `layers` (default selected) of a graphic clip `left|hcenter|right|top|vcenter|bottom`, relative to the `frame`, their union (`group`) or the selection."
         }
@@ -544,8 +542,8 @@ pub fn description(id: &str) -> &'static str {
         "graphics.upgradeToSourceGraphic" => "Turns graphic `clip` into a source graphic project item, so several clips can share and update it.",
         "help.systemReport" => "Reads what this build supports: OS, CPU, decoders, containers and export formats.",
         "history.list" => "Lists the undo history: each step's label, who made it (person or agent) and which steps can be undone or redone.",
-        "jobs.cancel" => "Cancels background `job` by id.",
-        "jobs.list" => "Lists background jobs (exports, proxies, analysis, renders) with id, kind, status and progress.",
+        "job.cancel" => "Cancels background `job` by id.",
+        "job.list" => "Lists background jobs (exports, proxies, analysis, renders) with id, kind, status and progress.",
         "color.applyMatch" => {
             "Color-matches `clip` (default selected) to the reference frame at `referenceTime`/frame/timecode in the sequence, writing Color effect corrections; `faceDetection` weights skin tones."
         }
@@ -563,80 +561,78 @@ pub fn description(id: &str) -> &'static str {
         "lut.import" => "Installs the LUT file at `path` (cube, 3dl…) into the LUT library as `name`.",
         "lut.list" => "Lists the LUTs installed for the Color effect's Input LUT and Creative Look.",
         "lut.remove" => "Uninstalls LUT `id` from the LUT library; clips that use it keep a copy.",
-        "markers.add" => {
+        "marker.add" => {
             "Adds a marker at the playhead or `time` (ticks; or `frame`, `timecode`, or `seconds`, on the frame that shows that time) with `name`, `comment`, `color` (a marker colour: Red, Orange, Yellow, Green, Cyan, Blue, Purple, or a label name; it reads back as the marker colour, Red for Rose; an unknown colour is refused) and optional `durationFrames` or `durationSeconds` (a range marker), on the sequence or, with target \"source\", the Source monitor clip. Answers the marker id."
         }
-        "markers.addChapter" => {
+        "marker.addChapter" => {
             "Adds a chapter marker (exported as a chapter in MP4/DVD) at the playhead or `time` (or `frame`, `seconds`, `timecode`); named Chapter n by default."
         }
-        "markers.addFlashCue" => {
-            "Adds a Flash Cue marker (an event cue for interactive exports) at the playhead or `time` (or `frame`, `seconds`, `timecode`)."
-        }
-        "markers.addRange" => {
+        "marker.addFlashCue" => "Adds a Flash Cue marker (an event cue for interactive exports) at the playhead or `time` (or `frame`, `seconds`, `timecode`).",
+        "marker.addRange" => {
             "Adds a range marker starting at the playhead or `time` (or `frame`, `seconds`, `timecode`), `durationFrames` or `durationSeconds` long (1 second by default) or `duration` ticks."
         }
-        "markers.addRangeInOut" => "Adds a range marker spanning the sequence In to Out points. Needs both In and Out set.",
-        "markers.clearAll" => "Removes every marker from the sequence (or the Source clip with target \"source\").",
-        "markers.clearCurrent" => "Removes the marker that starts exactly at the playhead.",
-        "markers.clearIn" => "Clears the In point (including split video/audio Ins) of the sequence or Source clip.",
-        "markers.clearInOut" => "Clears both In and Out points (and any split edits) of the sequence or Source clip.",
-        "markers.clearOut" => "Clears the Out point (including split video/audio Outs) of the sequence or Source clip.",
-        "markers.copyPasteIncludesSequenceMarkers" => {
+        "marker.addRangeInOut" => "Adds a range marker spanning the sequence In to Out points. Needs both In and Out set.",
+        "marker.clearAll" => "Removes every marker from the sequence (or the Source clip with target \"source\").",
+        "marker.clearCurrent" => "Removes the marker that starts exactly at the playhead.",
+        "marker.clearIn" => "Clears the In point (including split video/audio Ins) of the sequence or Source clip.",
+        "marker.clearInOut" => "Clears both In and Out points (and any split edits) of the sequence or Source clip.",
+        "marker.clearOut" => "Clears the Out point (including split video/audio Outs) of the sequence or Source clip.",
+        "marker.copyPasteIncludesSequenceMarkers" => {
             "Sets whether copying and pasting clips also carries the sequence markers over them (`on`, toggles when omitted)."
         }
-        "markers.edit" => {
+        "marker.edit" => {
             "Changes a marker by id (`marker`): name, comment, `color` (a marker colour or label name), `durationFrames`/`durationSeconds` (0 makes it a point marker), or where a sequence marker starts (`time`, ticks; a Source marker keeps its time)."
         }
-        "markers.filterColors" => {
+        "marker.filterColors" => {
             "Hides or shows marker colors in the Markers panel: `hidden` lists colors to hide, or `color` with `visible`. View filter only."
         }
-        "markers.goNext" => "Moves the playhead to the next marker after it on the sequence (or Source clip).",
-        "markers.goPrev" => "Moves the playhead to the previous marker before it on the sequence (or Source clip).",
-        "markers.goToIn" => "Moves the playhead to the In point (the start when none is set).",
-        "markers.goToOut" => "Moves the playhead to the Out point (the end when none is set).",
-        "markers.goToSplitAudioIn" => "Moves the playhead to the split audio In point. Needs a split edit.",
-        "markers.goToSplitAudioOut" => "Moves the playhead to the split audio Out point. Needs a split edit.",
-        "markers.goToSplitVideoIn" => "Moves the playhead to the split video In point. Needs a split edit.",
-        "markers.goToSplitVideoOut" => "Moves the playhead to the split video Out point. Needs a split edit.",
-        "markers.markClip" => "Sets In and Out around the clip under the playhead on the first targeted track.",
-        "markers.markIn" => {
+        "marker.goNext" => "Moves the playhead to the next marker after it on the sequence (or Source clip).",
+        "marker.goPrev" => "Moves the playhead to the previous marker before it on the sequence (or Source clip).",
+        "marker.goToIn" => "Moves the playhead to the In point (the start when none is set).",
+        "marker.goToOut" => "Moves the playhead to the Out point (the end when none is set).",
+        "marker.goToSplitAudioIn" => "Moves the playhead to the split audio In point. Needs a split edit.",
+        "marker.goToSplitAudioOut" => "Moves the playhead to the split audio Out point. Needs a split edit.",
+        "marker.goToSplitVideoIn" => "Moves the playhead to the split video In point. Needs a split edit.",
+        "marker.goToSplitVideoOut" => "Moves the playhead to the split video Out point. Needs a split edit.",
+        "marker.markClip" => "Sets In and Out around the clip under the playhead on the first targeted track.",
+        "marker.markIn" => {
             "Sets the In point at the playhead or at `time` (ticks), `seconds`, `frame` or `timecode` on the sequence, or on the Source clip with target \"source\" (`time` or `seconds`)."
         }
-        "markers.markOut" => {
+        "marker.markOut" => {
             "Sets the Out point at the playhead or at `time` (ticks), `seconds`, `frame` or `timecode` on the sequence, or on the Source clip with target \"source\" (`time` or `seconds`)."
         }
-        "markers.markSelection" => "Sets In and Out around the selected clips (from the earliest start to the latest end). Needs a clip selection.",
-        "markers.markSplitAudioIn" => "Sets a separate audio In point (a split edit, J/L cut) at the playhead or `time`; video keeps its own In.",
-        "markers.markSplitAudioOut" => "Sets a separate audio Out point (split edit) at the playhead or `time`.",
-        "markers.markSplitVideoIn" => "Sets a separate video In point (split edit) at the playhead or `time`; audio keeps its own In.",
-        "markers.markSplitVideoOut" => "Sets a separate video Out point (split edit) at the playhead or `time`.",
-        "markers.rippleSequenceMarkers" => "Sets whether ripple edits also move the sequence markers after the edit (`on`, toggles when omitted).",
-        "markers.showAllMarkerColors" => "Shows every marker color again in the Markers panel, clearing the color filter.",
-        "masks.add" => {
+        "marker.markSelection" => "Sets In and Out around the selected clips (from the earliest start to the latest end). Needs a clip selection.",
+        "marker.markSplitAudioIn" => "Sets a separate audio In point (a split edit, J/L cut) at the playhead or `time`; video keeps its own In.",
+        "marker.markSplitAudioOut" => "Sets a separate audio Out point (split edit) at the playhead or `time`.",
+        "marker.markSplitVideoIn" => "Sets a separate video In point (split edit) at the playhead or `time`; audio keeps its own In.",
+        "marker.markSplitVideoOut" => "Sets a separate video Out point (split edit) at the playhead or `time`.",
+        "marker.rippleSequenceMarkers" => "Sets whether ripple edits also move the sequence markers after the edit (`on`, toggles when omitted).",
+        "marker.showAllMarkerColors" => "Shows every marker color again in the Markers panel, clearing the color filter.",
+        "mask.add" => {
             "Adds a mask to `clip`'s `effect` (default Opacity): `shape` ellipse, polygon or bezier `path`, with `center`, `size` and `path` points in frame (sequence) pixels, mapped onto the clip through its Motion at the playhead so the mask stays on that part of the picture. Answers its index."
         }
-        "masks.addVertex" => "Inserts a vertex into a mask path `after` vertex n, at point `at` in frame pixels.",
-        "masks.list" => {
+        "mask.addVertex" => "Inserts a vertex into a mask path `after` vertex n, at point `at` in frame pixels.",
+        "mask.list" => {
             "Lists the masks of `clip` (or every clip with masks) evaluated at the playhead or `time`: effect, index, shape, path points in frame pixels (where the clip's Motion shows them), feather, opacity, mode."
         }
-        "masks.moveVertex" => {
+        "mask.moveVertex" => {
             "Moves vertex `vertex` of a mask (or its in/out bezier `handle`) `to` a point or by `delta` in frame pixels; `breakHandles` unlinks the handles."
         }
-        "masks.remove" => "Deletes mask `mask` (default selected) from an effect of `clip`.",
-        "masks.removeVertex" => "Deletes vertex `vertex` from a mask path.",
-        "masks.select" => "Selects mask `mask` of `clip`'s `effect` for editing in the Program monitor, or clears it with `none`.",
-        "masks.set" => {
+        "mask.remove" => "Deletes mask `mask` (default selected) from an effect of `clip`.",
+        "mask.removeVertex" => "Deletes vertex `vertex` from a mask path.",
+        "mask.select" => "Selects mask `mask` of `clip`'s `effect` for editing in the Program monitor, or clears it with `none`.",
+        "mask.set" => {
             "Changes a mask: name, inverted, blend `mode`, feather px, opacity %, expansion px, tracking method, or its `path` in frame pixels (keyframed at `time` when animated)."
         }
-        "masks.toggleVertexSmooth" => "Converts a mask vertex between a sharp corner and a smooth bezier point.",
-        "masks.track" => {
+        "mask.toggleVertexSmooth" => "Converts a mask vertex between a sharp corner and a smooth bezier point.",
+        "mask.track" => {
             "Tracks a mask through the clip `direction` forward or backward (for `frames`, default to the end), keyframing its path by position, rotation and scale; `wait` blocks."
         }
-        "masks.translate" => "Moves a whole mask by `delta` [dx, dy] frame pixels.",
+        "mask.translate" => "Moves a whole mask by `delta` [dx, dy] frame pixels.",
         "media.attachProxies" => "Attaches existing proxy files (`path` or `paths`) to media `item`/`items`; `force` skips the format check.",
         "media.autoRelink" => "Relinks missing media by remapping a folder prefix (`from` → `to`) or by searching a `folder` tree for the same file names.",
         "media.colorInfo" => "Reads a media `item`'s detected color: primaries, transfer, matrix, range, bit depth and the color space used.",
-        "media.createProxies" => {
+        "media.addProxies" => {
             "Creates proxy files for the selected or listed `items` with a `preset` (ProRes or H.264, quarter/half size) in `destination`, attaching them by default; `wait` blocks."
         }
         "media.detachProxies" => "Detaches proxies from the selected or listed `items`; the proxy files stay on disk.",
@@ -644,7 +640,7 @@ pub fn description(id: &str) -> &'static str {
         "media.linkMedia" => "Opens the Link Media dialog for missing files in the host. Agents relink with media.relink or media.autoRelink instead.",
         "media.makeOffline" => "Makes the selected or listed `items` offline (clips show Media Offline); `deleteFiles` also deletes the files on disk.",
         "media.offlineAll" => "Leaves every missing file offline and closes the Link Media dialog.",
-        "media.proxyPresets" => "Lists the proxy presets media.createProxies accepts.",
+        "media.proxyPresets" => "Lists the proxy presets media.addProxies accepts.",
         "media.reconnectFullRes" => "Points media `item`'s full-resolution file at `path` while keeping its proxy.",
         "media.relink" => {
             "Links media `item` to the file at `path` (checked to match unless `force`), then relinks other missing items found the same way when `relinkOthers`."
@@ -833,13 +829,13 @@ pub fn description(id: &str) -> &'static str {
         "prefs.reset" => "Resets preferences to defaults: one `category` or all.",
         "prefs.schema" => "Lists every preference key with its type, default, allowed values and category.",
         "prefs.set" => "Sets preference `key` to `value`, or several `values`; see prefs.schema for keys and types.",
-        "presets.apply" => "Applies effect `preset` to the selected or listed `clips`.",
-        "presets.delete" => "Deletes saved effect preset `name`; clips it was applied to keep their effects.",
-        "presets.export" => "Writes effect presets (`names`, default all) to a preset file at `path`.",
-        "presets.import" => "Reads effect presets from the file at `path` into the preset library.",
-        "presets.list" => "Lists saved effect presets with their effects and keyframe handling.",
-        "presets.rename" => "Renames effect preset `name` to `to`.",
-        "presets.save" => {
+        "preset.apply" => "Applies effect `preset` to the selected or listed `clips`.",
+        "preset.delete" => "Deletes saved effect preset `name`; clips it was applied to keep their effects.",
+        "preset.export" => "Writes effect presets (`names`, default all) to a preset file at `path`.",
+        "preset.import" => "Reads effect presets from the file at `path` into the preset library.",
+        "preset.list" => "Lists saved effect presets with their effects and keyframe handling.",
+        "preset.rename" => "Renames effect preset `name` to `to`.",
+        "preset.save" => {
             "Saves `clip`'s effects (`effects` indices, default all) as preset `name`; `keyframes` scale|anchorIn|anchorOut|none decides how keyframes fit other clips."
         }
         "project.columns.list" => {
@@ -872,7 +868,7 @@ pub fn description(id: &str) -> &'static str {
         "project.ingestSettings" => {
             "Reads or sets the project's ingest settings: `enabled`, `action` copy|transcode|createProxies|copyAndCreateProxies, `destination` folder and transcode `preset`."
         }
-        "project.inspect" => {
+        "file.inspect" => {
             "Reads the whole project: bins and items with ids, kinds (media, sequence, generators), durations, frame rates and media paths. Read first to find item ids."
         }
         "project.items" => "Lists the rows the Project panel shows for `bin` (default root; `recursive` for sub-bins), sorted, with each shown column's text.",
@@ -899,7 +895,7 @@ pub fn description(id: &str) -> &'static str {
         "project.viewPreset.restore" => "Applies the Project panel view preset in `slot` (1–10).",
         "project.viewPreset.save" => "Saves the current Project panel view over the current preset (or `slot`) with `name`.",
         "project.viewPreset.saveAs" => "Saves the current Project panel view as a new preset in `slot` (default the first free) named `name`.",
-        "scopes.read" => {
+        "scope.read" => {
             "Measures the program frame at the playhead or `time` with scopes (waveform, parade, histogram, vectorscopes), summarised in `columns`, `peaks` and bins."
         }
         "sequence.addEdit" => {
@@ -979,25 +975,25 @@ pub fn description(id: &str) -> &'static str {
         "sequence.transcribe" => {
             "Transcribes the active sequence's audio (`track`: mix or an audio track) into a transcript, in `language` (auto detects), with speaker labels when `diarize`."
         }
-        "shortcuts.audit" => "Checks the shortcut table for unknown commands, conflicts and invalid keys.",
-        "shortcuts.clear" => "Removes `keys` (or every shortcut) from `command` in `panel`.",
-        "shortcuts.conflicts" => "Lists keys assigned to more than one command in the same panel on `platform`.",
-        "shortcuts.deletePreset" => "Deletes saved keyboard shortcut preset `name`.",
-        "shortcuts.export" => "Writes the current keyboard shortcuts to a file at `path`.",
-        "shortcuts.forKey" => "Lists the commands on `key` with every modifier combination.",
-        "shortcuts.get" => "Reads the shortcuts assigned to `command` on `platform`.",
-        "shortcuts.import" => "Reads a keyboard shortcut file at `path` as a preset and makes it active unless `activate: false`.",
-        "shortcuts.list" => "Lists keyboard shortcuts, filtered by `query`, `panel`, `assigned` and `platform`.",
-        "shortcuts.loadPreset" => "Switches to keyboard shortcut preset `name`.",
-        "shortcuts.presets" => "Lists the keyboard shortcut presets (built-in and saved) and the current one.",
-        "shortcuts.redo" => "Redoes the last undone keyboard shortcut change.",
-        "shortcuts.registerExternal" => "Registers host-side (frontend) commands so they can be given keyboard shortcuts; host use only.",
-        "shortcuts.resolve" => "Answers which command `keys` would run in `panel` on `platform`.",
-        "shortcuts.savePreset" => "Saves the current shortcuts as preset `name`.",
-        "shortcuts.set" => {
+        "shortcut.audit" => "Checks the shortcut table for unknown commands, conflicts and invalid keys.",
+        "shortcut.clear" => "Removes `keys` (or every shortcut) from `command` in `panel`.",
+        "shortcut.conflicts" => "Lists keys assigned to more than one command in the same panel on `platform`.",
+        "shortcut.deletePreset" => "Deletes saved keyboard shortcut preset `name`.",
+        "shortcut.export" => "Writes the current keyboard shortcuts to a file at `path`.",
+        "shortcut.forKey" => "Lists the commands on `key` with every modifier combination.",
+        "shortcut.get" => "Reads the shortcuts assigned to `command` on `platform`.",
+        "shortcut.import" => "Reads a keyboard shortcut file at `path` as a preset and makes it active unless `activate: false`.",
+        "shortcut.list" => "Lists keyboard shortcuts, filtered by `query`, `panel`, `assigned` and `platform`.",
+        "shortcut.loadPreset" => "Switches to keyboard shortcut preset `name`.",
+        "shortcut.presets" => "Lists the keyboard shortcut presets (built-in and saved) and the current one.",
+        "shortcut.redo" => "Redoes the last undone keyboard shortcut change.",
+        "shortcut.registerExternal" => "Registers host-side (frontend) commands so they can be given keyboard shortcuts; host use only.",
+        "shortcut.resolve" => "Answers which command `keys` would run in `panel` on `platform`.",
+        "shortcut.savePreset" => "Saves the current shortcuts as preset `name`.",
+        "shortcut.set" => {
             "Assigns `keys` (e.g. Cmd+Shift+K) to `command` in `panel`; `add` keeps its existing keys, and conflicting assignments are removed unless `keepConflicts`."
         }
-        "shortcuts.undo" => "Undoes the last keyboard shortcut change.",
+        "shortcut.undo" => "Undoes the last keyboard shortcut change.",
         "sound.phrase" => {
             "Builds a stock sound phrase at `frame` (or `seconds`) from sound items the caller imported, as one undo step, each sound peak-aligned (its loudest sample on the frame) on the first free audio track: `closing` = items.riser starting at the frame (0.5), items.impact peaking `impactAfterFrames` (35) later at 0.55 (keep it the loudest sound, at most three such hits a film), items.sparkle `sparkleAfterFrames` (25) after the impact at 0.3; `titleIn` = items.swoosh 0.4; `sceneIn` = items.transition 0.4; `click` = items.click 0.6; `hitRun` = `count` (6) hits alternating items.hit / items.hitAlt, volume stepping 0.40 → 0.25, spacing from `spacingFrames` (5) to `endSpacingFrames`; hits closer than 3 frames blur, so items.swoosh plays once over the run instead. `gainOffsetDb` shifts every gain. Answers `placed` as timeline.placeMany."
         }
@@ -1103,7 +1099,7 @@ pub fn description(id: &str) -> &'static str {
         "timeline.trim" => {
             "Trims `clip`'s in or out `edge` by `delta` ticks or `deltaFrames`: `mode` regular leaves a gap or overlaps; ripple moves later clips to keep the edit closed. `snap` (\"markers\", \"beats\" or both) lands the trimmed edge on the nearest sequence marker or music beat within `toleranceFrames` (3)."
         }
-        "transcript.createCaptions" => {
+        "transcript.addCaptions" => {
             "Creates a caption track from the sequence transcript: `maxChars` per line, 1 or 2 `lines`, caption length between `minSeconds` and `maxSeconds`, `gapFrames` between captions."
         }
         "transcript.delete" => "Deletes the transcripts of the selected or listed `items`.",
@@ -1189,4 +1185,4 @@ pub fn description(id: &str) -> &'static str {
 }
 
 /// Reading commands that answer nothing, with why (kition-sdk `check_commands`' `no_output`).
-pub const NO_OUTPUT: &[(&str, &str)] = &[("masks.select", "answers nothing (null): it changes view or session state only")];
+pub const NO_OUTPUT: &[(&str, &str)] = &[("mask.select", "answers nothing (null): it changes view or session state only")];

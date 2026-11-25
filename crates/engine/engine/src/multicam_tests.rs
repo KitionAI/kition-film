@@ -139,8 +139,7 @@ fn audio_sync_multicam_sample_accurate() {
     let mut s = Session::default();
     let items = import(&mut s, &[&a, &b, &rec]);
     let t0 = std::time::Instant::now();
-    let r =
-        on_items(&mut s, "clip.createMulticam", &items, json!({"method": "audio", "audio": "switch", "name": "Interview MC", "processedBin": true})).unwrap();
+    let r = on_items(&mut s, "clip.addMulticam", &items, json!({"method": "audio", "audio": "switch", "name": "Interview MC", "processedBin": true})).unwrap();
     let ms = t0.elapsed().as_secs_f64() * 1000.0;
     let seq_id = ItemId(r["sequence"].as_u64().unwrap());
     let q = s.project.sequence(seq_id).unwrap().clone();
@@ -205,12 +204,12 @@ fn timecode_marker_and_in_point_sync_within_one_frame() {
         (vb.start - vb.source_in) - (va.start - va.source_in)
     };
     // timecode: A 01:00:00:00, B 01:00:02:12 = 2.5 s later (the true offset is 2.5257 s)
-    let r = on_items(&mut s, "clip.createMulticam", &items, json!({"method": "timecode"})).unwrap();
+    let r = on_items(&mut s, "clip.addMulticam", &items, json!({"method": "timecode"})).unwrap();
     let off = offset_of(&s, &r);
     assert_eq!(off, rate.tick_of(60), "timecode offset is exactly 60 frames");
     assert!((off - truth).abs() <= rate.frame_duration(), "within a frame of the truth");
     // ignoring hours gives the same result here
-    let r = on_items(&mut s, "clip.createMulticam", &items, json!({"method": "timecode", "ignoreHours": true})).unwrap();
+    let r = on_items(&mut s, "clip.addMulticam", &items, json!({"method": "timecode", "ignoreHours": true})).unwrap();
     assert_eq!(offset_of(&s, &r), rate.tick_of(60));
     // clip markers: the same event moment marked in both clips (frame accuracy)
     let event_frame_a = 72; // 3 s into camera A
@@ -230,7 +229,7 @@ fn timecode_marker_and_in_point_sync_within_one_frame() {
     }
     s.project = std::sync::Arc::new(p);
     s.reset_kdm();
-    let r = on_items(&mut s, "clip.createMulticam", &items, json!({"method": "marker", "marker": "clap"})).unwrap();
+    let r = on_items(&mut s, "clip.addMulticam", &items, json!({"method": "marker", "marker": "clap"})).unwrap();
     let off = offset_of(&s, &r);
     assert!((off - truth).abs() <= rate.frame_duration(), "marker sync {} vs {}", off.0, truth.0);
     // In points: A's In at 2.5 s, B's at 0 → B starts 2.5 s after A
@@ -238,13 +237,13 @@ fn timecode_marker_and_in_point_sync_within_one_frame() {
     p.item_mut(items[0]).unwrap().as_media_mut().unwrap().mark_in = Some(rate.tick_of(60));
     s.project = std::sync::Arc::new(p);
     s.reset_kdm();
-    let r = on_items(&mut s, "clip.createMulticam", &items, json!({"method": "in"})).unwrap();
+    let r = on_items(&mut s, "clip.addMulticam", &items, json!({"method": "in"})).unwrap();
     assert_eq!(offset_of(&s, &r), rate.tick_of(60));
     // Out points: A ends at 12 s, B at 10 s, both Outs unset → ends aligned: B media 0 at 2 s
-    let r = on_items(&mut s, "clip.createMulticam", &items, json!({"method": "out"})).unwrap();
+    let r = on_items(&mut s, "clip.addMulticam", &items, json!({"method": "out"})).unwrap();
     assert_eq!(offset_of(&s, &r), rate.tick_of(48));
     // a missing marker is an error, not a guess
-    assert!(on_items(&mut s, "clip.createMulticam", &items, json!({"method": "marker", "marker": "nope"})).is_err());
+    assert!(on_items(&mut s, "clip.addMulticam", &items, json!({"method": "marker", "marker": "nope"})).is_err());
 }
 
 #[test]
@@ -340,7 +339,7 @@ fn mc_session(audio: &str) -> (Session, Vec<ItemId>, ItemId, ItemId) {
     let mut s = Session::default();
     let refs: Vec<&Path> = files.iter().map(|p| p.as_path()).collect();
     let items = import(&mut s, &refs);
-    let r = on_items(&mut s, "clip.createMulticam", &items, json!({"method": "in", "audio": audio, "cameraNames": "track"})).unwrap();
+    let r = on_items(&mut s, "clip.addMulticam", &items, json!({"method": "in", "audio": audio, "cameraNames": "track"})).unwrap();
     let src = ItemId(r["sequence"].as_u64().unwrap());
     let mut p = (*s.project).clone();
     let edit =
@@ -635,10 +634,10 @@ fn many_angles(n: usize) -> (Session, ItemId) {
     for k in 0..n {
         let [r, g, b] = cam_rgb(k);
         let hex = format!("#{r:02x}{g:02x}{b:02x}");
-        let r = s.execute("file.newColorMatte", json!({"color": hex, "seconds": 4.0, "width": 64, "height": 36, "name": format!("Cam {}", k + 1)})).unwrap();
+        let r = s.execute("item.newColorMatte", json!({"color": hex, "seconds": 4.0, "width": 64, "height": 36, "name": format!("Cam {}", k + 1)})).unwrap();
         items.push(ItemId(r["item"].as_u64().unwrap()));
     }
-    let r = on_items(&mut s, "clip.createMulticam", &items, json!({"method": "in", "cameraNames": "clip"})).unwrap();
+    let r = on_items(&mut s, "clip.addMulticam", &items, json!({"method": "in", "cameraNames": "clip"})).unwrap();
     let src = ItemId(r["sequence"].as_u64().unwrap());
     let mut p = (*s.project).clone();
     let edit =
@@ -820,7 +819,7 @@ fn perf_grid_of_four_1080p_angles() {
         let mut s = Session::default();
         let refs: Vec<&Path> = files.iter().map(|p| p.as_path()).collect();
         let items = import(&mut s, &refs);
-        let r = on_items(&mut s, "clip.createMulticam", &items, json!({"method": "in"})).unwrap();
+        let r = on_items(&mut s, "clip.addMulticam", &items, json!({"method": "in"})).unwrap();
         (s, ItemId(r["sequence"].as_u64().unwrap()))
     };
     let rate = FrameRate::FPS_24;

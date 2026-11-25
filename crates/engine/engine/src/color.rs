@@ -183,7 +183,7 @@ pub(crate) fn color_clip(s: &mut Session, p: &Value, cmd: &str) -> Result<(ClipI
         }
     };
     if !has(&clip) {
-        s.execute("effects.apply", json!({"clips": [clip.0], "effect": "color"}))?;
+        s.execute("effect.apply", json!({"clips": [clip.0], "effect": "color"}))?;
     }
     let seq = s.active_sequence().ok_or_else(|| bad(cmd, "no active sequence"))?;
     let idx = seq.find_item(clip).and_then(|(_, it)| it.effects.iter().position(|e| e.effect == "color")).ok_or_else(|| bad(cmd, "no Color effect"))?;
@@ -364,7 +364,7 @@ fn list_presets(_: &mut Session, p: &Value) -> Result<Value> {
 }
 
 /// Color Presets ▸ apply: a new Color effect configured as the preset on each video clip
-/// (standard effects go before the intrinsic ones, like `effects.apply`).
+/// (standard effects go before the intrinsic ones, like `effect.apply`).
 fn apply_preset(s: &mut Session, p: &Value) -> Result<Value> {
     let cmd = "color.applyPreset";
     let name = str_p(p, "name").ok_or_else(|| bad(cmd, "need `name`"))?;

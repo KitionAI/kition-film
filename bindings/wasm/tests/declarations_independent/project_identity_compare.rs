@@ -9,7 +9,7 @@ use kition_kit::{EditorState, KitDocument, Premise, TimeSpan, Under, Within};
 use serde_json::{Value, json};
 
 pub const PATHS: &[(&str, &str)] = &[
-    ("file.newBin", "parent"),
+    ("bin.add", "parent"),
     ("project.select", "selection"),
     ("project.renameBin", "bin by ID"),
     ("project.moveToBin", "items"),
@@ -27,7 +27,7 @@ pub fn compared_path(command: &str, path: &str) -> bool {
 pub fn more(command: &str) -> Vec<&'static str> {
     let mut out = vec!["unconsumed-program-material"];
     match command {
-        "file.newBin" => out.push("unnamed-bin-parent-content"),
+        "bin.add" => out.push("unnamed-bin-parent-content"),
         "project.select" => out.push("selection-target-content"),
         "project.renameBin" => out.push("whole-renamed-bin"),
         "project.moveToBin" => out.extend(["coarse-selection-state", "unconsumed-selection", "moved-item-content", "destination-bin-content"]),
@@ -65,9 +65,9 @@ fn project_identity_paths_compare_parent_fallbacks_selections_addresses_and_assi
     for populated in [false, true] {
         let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
         let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-        let item = doc.execute("file.newColorMatte", json!({"seconds":2})).unwrap()["item"].as_u64().unwrap();
-        let bin = doc.execute("file.newBin", json!({"name":"Parent"})).unwrap()["bin"].as_u64().unwrap();
-        let child = doc.execute("file.newBin", json!({"name":"Child","parent":bin})).unwrap()["bin"].as_u64().unwrap();
+        let item = doc.execute("item.newColorMatte", json!({"seconds":2})).unwrap()["item"].as_u64().unwrap();
+        let bin = doc.execute("bin.add", json!({"name":"Parent"})).unwrap()["bin"].as_u64().unwrap();
+        let child = doc.execute("bin.add", json!({"name":"Child","parent":bin})).unwrap()["bin"].as_u64().unwrap();
         if populated {
             doc.execute("timeline.place", json!({"item":item,"time":0,"track":"V1"})).unwrap();
         }
@@ -97,13 +97,13 @@ fn project_identity_paths_compare_parent_fallbacks_selections_addresses_and_assi
                         }
                     );
                     let objects = match command {
-                        "file.newBin" => vec!["parent"],
+                        "bin.add" => vec!["parent"],
                         "project.renameBin" | "project.moveToBin" => vec!["bin"],
                         _ => vec![],
                     };
                     assert_eq!(spec.objects, objects);
                     let types = match command {
-                        "file.newBin" => vec![("parent", &["Bin"][..])],
+                        "bin.add" => vec![("parent", &["Bin"][..])],
                         "project.select" => vec![("items", &["Item", "Bin"][..])],
                         "project.renameBin" => vec![("bin", &["Bin"][..])],
                         "project.moveToBin" => vec![("items", &["Item"][..]), ("bin", &["Bin"][..])],
@@ -112,7 +112,7 @@ fn project_identity_paths_compare_parent_fallbacks_selections_addresses_and_assi
                     assert_eq!(spec.object_types, types);
                     assert!(spec.name_params.is_empty() && spec.name_field.is_none() && spec.index.is_none() && !spec.index_numbers && !spec.index_reversed);
                     let params: Vec<Value> = match command {
-                        "file.newBin" => [None, Some(Value::Null), Some(json!("New")), Some(json!(""))]
+                        "bin.add" => [None, Some(Value::Null), Some(json!("New")), Some(json!(""))]
                             .into_iter()
                             .flat_map(|name| {
                                 [None, Some(Value::Null), Some(json!(project.root.id.0)), Some(json!(bin)), Some(json!(child))].into_iter().map(move |parent| {
@@ -144,7 +144,7 @@ fn project_identity_paths_compare_parent_fallbacks_selections_addresses_and_assi
                         _ => vec![json!({}), json!({"item":null}), json!({"item":sequence}), json!({"item":item})],
                     };
                     for p in params {
-                        let want = if command == "file.newBin" && p["name"].is_string() {
+                        let want = if command == "bin.add" && p["name"].is_string() {
                             Under {
                                 premises: vec![
                                     Premise::on(json!(p["parent"].as_u64().unwrap_or(project.root.id.0)))

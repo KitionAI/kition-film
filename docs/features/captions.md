@@ -11,7 +11,7 @@ version 2; version 1 projects open with no caption tracks).
   burned in on export), lock, sync lock, and a **track style**:
   font size (pixels at 1080 lines, scaled to the frame), text colour, background box and its colour,
   outline width and colour, alignment (left/centre/right), position (top/middle/bottom) and
-  margin (a fraction of the frame height, default 0.08; `captions.setStyle` clamps it to 0–0.45),
+  margin (a fraction of the frame height, default 0.08; `caption.setStyle` clamps it to 0–0.45),
   line spacing.
 - **Caption**: in/out in exact `Tick`s, text (lines separated by `\n`; `<i>`, `<b>`, `<u>` kept
   as written), optional speaker, and the WebVTT cue id and cue settings, kept for round trips.
@@ -36,23 +36,23 @@ Details of each format and the SCC encoder are in [`crates/engine/captions/READM
 
 | Command | Menu / shortcut | Params |
 |---|---|---|
-| `captions.newTrack` | Sequence ▸ Captions ▸ Add New Caption Track… (⌥⌘A) | `format`, `name`, `language` |
-| `captions.add` | Sequence ▸ Captions ▸ Add Caption at Playhead (⌥⌘C) | `track`, `text`, `time`, `durationSeconds` (3) |
-| `captions.next` / `captions.previous` | Sequence ▸ Captions ▸ Go to Next/Previous Caption Segment (⌥⌘↓/↑) | |
-| `captions.showAll` / `captions.hideAll` | Sequence ▸ Captions | |
-| `captions.split` | Text panel ✂ | `caption`, `time` (default: every caption under the playhead) |
-| `captions.merge` | Text panel | `captions` (consecutive, one track) |
-| `captions.setText` | Text panel text field | `caption`, `text`, `speaker` |
-| `captions.setTimes` | Text panel in/out fields | `caption`, `start…`/`end…` (`Time` ticks, `Frame`, `Seconds`, `Timecode`) |
-| `captions.trim` | drag a caption edge in the timeline | `caption`, `edge` (`in`/`out`), `delta` or `deltaFrames` |
-| `captions.move` | drag a caption in the timeline | `captions`, `delta` or `deltaFrames` |
-| `captions.delete` | Edit ▸ Clear / Ripple Delete with captions selected | `captions`, `ripple` |
-| `captions.select`, `captions.goTo` | click / number button | `captions`, `add` / `caption` |
-| `captions.setTrack` | caption track header (eye, lock) | `track`, `name`, `format`, `language`, `enabled`, `locked`, `syncLock` |
-| `captions.setStyle` | Text panel style strip | `track`, `size`, `color`, `background`, `backgroundColor`, `outline`, `outlineColor`, `align`, `anchor`, `margin`, `lineSpacing`, `reset` |
-| `captions.deleteTrack` | | `track` |
-| `captions.import` / `captions.export` | File ▸ Export ▸ Captions… | `path`, `format`, `track`, `dropFrame` |
-| `captions.list` | (query) | `track` — tracks, styles and captions with timecodes |
+| `caption.newTrack` | Sequence ▸ Captions ▸ Add New Caption Track… (⌥⌘A) | `format`, `name`, `language` |
+| `caption.add` | Sequence ▸ Captions ▸ Add Caption at Playhead (⌥⌘C) | `track`, `text`, `time`, `durationSeconds` (3) |
+| `caption.next` / `caption.previous` | Sequence ▸ Captions ▸ Go to Next/Previous Caption Segment (⌥⌘↓/↑) | |
+| `caption.showAll` / `caption.hideAll` | Sequence ▸ Captions | |
+| `caption.split` | Text panel ✂ | `caption`, `time` (default: every caption under the playhead) |
+| `caption.merge` | Text panel | `captions` (consecutive, one track) |
+| `caption.setText` | Text panel text field | `caption`, `text`, `speaker` |
+| `caption.setTimes` | Text panel in/out fields | `caption`, `start…`/`end…` (`Time` ticks, `Frame`, `Seconds`, `Timecode`) |
+| `caption.trim` | drag a caption edge in the timeline | `caption`, `edge` (`in`/`out`), `delta` or `deltaFrames` |
+| `caption.move` | drag a caption in the timeline | `captions`, `delta` or `deltaFrames` |
+| `caption.delete` | Edit ▸ Clear / Ripple Delete with captions selected | `captions`, `ripple` |
+| `caption.select`, `caption.goTo` | click / number button | `captions`, `add` / `caption` |
+| `caption.setTrack` | caption track header (eye, lock) | `track`, `name`, `format`, `language`, `enabled`, `locked`, `syncLock` |
+| `caption.setStyle` | Text panel style strip | `track`, `size`, `color`, `background`, `backgroundColor`, `outline`, `outlineColor`, `align`, `anchor`, `margin`, `lineSpacing`, `reset` |
+| `caption.deleteTrack` | | `track` |
+| `caption.import` / `caption.export` | File ▸ Export ▸ Captions… | `path`, `format`, `track`, `dropFrame` |
+| `caption.list` | (query) | `track` — tracks, styles and captions with timecodes |
 
 Tracks are addressed by id or `"C1"`, `"C2"`… (top first). Edits are limited by neighbouring
 captions and a one-frame minimum. Sync-locked caption tracks follow insert and extract edits on

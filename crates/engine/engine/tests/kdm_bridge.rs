@@ -90,9 +90,9 @@ fn one_command_one_transaction_reproduces_in_a_peer() {
             let end = s.active_sequence().unwrap().duration();
             s.execute("timeline.move", json!({"moves": [{"clip": c, "track": "V1", "time": end.0}], "linked": false})).unwrap();
         }),
-        ("effects.setParam", |s| {
+        ("effect.setParam", |s| {
             let c = first_video_clip(s).0;
-            s.execute("effects.setParam", json!({"clip": c, "effect": "motion", "param": "scale", "value": 50.0})).unwrap();
+            s.execute("effect.setParam", json!({"clip": c, "effect": "motion", "param": "scale", "value": 50.0})).unwrap();
         }),
         ("sequence.addTracks", |s| {
             s.execute("sequence.addTracks", json!({})).unwrap();
@@ -128,7 +128,7 @@ fn undo_after_a_remote_edit_keeps_it_and_reverts_only_the_local_one() {
     // One line of changes: the local trim reaches `b`, then `b`'s edit reaches `a`.
     a.execute("timeline.trim", json!({"clip": shared, "edge": "in", "mode": "regular", "deltaFrames": 3})).unwrap();
     sync(&mut a, &mut b);
-    b.execute("effects.setParam", json!({"clip": other_on_b, "effect": "motion", "param": "scale", "value": 42.0})).unwrap();
+    b.execute("effect.setParam", json!({"clip": other_on_b, "effect": "motion", "param": "scale", "value": 42.0})).unwrap();
     sync(&mut a, &mut b);
     assert_same(&mut a, &mut b, "exchanged");
     assert_eq!(scale_of(&a, other_on_a), 42.0, "the remote change arrived");
@@ -149,7 +149,7 @@ fn a_coalesced_drag_is_one_undo_step() {
     let before = scale_of(&s, c);
     let past = s.history.undo.len();
     for v in [90.0, 70.0, 50.0, 30.0] {
-        s.execute("effects.setParam", json!({"clip": c, "effect": "motion", "param": "scale", "value": v, "merge": true})).unwrap();
+        s.execute("effect.setParam", json!({"clip": c, "effect": "motion", "param": "scale", "value": v, "merge": true})).unwrap();
     }
     assert_eq!(s.history.undo.len(), past + 1, "one history step");
     assert_eq!(s.history.undo.last().unwrap().2, 1, "one replica undo step for the whole drag");
@@ -184,7 +184,7 @@ fn agent_edits_record_their_origin_and_undo_in_their_own_scope() {
     let agent = Origin::agent("test");
     let c = first_video_clip(&s).0;
     let before = scale_of(&s, c);
-    s.execute_as("effects.setParam", json!({"clip": c, "effect": "motion", "param": "scale", "value": 55.0}), &agent).unwrap();
+    s.execute_as("effect.setParam", json!({"clip": c, "effect": "motion", "param": "scale", "value": 55.0}), &agent).unwrap();
     assert_eq!(s.origin(), kition_film_engine::kdm_bridge::local_person(), "the origin is restored after the call");
     assert_eq!(scale_of(&s, c), 55.0);
     assert!(s.undo().is_none(), "the person has no step of their own to undo");
@@ -204,8 +204,8 @@ fn an_agent_undo_under_the_persons_later_step_keeps_the_persons_edit() {
     let items = &s.active_sequence().unwrap().video_tracks[0].items;
     let (c, d) = (items[0].id.0, items[1].id.0);
     let before = scale_of(&s, c);
-    s.execute_as("effects.setParam", json!({"clip": c, "effect": "motion", "param": "scale", "value": 55.0}), &agent).unwrap();
-    s.execute("effects.setParam", json!({"clip": d, "effect": "motion", "param": "rotation", "value": 30.0})).unwrap();
+    s.execute_as("effect.setParam", json!({"clip": c, "effect": "motion", "param": "scale", "value": 55.0}), &agent).unwrap();
+    s.execute("effect.setParam", json!({"clip": d, "effect": "motion", "param": "rotation", "value": 30.0})).unwrap();
     s.execute("edit.undo", json!({"scope": "agent"})).unwrap();
     assert_eq!(scale_of(&s, c), before, "the agent's step is undone");
     assert_eq!(rotation_of(&s, d), 30.0, "the person's later edit stays");
@@ -234,7 +234,7 @@ fn a_merged_drag_of_two_parameters_undoes_as_one_step() {
     for (i, step) in [1.0, 2.0, 3.0, 4.0].into_iter().enumerate() {
         for (k, param) in ["anchor", "position"].into_iter().enumerate() {
             let value = json!([100.0 + step, 50.0 + step]);
-            s.execute("effects.setParam", json!({"clip": c, "effect": "motion", "param": param, "value": value, "merge": "drag", "begin": i == 0 && k == 0}))
+            s.execute("effect.setParam", json!({"clip": c, "effect": "motion", "param": param, "value": value, "merge": "drag", "begin": i == 0 && k == 0}))
                 .unwrap();
         }
     }
@@ -264,7 +264,7 @@ fn an_effect_moved_among_the_standard_ones_undoes_to_its_place() {
     let mut s = new_session();
     let c = first_video_clip(&s).0;
     for effect in ["gaussian_blur", "invert"] {
-        s.execute("effects.apply", json!({"clips": [c], "effect": effect})).unwrap();
+        s.execute("effect.apply", json!({"clips": [c], "effect": effect})).unwrap();
     }
     let before = effect_order(&s, c);
     let at = |name: &str| before.iter().position(|effect| effect == name).unwrap();
@@ -367,7 +367,7 @@ fn a_write_the_replica_refuses_resets_it_and_the_next_edit_rebuilds_it() {
     // its replica (a reset hosts see), keeping the edits and their undo.
     let mut parent: Option<u64> = None;
     for i in 0..70 {
-        let r = s.execute("file.newBin", json!({"name": format!("G{i}"), "parent": parent})).unwrap();
+        let r = s.execute("bin.add", json!({"name": format!("G{i}"), "parent": parent})).unwrap();
         parent = r["bin"].as_u64();
     }
     assert!(s.kdm().is_none(), "the project left its replica");
@@ -451,7 +451,7 @@ fn new_bin_from_selection_files_its_items_in_the_replica() {
     let mut s = new_session();
     let items: Vec<u64> = s.project.items.values().filter(|i| i.as_media().is_some()).take(2).map(|i| i.id.0).collect();
     s.execute("project.select", json!({"items": items})).unwrap();
-    s.execute("file.newBinFromSelection", json!({})).unwrap();
+    s.execute("bin.addFromSelection", json!({})).unwrap();
     let filed = items_in_tree(&s.project);
     assert_eq!(filed, s.project.items.len(), "every item is filed in the project");
     assert_eq!(items_in_tree(&replica_project(&mut s)), filed, "and in the replica");
@@ -515,9 +515,9 @@ fn link(s: &mut Session, clips: [u64; 2]) -> u64 {
 fn ids_kept_as_data_are_not_reused_after_a_reload() {
     let mut s = new_session();
     reload(&mut s, "a");
-    s.execute("markers.add", json!({"target": "program", "name": "A", "time": 0})).unwrap();
+    s.execute("marker.add", json!({"target": "program", "name": "A", "time": 0})).unwrap();
     reload(&mut s, "b");
-    s.execute("markers.add", json!({"target": "program", "name": "B", "time": 25_401_600_000i64})).unwrap();
+    s.execute("marker.add", json!({"target": "program", "name": "B", "time": 25_401_600_000i64})).unwrap();
     let markers: Vec<u64> = s.active_sequence().unwrap().markers.iter().map(|m| m.id.0).collect();
     let distinct: std::collections::BTreeSet<u64> = markers.iter().copied().collect();
     assert_eq!(distinct.len(), markers.len(), "every marker has its own id: {markers:?}");
@@ -703,7 +703,7 @@ fn random_wide_command(s: &mut Session, rng: &mut Rng) -> String {
             None => return "no clip".into(),
         },
         5 => match pick(rng) {
-            Some(c) => ("effects.setParam", json!({"clip": c, "effect": "motion", "param": "scale", "value": rng.below(200) as f64})),
+            Some(c) => ("effect.setParam", json!({"clip": c, "effect": "motion", "param": "scale", "value": rng.below(200) as f64})),
             None => return "no clip".into(),
         },
         6 => {
@@ -712,10 +712,10 @@ fn random_wide_command(s: &mut Session, rng: &mut Rng) -> String {
             let start = rng.below(media.len().max(1) as u64) as usize;
             let chosen: Vec<u64> = media.iter().cycle().skip(start).take(n.min(media.len())).copied().collect();
             let _ = s.execute("project.select", json!({"items": chosen}));
-            ("file.newBinFromSelection", json!({}))
+            ("bin.addFromSelection", json!({}))
         }
         7 => ("timeline.setTrack", json!({"track": video[rng.below(video.len() as u64) as usize], "name": format!("T{}", rng.below(1000))})),
-        8 => ("markers.add", json!({"target": "program", "name": format!("M{}", rng.below(1000)), "time": rng.below(end as u64)})),
+        8 => ("marker.add", json!({"target": "program", "name": format!("M{}", rng.below(1000)), "time": rng.below(end as u64)})),
         9 => match (pick(rng), pick(rng)) {
             (Some(a), Some(b)) if a != b => ("clip.link", json!({"clips": [a, b]})),
             _ => return "no pair".into(),
@@ -809,7 +809,7 @@ fn steps_from_before_a_reset_never_step_the_fresh_replica() {
     s.execute("timeline.setTrack", json!({"track": "V3", "name": "Before"})).unwrap();
     let mut parent: Option<u64> = None;
     for i in 0..70 {
-        let r = s.execute("file.newBin", json!({"name": format!("G{i}"), "parent": parent})).unwrap();
+        let r = s.execute("bin.add", json!({"name": format!("G{i}"), "parent": parent})).unwrap();
         parent = r["bin"].as_u64();
     }
     assert_eq!(s.kdm_resets(), 1);

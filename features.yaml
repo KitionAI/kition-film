@@ -159,7 +159,7 @@ features:
     dimension: [function, conversion, data-safety]
     priority: P0
     status: has
-    commands: [markers.add, markers.markIn, markers.markOut]
+    commands: [marker.add, marker.markIn, marker.markOut]
     paths: [bindings/wasm/tests/round_trip.rs, web/src/i18n/upstream/zh-hans.tsv, web/parity/check.test.mjs]
     target: "Premiere Pro 2026 (26.5)"
     cases: [regressions/issue-c8-film-pin-marker-labels, film.markers.basics/save-reopen, regressions/issue-7, regressions/issue-17, regressions/issue-18]
@@ -189,7 +189,7 @@ features:
     dimension: [function, conversion, data-safety]
     priority: P0
     status: has
-    commands: [effects.apply, effects.setParam, effects.addKeyframe, masks.add]
+    commands: [effect.apply, effect.setParam, effect.addKeyframe, mask.add]
     paths: [bindings/wasm/tests/round_trip.rs]
     target: "Premiere Pro 2026 (26.5)"
     cases: [film.effects.basics/save-reopen, regressions/issue-5, regressions/issue-1]
@@ -239,7 +239,7 @@ features:
     dimension: [function]
     priority: P1
     status: partial
-    commands: [file.newSequence, file.newSequenceFromClip, file.newBin, file.newBinFromSelection, file.newSearchBin, file.newOfflineFile, file.newAdjustmentLayer, file.newBarsAndTone, file.newBlackVideo, file.newColorMatte, file.newCountingLeader, file.newTransparentVideo, file.newProjectFromTemplate]
+    commands: [sequence.new, sequence.newFromClip, bin.add, bin.addFromSelection, bin.addSearch, item.newOfflineFile, item.newAdjustmentLayer, item.newBarsAndTone, item.newBlackVideo, item.newColorMatte, item.newCountingLeader, item.newTransparentVideo, file.newProjectFromTemplate]
     paths: [crates/engine/engine/src/clip_ops.rs, bindings/wasm/src/dialogs.rs, bindings/wasm/src/lib.rs, bindings/wasm/src/panels.rs]
     target: "Premiere Pro 2026 (26.5)"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
@@ -259,7 +259,7 @@ features:
     dimension: [conversion, function]
     priority: P1
     status: partial
-    commands: [file.exportMedia, jobs.list, jobs.cancel, file.exportGraphicsTemplate, export.formats, export.resolve, export.queue.add, export.queue.list, export.queue.start, export.queue.stop, export.queue.cancel, export.queue.retry, export.queue.remove, export.queue.move, export.queue.clear, export.quick]
+    commands: [file.exportMedia, job.list, job.cancel, file.exportGraphicsTemplate, export.formats, export.resolve, export.queue.add, export.queue.list, export.queue.start, export.queue.stop, export.queue.cancel, export.queue.retry, export.queue.remove, export.queue.move, export.queue.clear, export.quick]
     paths: [crates/engine/engine/src/export_tools.rs, bindings/wasm/src/files.rs, bindings/wasm/src/lib.rs, crates/engine/engine/src/graphic_templates.rs]
     target: "Premiere Pro 2026 (26.5)"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
@@ -279,7 +279,7 @@ features:
     dimension: [function]
     priority: P1
     status: partial
-    commands: [edit.undo, edit.redo, edit.cut, edit.copy, edit.paste, edit.pasteInsert, edit.pasteAttributes, edit.removeAttributes, edit.clear, edit.rippleDelete, edit.duplicate, history.list]
+    commands: [edit.undo, edit.redo, edit.cut, edit.copy, edit.paste, edit.pasteInsert, edit.pasteAttributes, edit.removeAttributes, edit.delete, edit.rippleDelete, edit.duplicate, history.list]
     paths: [bindings/wasm/src/dialogs.rs, crates/engine/engine/src/clip_ops.rs, crates/engine/engine/src/source_monitor.rs, bindings/wasm/src/panels.rs]
     target: "Premiere Pro 2026 (26.5)"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
@@ -350,7 +350,7 @@ features:
     dimension: [function]
     priority: P1
     status: partial
-    commands: [markers.markClip, markers.markSelection, markers.markSplitVideoIn, markers.markSplitVideoOut, markers.markSplitAudioIn, markers.markSplitAudioOut, markers.goToIn, markers.goToOut, markers.goToSplitVideoIn, markers.goToSplitVideoOut, markers.goToSplitAudioIn, markers.goToSplitAudioOut, markers.clearIn, markers.clearOut, markers.clearInOut, markers.addRange, markers.addRangeInOut, markers.goNext, markers.goPrev, markers.clearCurrent, markers.clearAll, markers.showAllMarkerColors, markers.filterColors, markers.edit, markers.addChapter, markers.addFlashCue, markers.rippleSequenceMarkers, markers.copyPasteIncludesSequenceMarkers]
+    commands: [marker.markClip, marker.markSelection, marker.markSplitVideoIn, marker.markSplitVideoOut, marker.markSplitAudioIn, marker.markSplitAudioOut, marker.goToIn, marker.goToOut, marker.goToSplitVideoIn, marker.goToSplitVideoOut, marker.goToSplitAudioIn, marker.goToSplitAudioOut, marker.clearIn, marker.clearOut, marker.clearInOut, marker.addRange, marker.addRangeInOut, marker.goNext, marker.goPrev, marker.clearCurrent, marker.clearAll, marker.showAllMarkerColors, marker.filterColors, marker.edit, marker.addChapter, marker.addFlashCue, marker.rippleSequenceMarkers, marker.copyPasteIncludesSequenceMarkers]
     paths: [crates/engine/engine/src/sequence_tools.rs, crates/engine/engine/src/source_monitor.rs, bindings/wasm/src/panels.rs, crates/engine/engine/src/project_tools.rs]
     target: "Premiere Pro 2026 (26.5)"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
@@ -360,7 +360,7 @@ features:
     dimension: [function]
     priority: P1
     status: partial
-    commands: [clip.makeSubclip, clip.editSubclip, clip.editOffline, clip.sourceSettings, clip.audioChannels, clip.interpretFootage, clip.modifyTimecode, clip.frameHoldOptions, clip.frameHold, clip.insertFrameHoldSegment, clip.fieldOptions, clip.timeInterpolation.frameSampling, clip.timeInterpolation.frameBlending, clip.timeInterpolation.opticalFlow, clip.scaleToFrameSize, clip.fitToFrame, clip.fillFrame, clip.breakoutToMono, clip.extractAudio, clip.sceneEditDetection, clip.enable, clip.link, clip.group, clip.ungroup, clip.audioPeak, clip.nest, clip.revealInProject, clip.replaceFromSource, clip.replaceFromSourceMatchFrame, clip.replaceFromBin, clip.restoreCaptionsFromSource, clip.updateMetadata, clip.generateAudioWaveform, clip.automateToSequence, clip.synchronize, clip.mergeClips, clip.createMulticam, clip.multicamEnable, clip.multicamFlatten, clip.remix.enable, clip.remix.properties, clip.remix.revert, clip.remix, clip.volumeUp, clip.volumeDown, clip.volumeUpMany, clip.volumeDownMany, clip.nudgeVolumeUp1, clip.nudgeVolumeUp3, clip.nudgeVolumeDown1, clip.nudgeVolumeDown3, clip.setPosterFrame, clip.clearPosterFrame, clip.setTimeInterpolation]
+    commands: [clip.makeSubclip, clip.editSubclip, clip.editOffline, clip.sourceSettings, clip.audioChannels, clip.interpretFootage, clip.setTimecode, clip.frameHoldOptions, clip.frameHold, clip.insertFrameHoldSegment, clip.fieldOptions, clip.timeInterpolation.frameSampling, clip.timeInterpolation.frameBlending, clip.timeInterpolation.opticalFlow, clip.scaleToFrameSize, clip.fitToFrame, clip.fillFrame, clip.breakoutToMono, clip.extractAudio, clip.sceneEditDetection, clip.enable, clip.link, clip.group, clip.ungroup, clip.audioPeak, clip.nest, clip.revealInProject, clip.replaceFromSource, clip.replaceFromSourceMatchFrame, clip.replaceFromBin, clip.restoreCaptionsFromSource, clip.updateMetadata, clip.generateAudioWaveform, clip.automateToSequence, clip.synchronize, clip.mergeClips, clip.addMulticam, clip.multicamEnable, clip.multicamFlatten, clip.remix.enable, clip.remix.properties, clip.remix.revert, clip.remix, clip.volumeUp, clip.volumeDown, clip.volumeUpMany, clip.volumeDownMany, clip.nudgeVolumeUp1, clip.nudgeVolumeUp3, clip.nudgeVolumeDown1, clip.nudgeVolumeDown3, clip.setPosterFrame, clip.clearPosterFrame, clip.setTimeInterpolation]
     paths: [crates/engine/engine/src/clip_ops.rs, bindings/wasm/src/dialogs.rs, crates/engine/engine/src/keyboard.rs, crates/engine/engine/src/project_tools.rs]
     target: "Premiere Pro 2026 (26.5)"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
@@ -381,7 +381,7 @@ features:
     dimension: [function]
     priority: P1
     status: partial
-    commands: [captions.newTrack, captions.deleteTrack, captions.setTrack, captions.setStyle, captions.add, captions.split, captions.merge, captions.setText, captions.setTimes, captions.trim, captions.move, captions.delete, captions.select, captions.goTo, captions.next, captions.previous, captions.showAll, captions.showActiveOnly, captions.hideAll, captions.import, captions.export, captions.list]
+    commands: [caption.newTrack, caption.deleteTrack, caption.setTrack, caption.setStyle, caption.add, caption.split, caption.merge, caption.setText, caption.setTimes, caption.trim, caption.move, caption.delete, caption.select, caption.goTo, caption.next, caption.previous, caption.showAll, caption.showActiveOnly, caption.hideAll, caption.import, caption.export, caption.list]
     paths: [crates/engine/engine/src/captions.rs, bindings/wasm/src/files.rs, crates/engine/engine/src/project_tools.rs, crates/engine/engine/src/sequence_extras.rs]
     target: "Premiere Pro 2026 (26.5)"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
@@ -392,7 +392,7 @@ features:
     dimension: [function]
     priority: P1
     status: partial
-    commands: [transcript.generate, transcript.set, transcript.delete, transcript.inspect, transcript.search, transcript.models, transcript.downloadModel, transcript.select, transcript.extract, transcript.lift, transcript.renameSpeaker, transcript.removePauses, transcript.removeFillers, transcript.createCaptions]
+    commands: [transcript.generate, transcript.set, transcript.delete, transcript.inspect, transcript.search, transcript.models, transcript.downloadModel, transcript.select, transcript.extract, transcript.lift, transcript.renameSpeaker, transcript.removePauses, transcript.removeFillers, transcript.addCaptions]
     paths: [crates/engine/engine/src/transcript.rs, web/src/commandIcons.ts, crates/engine/engine/src/media_pool.rs, crates/engine/engine/src/sequence_extras.rs]
     target: "Premiere Pro 2026 (26.5)"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
@@ -412,7 +412,7 @@ features:
     dimension: [function]
     priority: P1
     status: partial
-    commands: [graphics.newShape, graphics.setTextType, graphics.selectLayer, graphics.deleteLayer, graphics.arrangeLayer, graphics.align, graphics.distribute, fonts.list, graphics.newVerticalText, graphics.newRectangle, graphics.newEllipse, graphics.newPolygon, graphics.newFromFile, graphics.alignFrame.left, graphics.alignFrame.hcenter, graphics.alignFrame.right, graphics.alignFrame.top, graphics.alignFrame.vcenter, graphics.alignFrame.bottom, graphics.alignGroup.left, graphics.alignGroup.hcenter, graphics.alignGroup.right, graphics.alignGroup.top, graphics.alignGroup.vcenter, graphics.alignGroup.bottom, graphics.alignSelection.left, graphics.alignSelection.hcenter, graphics.alignSelection.right, graphics.alignSelection.top, graphics.alignSelection.vcenter, graphics.alignSelection.bottom, graphics.distributeVertically, graphics.distributeSpaceVertically, graphics.distributeHorizontally, graphics.distributeSpaceHorizontally, graphics.bringToFront, graphics.bringForward, graphics.sendBackward, graphics.sendToBack, graphics.selectNextGraphic, graphics.selectPreviousGraphic, graphics.selectNextLayer, graphics.selectPreviousLayer, graphics.resetAllParameters, graphics.resetDuration, graphics.setRoll, graphics.setResponsiveTime, graphics.pin, graphics.setCharStyle, graphics.upgradeCaption, graphics.upgradeToSourceGraphic, graphics.fonts.used, graphics.fontSizeUp, graphics.fontSizeDown, graphics.fontSizeUp5, graphics.fontSizeDown5, graphics.leadingUp, graphics.leadingDown, graphics.leadingUp5, graphics.leadingDown5, graphics.alignTextLeft, graphics.alignTextCenter, graphics.alignTextRight, graphics.nudgeLeft, graphics.nudgeRight, graphics.nudgeUp, graphics.nudgeDown, graphics.nudgeLeft5, graphics.nudgeRight5, graphics.nudgeUp5, graphics.nudgeDown5]
+    commands: [graphics.newShape, graphics.setTextType, graphics.selectLayer, graphics.deleteLayer, graphics.arrangeLayer, graphics.align, graphics.distribute, font.list, graphics.newVerticalText, graphics.newRectangle, graphics.newEllipse, graphics.newPolygon, graphics.newFromFile, graphics.alignFrame.left, graphics.alignFrame.hcenter, graphics.alignFrame.right, graphics.alignFrame.top, graphics.alignFrame.vcenter, graphics.alignFrame.bottom, graphics.alignGroup.left, graphics.alignGroup.hcenter, graphics.alignGroup.right, graphics.alignGroup.top, graphics.alignGroup.vcenter, graphics.alignGroup.bottom, graphics.alignSelection.left, graphics.alignSelection.hcenter, graphics.alignSelection.right, graphics.alignSelection.top, graphics.alignSelection.vcenter, graphics.alignSelection.bottom, graphics.distributeVertically, graphics.distributeSpaceVertically, graphics.distributeHorizontally, graphics.distributeSpaceHorizontally, graphics.bringToFront, graphics.bringForward, graphics.sendBackward, graphics.sendToBack, graphics.selectNextGraphic, graphics.selectPreviousGraphic, graphics.selectNextLayer, graphics.selectPreviousLayer, graphics.resetAllParameters, graphics.resetDuration, graphics.setRoll, graphics.setResponsiveTime, graphics.pin, graphics.setCharStyle, graphics.upgradeCaption, graphics.upgradeToSourceGraphic, graphics.fonts.used, graphics.fontSizeUp, graphics.fontSizeDown, graphics.fontSizeUp5, graphics.fontSizeDown5, graphics.leadingUp, graphics.leadingDown, graphics.leadingUp5, graphics.leadingDown5, graphics.alignTextLeft, graphics.alignTextCenter, graphics.alignTextRight, graphics.nudgeLeft, graphics.nudgeRight, graphics.nudgeUp, graphics.nudgeDown, graphics.nudgeLeft5, graphics.nudgeRight5, graphics.nudgeUp5, graphics.nudgeDown5]
     paths: [crates/engine/engine/src/graphics.rs, crates/engine/engine/src/keyboard.rs, crates/engine/engine/src/graphic_templates.rs, bindings/wasm/src/panels.rs]
     target: "Premiere Pro 2026 (26.5)"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
@@ -423,7 +423,7 @@ features:
     dimension: [function]
     priority: P1
     status: partial
-    commands: [effects.remove, effects.move, effects.toggleAnimation, effects.toggleEnabled, effects.reset, effects.deleteKeyframe, effects.moveKeyframe, effects.setInterpolation, effects.setKeyframe, effects.list, effects.setDefaultTransition, masks.remove, masks.set, masks.moveVertex, masks.translate, masks.addVertex, masks.removeVertex, masks.track, masks.toggleVertexSmooth, masks.select, masks.list]
+    commands: [effect.remove, effects.move, effect.toggleAnimation, effect.toggleEnabled, effect.reset, effect.deleteKeyframe, effect.moveKeyframe, effect.setInterpolation, effect.setKeyframe, effect.list, effect.setDefaultTransition, mask.remove, mask.set, mask.moveVertex, mask.translate, mask.addVertex, mask.removeVertex, mask.track, mask.toggleVertexSmooth, mask.select, mask.list]
     paths: [crates/engine/engine/src/masks.rs, bindings/wasm/src/panels.rs, bindings/wasm/src/files.rs, bindings/wasm/src/sound.rs]
     target: "Premiere Pro 2026 (26.5)"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
@@ -434,7 +434,7 @@ features:
     dimension: [function]
     priority: P1
     status: partial
-    commands: [color.spaces, color.presets, color.applyPreset, color.presetThumbnails, lut.import, lut.list, lut.remove, lut.export, color.setInputLut, color.setLook, color.applyMatch, color.setSection, scopes.read]
+    commands: [color.spaces, color.presets, color.applyPreset, color.presetThumbnails, lut.import, lut.list, lut.remove, lut.export, color.setInputLut, color.setLook, color.applyMatch, color.setSection, scope.read]
     paths: [crates/engine/engine/src/color.rs, bindings/wasm/src/files.rs, web/src/commandIcons.ts, bindings/wasm/src/picture.rs]
     target: "Premiere Pro 2026 (26.5)"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
@@ -455,7 +455,7 @@ features:
     dimension: [function]
     priority: P1
     status: partial
-    commands: [project.matteColor, project.select, project.delete, project.moveToBin, project.setMarks, project.inspect, project.ingestSettings, metadata.get, metadata.set, project.view.get, project.view.set, project.columns.list, project.columns.set, project.columns.resize, project.sort, project.items, project.viewPreset.list, project.viewPreset.save, project.viewPreset.saveAs, project.viewPreset.restore, project.viewPreset.rename, project.viewPreset.delete, project.freeform.layout, project.freeform.move, project.freeform.resize, project.freeform.alignToGrid, project.freeform.reset, project.freeform.stack, project.freeform.unstack, project.freeform.saveArrangement, project.freeform.restoreArrangement, project.freeform.deleteArrangement, project.freeform.arrangements, project.freeform.options, project.renameBin, project.selectAll, project.deselectAll, mediaBrowser.roots, mediaBrowser.list, mediaBrowser.navigate, mediaBrowser.select, mediaBrowser.favorite, mediaBrowser.clearRecent, mediaBrowser.settings, mediaBrowser.import, mediaBrowser.openInSource, mediaBrowser.probe, project.searchBinItems, project.searchBins, project.editSearchBin, project.deleteSearchBin]
+    commands: [project.matteColor, project.select, project.delete, project.moveToBin, project.setMarks, file.inspect, project.ingestSettings, metadata.get, metadata.set, project.view.get, project.view.set, project.columns.list, project.columns.set, project.columns.resize, project.sort, project.items, project.viewPreset.list, project.viewPreset.save, project.viewPreset.saveAs, project.viewPreset.restore, project.viewPreset.rename, project.viewPreset.delete, project.freeform.layout, project.freeform.move, project.freeform.resize, project.freeform.alignToGrid, project.freeform.reset, project.freeform.stack, project.freeform.unstack, project.freeform.saveArrangement, project.freeform.restoreArrangement, project.freeform.deleteArrangement, project.freeform.arrangements, project.freeform.options, project.renameBin, project.selectAll, project.deselectAll, mediaBrowser.roots, mediaBrowser.list, mediaBrowser.navigate, mediaBrowser.select, mediaBrowser.favorite, mediaBrowser.clearRecent, mediaBrowser.settings, mediaBrowser.import, mediaBrowser.openInSource, mediaBrowser.probe, project.searchBinItems, project.searchBins, project.editSearchBin, project.deleteSearchBin]
     paths: [crates/engine/engine/src/project_panel.rs, crates/engine/engine/src/media_browser.rs, bindings/wasm/src/files.rs, crates/engine/engine/src/project_tools.rs]
     target: "Premiere Pro 2026 (26.5)"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
@@ -465,7 +465,7 @@ features:
     dimension: [function]
     priority: P1
     status: partial
-    commands: [mediaCache.info, mediaCache.clean, media.colorInfo, media.findMissing, media.status, media.linkMedia, media.relink, media.replaceFootage, media.autoRelink, media.search, media.makeOffline, media.offlineAll, media.createProxies, media.attachProxies, media.detachProxies, media.reconnectFullRes, media.toggleProxies, media.proxyPresets]
+    commands: [mediaCache.info, mediaCache.clean, media.colorInfo, media.findMissing, media.status, media.linkMedia, media.relink, media.replaceFootage, media.autoRelink, media.search, media.makeOffline, media.offlineAll, media.addProxies, media.attachProxies, media.detachProxies, media.reconnectFullRes, media.toggleProxies, media.proxyPresets]
     paths: [crates/engine/engine/src/relink.rs, crates/engine/engine/src/proxies.rs, bindings/wasm/src/files.rs, crates/engine/engine/src/settings.rs]
     target: "Premiere Pro 2026 (26.5)"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
@@ -476,7 +476,7 @@ features:
     dimension: [function]
     priority: P2
     status: partial
-    commands: [presets.list, presets.save, presets.apply, presets.delete, presets.rename, presets.export, presets.import]
+    commands: [preset.list, preset.save, preset.apply, preset.delete, preset.rename, preset.export, preset.import]
     paths: [crates/engine/engine/src/presets.rs, bindings/wasm/src/files.rs]
     target: "Premiere Pro 2026 (26.5)"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
@@ -486,7 +486,7 @@ features:
     dimension: [function]
     priority: P2
     status: partial
-    commands: [prefs.get, prefs.set, prefs.reset, perf.stats, command.list, state.inspect, prefs.schema, shortcuts.registerExternal, shortcuts.list, shortcuts.get, shortcuts.set, shortcuts.clear, shortcuts.undo, shortcuts.redo, shortcuts.conflicts, shortcuts.forKey, shortcuts.resolve, shortcuts.presets, shortcuts.loadPreset, shortcuts.savePreset, shortcuts.deletePreset, shortcuts.export, shortcuts.import, shortcuts.audit, events.list, events.clear, help.systemReport]
+    commands: [prefs.get, prefs.set, prefs.reset, perf.stats, command.list, state.inspect, prefs.schema, shortcut.registerExternal, shortcut.list, shortcut.get, shortcut.set, shortcut.clear, shortcut.undo, shortcut.redo, shortcut.conflicts, shortcut.forKey, shortcut.resolve, shortcut.presets, shortcut.loadPreset, shortcut.savePreset, shortcut.deletePreset, shortcut.export, shortcut.import, shortcut.audit, event.list, event.clear, help.systemReport]
     paths: [crates/engine/engine/src/shortcuts.rs, bindings/wasm/src/files.rs, bindings/wasm/src/prefs.rs, crates/engine/engine/src/panels.rs]
     target: "Premiere Pro 2026 (26.5)"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
@@ -545,7 +545,7 @@ features:
     cases: [film.timeline.by-hand/tracks-playhead-volume-fades, film.timeline.by-hand/ruler-and-menus]
     since: "2026-11-24"
   - id: film.monitor.picture-by-hand
-    title: "On the Program picture by hand: a click selects the top-most video clip there; the selected clip's Motion box moves, scales (also non-uniformly, Uniform Scale off), rotates and moves its anchor point, live and one undo step per drag (effects.setParam merged by the drag's key), Escape undoing it, at any magnification and resolution; a Chinese title typed with the Type tool draws real glyphs, and the Properties panel styles it (font, size, fill, alignment, faux bold and italic)"
+    title: "On the Program picture by hand: a click selects the top-most video clip there; the selected clip's Motion box moves, scales (also non-uniformly, Uniform Scale off), rotates and moves its anchor point, live and one undo step per drag (effect.setParam merged by the drag's key), Escape undoing it, at any magnification and resolution; a Chinese title typed with the Type tool draws real glyphs, and the Properties panel styles it (font, size, fill, alignment, faux bold and italic)"
     dimension: [function]
     priority: P0
     status: partial

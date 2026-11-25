@@ -40,7 +40,7 @@ pub fn more(command: &str) -> Vec<&'static str> {
 fn project_queries_hold_complete_candidates_including_empty_and_off_playhead_sets() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
     let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let item = doc.execute("file.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].as_u64().unwrap();
+    let item = doc.execute("item.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].as_u64().unwrap();
     doc.execute("clip.rename", json!({"item":item,"name":"Candidate"})).unwrap();
     let clip = doc.execute("timeline.place", json!({"item":item,"track":"V1","seconds":5})).unwrap()["clips"][0].as_u64().unwrap();
     for selected in [vec![clip], vec![]] {

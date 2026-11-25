@@ -24,7 +24,7 @@ for (const replacement of ['project', 'relink']) {
     await lendMedia(film, 'media/silence.wav', wav(true))
     const setup = async path => {
       await film.command('file.newProject', { name: 'Music cache context' })
-      await film.command('file.newSequence', { name: 'Music', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
+      await film.command('sequence.new', { name: 'Music', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
       const { items: [item] } = await film.command('file.import', { paths: [path] })
       await film.command('timeline.place', { item, seconds: 0 })
       await film.command('timeline.select', { clips: clips(await film.sequence(), 'audio').map(clip => clip.clip) })

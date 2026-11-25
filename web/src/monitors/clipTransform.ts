@@ -228,7 +228,7 @@ const clampScale = (value: number) => (Number.isFinite(value) ? Math.min(SCALE_M
 /**
  * The Motion values a drag sets with the pointer at `cur` (upstream `changes`): `moved` is the
  * pointer's travel from the press, which Snap in Program Monitor may have adjusted. Each is a
- * `[param, value]` for `effects.setParam`.
+ * `[param, value]` for `effect.setParam`.
  */
 export function boxChanges(drag: BoxDrag, cur: Point, moved: Point): Array<[string, unknown]> {
   const pl = drag.from

@@ -13,7 +13,7 @@ async fn arrangement_commands_hold_literal_keys_and_leave_other_arrangements_ind
             for changed_name in [name, "Other", "Review", "Review.v1.extra"] {
                 let assigned = changed_name == name;
                 let mut doc = FilmDocument::create(FILE, 64, 36).unwrap();
-                let item = doc.execute("file.newColorMatte", json!({"seconds":1})).unwrap()["item"].as_u64().unwrap();
+                let item = doc.execute("item.newColorMatte", json!({"seconds":1})).unwrap()["item"].as_u64().unwrap();
                 doc.execute("project.freeform.saveArrangement", json!({"name":name})).unwrap();
                 let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
                 let (_, basis) = f.inspect().await;

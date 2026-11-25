@@ -23,7 +23,7 @@ pub fn caption_windows(session: &Session, command: &str, under: &mut Under) {
 }
 
 pub fn under(session: &Session, command: &str, params: &Value) -> Option<Under> {
-    if command == "captions.newTrack" {
+    if command == "caption.newTrack" {
         let id = session.state.active_sequence?;
         return Some(Under { premises: vec![Premise::on(json!(id.0)).fields(["~captionTrackCount"]).positions(Vec::<String>::new())], ..Default::default() });
     }
@@ -90,8 +90,8 @@ pub fn under(session: &Session, command: &str, params: &Value) -> Option<Under> 
         return join_through(session, params);
     }
     let channel = match command {
-        "markers.markSplitVideoIn" | "markers.markSplitVideoOut" => Some(("videoIn", "videoOut")),
-        "markers.markSplitAudioIn" | "markers.markSplitAudioOut" => Some(("audioIn", "audioOut")),
+        "marker.markSplitVideoIn" | "marker.markSplitVideoOut" => Some(("videoIn", "videoOut")),
+        "marker.markSplitAudioIn" | "marker.markSplitAudioOut" => Some(("audioIn", "audioOut")),
         _ => None,
     };
     if let Some((in_field, out_field)) = channel {
@@ -107,7 +107,7 @@ pub fn under(session: &Session, command: &str, params: &Value) -> Option<Under> 
             ..Default::default()
         });
     }
-    if command != "markers.addRangeInOut" {
+    if command != "marker.addRangeInOut" {
         return None;
     }
     let id = session.state.active_sequence?;
@@ -150,13 +150,13 @@ pub fn under(session: &Session, command: &str, params: &Value) -> Option<Under> 
 }
 
 fn caption_navigation(session: &Session, command: &str, params: &Value) -> Option<Under> {
-    if !matches!(command, "captions.select" | "captions.goTo" | "captions.next" | "captions.previous" | "captions.showActiveOnly") {
+    if !matches!(command, "caption.select" | "caption.goTo" | "caption.next" | "caption.previous" | "caption.showActiveOnly") {
         return None;
     }
     let sequence = session.state.active_sequence?;
     let q = session.active_sequence()?;
     let mut fields = vec!["~captionTrackOrder".to_owned()];
-    if matches!(command, "captions.goTo" | "captions.next" | "captions.previous") {
+    if matches!(command, "caption.goTo" | "caption.next" | "caption.previous") {
         fields.push("sequence.settings.settings.frame_rate".to_owned());
     }
     let explicit = kition_film_engine::commands::clip_p(params, "caption").map(|id| id.0);
@@ -169,25 +169,24 @@ fn caption_navigation(session: &Session, command: &str, params: &Value) -> Optio
     for track in &q.caption_tracks {
         let prefix = format!("sequence.captionTracks[id={}]", track.id.0);
         fields.push(format!("sequence.captions[track={}].id", track.id.0));
-        if matches!(command, "captions.next" | "captions.previous" | "captions.showActiveOnly") {
+        if matches!(command, "caption.next" | "caption.previous" | "caption.showActiveOnly") {
             fields.push(format!("{prefix}.enabled"));
         }
         for caption in &track.captions {
-            if matches!(command, "captions.next" | "captions.previous") && track.enabled || command == "captions.goTo" && (point || chosen == Some(caption.id))
-            {
+            if matches!(command, "caption.next" | "caption.previous") && track.enabled || command == "caption.goTo" && (point || chosen == Some(caption.id)) {
                 fields.push(format!("sequence.captions[id={}].start", caption.id.0));
-                if command == "captions.goTo" && point {
+                if command == "caption.goTo" && point {
                     fields.push(format!("sequence.captions[id={}].duration", caption.id.0));
                 }
             }
         }
     }
     let mut answer = Under::default();
-    if session.state.selection_follows_playhead && matches!(command, "captions.next" | "captions.previous") {
+    if session.state.selection_follows_playhead && matches!(command, "caption.next" | "caption.previous") {
         let mut starts: Vec<_> =
             q.caption_tracks.iter().filter(|track| track.enabled).flat_map(|track| track.captions.iter().map(|caption| (caption.start, caption.id))).collect();
         starts.sort();
-        let destination = if command == "captions.next" {
+        let destination = if command == "caption.next" {
             starts.iter().find(|(start, _)| *start > session.playhead())
         } else {
             starts.iter().rev().find(|(start, _)| *start < session.playhead())

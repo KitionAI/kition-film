@@ -34,7 +34,7 @@ fn assert_order(ids: &[&str], order: &[&str]) {
 
 #[test]
 fn file_edit_clip_menu_order_and_shortcuts_match_premiere() {
-    assert_order(&menu_ids(&["File", "New"]), &["file.newBin", "file.newBinFromSelection", "file.newSearchBin", "file.newOfflineFile"]);
+    assert_order(&menu_ids(&["File", "New"]), &["bin.add", "bin.addFromSelection", "bin.addSearch", "item.newOfflineFile"]);
     assert_order(
         &menu_ids(&["File"]),
         &[
@@ -97,7 +97,7 @@ fn file_edit_clip_menu_order_and_shortcuts_match_premiere() {
 #[test]
 fn search_bins_update_live() {
     let mut s = demo();
-    let r = s.execute("file.newSearchBin", json!({"column": "Name", "operator": "contains", "text": "ocean"})).unwrap();
+    let r = s.execute("bin.addSearch", json!({"column": "Name", "operator": "contains", "text": "ocean"})).unwrap();
     let bin = r["bin"].as_u64().unwrap();
     assert_eq!(r["name"], "ocean");
     let ocean = item_named(&s, "Ocean_Sunset.mp4");
@@ -121,7 +121,7 @@ fn search_bins_update_live() {
     // saved with the project
     let back = kition_film_format::decode(&kition_film_format::encode(&s.project, false)).unwrap().project;
     assert_eq!(back.search_bins, s.project.search_bins);
-    assert!(s.execute("file.newSearchBin", json!({"text": ""})).is_err());
+    assert!(s.execute("bin.addSearch", json!({"text": ""})).is_err());
     // project.searchBins lists the search bins with their live contents, for the Project panel;
     // inspect() does not evaluate them (it runs on every revision, the preview's too)
     assert!(crate::commands::inspect_project(&s).get("searchBins").is_none());
@@ -131,7 +131,7 @@ fn search_bins_update_live() {
     let movies = s.project.search_bins[0].query.find(&s.project).iter().map(|i| i.0).collect::<Vec<_>>();
     assert_eq!(shown, json!([{"bin": bin, "name": s.project.search_bins[0].name, "items": movies}]));
     assert_eq!(movies.len(), 2, "the undone edit's query: the two ocean items");
-    assert!(s.execute("file.newSearchBin", json!({"text": "x", "operator": "near"})).is_err());
+    assert!(s.execute("bin.addSearch", json!({"text": "x", "operator": "near"})).is_err());
 }
 
 #[test]
@@ -169,7 +169,7 @@ fn find_and_find_next_in_the_project_and_timeline() {
     assert_eq!(hits.len(), 2, "{r}");
     assert_eq!(hits[0], r["clip"], "the first hit is the one selected: {r}");
     assert_eq!(r["markers"], json!([]), "{r}");
-    s.execute("markers.add", json!({"seconds": 3.0, "name": "Pickup line"})).unwrap();
+    s.execute("marker.add", json!({"seconds": 3.0, "name": "Pickup line"})).unwrap();
     let r = s.execute("edit.find", json!({"scope": "timeline", "text": "pickup", "in": "markers"})).unwrap();
     assert!(r.get("marker").is_some());
     assert_eq!(r["markers"], json!([r["marker"].clone()]), "{r}");
@@ -191,7 +191,7 @@ fn close_commands_and_templates() {
     let r = s.execute("file.saveAsTemplate", json!({"path": path, "name": "Doc Template"})).unwrap();
     assert_eq!(r["path"], path);
     let n = s.project.items.len();
-    s.execute("file.newBin", json!({"name": "Unsaved"})).unwrap();
+    s.execute("bin.add", json!({"name": "Unsaved"})).unwrap();
     assert!(s.execute("file.closeAllProjects", json!({})).is_err(), "dirty: needs force");
     s.execute("file.closeAllProjects", json!({"force": true})).unwrap();
     assert!(s.project.items.is_empty());
@@ -327,7 +327,7 @@ fn edit_original_update_metadata_and_clip_items() {
 #[test]
 fn edit_offline_sets_the_log_fields() {
     let mut s = demo();
-    let r = s.execute("file.newOfflineFile", json!({"name": "Missing Take", "seconds": 4.0})).unwrap();
+    let r = s.execute("item.newOfflineFile", json!({"name": "Missing Take", "seconds": 4.0})).unwrap();
     let id = ItemId(r["item"].as_u64().unwrap());
     let ocean = item_named(&s, "Ocean_Sunset.mp4");
     s.execute("project.select", json!({"items": [ocean.0]})).unwrap();
@@ -347,7 +347,7 @@ fn edit_offline_sets_the_log_fields() {
 #[test]
 fn automate_to_sequence_places_clips_with_overlap_and_transitions() {
     let mut s = demo();
-    s.execute("file.newSequence", json!({"name": "Auto", "fps": 23.976})).unwrap();
+    s.execute("sequence.new", json!({"name": "Auto", "fps": 23.976})).unwrap();
     let rate = s.sequence_rate();
     let names = ["Misty_Forest.mp4", "Ocean_Sunset.mp4", "Aurora_Timelapse.mp4"];
     let ids: Vec<ItemId> = names.iter().map(|n| item_named(&s, n)).collect();
@@ -394,9 +394,9 @@ fn automate_to_sequence_places_clips_with_overlap_and_transitions() {
     assert_eq!(q.video_tracks[0].items[0].item, ids[0]);
     assert_eq!(q.video_tracks[0].items.last().unwrap().end(), end + rate.tick_of(72));
     // at unnumbered markers
-    s.execute("file.newSequence", json!({"name": "Markers", "fps": 23.976})).unwrap();
-    s.execute("markers.add", json!({"seconds": 10.0})).unwrap();
-    s.execute("markers.add", json!({"seconds": 20.0})).unwrap();
+    s.execute("sequence.new", json!({"name": "Markers", "fps": 23.976})).unwrap();
+    s.execute("marker.add", json!({"seconds": 10.0})).unwrap();
+    s.execute("marker.add", json!({"seconds": 20.0})).unwrap();
     s.execute("project.select", json!({"items": ids.iter().map(|i| i.0).collect::<Vec<_>>()})).unwrap();
     let r = s.execute("clip.automateToSequence", json!({"placement": "unnumberedMarkers", "method": "overwrite", "ordering": "selection"})).unwrap();
     assert_eq!(r["placed"], 2, "two markers, two clips");
@@ -422,9 +422,9 @@ fn system_report_lists_the_build() {
 fn clear_deletes_a_bin_with_everything_in_it() {
     let mut s = demo();
     let before = s.project.items.len();
-    let outer = s.execute("file.newBin", json!({"name": "Old footage"})).unwrap()["bin"].as_u64().unwrap();
-    let inner = s.execute("file.newBin", json!({"name": "Inside", "parent": outer})).unwrap()["bin"].as_u64().unwrap();
-    let empty = s.execute("file.newBin", json!({"name": "Empty"})).unwrap()["bin"].as_u64().unwrap();
+    let outer = s.execute("bin.add", json!({"name": "Old footage"})).unwrap()["bin"].as_u64().unwrap();
+    let inner = s.execute("bin.add", json!({"name": "Inside", "parent": outer})).unwrap()["bin"].as_u64().unwrap();
+    let empty = s.execute("bin.add", json!({"name": "Empty"})).unwrap()["bin"].as_u64().unwrap();
     let ocean = item_named(&s, "Ocean_Sunset.mp4");
     s.execute("project.moveToBin", json!({"items": [ocean.0], "bin": inner})).unwrap();
     let dunes = item_named(&s, "Desert_Dunes.mp4");
@@ -468,7 +468,7 @@ fn the_project_epoch_moves_only_when_the_project_is_replaced() {
     let epoch = |s: &Session| crate::commands::inspect_project(s)["epoch"].as_u64().unwrap();
     let start = epoch(&s);
     assert_eq!(s.epoch, start);
-    s.execute("file.newBin", json!({"name": "Kept"})).unwrap();
+    s.execute("bin.add", json!({"name": "Kept"})).unwrap();
     let dir = tmp_dir("epoch");
     let path = dir.join("e.kfilm").to_string_lossy().to_string();
     s.execute("file.saveAs", json!({"path": path})).unwrap();

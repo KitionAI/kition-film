@@ -8,7 +8,7 @@ use serde_json::json;
 async fn project_channel_maps_accept_channel_numbers_and_preserve_same_field_conflicts() {
     for changed in [false, true] {
         let f = Fixture::new(0);
-        let source = f.colleague(&[("file.newBarsAndTone", json!({"seconds":2}))])[0]["item"].as_u64().unwrap();
+        let source = f.colleague(&[("item.newBarsAndTone", json!({"seconds":2}))])[0]["item"].as_u64().unwrap();
         let (_, basis) = f.inspect().await;
         if changed {
             f.colleague(&[("clip.audioChannels", json!({"items":[source],"format":"stereo","clips":[[1,0]]}))]);
@@ -33,7 +33,7 @@ async fn project_channel_maps_accept_channel_numbers_and_preserve_same_field_con
 async fn timeline_channels_refuse_changed_source_streams_but_allow_source_names() {
     for related in [false, true] {
         let f = Fixture::new(0);
-        let source = f.colleague(&[("file.newBarsAndTone", json!({"seconds":2}))])[0]["item"].as_u64().unwrap();
+        let source = f.colleague(&[("item.newBarsAndTone", json!({"seconds":2}))])[0]["item"].as_u64().unwrap();
         let placed = f.colleague(&[("timeline.place", json!({"item":source,"track":"V1","time":0}))]);
         let audio = placed[0]["clips"][1].as_u64().unwrap();
         let (seen, basis) = f.inspect().await;

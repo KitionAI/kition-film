@@ -1,6 +1,6 @@
 //! commands.rs:1945-2136; sequence_tools.rs:902-930;
 //! source_monitor.rs:115-217; clip_ops.rs:473-514.
-//! Re-read for markers.edit's `time` (a sequence marker moved along the ruler): the
+//! Re-read for marker.edit's `time` (a sequence marker moved along the ruler): the
 //! marker's new start is checked against its duration (its end must stay in range) and
 //! the markers are kept in time order, so the whole marker is held, as for a new
 //! duration; the Source route refuses `time` before reading anything.
@@ -12,22 +12,22 @@ use kition_kit::{KitDocument, Premise, TimeSpan, Under, Within};
 use serde_json::json;
 
 pub const PATHS: &[(&str, &str)] = &[
-    ("markers.markClip", "point"),
-    ("markers.markSelection", "selection"),
-    ("markers.add", "program"),
-    ("markers.clearCurrent", "program"),
-    ("markers.clearAll", "program"),
-    ("markers.edit", "program"),
-    ("markers.addRange", "point"),
-    ("markers.addRangeInOut", "marked range"),
-    ("markers.addChapter", "point"),
-    ("markers.addFlashCue", "point"),
-    ("markers.goNext", "target=source"),
-    ("markers.goPrev", "target=source"),
-    ("markers.add", "target=source"),
-    ("markers.edit", "target=source"),
-    ("markers.clearCurrent", "target=source"),
-    ("markers.clearAll", "target=source"),
+    ("marker.markClip", "point"),
+    ("marker.markSelection", "selection"),
+    ("marker.add", "program"),
+    ("marker.clearCurrent", "program"),
+    ("marker.clearAll", "program"),
+    ("marker.edit", "program"),
+    ("marker.addRange", "point"),
+    ("marker.addRangeInOut", "marked range"),
+    ("marker.addChapter", "point"),
+    ("marker.addFlashCue", "point"),
+    ("marker.goNext", "target=source"),
+    ("marker.goPrev", "target=source"),
+    ("marker.add", "target=source"),
+    ("marker.edit", "target=source"),
+    ("marker.clearCurrent", "target=source"),
+    ("marker.clearAll", "target=source"),
     ("timeline.setTargeting", "target"),
 ];
 
@@ -46,20 +46,20 @@ pub fn more(command: &str, path: &str) -> Vec<&'static str> {
     }
     if path == "target=source" {
         let mut out = vec!["source-only-part", "coarse-active-state", "coarse-mode-state", "coarse-time-state", "coarse-source-route"];
-        if command != "markers.add" {
+        if command != "marker.add" {
             out.push("whole-source-marker-list");
         }
         return out;
     }
-    if matches!(command, "markers.clearCurrent" | "markers.clearAll") {
+    if matches!(command, "marker.clearCurrent" | "marker.clearAll") {
         return vec!["coarse-time-state", "coarse-mode-state", "coarse-active-state"];
     }
     let mut out = vec!["coarse-time-state", "coarse-mode-state", "coarse-active-state"];
-    if command == "markers.markSelection" {
+    if command == "marker.markSelection" {
         out.extend(["coarse-selection-state", "unconsumed-program-material"]);
-    } else if command == "markers.markClip" {
+    } else if command == "marker.markClip" {
         out.push("unconsumed-program-material");
-    } else if command == "markers.edit" {
+    } else if command == "marker.edit" {
         out.extend(["whole-duration-marker", "whole-moved-marker"]);
     }
     out
@@ -68,7 +68,7 @@ pub fn more(command: &str, path: &str) -> Vec<&'static str> {
 #[test]
 fn private_source_tick_facts_keep_exact_values_and_honor_requested_names() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
-    let source = doc.execute("file.newColorMatte", json!({"seconds":60_000})).unwrap()["item"].as_u64().unwrap();
+    let source = doc.execute("item.newColorMatte", json!({"seconds":60_000})).unwrap()["item"].as_u64().unwrap();
     let project = kition_film_format::decode(&doc.save(None).unwrap()).unwrap().project;
     let duration = project.item(ItemId(source)).unwrap().as_media().unwrap().duration().0;
     assert!(duration > 9_007_199_254_740_992);
@@ -89,11 +89,11 @@ fn program_marker_writes_compare_times_ranges_presence_and_assignment_inputs() {
     const SECOND: i64 = 254_016_000_000;
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
     let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let item = doc.execute("file.newColorMatte", json!({"seconds":4})).unwrap()["item"].clone();
+    let item = doc.execute("item.newColorMatte", json!({"seconds":4})).unwrap()["item"].clone();
     let clip = doc.execute("timeline.place", json!({"item":item,"track":"V1","time":0})).unwrap()["clips"][0].as_u64().unwrap();
-    let marker = doc.execute("markers.add", json!({"time":SECOND})).unwrap()["marker"].as_u64().unwrap();
-    doc.execute("markers.markIn", json!({"time":0})).unwrap();
-    doc.execute("markers.markOut", json!({"time":2*SECOND})).unwrap();
+    let marker = doc.execute("marker.add", json!({"time":SECOND})).unwrap()["marker"].as_u64().unwrap();
+    doc.execute("marker.markIn", json!({"time":0})).unwrap();
+    doc.execute("marker.markOut", json!({"time":2*SECOND})).unwrap();
     doc.execute("timeline.select", json!({"clips":[clip]})).unwrap();
     let project = kition_film_format::decode(&doc.save(None).unwrap()).unwrap().project;
     let q = project.sequence(ItemId(sequence)).unwrap();
@@ -116,9 +116,9 @@ fn program_marker_writes_compare_times_ranges_presence_and_assignment_inputs() {
                     let spec = doc.commands().into_iter().find(|spec| spec.id == command).unwrap();
                     p.as_object_mut().unwrap().retain(|key, _| spec.schema.as_ref().is_some_and(|schema| schema.get(key).is_some()));
                     let mut want = Under::default();
-                    let add = matches!(command, "markers.add" | "markers.addRange" | "markers.addChapter" | "markers.addFlashCue");
-                    if !matches!(command, "markers.clearCurrent" | "markers.clearAll" | "markers.edit") {
-                        let start = if command == "markers.addRangeInOut" {
+                    let add = matches!(command, "marker.add" | "marker.addRange" | "marker.addChapter" | "marker.addFlashCue");
+                    if !matches!(command, "marker.clearCurrent" | "marker.clearAll" | "marker.edit") {
+                        let start = if command == "marker.addRangeInOut" {
                             0
                         } else if add {
                             if p.get("time").is_some() {
@@ -135,13 +135,13 @@ fn program_marker_writes_compare_times_ranges_presence_and_assignment_inputs() {
                         } else {
                             at
                         };
-                        let end = if command == "markers.addRangeInOut" { 2 * SECOND + q.settings.frame_rate.frame_duration().0 } else { start };
+                        let end = if command == "marker.addRangeInOut" { 2 * SECOND + q.settings.frame_rate.frame_duration().0 } else { start };
                         for track in q.all_tracks() {
                             let from = track.items.iter().take_while(|clip| clip.end().0 <= start).count();
                             let to = track.items.iter().take_while(|clip| clip.start.0 < end.max(start + 1)).count().max(from);
                             for clip in &track.items[from..to] {
                                 want.objects.push(json!(clip.id.0));
-                                if add || command == "markers.addRangeInOut" {
+                                if add || command == "marker.addRangeInOut" {
                                     want.premises.push(Premise::on(json!(clip.id.0)).positions(["start", "clipId"]));
                                 }
                             }
@@ -160,11 +160,11 @@ fn program_marker_writes_compare_times_ranges_presence_and_assignment_inputs() {
                             });
                         }
                     }
-                    let duration = matches!(command, "markers.add" | "markers.addRange" | "markers.edit")
-                        && !(command == "markers.addRange" && p.get("duration").is_some())
+                    let duration = matches!(command, "marker.add" | "marker.addRange" | "marker.edit")
+                        && !(command == "marker.addRange" && p.get("duration").is_some())
                         && (p.get("durationFrames").is_some() || p.get("durationSeconds").is_some());
                     let converted = add && (p.get("frame").is_some() || p.get("timecode").is_some() || p.get("seconds").is_some());
-                    if duration || converted || command == "markers.addRange" && p.get("duration").is_none() {
+                    if duration || converted || command == "marker.addRange" && p.get("duration").is_none() {
                         let mut fields = vec!["sequence.settings.settings.frame_rate"];
                         if add && p.get("timecode").is_some() {
                             fields.push("sequence.settings.settings.drop_frame");
@@ -172,20 +172,20 @@ fn program_marker_writes_compare_times_ranges_presence_and_assignment_inputs() {
                         want.premises.push(leaf(sequence, fields));
                     }
                     match command {
-                        "markers.markClip" | "markers.markSelection" => {
+                        "marker.markClip" | "marker.markSelection" => {
                             want.premises
                                 .push(leaf(sequence, ["sequence.settings.mark_in", "sequence.settings.mark_out", "sequence.settings.settings.frame_rate"]));
-                            if command == "markers.markClip" {
+                            if command == "marker.markClip" {
                                 want.premises.push(leaf(sequence, ["~videoTrackOrder", "~audioTrackOrder", "~submixTrackOrder"]));
                             }
-                            if command == "markers.markSelection" || at < q.video_tracks[0].items[0].end().0 {
+                            if command == "marker.markSelection" || at < q.video_tracks[0].items[0].end().0 {
                                 want.premises.push(Premise::on(json!(clip)).fields(Vec::<String>::new()).positions(["start", "duration"]));
                             }
                         }
-                        "markers.addChapter" | "markers.addFlashCue" if p.get("name").is_none() => want.premises.push(leaf(sequence, ["sequence.markers"])),
-                        "markers.clearCurrent" => want.premises.push(leaf(sequence, [format!("sequence.markers[start={at}]")])),
-                        "markers.clearAll" => want.premises.push(leaf(sequence, ["sequence.markers"])),
-                        "markers.edit" => {
+                        "marker.addChapter" | "marker.addFlashCue" if p.get("name").is_none() => want.premises.push(leaf(sequence, ["sequence.markers"])),
+                        "marker.clearCurrent" => want.premises.push(leaf(sequence, [format!("sequence.markers[start={at}]")])),
+                        "marker.clearAll" => want.premises.push(leaf(sequence, ["sequence.markers"])),
+                        "marker.edit" => {
                             let prefix = format!("sequence.markers[id={marker}]");
                             let moved = p.get("time").is_some();
                             let mut fields: Vec<_> = if duration || moved {
@@ -198,7 +198,7 @@ fn program_marker_writes_compare_times_ranges_presence_and_assignment_inputs() {
                             }
                             want.premises.push(leaf(sequence, fields));
                         }
-                        "markers.addRangeInOut" => want.premises.push(leaf(
+                        "marker.addRangeInOut" => want.premises.push(leaf(
                             sequence,
                             ["sequence.settings.mark_in", "sequence.settings.mark_out", "sequence.settings.settings.frame_rate", "~markedMaterial"],
                         )),
@@ -217,7 +217,7 @@ fn program_marker_writes_compare_times_ranges_presence_and_assignment_inputs() {
 fn source_marker_writes_compare_parent_routes_filtered_destinations_and_duration_bounds() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
     let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let media = doc.execute("file.newColorMatte", json!({"seconds":4})).unwrap()["item"].as_u64().unwrap();
+    let media = doc.execute("item.newColorMatte", json!({"seconds":4})).unwrap()["item"].as_u64().unwrap();
     doc.execute("timeline.place", json!({"item":media,"track":"V1","time":0})).unwrap();
     let mut sources = vec![sequence, media];
     for restrict in [false, true] {
@@ -229,7 +229,7 @@ fn source_marker_writes_compare_parent_routes_filtered_destinations_and_duration
     }
     for source in sources {
         doc.execute("source.open", json!({"item":source})).unwrap();
-        let marker = doc.execute("markers.add", json!({"target":"source","time":254_016_000_000i64})).unwrap()["marker"].as_u64().unwrap();
+        let marker = doc.execute("marker.add", json!({"target":"source","time":254_016_000_000i64})).unwrap()["marker"].as_u64().unwrap();
         let project = kition_film_format::decode(&doc.save(None).unwrap()).unwrap().project;
         let root = if source == sequence { sequence } else { media };
         let path = if root == sequence { "sequence.markers" } else { "markers" };
@@ -253,17 +253,17 @@ fn source_marker_writes_compare_parent_routes_filtered_destinations_and_duration
                     if source != root {
                         route.push(root);
                     }
-                    if command != "markers.add" || p.get("durationFrames").is_some() {
+                    if command != "marker.add" || p.get("durationFrames").is_some() {
                         for &id in &route {
                             want.premises.push(leaf(id, ["kind", "props.parent"]));
                         }
                     }
-                    if p.get("durationFrames").is_some() && matches!(command, "markers.add" | "markers.edit") {
+                    if p.get("durationFrames").is_some() && matches!(command, "marker.add" | "marker.edit") {
                         want.premises
                             .push(leaf(root, [if root == sequence { "sequence.settings.settings.frame_rate" } else { "props.media.info.video.frame_rate" }]));
                     }
-                    if command != "markers.add" {
-                        let fields = if command == "markers.edit" {
+                    if command != "marker.add" {
+                        let fields = if command == "marker.edit" {
                             let prefix = format!("{path}[id={marker}]");
                             let mut fields = vec![format!("{prefix}.id")];
                             fields.extend(["name", "comment", "color"].iter().filter(|key| p.get(**key).is_some()).map(|key| format!("{prefix}.{key}")));
@@ -276,9 +276,9 @@ fn source_marker_writes_compare_parent_routes_filtered_destinations_and_duration
                         };
                         want.premises.push(leaf(root, fields));
                     }
-                    if matches!(command, "markers.goNext" | "markers.goPrev" | "markers.add" | "markers.edit") {
+                    if matches!(command, "marker.goNext" | "marker.goPrev" | "marker.add" | "marker.edit") {
                         let mut fields = vec!["~sourceMedia"];
-                        let navigation = matches!(command, "markers.goNext" | "markers.goPrev");
+                        let navigation = matches!(command, "marker.goNext" | "marker.goPrev");
                         if navigation {
                             fields.push("~sourceMarkerStarts");
                         }
@@ -291,12 +291,12 @@ fn source_marker_writes_compare_parent_routes_filtered_destinations_and_duration
                             };
                             markers.iter().any(|marker| {
                                 range.is_none_or(|range| marker.start >= range.start && marker.start < range.end())
-                                    && if command == "markers.goNext" { marker.start.0 > cursor } else { marker.start.0 < cursor }
+                                    && if command == "marker.goNext" { marker.start.0 > cursor } else { marker.start.0 < cursor }
                             })
                         } else {
                             false
                         };
-                        if destination || command == "markers.add" || command == "markers.edit" && p.get("durationFrames").is_some() {
+                        if destination || command == "marker.add" || command == "marker.edit" && p.get("durationFrames").is_some() {
                             fields.extend(["~sourceStart", "~sourceEnd"]);
                             if destination || p.get("durationFrames").is_some() {
                                 fields.push("~sourceRate");

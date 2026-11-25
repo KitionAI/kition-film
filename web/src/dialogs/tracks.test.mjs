@@ -22,7 +22,7 @@ const answers = {
     params: { name: 'Sequence 01 (Simplified)', removeDisabled: true, removeEmptyTracks: true, closeGaps: false, moveClipsDown: false, removeVideoEffects: false, removeAudioEffects: false, removeText: false, keep: 'both' },
     info: { current: { name: 'Sequence 01 (Simplified)' } },
   },
-  'file.newColorMatte': { params: { color: '#000000', name: 'Color Matte', width: 1920, height: 1080, seconds: 5 }, info: null },
+  'item.newColorMatte': { params: { color: '#000000', name: 'Color Matte', width: 1920, height: 1080, seconds: 5 }, info: null },
   'project.matteColor': { params: { item: 12, color: '#ff0000' }, info: { current: { color: '#ff0000' } } },
 }
 /** The active sequence: V1 and V2, A1. */
@@ -140,13 +140,13 @@ test("Simplify's keep maps to upstream's params, its name and remove options tra
 })
 
 test('New Color Matte sends the colour, name, whole size, and seconds; Color Matte Color the item and colour', async () => {
-  assert.deepEqual(await ok('file.newColorMatte', [['color', '#ff0000'], ['width', 640.4], ['height', 360]]), [{ command: 'file.newColorMatte', params: { color: '#ff0000', name: 'Color Matte', width: 640, height: 360, seconds: 5 } }])
+  assert.deepEqual(await ok('item.newColorMatte', [['color', '#ff0000'], ['width', 640.4], ['height', 360]]), [{ command: 'item.newColorMatte', params: { color: '#ff0000', name: 'Color Matte', width: 640, height: 360, seconds: 5 } }])
   assert.deepEqual(await ok('project.matteColor', [['color', '#0000ff']]), [{ command: 'project.matteColor', params: { item: 12, color: '#0000ff' } }])
-  assert.deepEqual(spec('file.newColorMatte').preview, ['project'])
-  assert.equal(spec('file.newColorMatte').stripItem({ item: 31 }), 31, 'the strip shows the new matte')
+  assert.deepEqual(spec('item.newColorMatte').preview, ['project'])
+  assert.equal(spec('item.newColorMatte').stripItem({ item: 31 }), 31, 'the strip shows the new matte')
   assert.deepEqual(spec('project.matteColor').preview, ['project', 'picture'])
   // Without the engine's answer the defaults are upstream's (black, the sequence's size, 5 s).
-  const fallback = await opened('file.newColorMatte', context({}, { ...film, width: 1280, height: 720 }))
+  const fallback = await opened('item.newColorMatte', context({}, { ...film, width: 1280, height: 720 }))
   assert.deepEqual([fallback.color, fallback.width, fallback.height, fallback.seconds], ['#000000', 1280, 720, 5])
 })
 
@@ -160,18 +160,18 @@ test("Color Matte Color opens only on one selected matte (upstream's error other
 })
 
 test('the dialogs open with no params and run at once with them; the new items and Add Submix stay direct', () => {
-  for (const id of ['sequence.addTracks', 'sequence.deleteTracks', 'sequence.normalizeMixTrack', 'sequence.simplify', 'file.newColorMatte', 'project.matteColor']) {
+  for (const id of ['sequence.addTracks', 'sequence.deleteTracks', 'sequence.normalizeMixTrack', 'sequence.simplify', 'item.newColorMatte', 'project.matteColor']) {
     assert.equal(routeOf(id, {}, 'timeline'), 'dialog', id)
   }
   assert.equal(routeOf('sequence.addTracks', { video: 1 }, 'timeline'), 'session')
-  assert.equal(routeOf('file.newColorMatte', { color: '#ff0000' }, 'project'), 'session')
-  for (const id of ['file.newBarsAndTone', 'file.newBlackVideo', 'file.newCountingLeader', 'file.newTransparentVideo', 'file.newAdjustmentLayer', 'mixer.addSubmix']) {
+  assert.equal(routeOf('item.newColorMatte', { color: '#ff0000' }, 'project'), 'session')
+  for (const id of ['item.newBarsAndTone', 'item.newBlackVideo', 'item.newCountingLeader', 'item.newTransparentVideo', 'item.newAdjustmentLayer', 'mixer.addSubmix']) {
     assert.ok(DIRECT_ROWS.has(id), id)
     assert.equal(routeOf(id, {}, 'project'), 'session', id)
   }
   // Upstream keeps them open on another active sequence (rule 6): none closes; only Sequence
   // Settings and Color Management, which edit the sequence they opened on, do.
-  for (const id of ['sequence.addTracks', 'sequence.deleteTracks', 'sequence.normalizeMixTrack', 'sequence.simplify', 'file.newColorMatte', 'project.matteColor']) assert.equal(sequenceGone(spec(id), 1, { activeSequence: 2 }), false, id)
+  for (const id of ['sequence.addTracks', 'sequence.deleteTracks', 'sequence.normalizeMixTrack', 'sequence.simplify', 'item.newColorMatte', 'project.matteColor']) assert.equal(sequenceGone(spec(id), 1, { activeSequence: 2 }), false, id)
   for (const id of ['sequence.settings', 'sequence.colorSettings']) assert.equal(sequenceGone(spec(id), 1, { activeSequence: 2 }), true, id)
 })
 

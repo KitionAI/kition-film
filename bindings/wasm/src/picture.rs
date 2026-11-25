@@ -1,5 +1,5 @@
 //! Read-only picture data for the colour panels: Scopes as numbers ([`FilmDocument::scopes`],
-//! what `scopes.read` answers) and as the trace images upstream's panel draws
+//! what `scope.read` answers) and as the trace images upstream's panel draws
 //! ([`FilmDocument::scope_images`]), the Effects panel's color preset thumbnails
 //! ([`FilmDocument::color_preset_thumbnails`]). Each answer is bounded: nothing renders more
 //! than [`MAX_ITEM_FRAME_PIXELS`], and no answer holds more pixels than that.
@@ -145,11 +145,11 @@ fn named<T: Copy>(all: &[T], label: impl Fn(T) -> String) -> impl Fn(&str) -> Op
 }
 
 impl FilmDocument {
-    /// Scopes as numbers: exactly what `scopes.read` answers for `params` (`scopes`,
+    /// Scopes as numbers: exactly what `scope.read` answers for `params` (`scopes`,
     /// `waveformType`, `paradeType`, `colorSpace`, `clamp`, `columns` 1–512, `peaks`, `bins`,
     /// `scale`), at `seconds` of the active sequence (snapped to its frame; any `time`, `frame`,
     /// or `timecode` in `params` is ignored), without the command path: it changes nothing. The
-    /// render `scale` defaults to 0.25, the quarter frame upstream's panel reads (`scopes.read`'s
+    /// render `scale` defaults to 0.25, the quarter frame upstream's panel reads (`scope.read`'s
     /// own default is 0.5), and is lowered so the frame read is at most
     /// [`MAX_ITEM_FRAME_PIXELS`]. It is for numbers on demand, not a read per frame: the panel
     /// draws from [`Self::scope_images`]. An error without an open sequence, or for a `scopes`
@@ -374,7 +374,7 @@ mod tests {
         assert_eq!(state(&mut doc), before, "a read changes nothing");
         let mut command = params.clone();
         command["seconds"] = json!(1.0);
-        let native = doc.session.execute("scopes.read", command).unwrap();
+        let native = doc.session.execute("scope.read", command).unwrap();
         assert_eq!(ours, native);
         // Over the red matte the parade's red levels are at the top and green and blue at the
         // bottom, and the histogram's red peaks in its top bin.
@@ -481,7 +481,7 @@ mod tests {
         let pixels = (7680.0 * scale).round() * (4320.0 * scale).round();
         assert!(pixels <= MAX_ITEM_FRAME_PIXELS as f32 * 1.001 && pixels > MAX_ITEM_FRAME_PIXELS as f32 * 0.99, "{pixels}");
         let mut doc = FilmDocument::create("Edit.kfilm", 7680, 4320).unwrap();
-        let matte = doc.execute("file.newColorMatte", json!({ "color": "#ff0000", "seconds": 1.0 })).unwrap();
+        let matte = doc.execute("item.newColorMatte", json!({ "color": "#ff0000", "seconds": 1.0 })).unwrap();
         doc.execute("timeline.place", json!({ "item": matte["item"], "track": "V1", "seconds": 0.0 })).unwrap();
         let read = doc.scopes(0.0, json!({ "scopes": ["histogram"], "scale": 1.0, "bins": false })).unwrap();
         assert_eq!(read["histogram"]["peakBin"]["r"], 255);
@@ -526,7 +526,7 @@ mod tests {
     fn scopes_default_to_upstreams_quarter_frame() {
         let (mut doc, _) = with_clip();
         let ours = doc.scopes(1.0, json!({ "scopes": ["parade"] })).unwrap();
-        let native = doc.session.execute("scopes.read", json!({ "scopes": ["parade"], "seconds": 1.0, "scale": 0.25 })).unwrap();
+        let native = doc.session.execute("scope.read", json!({ "scopes": ["parade"], "seconds": 1.0, "scale": 0.25 })).unwrap();
         assert_eq!(ours, native);
         assert_eq!(ours["samples"], json!([16, 9]), "a quarter of 64 x 36");
     }
@@ -534,7 +534,7 @@ mod tests {
     /// A 1920 × 1080 sequence with a red matte on V1, its working space set by `settings`.
     fn graded(settings: Value) -> FilmDocument {
         let mut doc = FilmDocument::create("Edit.kfilm", 1920, 1080).unwrap();
-        let matte = doc.execute("file.newColorMatte", json!({ "color": "#ff0000", "seconds": 2.0 })).unwrap();
+        let matte = doc.execute("item.newColorMatte", json!({ "color": "#ff0000", "seconds": 2.0 })).unwrap();
         doc.execute("timeline.place", json!({ "item": matte["item"], "track": "V1", "seconds": 0.0 })).unwrap();
         doc.execute("sequence.colorSettings", settings).unwrap();
         doc
@@ -601,11 +601,11 @@ mod tests {
                 let name = path.file_name().unwrap().to_string_lossy().into_owned();
                 doc.execute("file.import", json!({ "paths": [name] })).unwrap()["items"][0].clone()
             }
-            None => doc.execute("file.newColorMatte", json!({ "color": "#3080c0", "seconds": 4.0 })).unwrap()["item"].clone(),
+            None => doc.execute("item.newColorMatte", json!({ "color": "#3080c0", "seconds": 4.0 })).unwrap()["item"].clone(),
         };
         doc.execute("timeline.place", json!({ "item": item, "track": "V1", "seconds": 0.0 })).unwrap();
         let clip = doc.inspect().unwrap()["sequence"]["video"][0]["items"][0]["clip"].as_u64().unwrap();
-        doc.execute("effects.apply", json!({ "clips": [clip], "effect": "color" })).unwrap();
+        doc.execute("effect.apply", json!({ "clips": [clip], "effect": "color" })).unwrap();
         let timed = |label: &str, run: &mut dyn FnMut()| {
             run();
             let started = std::time::Instant::now();

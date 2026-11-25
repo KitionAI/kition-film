@@ -121,7 +121,7 @@ type LayerDrag = { kind: 'move' | 'handle' | 'anchor'; n: number; view: LayerVie
  * pixels: what it holds and the box then (`drag`), the clip's frame it was placed from, the Motion
  * values the pointer gives now (`changes`) and a move's snap lines. A drag sends its values to the
  * engine as the pointer moves, at most one per animation frame and none while one is in flight,
- * all merged into one undo step by the drag's own key (`effects.setParam`'s `merge` with a name,
+ * all merged into one undo step by the drag's own key (`effect.setParam`'s `merge` with a name,
  * the first call with `begin`), so the picture follows live, also for a drag that changes two
  * parameters (the anchor point: Anchor Point and Position; a corner with Uniform Scale off: Scale
  * Height and Width).
@@ -507,7 +507,7 @@ export function useProgramGraphics(options: Options) {
     }
   }, [doc, boxTool, selectionKey, revision, playhead, readClips, draw])
 
-  /** The run that sends a Motion box drag's values: each `effects.setParam` merged into the drag's step by its key, the first with `begin`; `final` (the release) refreshes the whole editor once. */
+  /** The run that sends a Motion box drag's values: each `effect.setParam` merged into the drag's step by its key, the first with `begin`; `final` (the release) refreshes the whole editor once. */
   const sendBox = useCallback(async (drag: ClipBoxDrag, changes: ReadonlyArray<[string, unknown]>, final: boolean) => {
     const open = latest.current.doc
     if (!open) return
@@ -516,7 +516,7 @@ export function useProgramGraphics(options: Options) {
       const params = { clip: drag.frame.clip, effect: 'motion', param, value, merge: drag.key, begin: !drag.begun }
       drag.begun = true
       try {
-        await latest.current.invoke('effects.setParam', params, final ? undefined : { refresh: 'repaint' })
+        await latest.current.invoke('effect.setParam', params, final ? undefined : { refresh: 'repaint' })
       } catch {
         // The status bar says why (invoke's own report).
       }
@@ -1022,14 +1022,14 @@ export function useProgramGraphics(options: Options) {
           detach()
           return
         }
-        const refused = latest.current.editRefusal?.('effects.setParam')
+        const refused = latest.current.editRefusal?.('effect.setParam')
         if (refused) {
           latest.current.status?.(refused)
           return
         }
         if (clipBoxes.current.locked.has(frame.clip)) {
           // The engine sets Motion on a locked track's clip; the editor refuses it as it refuses other edits there.
-          latest.current.errorStatus?.('command `effects.setParam` is not available right now: track is locked')
+          latest.current.errorStatus?.('command `effect.setParam` is not available right now: track is locked')
           return
         }
         boxDrags += 1

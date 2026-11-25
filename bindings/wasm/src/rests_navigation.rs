@@ -37,7 +37,7 @@ pub fn under(session: &Session, command: &str, params: &Value) -> Option<Under> 
         }
         return Some(answer);
     }
-    if command == "source.setPlayhead" || command.starts_with("markers.goTo") || matches!(command, "markers.goNext" | "markers.goPrev") {
+    if command == "source.setPlayhead" || command.starts_with("markers.goTo") || matches!(command, "marker.goNext" | "marker.goPrev") {
         return marker_destination(session, command, params);
     }
     if command == "project.selectAll" {
@@ -241,7 +241,7 @@ fn marker_destination(session: &Session, command: &str, params: &Value) -> Optio
     let split = command.strip_prefix("markers.goToSplit");
     if source && split.is_none() {
         // Source next/previous already have a historical marker-list profile.
-        if matches!(command, "markers.goNext" | "markers.goPrev") {
+        if matches!(command, "marker.goNext" | "marker.goPrev") {
             return None;
         }
         let id = session.state.source_item?;
@@ -274,14 +274,14 @@ fn marker_destination(session: &Session, command: &str, params: &Value) -> Optio
         fields.extend([format!("sequence.settings.split.{channel}{edge}"), format!("sequence.settings.mark_{}", edge.to_ascii_lowercase())]);
     } else {
         match command {
-            "markers.goToIn" => fields.push("sequence.settings.mark_in".into()),
-            "markers.goToOut" => {
+            "marker.goToIn" => fields.push("sequence.settings.mark_in".into()),
+            "marker.goToOut" => {
                 fields.push("sequence.settings.mark_out".into());
                 if q.mark_out.is_none() {
                     fields.push("sequence.duration".into());
                 }
             }
-            "markers.goNext" | "markers.goPrev" => fields.push("sequence.markers".into()),
+            "marker.goNext" | "marker.goPrev" => fields.push("sequence.markers".into()),
             _ => return None,
         }
     }
@@ -304,23 +304,22 @@ fn leaf(id: Value, fields: impl IntoIterator<Item = &'static str>) -> Premise {
 }
 
 pub(super) fn source_marker_inputs(session: &Session, command: &str, params: &Value, under: Option<Under>) -> Option<Under> {
-    if params.get("target").and_then(Value::as_str) != Some("source")
-        || !matches!(command, "markers.add" | "markers.edit" | "markers.goNext" | "markers.goPrev")
-    {
+    if params.get("target").and_then(Value::as_str) != Some("source") || !matches!(command, "marker.add" | "marker.edit" | "marker.goNext" | "marker.goPrev") {
         return under;
     }
     let Some(id) = session.state.source_item else { return under };
     let Some(view) = kition_film_engine::clip_ops::source_view(session, id) else { return under };
-    let navigation = matches!(command, "markers.goNext" | "markers.goPrev");
+    let navigation = matches!(command, "marker.goNext" | "marker.goPrev");
     let mut fields = vec!["~sourceMedia"];
     let destination = navigation
-        && view.markers.iter().any(|marker| {
-            if command == "markers.goNext" { marker.start > session.state.source_playhead } else { marker.start < session.state.source_playhead }
-        });
+        && view
+            .markers
+            .iter()
+            .any(|marker| if command == "marker.goNext" { marker.start > session.state.source_playhead } else { marker.start < session.state.source_playhead });
     if navigation {
         fields.push("~sourceMarkerStarts");
     }
-    if destination || command == "markers.add" || command == "markers.edit" && params.get("durationFrames").is_some() {
+    if destination || command == "marker.add" || command == "marker.edit" && params.get("durationFrames").is_some() {
         fields.extend(["~sourceStart", "~sourceEnd"]);
         if destination || params.get("durationFrames").is_some() {
             fields.push("~sourceRate");

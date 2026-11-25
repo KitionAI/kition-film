@@ -6,16 +6,16 @@
 //!
 //! | command | object | fields | positions |
 //! |---|---|---|---|
-//! | `effects.setParam` by `clip`, no `time`/`frame`/`seconds`/`timecode`, no `mask`, on a clip with no keyframe | the clip | `effects` | none |
-//! | `effects.setKeyframe`, `effects.deleteKeyframe`, `effects.moveKeyframe`, `effects.setInterpolation` with `mediaTime` | the clip | `effects` | none |
-//! | `effects.toggleEnabled` | the clip | `effects` | none |
+//! | `effect.setParam` by `clip`, no `time`/`frame`/`seconds`/`timecode`, no `mask`, on a clip with no keyframe | the clip | `effects` | none |
+//! | `effect.setKeyframe`, `effect.deleteKeyframe`, `effect.moveKeyframe`, `effect.setInterpolation` with `mediaTime` | the clip | `effects` | none |
+//! | `effect.toggleEnabled` | the clip | `effects` | none |
 //! | `clip.enable` | each clip and, with Linked Selection, its linked clips | `props.enabled`, `link` | none |
 //! | `clip.rename` | the clip, or the project item `item` | `props.name` (`name` for an item) | none |
-//! | `captions.setTrack`, `.deleteTrack`, `.setStyle` | the open sequence's item | `sequence.captionTracks[id=<id>]` (`.deleteTrack` also its captions, `sequence.captions[track=<id>]`); an ordinal also holds its indexed id | none |
-//! | `captions.setText` | the open sequence's item | its caption by its id, `sequence.captions[id=<id>]` | none |
-//! | `captions.setTimes`, `.trim`, `.move`, `.delete`, `.merge`, `.split` (and `.setText` on a caption it cannot find, or the one under the playhead) | the open sequence's item | `sequence.captionTracks`, `sequence.captions` | none |
-//! | `markers.edit` (program) | the open sequence's item | its marker by its id, `sequence.markers[id=<id>]` | none |
-//! | `markers.clearCurrent`, `markers.clearAll` (program) | the open sequence's item | `sequence.markers` | none |
+//! | `caption.setTrack`, `.deleteTrack`, `.setStyle` | the open sequence's item | `sequence.captionTracks[id=<id>]` (`.deleteTrack` also its captions, `sequence.captions[track=<id>]`); an ordinal also holds its indexed id | none |
+//! | `caption.setText` | the open sequence's item | its caption by its id, `sequence.captions[id=<id>]` | none |
+//! | `caption.setTimes`, `.trim`, `.move`, `.delete`, `.merge`, `.split` (and `.setText` on a caption it cannot find, or the one under the playhead) | the open sequence's item | `sequence.captionTracks`, `sequence.captions` | none |
+//! | `marker.edit` (program) | the open sequence's item | its marker by its id, `sequence.markers[id=<id>]` | none |
+//! | `marker.clearCurrent`, `marker.clearAll` (program) | the open sequence's item | `sequence.markers` | none |
 //! | `timeline.razor`, `sequence.addEdit`, `sequence.addEditAllTracks` at a place | each clip under it | every field | `start` |
 //! | `timeline.place` (insert or overwrite) at a place | each clip under it (bindings/wasm) | every field | `start`, `clipId` |
 //! | `sequence.lift`, `sequence.extract` | each clip in the marked range; for extract each later clip | every field; `link` | `start`, `clipId`; `start`, `clips` |
@@ -23,7 +23,7 @@
 //! | `timeline.place` with `snap` | the open sequence's item (`markers`), every audio clip (`beats`) | `sequence.markers`; every field | none; every position |
 //!
 //! Why each is exact:
-//! - `effects.setParam` sets the parameter's value (`Param::set_at`): with no keyframe on the
+//! - `effect.setParam` sets the parameter's value (`Param::set_at`): with no keyframe on the
 //!   parameter that ignores the time, so neither the playhead nor where the clip is matters. On a
 //!   clip with a keyframe on any parameter, or given a time, it keys the value at the clip's source
 //!   time under that time, which a move, trim, slip or speed change of the clip changes: no premise
@@ -68,9 +68,8 @@ impl Premise {
 }
 
 /// The caption edits that act on the captions named, else the selected ones, else the one under
-/// the playhead (`captions::caption_ids`), or on those under a time (`captions.split`).
-const CAPTION_EDITS: [&str; 7] =
-    ["captions.setText", "captions.setTimes", "captions.trim", "captions.move", "captions.delete", "captions.merge", "captions.split"];
+/// the playhead (`captions::caption_ids`), or on those under a time (`caption.split`).
+const CAPTION_EDITS: [&str; 7] = ["caption.setText", "caption.setTimes", "caption.trim", "caption.move", "caption.delete", "caption.merge", "caption.split"];
 
 /// The keys a command reads a sequence time from in place of the playhead.
 const TIME_KEYS: [&str; 4] = ["time", "seconds", "frame", "timecode"];
@@ -157,11 +156,11 @@ impl Session {
         let item = self.state.active_sequence.filter(|_| sequence.is_some()).map(|item| item.0);
         let program = params.get("target").and_then(Value::as_str) != Some("source");
         let mut out = Vec::new();
-        if command == "captions.split" {
+        if command == "caption.split" {
             out.extend(item.map(|item| Premise::content(item, &["sequence.settings.settings.frame_rate"])));
         }
-        if matches!(command, "captions.add" | "captions.setTimes") {
-            let prefixes: &[&str] = if command == "captions.add" { &[""] } else { &["start", "end"] };
+        if matches!(command, "caption.add" | "caption.setTimes") {
+            let prefixes: &[&str] = if command == "caption.add" { &[""] } else { &["start", "end"] };
             let timecode = prefixes.iter().any(|prefix| {
                 let key = |suffix: &str| if prefix.is_empty() { suffix.to_ascii_lowercase() } else { format!("{prefix}{suffix}") };
                 params.get(key("Time")).and_then(Value::as_i64).is_none()
@@ -173,8 +172,8 @@ impl Session {
                 out.extend(item.map(|item| Premise::content(item, &["sequence.settings.settings.drop_frame"])));
             }
         }
-        let effect_time = matches!(command, "effects.setParam" | "effects.toggleAnimation" | "effects.addKeyframe")
-            || (command == "effects.setInterpolation" && params.get("mediaTime").and_then(Value::as_i64).is_none());
+        let effect_time = matches!(command, "effect.setParam" | "effect.toggleAnimation" | "effect.addKeyframe")
+            || (command == "effect.setInterpolation" && params.get("mediaTime").and_then(Value::as_i64).is_none());
         if effect_time && params.get("time").and_then(Value::as_i64).is_none() {
             let frame = params.get("frame").and_then(Value::as_i64).is_some();
             let timecode = !frame && params.get("seconds").and_then(Value::as_f64).is_none() && params.get("timecode").and_then(Value::as_str).is_some();
@@ -188,7 +187,7 @@ impl Session {
                 out.push(Premise::content(item, &fields));
             }
         }
-        if command == "effects.setParam"
+        if command == "effect.setParam"
             && params.get("mask").is_some()
             && params.get("param").and_then(Value::as_str) == Some("path")
             && let Some(clip) = whole(params, "clip").map(ClipId)
@@ -211,25 +210,25 @@ impl Session {
         // These are additional dependencies of the core handlers. Keep the
         // normal place answer: an absolute mark still names what was there.
         if program
-            && matches!(command, "markers.markIn" | "markers.markOut" | "markers.clearIn" | "markers.clearOut" | "markers.clearInOut")
+            && matches!(command, "marker.markIn" | "marker.markOut" | "marker.clearIn" | "marker.clearOut" | "marker.clearInOut")
             && let Some(item) = item
         {
             let mut fields = Vec::new();
-            if command != "markers.clearOut" {
+            if command != "marker.clearOut" {
                 fields.push("sequence.settings.mark_in");
             }
-            if command != "markers.clearIn" {
+            if command != "marker.clearIn" {
                 fields.push("sequence.settings.mark_out");
             }
-            if matches!(command, "markers.markIn" | "markers.clearIn" | "markers.clearInOut") {
+            if matches!(command, "marker.markIn" | "marker.clearIn" | "marker.clearInOut") {
                 fields.extend(["sequence.settings.split.videoIn", "sequence.settings.split.audioIn"]);
             }
-            if matches!(command, "markers.markOut" | "markers.clearOut" | "markers.clearInOut") {
+            if matches!(command, "marker.markOut" | "marker.clearOut" | "marker.clearInOut") {
                 fields.extend(["sequence.settings.split.videoOut", "sequence.settings.split.audioOut"]);
             }
             out.push(Premise::content(item, &fields));
         }
-        if matches!(command, "edit.clear" | "edit.cut") {
+        if matches!(command, "edit.delete" | "edit.cut") {
             let named: Vec<_> = if command == "edit.cut" { self.state.selection.clone() } else { crate::commands::clips_p(self, params) };
             let selected = with_links(self, &named);
             if let Some(sequence) = sequence {
@@ -291,7 +290,7 @@ impl Session {
             }
         }
         match command {
-            "masks.track" => {
+            "mask.track" => {
                 if let Ok(id) = crate::masks::target_clip(self, params)
                     && let Some(q) = sequence
                     && let Some((owner, clip)) = q.find_item(id)
@@ -323,7 +322,7 @@ impl Session {
                     }
                 }
             }
-            "effects.apply" => {
+            "effect.apply" => {
                 if let Some(def) = params.get("effect").and_then(Value::as_str).and_then(|name| crate::commands::resolve_effect_name(self, params, name)) {
                     use kition_film_project::{EffectKind, ParamValue, TrackKind};
                     if matches!(def.kind, EffectKind::VideoTransition | EffectKind::AudioTransition) {
@@ -359,7 +358,7 @@ impl Session {
                     }
                 }
             }
-            "effects.reset" => {
+            "effect.reset" => {
                 if let Some(clip) = whole(params, "clip").map(ClipId)
                     && let Some(q) = sequence
                     && let Some((_, clip)) = q.find_item(clip)
@@ -372,19 +371,19 @@ impl Session {
                     }
                 }
             }
-            "masks.add"
-            | "masks.remove"
-            | "masks.set"
-            | "masks.translate"
-            | "masks.moveVertex"
-            | "masks.addVertex"
-            | "masks.removeVertex"
-            | "masks.toggleVertexSmooth" => {
+            "mask.add"
+            | "mask.remove"
+            | "mask.set"
+            | "mask.translate"
+            | "mask.moveVertex"
+            | "mask.addVertex"
+            | "mask.removeVertex"
+            | "mask.toggleVertexSmooth" => {
                 let clip = whole(params, "clip").map(ClipId).or_else(|| self.state.selected_mask.map(|mask| mask.clip)).or_else(|| {
                     self.state.selection.iter().copied().find(|clip| sequence.is_some_and(|q| q.video_tracks.iter().any(|track| track.item(*clip).is_some())))
                 });
                 if let Some(clip) = clip {
-                    if command == "masks.remove" {
+                    if command == "mask.remove" {
                         out.push(Premise::content(clip.0, &["effects"]));
                     } else {
                         out.push(Premise {
@@ -397,8 +396,8 @@ impl Session {
                         if let Some((_, found)) = sequence.and_then(|q| q.find_item(clip)) {
                             out.extend(source_dimensions(self, found.item));
                         }
-                        let at = if command == "masks.add" { self.playhead() } else { crate::commands::time_p(self, params, "").unwrap_or(self.playhead()) };
-                        if crate::masks::uses_sequence_dimensions(self, clip, at, command == "masks.add")
+                        let at = if command == "mask.add" { self.playhead() } else { crate::commands::time_p(self, params, "").unwrap_or(self.playhead()) };
+                        if crate::masks::uses_sequence_dimensions(self, clip, at, command == "mask.add")
                             && let Some(item) = item
                         {
                             out.push(Premise::content(item, &["sequence.settings.settings.width", "sequence.settings.settings.height"]));
@@ -406,18 +405,18 @@ impl Session {
                     }
                 }
             }
-            "file.newBarsAndTone"
-            | "file.newBlackVideo"
-            | "file.newColorMatte"
-            | "file.newCountingLeader"
-            | "file.newTransparentVideo"
-            | "file.newAdjustmentLayer" => {
+            "item.newBarsAndTone"
+            | "item.newBlackVideo"
+            | "item.newColorMatte"
+            | "item.newCountingLeader"
+            | "item.newTransparentVideo"
+            | "item.newAdjustmentLayer" => {
                 if let Some(item) = item {
                     let mut fields = vec!["sequence.settings.settings.frame_rate"];
-                    if command == "file.newAdjustmentLayer" || !given(params, "width") {
+                    if command == "item.newAdjustmentLayer" || !given(params, "width") {
                         fields.push("sequence.settings.settings.width");
                     }
-                    if command == "file.newAdjustmentLayer" || !given(params, "height") {
+                    if command == "item.newAdjustmentLayer" || !given(params, "height") {
                         fields.push("sequence.settings.settings.height");
                     }
                     out.push(Premise::content(item, &fields));
@@ -581,7 +580,7 @@ impl Session {
                     }
                 }
             }
-            "markers.addChapter" | "markers.addFlashCue" if program && !given(params, "name") => {
+            "marker.addChapter" | "marker.addFlashCue" if program && !given(params, "name") => {
                 // The default name counts the markers of the kind.
                 out.extend(item.map(|item| Premise::content(item, &["sequence.markers"])));
             }
@@ -740,7 +739,7 @@ impl Session {
                     out.push(Premise { id: track.0, fields: None, positions: None });
                 }
             }
-            "effects.setParam" => {
+            "effect.setParam" => {
                 let unkeyed = |clip: u64| {
                     sequence
                         .and_then(|sequence| sequence.find_item(ClipId(clip)))
@@ -754,14 +753,14 @@ impl Session {
                     out.push(Premise::content(clip, &["effects"]));
                 }
             }
-            "effects.setKeyframe" | "effects.deleteKeyframe" | "effects.moveKeyframe" | "effects.setInterpolation" => {
+            "effect.setKeyframe" | "effect.deleteKeyframe" | "effect.moveKeyframe" | "effect.setInterpolation" => {
                 if let Some(clip) = whole(params, "clip")
                     && given(params, "mediaTime")
                 {
                     out.push(Premise::content(clip, &["effects"]));
                 }
             }
-            "effects.toggleEnabled" => out.extend(whole(params, "clip").map(|clip| Premise::content(clip, &["effects"]))),
+            "effect.toggleEnabled" => out.extend(whole(params, "clip").map(|clip| Premise::content(clip, &["effects"]))),
             "effects.move" => {
                 // It reorders the clip's effects (reading which are standard ones) and is refused on
                 // a locked track.
@@ -783,12 +782,12 @@ impl Session {
                 (None, Some(clip)) => out.push(Premise::content(clip, &["props.name"])),
                 (None, None) => {}
             },
-            "captions.setTrack" | "captions.deleteTrack" | "captions.setStyle" => {
+            "caption.setTrack" | "caption.deleteTrack" | "caption.setStyle" => {
                 if let (Some(item), Some(sequence), Some(track)) = (item, sequence, crate::captions::track_param(self, params)) {
                     let path = format!("sequence.captionTracks[id={}]", track.0);
-                    let mut fields = if command == "captions.deleteTrack" {
+                    let mut fields = if command == "caption.deleteTrack" {
                         vec![path.clone(), format!("sequence.captions[track={}]", track.0)]
-                    } else if command == "captions.setStyle" {
+                    } else if command == "caption.setStyle" {
                         if params.get("reset").and_then(Value::as_bool) == Some(true) {
                             vec![format!("{path}.style")]
                         } else {
@@ -850,7 +849,7 @@ impl Session {
                                 .find_map(|track| track.captions.iter().any(|caption| caption.id.0 == *id).then(|| format!("sequence.captions[id={id}]")))
                         })
                         .collect();
-                    if command == "captions.setText" && !paths.is_empty() && paths.len() == ids.len() {
+                    if command == "caption.setText" && !paths.is_empty() && paths.len() == ids.len() {
                         // Named by id, the text (and speaker) alone is written and nothing read
                         // (C8-time-policy): a move of the caption in time does not refuse it. Found
                         // by time, the caption's time is what names it: the whole caption is held.
@@ -867,17 +866,17 @@ impl Session {
                             }
                         }
                         out.push(Premise { id: item, fields: Some(paths), positions: Some(Vec::new()) });
-                    } else if command == "captions.showAll" || command == "captions.hideAll" {
+                    } else if command == "caption.showAll" || command == "caption.hideAll" {
                         let fields = sequence.caption_tracks.iter().map(|track| format!("sequence.captionTracks[id={}].enabled", track.id.0)).collect();
                         out.push(Premise { id: item, fields: Some(fields), positions: Some(Vec::new()) });
-                    } else if command == "captions.add" || command == "captions.trim" || command == "captions.setTimes" || command == "captions.move" {
+                    } else if command == "caption.add" || command == "caption.trim" || command == "caption.setTimes" || command == "caption.move" {
                         let mut fields = Vec::new();
-                        if command != "captions.move" || params.get("delta").and_then(Value::as_i64).is_none() {
+                        if command != "caption.move" || params.get("delta").and_then(Value::as_i64).is_none() {
                             fields.push("sequence.settings.settings.frame_rate".to_owned());
                         }
                         let track = crate::captions::track_param(self, params);
                         for (index, tr) in sequence.caption_tracks.iter().enumerate() {
-                            let chosen = if command == "captions.add" { Some(tr.id) == track } else { tr.captions.iter().any(|c| ids.contains(&c.id.0)) };
+                            let chosen = if command == "caption.add" { Some(tr.id) == track } else { tr.captions.iter().any(|c| ids.contains(&c.id.0)) };
                             if !chosen {
                                 continue;
                             }
@@ -892,7 +891,7 @@ impl Session {
                                 fields.push(format!("sequence.captions[id={}].start", caption.id.0));
                                 fields.push(format!("sequence.captions[id={}].duration", caption.id.0));
                             }
-                            if command == "captions.add" && !params.get("track").is_some_and(Value::is_number) {
+                            if command == "caption.add" && !params.get("track").is_some_and(Value::is_number) {
                                 fields.push(format!("sequence.captionTracks.{index}.id"));
                             }
                         }
@@ -913,7 +912,7 @@ impl Session {
                     }));
                 }
             }
-            "markers.edit" if program => {
+            "marker.edit" if program => {
                 if let (Some(item), Some(sequence), Some(marker)) = (item, sequence, whole(params, "marker")) {
                     // By its id, not its index (kition-sdk C8-fix-9 selectors): followed across others' saves.
                     if sequence.markers.iter().any(|found| found.id.0 == marker) {
@@ -933,10 +932,10 @@ impl Session {
                     }
                 }
             }
-            "markers.clearCurrent" if program => {
+            "marker.clearCurrent" if program => {
                 out.extend(item.map(|item| Premise::content(item, &[&format!("sequence.markers[start={}]", self.playhead().0)])));
             }
-            "markers.clearAll" if program => out.extend(item.map(|item| Premise::content(item, &["sequence.markers"]))),
+            "marker.clearAll" if program => out.extend(item.map(|item| Premise::content(item, &["sequence.markers"]))),
             _ => {}
         }
         if matches!(command, "timeline.place" | "timeline.move" | "timeline.trim") && given(params, "snap") {

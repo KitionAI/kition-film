@@ -6,13 +6,13 @@ for (const num of [30000, 60000]) {
   test(`F41 ${num}/1001 fps export retains the exact frame count, cut boundary, and audio duration`, async ({ film, page }, testInfo) => {
     await film.open()
     await film.command('file.newProject', { name: 'Original fractional rate footage' })
-    await film.command('file.newSequence', { name: 'NTSC export', width: 64, height: 36, fps: num / 1001, video: 2, audio: 1 })
+    await film.command('sequence.new', { name: 'NTSC export', width: 64, height: 36, fps: num / 1001, video: 2, audio: 1 })
     const frames = num / 1000
     const duration = TICKS * 1001 / 1000
-    const { item: tone } = await film.command('file.newBarsAndTone', { seconds: 2 })
+    const { item: tone } = await film.command('item.newBarsAndTone', { seconds: 2 })
     await film.command('timeline.place', { item: tone, track: 'V1', time: 0, duration })
     for (const [time, color] of [[0, '#ff0000'], [duration / 2, '#0000ff']]) {
-      const { item } = await film.command('file.newColorMatte', { color, seconds: 2 })
+      const { item } = await film.command('item.newColorMatte', { color, seconds: 2 })
       await film.command('timeline.place', { item, track: 'V2', time, duration: duration / 2 })
     }
     const before = await film.sequence()

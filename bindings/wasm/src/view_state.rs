@@ -48,7 +48,7 @@ mod tests {
     fn two_sequences() -> (Vec<u8>, [u64; 2]) {
         let mut doc = FilmDocument::open("Edit.kfilm", &fixture()).unwrap();
         let first = doc.session.state.active_sequence.unwrap().0;
-        let second = doc.execute("file.newSequence", json!({ "name": "B" })).unwrap()["sequence"].as_u64().unwrap();
+        let second = doc.execute("sequence.new", json!({ "name": "B" })).unwrap()["sequence"].as_u64().unwrap();
         (doc.save(None).unwrap(), [first, second])
     }
 

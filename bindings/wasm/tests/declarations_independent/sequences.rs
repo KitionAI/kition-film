@@ -147,7 +147,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.markSplitVideoIn",
+        command: "marker.markSplitVideoIn",
         path: "program",
         resolves: "active sequence; explicit time or playhead",
         reads: "same-channel opposite split point (conditionally cleared); assigned side split; has_seq",
@@ -157,7 +157,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.markSplitVideoIn",
+        command: "marker.markSplitVideoIn",
         path: "source",
         resolves: "source_item editor state (no item param); explicit time or source_playhead",
         reads: "source item split same-channel opposite and assigned side; item existence",
@@ -167,7 +167,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.goToSplitVideoIn",
+        command: "marker.goToSplitVideoIn",
         path: "program",
         resolves: "sequence split side falling back ordinary mark",
         reads: "sequence split and ordinary same-side mark; split exists in program OR source eligibility",
@@ -177,7 +177,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.goToSplitVideoIn",
+        command: "marker.goToSplitVideoIn",
         path: "source",
         resolves: "source_item; split falling back media/sequence marks (not subclip parent)",
         reads: "source item split,kind,markIn/markOut; program/source split existence eligibility",
@@ -187,7 +187,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.markSplitVideoOut",
+        command: "marker.markSplitVideoOut",
         path: "program",
         resolves: "active sequence; explicit time or playhead",
         reads: "same-channel opposite split point (conditionally cleared); assigned side split; has_seq",
@@ -197,7 +197,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.markSplitVideoOut",
+        command: "marker.markSplitVideoOut",
         path: "source",
         resolves: "source_item editor state (no item param); explicit time or source_playhead",
         reads: "source item split same-channel opposite and assigned side; item existence",
@@ -207,7 +207,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.goToSplitVideoOut",
+        command: "marker.goToSplitVideoOut",
         path: "program",
         resolves: "sequence split side falling back ordinary mark",
         reads: "sequence split and ordinary same-side mark; split exists in program OR source eligibility",
@@ -217,7 +217,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.goToSplitVideoOut",
+        command: "marker.goToSplitVideoOut",
         path: "source",
         resolves: "source_item; split falling back media/sequence marks (not subclip parent)",
         reads: "source item split,kind,markIn/markOut; program/source split existence eligibility",
@@ -227,7 +227,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.markSplitAudioIn",
+        command: "marker.markSplitAudioIn",
         path: "program",
         resolves: "active sequence; explicit time or playhead",
         reads: "same-channel opposite split point (conditionally cleared); assigned side split; has_seq",
@@ -237,7 +237,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.markSplitAudioIn",
+        command: "marker.markSplitAudioIn",
         path: "source",
         resolves: "source_item editor state (no item param); explicit time or source_playhead",
         reads: "source item split same-channel opposite and assigned side; item existence",
@@ -247,7 +247,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.goToSplitAudioIn",
+        command: "marker.goToSplitAudioIn",
         path: "program",
         resolves: "sequence split side falling back ordinary mark",
         reads: "sequence split and ordinary same-side mark; split exists in program OR source eligibility",
@@ -257,7 +257,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.goToSplitAudioIn",
+        command: "marker.goToSplitAudioIn",
         path: "source",
         resolves: "source_item; split falling back media/sequence marks (not subclip parent)",
         reads: "source item split,kind,markIn/markOut; program/source split existence eligibility",
@@ -267,7 +267,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.markSplitAudioOut",
+        command: "marker.markSplitAudioOut",
         path: "program",
         resolves: "active sequence; explicit time or playhead",
         reads: "same-channel opposite split point (conditionally cleared); assigned side split; has_seq",
@@ -277,7 +277,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.markSplitAudioOut",
+        command: "marker.markSplitAudioOut",
         path: "source",
         resolves: "source_item editor state (no item param); explicit time or source_playhead",
         reads: "source item split same-channel opposite and assigned side; item existence",
@@ -287,7 +287,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.goToSplitAudioOut",
+        command: "marker.goToSplitAudioOut",
         path: "program",
         resolves: "sequence split side falling back ordinary mark",
         reads: "sequence split and ordinary same-side mark; split exists in program OR source eligibility",
@@ -297,7 +297,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.goToSplitAudioOut",
+        command: "marker.goToSplitAudioOut",
         path: "source",
         resolves: "source_item; split falling back media/sequence marks (not subclip parent)",
         reads: "source item split,kind,markIn/markOut; program/source split existence eligibility",
@@ -307,7 +307,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.addRange",
+        command: "marker.addRange",
         path: "point",
         resolves: "time/frame/seconds/timecode else playhead; duration ticks/frame/seconds else one rate-based second",
         reads: "sequence frameRate/dropFrame for formatted/frame inputs; point material identity; no existing marker contents read",
@@ -317,7 +317,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.addRangeInOut",
+        command: "marker.addRangeInOut",
         path: "marked range",
         resolves: "sequence markIn/markOut; both required",
         reads: "markIn,markOut,settings.frameRate; material under marked range by positional address",
@@ -327,7 +327,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.addChapter",
+        command: "marker.addChapter",
         path: "point",
         resolves: "time/frame/seconds/timecode else playhead",
         reads: "point material identity; settings rate/dropFrame for time inputs; number Chapter markers if name omitted",
@@ -337,7 +337,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.addFlashCue",
+        command: "marker.addFlashCue",
         path: "point",
         resolves: "time/frame/seconds/timecode else playhead; snap to frame",
         reads: "settings.frameRate; point material identity; dropFrame for timecode; count FlashCue markers when name omitted",
@@ -347,7 +347,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.showAllMarkerColors",
+        command: "marker.showAllMarkerColors",
         path: "editor",
         resolves: "none",
         reads: "hidden colors nonempty eligibility",
@@ -357,7 +357,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.filterColors",
+        command: "marker.filterColors",
         path: "editor",
         resolves: "hidden list or color name",
         reads: "current hidden colors when toggling; no document",
@@ -367,7 +367,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.rippleSequenceMarkers",
+        command: "marker.rippleSequenceMarkers",
         path: "toggle/absolute",
         resolves: "none",
         reads: "none",
@@ -377,7 +377,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.copyPasteIncludesSequenceMarkers",
+        command: "marker.copyPasteIncludesSequenceMarkers",
         path: "toggle/absolute",
         resolves: "none",
         reads: "none",
@@ -437,7 +437,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "captions.showActiveOnly",
+        command: "caption.showActiveOnly",
         path: "explicit/default",
         resolves: "track id/C ordinal; omitted selected caption owner else targeted caption track else first",
         reads: "caption tracks exists; selected caption owner identity; assigned enabled on every caption track",
@@ -447,7 +447,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "captions.newTrack",
+        command: "caption.newTrack",
         path: "append",
         resolves: "track id/C ordinal/default first; C string parsed ordinal, not stored name",
         reads: "sequence exists; end list gap",
@@ -457,7 +457,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "captions.deleteTrack",
+        command: "caption.deleteTrack",
         path: "track",
         resolves: "track id/C ordinal/default first; C string parsed ordinal, not stored name",
         reads: "track exists; at least one caption track eligibility; deleted owner subtree",
@@ -467,7 +467,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "captions.setTrack",
+        command: "caption.setTrack",
         path: "patch",
         resolves: "track id/C ordinal/default first; C string parsed ordinal, not stored name",
         reads: "assigned name/format/language/enabled/locked/syncLock only; track existence,caption tracks nonempty eligibility",
@@ -477,7 +477,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "captions.setStyle",
+        command: "caption.setStyle",
         path: "patch/reset",
         resolves: "track id/C ordinal/default first; C string parsed ordinal, not stored name",
         reads: "assigned style members supplied; reset assigns entire style; track exists; no owner.locked check",
@@ -487,7 +487,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "captions.export",
+        command: "caption.export",
         path: "external",
         resolves: "track id/C ordinal/default first; C string parsed ordinal, not stored name",
         reads: "selected track all caption text/start/duration/speaker/cueId/settings; sequence frameRate; track exists",
@@ -497,7 +497,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "captions.add",
+        command: "caption.add",
         path: "existing track, text/time",
         resolves: "track id/C ordinal/default first; time else playhead",
         reads: "owner.locked; settings.frameRate snap/minimum; existing caption covering start eligibility; next caption.start clamps duration; positional material at start; no unrelated caption text read",
@@ -507,7 +507,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "captions.add",
+        command: "caption.add",
         path: "words",
         resolves: "track id/C ordinal/default first; words earliest start unless explicit time; optional duration else latest word end",
         reads: "same track.locked,covering caption,next start,sequence frameRate as text path; no playhead default with words",
@@ -517,7 +517,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "captions.add",
+        command: "caption.add",
         path: "automatic C1",
         resolves: "no tracks + track omitted/null/C1; explicit unknown ID cannot create",
         reads: "caption-track list absence eligibility; sequence frameRate; requested insertion point identity",
@@ -527,7 +527,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "captions.split",
+        command: "caption.split",
         path: "explicit caption",
         resolves: "caption/captions IDs; absent caption_selection; absent first track caption under playhead (including disabled/locked tracks); explicit caption at time else playhead",
         reads: "owner.locked; entire caption cloned incl text/speaker/settings/cueId; start,duration,min duration; sequence frameRate; split strictly inside",
@@ -537,7 +537,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "captions.split",
+        command: "caption.split",
         path: "no caption",
         resolves: "all unlocked caption tracks: caption covering time; selection ignored",
         reads: "all owner locks; captions covering time full clone; sequence frameRate/min duration; at least one existing caption eligibility",
@@ -547,7 +547,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "captions.merge",
+        command: "caption.merge",
         path: "consecutive",
         resolves: "caption/captions IDs; absent caption_selection; absent first track caption under playhead (including disabled/locked tracks)",
         reads: "owner locked; same-track/consecutive eligible; selected captions text,start,last duration; assigned first duration,text; selected caption ordering/ownership",
@@ -557,7 +557,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "captions.setText",
+        command: "caption.setText",
         path: "text/speaker",
         resolves: "caption/captions IDs; absent caption_selection; absent first track caption under playhead (including disabled/locked tracks)",
         reads: "owner.locked; supplied text/speaker assigned fields; caption existence; at least one caption + track eligibility",
@@ -567,7 +567,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "captions.setTimes",
+        command: "caption.setTimes",
         path: "absolute/partial times",
         resolves: "caption/captions IDs; absent caption_selection; absent first track caption under playhead (including disabled/locked tracks)",
         reads: "owner.locked; current start/end defaults; assigned start/duration; sequence frameRate/min duration; all peer caption ranges for overlap eligibility (text irrelevant)",
@@ -577,7 +577,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "captions.trim",
+        command: "caption.trim",
         path: "edge",
         resolves: "caption/captions IDs; absent caption_selection; absent first track caption under playhead (including disabled/locked tracks)",
         reads: "owner.locked; selected start,duration; nearest prior end,next start clamp; sequence frameRate/min duration; assigned start/duration; nonzero applied eligibility",
@@ -587,7 +587,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "captions.move",
+        command: "caption.move",
         path: "delta",
         resolves: "caption/captions IDs; absent caption_selection; absent first track caption under playhead (including disabled/locked tracks)",
         reads: "each owner.locked; selected start,duration; all nonmoving peers ranges for overlap and clamp; assigned start; sequence frameRate for deltaFrames",
@@ -597,7 +597,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "captions.delete",
+        command: "caption.delete",
         path: "nonripple",
         resolves: "caption/captions IDs; absent caption_selection; absent first track caption under playhead (including disabled/locked tracks)",
         reads: "each owner.locked; selected existence; no selected text/times read to decide deletion",
@@ -607,7 +607,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "captions.delete",
+        command: "caption.delete",
         path: "ripple",
         resolves: "caption/captions IDs; absent caption_selection; absent first track caption under playhead (including disabled/locked tracks)",
         reads: "each owner.locked; selected start/duration defines removed gaps; suffix start membership and assigned start; text/speaker not read",
@@ -617,7 +617,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "captions.select",
+        command: "caption.select",
         path: "editor",
         resolves: "explicit captions IDs, filter existence; add or replace",
         reads: "caption existence only; sequence exists",
@@ -627,7 +627,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "captions.goTo",
+        command: "caption.goTo",
         path: "editor",
         resolves: "caption/captions IDs; absent caption_selection; absent first track caption under playhead (including disabled/locked tracks)",
         reads: "selected caption.start; has captions eligibility",
@@ -637,7 +637,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "captions.next",
+        command: "caption.next",
         path: "editor",
         resolves: "next/prior caption start relative playhead on enabled tracks",
         reads: "tracks enabled; captions starts and identity; at least one caption eligibility",
@@ -647,7 +647,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "captions.previous",
+        command: "caption.previous",
         path: "editor",
         resolves: "next/prior caption start relative playhead on enabled tracks",
         reads: "tracks enabled; captions starts and identity; at least one caption eligibility",
@@ -657,7 +657,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "captions.showAll",
+        command: "caption.showAll",
         path: "all tracks",
         resolves: "all caption tracks",
         reads: "assigned enabled of each; caption-track nonempty eligibility",
@@ -667,7 +667,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "captions.hideAll",
+        command: "caption.hideAll",
         path: "all tracks",
         resolves: "all caption tracks",
         reads: "assigned enabled of each; caption-track nonempty eligibility",
@@ -677,7 +677,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "captions.import",
+        command: "caption.import",
         path: "active sequence",
         resolves: "host path bytes; append caption track on active seq",
         reads: "sequence frameRate for frame snap; active sequence existence",
@@ -687,7 +687,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "captions.import",
+        command: "caption.import",
         path: "no sequence",
         resolves: "host path bytes; default sequence settings",
         reads: "no document input",
@@ -1147,7 +1147,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "clip.createMulticam",
+        command: "clip.addMulticam",
         path: "in",
         resolves: "items IDs/project_selection; resolve subclip through parent media; reference ID; track is V/A ordinal or ID for synchronize",
         reads: "sourceIn (project media markIn or subclip range.start); settings.frameRate,source duration/range; explicit reference among units/items eligibility; item name/default names,label,parent bin; video/audio capabilities; settings from reference media; intrinsic effects auto-points source dimensions; ranges copied; kind/media eligibility; camera names from metadata/name or ordinal; Camera Angle metadata optionally orders; enabled media streams; processed bin named Processed Clips reuse and item positions when moving",
@@ -1157,7 +1157,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "clip.createMulticam",
+        command: "clip.addMulticam",
         path: "out",
         resolves: "items IDs/project_selection; resolve subclip through parent media; reference ID; track is V/A ordinal or ID for synchronize",
         reads: "sourceIn,duration,speed (project markOut + source frame duration or subclip range.end); settings.frameRate,source duration/range; explicit reference among units/items eligibility; item name/default names,label,parent bin; video/audio capabilities; settings from reference media; intrinsic effects auto-points source dimensions; ranges copied; kind/media eligibility; camera names from metadata/name or ordinal; Camera Angle metadata optionally orders; enabled media streams; processed bin named Processed Clips reuse and item positions when moving",
@@ -1167,7 +1167,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "clip.createMulticam",
+        command: "clip.addMulticam",
         path: "timecode",
         resolves: "items IDs/project_selection; resolve subclip through parent media; reference ID; track is V/A ordinal or ID for synchronize",
         reads: "resolved media.info.startTimecode and frameRate; ignoreHours; settings.frameRate,source duration/range; explicit reference among units/items eligibility; item name/default names,label,parent bin; video/audio capabilities; settings from reference media; intrinsic effects auto-points source dimensions; ranges copied; kind/media eligibility; camera names from metadata/name or ordinal; Camera Angle metadata optionally orders; enabled media streams; processed bin named Processed Clips reuse and item positions when moving",
@@ -1177,7 +1177,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "clip.createMulticam",
+        command: "clip.addMulticam",
         path: "marker",
         resolves: "items IDs/project_selection; resolve subclip through parent media; reference ID; track is V/A ordinal or ID for synchronize",
         reads: "clip+resolved media marker name/start; first matching name eligibility; settings.frameRate,source duration/range; explicit reference among units/items eligibility; item name/default names,label,parent bin; video/audio capabilities; settings from reference media; intrinsic effects auto-points source dimensions; ranges copied; kind/media eligibility; camera names from metadata/name or ordinal; Camera Angle metadata optionally orders; enabled media streams; processed bin named Processed Clips reuse and item positions when moving",
@@ -1187,7 +1187,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "clip.createMulticam",
+        command: "clip.addMulticam",
         path: "audio",
         resolves: "items IDs/project_selection; resolve subclip through parent media; reference ID; track is V/A ordinal or ID for synchronize",
         reads: "resolved source audio bytes; source range,has_audio eligibility; correlation; settings.frameRate,source duration/range; explicit reference among units/items eligibility; item name/default names,label,parent bin; video/audio capabilities; settings from reference media; intrinsic effects auto-points source dimensions; ranges copied; kind/media eligibility; camera names from metadata/name or ordinal; Camera Angle metadata optionally orders; enabled media streams; processed bin named Processed Clips reuse and item positions when moving",
@@ -1747,7 +1747,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.markIn",
+        command: "marker.markIn",
         path: "target=source",
         resolves: "source_item, time/seconds else source_playhead; project.setMarks",
         reads: "source Media/Sequence/Subclip kind,rate,start/end; assigned mark+same-side split; opposite mark cleared if crossing; subclip range update per project.setMarks",
@@ -1757,7 +1757,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.markOut",
+        command: "marker.markOut",
         path: "target=source",
         resolves: "source_item, time/seconds else source_playhead; project.setMarks",
         reads: "source Media/Sequence/Subclip kind,rate,start/end; assigned mark+same-side split; opposite mark cleared if crossing; subclip range update per project.setMarks",
@@ -1767,7 +1767,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.clearIn",
+        command: "marker.clearIn",
         path: "target=source",
         resolves: "source_item then project.setMarks",
         reads: "source kind/mark fields and source range from source_view; same-side split assigned/cleared; source exists",
@@ -1777,7 +1777,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.clearOut",
+        command: "marker.clearOut",
         path: "target=source",
         resolves: "source_item then project.setMarks",
         reads: "source kind/mark fields and source range from source_view; same-side split assigned/cleared; source exists",
@@ -1787,7 +1787,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.clearInOut",
+        command: "marker.clearInOut",
         path: "target=source",
         resolves: "source_item then project.setMarks",
         reads: "source kind/mark fields and source range from source_view; same-side split assigned/cleared; source exists",
@@ -1797,7 +1797,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.goToIn",
+        command: "marker.goToIn",
         path: "target=source",
         resolves: "source_item; media root for subclips; marks/start/end or ordered marker starts",
         reads: "source view kind/rate/range/marks; marker starts for next/prev; source availability eligibility",
@@ -1807,7 +1807,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.goToOut",
+        command: "marker.goToOut",
         path: "target=source",
         resolves: "source_item; media root for subclips; marks/start/end or ordered marker starts",
         reads: "source view kind/rate/range/marks; marker starts for next/prev; source availability eligibility",
@@ -1817,7 +1817,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.goNext",
+        command: "marker.goNext",
         path: "target=source",
         resolves: "source_item; media root for subclips; marks/start/end or ordered marker starts",
         reads: "source view kind/rate/range/marks; marker starts for next/prev; source availability eligibility",
@@ -1827,7 +1827,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.goPrev",
+        command: "marker.goPrev",
         path: "target=source",
         resolves: "source_item; media root for subclips; marks/start/end or ordered marker starts",
         reads: "source view kind/rate/range/marks; marker starts for next/prev; source availability eligibility",
@@ -1837,7 +1837,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.add",
+        command: "marker.add",
         path: "target=source",
         resolves: "source_item -> source_view.media (subclip parent); time/seconds else source_playhead",
         reads: "source rate/bounds/subclip restriction for time/duration eligibility; same point source material; next_id exhaustion; existing marker names/comments irrelevant",
@@ -1847,7 +1847,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.edit",
+        command: "marker.edit",
         path: "target=source",
         resolves: "source_item -> media root; marker stable ID inside source marker list",
         reads: "assigned name/comment/color/duration; durationFrames reads source rate,end and marker.start clamp; source kind/range eligibility; no marker time read when only text/color",
@@ -1857,7 +1857,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.clearCurrent",
+        command: "marker.clearCurrent",
         path: "target=source",
         resolves: "source_item -> media root; source_playhead selects equal-start markers",
         reads: "marker starts at cursor; exact source point identity; source view availability",
@@ -1867,7 +1867,7 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "markers.clearAll",
+        command: "marker.clearAll",
         path: "target=source",
         resolves: "source_item -> media root",
         reads: "source view availability; deleted marker list existence",

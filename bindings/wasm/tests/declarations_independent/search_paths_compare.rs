@@ -8,7 +8,7 @@ use kition_film_kit::FilmDocument;
 use kition_kit::{ContentPremise, KitDocument, Premise, TimeSpan, Under, Within};
 use serde_json::{Value, json};
 
-pub const PATHS: &[(&str, &str)] = &[("file.newSearchBin", "new"), ("project.editSearchBin", "existing by ID"), ("project.deleteSearchBin", "existing by ID")];
+pub const PATHS: &[(&str, &str)] = &[("bin.addSearch", "new"), ("project.editSearchBin", "existing by ID"), ("project.deleteSearchBin", "existing by ID")];
 pub fn compared_path(command: &str, path: &str) -> bool {
     let hash = |s: &str| s.bytes().fold(0xcbf29ce484222325u64, |h, b| (h ^ u64::from(b)).wrapping_mul(0x100000001b3));
     PATHS.contains(&(command, path))
@@ -20,7 +20,7 @@ pub fn more(command: &str) -> Vec<&'static str> {
         return vec![];
     }
     let mut out = vec!["coarse-search-column-text", "unmatched-search-candidate-order"];
-    if command == "file.newSearchBin" {
+    if command == "bin.addSearch" {
         out.push("unconsumed-program-material");
     }
     out
@@ -34,8 +34,8 @@ fn search_bins_compare_live_results_query_precedence_column_spellings_and_full_r
     for populated in [false, true] {
         let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
         let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-        let source = doc.execute("file.newColorMatte", json!({"name":"Needle","seconds":2})).unwrap()["item"].as_u64().unwrap();
-        let bin = doc.execute("file.newSearchBin", json!({"name":"Saved","column":"Name","text":"Needle"})).unwrap()["bin"].as_u64().unwrap();
+        let source = doc.execute("item.newColorMatte", json!({"name":"Needle","seconds":2})).unwrap()["item"].as_u64().unwrap();
+        let bin = doc.execute("bin.addSearch", json!({"name":"Saved","column":"Name","text":"Needle"})).unwrap()["bin"].as_u64().unwrap();
         if populated {
             doc.execute("timeline.place", json!({"item":source,"track":"V1","time":0})).unwrap();
         }
@@ -76,7 +76,7 @@ fn search_bins_compare_live_results_query_precedence_column_spellings_and_full_r
                 ] {
                     for rows in [false, true] {
                         for replacement in [false, true] {
-                            let mut p = if command == "file.newSearchBin" || replacement {
+                            let mut p = if command == "bin.addSearch" || replacement {
                                 json!({"bin":bin,"name":"Agent","column":column,"text":"Needle"})
                             } else {
                                 json!({"bin":bin,"name":"Agent"})
@@ -85,7 +85,7 @@ fn search_bins_compare_live_results_query_precedence_column_spellings_and_full_r
                                 p["rows"] = json!([{"column":column,"text":"Needle"},{"column":"Scene","text":""},{"column":"Name","text":"other"}]);
                             }
                             let mut want = Under::default();
-                            if command == "file.newSearchBin" {
+                            if command == "bin.addSearch" {
                                 for track in q.all_tracks() {
                                     let from = track.items.iter().take_while(|clip| clip.end().0 <= at).count();
                                     let to = track.items.iter().take_while(|clip| clip.start.0 <= at).count().max(from);

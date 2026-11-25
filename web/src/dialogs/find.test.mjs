@@ -164,17 +164,17 @@ test('the Timeline highlights every clip and marker Find matched, where the copy
 
 test('Create Search Bin opens on the Project search, sends its name as upstream (an empty one too), and previews nothing without text', async () => {
   const ctx = context({ projectSearch: 'tone' })
-  const draft = await opened('file.newSearchBin', ctx)
+  const draft = await opened('bin.addSearch', ctx)
   assert.deepEqual(draft, { name: '', column: 'All', operator: 'contains', text: 'tone' })
-  assert.deepEqual(await ok('file.newSearchBin', [['column', 'Media Type'], ['text', 'Audio']], ctx), [{ command: 'file.newSearchBin', params: { name: '', column: 'Media Type', operator: 'contains', text: 'Audio' } }])
-  assert.deepEqual((await ok('file.newSearchBin', [['name', 'Sounds']], ctx))[0].params, { name: 'Sounds', column: 'All', operator: 'contains', text: 'tone' })
-  const empty = await opened('file.newSearchBin', context())
-  assert.deepEqual(previewSteps(spec('file.newSearchBin'), empty, context()), [])
-  assert.equal(dialogSteps(spec('file.newSearchBin'), empty, context()).length, 1, "OK runs it, for the engine's error")
-  assert.deepEqual(spec('file.newSearchBin').preview, ['project'])
+  assert.deepEqual(await ok('bin.addSearch', [['column', 'Media Type'], ['text', 'Audio']], ctx), [{ command: 'bin.addSearch', params: { name: '', column: 'Media Type', operator: 'contains', text: 'Audio' } }])
+  assert.deepEqual((await ok('bin.addSearch', [['name', 'Sounds']], ctx))[0].params, { name: 'Sounds', column: 'All', operator: 'contains', text: 'tone' })
+  const empty = await opened('bin.addSearch', context())
+  assert.deepEqual(previewSteps(spec('bin.addSearch'), empty, context()), [])
+  assert.equal(dialogSteps(spec('bin.addSearch'), empty, context()).length, 1, "OK runs it, for the engine's error")
+  assert.deepEqual(spec('bin.addSearch').preview, ['project'])
   // The lists are upstream's columns and operators.
-  assert.deepEqual(rowsOf('file.newSearchBin').get('column').options.map(([value]) => value), [...FIND_COLUMNS])
-  assert.deepEqual(rowsOf('file.newSearchBin').get('operator').options, FIND_OPERATORS)
+  assert.deepEqual(rowsOf('bin.addSearch').get('column').options.map(([value]) => value), [...FIND_COLUMNS])
+  assert.deepEqual(rowsOf('bin.addSearch').get('operator').options, FIND_OPERATORS)
 })
 
 test("Automate's ordering, placement, and method map to upstream's values, its frames are whole", async () => {
@@ -215,7 +215,7 @@ test("Automate's ordering, placement, and method map to upstream's values, its f
 })
 
 test('the dialogs open with no params and run at once with them', () => {
-  for (const id of ['edit.find', 'file.newSearchBin', 'clip.automateToSequence']) {
+  for (const id of ['edit.find', 'bin.addSearch', 'clip.automateToSequence']) {
     assert.equal(routeOf(id, {}, 'project'), 'dialog', id)
     assert.equal(routeOf(id, { text: 'x' }, 'project'), 'session', id)
   }

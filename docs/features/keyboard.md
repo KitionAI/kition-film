@@ -8,7 +8,7 @@ that Kition Film Default uses as well). `presets::premiere()` is the whole prese
 Every entry names a Kition Film command id. Engine commands run through `Session::execute`; UI
 commands (frames, panels, monitor zoom, Project and Text panel navigation) belong to the editor,
 whose `web/src/session/invoke.ts` routes them. The editor's key router (`web/src/session/keys.ts`)
-binds the engine's shortcut set (`shortcuts.list`) plus the UI commands' keys from the parity
+binds the engine's shortcut set (`shortcut.list`) plus the UI commands' keys from the parity
 manifest (`web/parity/film-upstream.json`). Agents run the engine commands by id through the
 headless `kition-film`.
 
@@ -56,7 +56,7 @@ Frame has no default key; the Premiere preset moves Shift+E to Export Frame and 
 | Production panel: New Project, New Folder, Close Project, Make a Copy, Move Selection Home/End/Page Up/Page Down, Move To Trash, Open Project, Zoom In/Out (12 keys) | Productions (shared multi-project folders) are not implemented; there is no Production panel. |
 | Search panel: Open in Source Monitor (⇧O) | No separate Search panel; Open Search (⇧⌘F) focuses the Project panel search. |
 | Audio Track Mixer: Show/Hide Tracks… (⌥⌘T), Meter Input(s) Only (⌃⇧I) | The mixer has no track visibility dialog and no input metering (no hardware input recording). |
-| Effect Controls: Remove Selected Effect (Delete), Loop During Audio-Only Playback (⌘L) | Effect Controls has no effect selection state and no audio-only playback mode; effects are removed from their context menu or `effects.remove`. |
+| Effect Controls: Remove Selected Effect (Delete), Loop During Audio-Only Playback (⌘L) | Effect Controls has no effect selection state and no audio-only playback mode; effects are removed from their context menu or `effect.remove`. |
 | Effects panel: New Custom Bin (⌘/), Delete Custom Item (Delete) | The Effects panel has no custom bins (effect presets live in the Presets bin). |
 | History panel: Delete (Delete) | History states cannot be selected and deleted individually. |
 | Media Browser: Select Directory List / Select Media List (⇧← / ⇧→) | The directory tree and media list take no separate keyboard focus. |

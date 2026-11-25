@@ -69,7 +69,7 @@ fn set_transition(q: &Sequence, seq: u64, transition: u64, p: &Value) -> Under {
 fn track_and_transition_paths_compare_ordinals_id_defaults_and_patch_masks() {
     let mut doc = FilmDocument::create("Track.kfilm", 64, 36).unwrap();
     let seq = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let item = doc.execute("file.newBarsAndTone", json!({"seconds":3})).unwrap()["item"].clone();
+    let item = doc.execute("item.newBarsAndTone", json!({"seconds":3})).unwrap()["item"].clone();
     let clip = doc.execute("timeline.place", json!({"item":item,"track":"V1","time":0})).unwrap()["clips"][0].clone();
     let transition = doc.execute("sequence.applyVideoTransition", json!({"clip":clip,"edge":"in","frames":8})).unwrap()["transition"].clone();
     let project = kition_film_format::decode(&doc.save(None).unwrap()).unwrap().project;
@@ -114,14 +114,14 @@ fn track_and_transition_paths_compare_ordinals_id_defaults_and_patch_masks() {
 fn transition_spans_clears_and_effect_order_hold_what_they_read() {
     let mut doc = FilmDocument::create("Track.kfilm", 64, 36).unwrap();
     let seq = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let item = doc.execute("file.newBarsAndTone", json!({"seconds":3})).unwrap()["item"].clone();
+    let item = doc.execute("item.newBarsAndTone", json!({"seconds":3})).unwrap()["item"].clone();
     let first = doc.execute("timeline.place", json!({"item":item,"track":"V1","time":0})).unwrap()["clips"][0].clone();
     let second = doc.execute("timeline.place", json!({"item":item,"track":"V1","time":762_048_000_000i64})).unwrap()["clips"][0].clone();
     // a transition between two clips, and a fade from nothing at the first clip's In
     let between = doc.execute("sequence.applyVideoTransition", json!({"clip":second,"edge":"in","frames":8})).unwrap()["transition"].clone();
     let fade = doc.execute("sequence.applyVideoTransition", json!({"clip":first,"edge":"in","frames":4})).unwrap()["transition"].clone();
-    doc.execute("effects.apply", json!({"clips":[first],"effect":"gaussian_blur"})).unwrap();
-    doc.execute("effects.apply", json!({"clips":[first],"effect":"invert"})).unwrap();
+    doc.execute("effect.apply", json!({"clips":[first],"effect":"gaussian_blur"})).unwrap();
+    doc.execute("effect.apply", json!({"clips":[first],"effect":"invert"})).unwrap();
     for locked in [false, true] {
         doc.execute("timeline.setTrack", json!({"track":"V1","locked":locked})).unwrap();
         let project = kition_film_format::decode(&doc.save(None).unwrap()).unwrap().project;

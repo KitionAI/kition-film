@@ -215,7 +215,7 @@ fn play_around_loops_preroll_to_postroll() {
     // trim buttons keep the loop running; other commands stop it
     s.execute("trim.forward", json!({})).unwrap();
     assert!(s.trim_play.around.is_some());
-    s.execute("markers.add", json!({})).unwrap();
+    s.execute("marker.add", json!({})).unwrap();
     assert!(s.trim_play.around.is_none());
     // playhead mode
     s.execute("prefs.set", json!({"key": "trim.playheadDeterminesLoop", "value": true})).unwrap();

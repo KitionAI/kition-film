@@ -1,7 +1,7 @@
 //! The Kition Film engine façade.
 //!
 //! Every user-visible action is a command with a stable id (`sequence.addEdit`,
-//! `timeline.trim`, `markers.markIn`…) and JSON parameters, dispatched through
+//! `timeline.trim`, `marker.markIn`…) and JSON parameters, dispatched through
 //! [`Session::execute`]. The egui UI, the CLI, the control channel and the MCP server all use this
 //! one entry point; that is what makes the UI swappable and the whole app agent-drivable.
 //!

@@ -24,7 +24,7 @@ test('UI-R1 a .kfilm changed outside merges into the stored replica as one impor
   test.setTimeout(120_000)
   await film.open('&replica=1&checkpoints=1')
   // The person's edit, saved: the host keeps the replica, and a checkpoint of that version.
-  const { item } = await film.command('file.newColorMatte', { color: '#00ff00', seconds: 2 })
+  const { item } = await film.command('item.newColorMatte', { color: '#00ff00', seconds: 2 })
   expect(typeof item).toBe('number')
   await save(film, page)
   expect(await page.evaluate(path => window.devHost.history.replica(path) != null, PATH), 'the save stored the replica').toBe(true)
@@ -73,7 +73,7 @@ test('7n the open sequence is the person\'s view state, kept by the host and put
   test.setTimeout(120_000)
   await film.open('&replica=1')
   const first = (await film.command('state.inspect')).active_sequence
-  const { sequence } = await film.command('file.newSequence', { name: 'Second' })
+  const { sequence } = await film.command('sequence.new', { name: 'Second' })
   expect(sequence).not.toBe(first)
   // The editor keeps the view with the host as it changes, and again with each save.
   const viewState = () => page.evaluate(path => window.devHost.history.viewState(path), PATH)

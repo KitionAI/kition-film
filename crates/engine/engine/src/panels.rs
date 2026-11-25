@@ -2,10 +2,10 @@
 //!
 //! | Id | What |
 //! |---|---|
-//! | `events.list` / `events.clear` | the Events panel: warnings and errors of commands, background jobs and the auto-save worker ([`EventLog`]) |
+//! | `event.list` / `event.clear` | the Events panel: warnings and errors of commands, background jobs and the auto-save worker ([`EventLog`]) |
 //! | `metadata.get` / `metadata.set` | the Metadata panel: an item's clip and file properties; editable log fields (undoable) |
 //!
-//! The Progress panel uses `jobs.list` / `jobs.cancel`; the Timecode panel and the Reference
+//! The Progress panel uses `job.list` / `job.cancel`; the Timecode panel and the Reference
 //! Monitor are frontend state only.
 
 use std::collections::{BTreeMap, VecDeque};
@@ -344,9 +344,9 @@ fn metadata_set(s: &mut Session, p: &Value) -> Result<Value> {
 pub(crate) fn commands() -> Vec<CommandSpec> {
     let q = |id, label, params, run| CommandSpec { id, label, menu: &[], shortcut: None, params, enabled: always, run, journal: false };
     vec![
-        q("events.list", "List Events", r#"{"level":"info|warning|error"?,"since":id?}"#, events_list),
+        q("event.list", "List Events", r#"{"level":"info|warning|error"?,"since":id?}"#, events_list),
         CommandSpec {
-            id: "events.clear",
+            id: "event.clear",
             label: "Clear All Events",
             menu: &[],
             shortcut: None,

@@ -11,7 +11,7 @@ use serde_json::json;
 async fn subsequence_copies_layout_but_not_source_track_mute() {
     for related in [true, false] {
         let f = Fixture::new(4);
-        f.colleague(&[("markers.markIn", json!({"time":SECOND})), ("markers.markOut", json!({"time":2*SECOND}))]);
+        f.colleague(&[("marker.markIn", json!({"time":SECOND})), ("marker.markOut", json!({"time":2*SECOND}))]);
         let (sequence, basis) = f.inspect().await;
         let track = sequence["video"][0]["id"].as_u64().unwrap();
         f.colleague(&[("timeline.setTrack", if related { json!({"track":track,"name":"Copied name"}) } else { json!({"track":track,"muted":true}) })]);
@@ -112,8 +112,8 @@ async fn empty_track_deletion_holds_emptiness_but_not_kept_track_names() {
 fn multicam() -> (Fixture, u64, u64, u64) {
     let mut doc = FilmDocument::open(FILE, &project(4)).unwrap();
     let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let source = doc.execute("file.newSequence", json!({"name":"Camera source","video":2,"audio":1})).unwrap()["sequence"].as_u64().unwrap();
-    let media = doc.execute("file.newColorMatte", json!({"name":"Camera","seconds":2})).unwrap()["item"].as_u64().unwrap();
+    let source = doc.execute("sequence.new", json!({"name":"Camera source","video":2,"audio":1})).unwrap()["sequence"].as_u64().unwrap();
+    let media = doc.execute("item.newColorMatte", json!({"name":"Camera","seconds":2})).unwrap()["item"].as_u64().unwrap();
     doc.execute("timeline.place", json!({"item":media,"track":"V1","seconds":0})).unwrap();
     doc.execute("timeline.place", json!({"item":media,"track":"V2","seconds":0})).unwrap();
     doc.execute("sequence.open", json!({"item":sequence})).unwrap();
@@ -172,7 +172,7 @@ async fn source_marker_edit_holds_the_assigned_field_but_not_source_metadata() {
         let mut doc = FilmDocument::open(FILE, &project(4)).unwrap();
         let source = doc.inspect().unwrap()["sequence"]["video"][0]["items"][0]["item"].as_u64().unwrap();
         doc.execute("source.open", json!({"item":source})).unwrap();
-        let marker = doc.execute("markers.add", json!({"target":"source","time":0,"name":"Old"})).unwrap()["marker"].as_u64().unwrap();
+        let marker = doc.execute("marker.add", json!({"target":"source","time":0,"name":"Old"})).unwrap()["marker"].as_u64().unwrap();
         let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
         let view = f.kits.open(kition_kits::Caller::User, FILE).await.unwrap();
         f.kits
@@ -188,8 +188,7 @@ async fn source_marker_edit_holds_the_assigned_field_but_not_source_metadata() {
                 item.metadata.insert("description".into(), "Unrelated".into());
             }
         });
-        let answer =
-            f.call("run", json!({"basis":basis,"steps":[{"command":"markers.edit","params":{"target":"source","marker":marker,"name":"Mine"}}]})).await;
+        let answer = f.call("run", json!({"basis":basis,"steps":[{"command":"marker.edit","params":{"target":"source","marker":marker,"name":"Mine"}}]})).await;
         if related {
             let error = answer.expect_err("source marker same-field overwrite");
             assert_eq!(error["error"]["code"], "conflict", "{error}");

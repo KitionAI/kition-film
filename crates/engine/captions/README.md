@@ -43,7 +43,7 @@ frame, colour, background box, outline, alignment, top/middle/bottom anchor and 
 rasterises it to a small premultiplied linear-light RGBA overlay. `kition-film-render` composites the
 overlays of visible caption tracks over the finished frame (Program monitor and export burn-in).
 Inline `<b>`, `<i>` and `<u>` are drawn. A caption with WebVTT word timestamps
-(`<00:00:01.200>剪辑`, written by `captions.add` `words`) is karaoke: `burn::render_caption_at`
+(`<00:00:01.200>剪辑`, written by `caption.add` `words`) is karaoke: `burn::render_caption_at`
 draws the word being sung (from its timestamp to the next) in the style's highlight colour and
 scale, the line reflowing around it; karaoke lines break between words, never inside one.
 

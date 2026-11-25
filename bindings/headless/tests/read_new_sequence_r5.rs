@@ -13,7 +13,7 @@ async fn new_sequence_from_media_holds_copied_fields_and_indirect_picture_size()
     for subclip in [false, true] {
         for change in ["width", "audio-stream", "sample-rate", "frame-rate", "label", "name", "metadata", "marks", "parent-name"] {
             let mut doc = FilmDocument::open(FILE, &project(4)).unwrap();
-            let parent = doc.execute("file.newOfflineFile", json!({"name":"Parent","seconds":1,"audio":true})).unwrap()["item"].as_u64().unwrap();
+            let parent = doc.execute("item.newOfflineFile", json!({"name":"Parent","seconds":1,"audio":true})).unwrap()["item"].as_u64().unwrap();
             let source = if subclip {
                 doc.execute("clip.makeSubclip", json!({"item":parent,"name":"Subclip","start":0,"end":SECOND/2})).unwrap()["item"].as_u64().unwrap()
             } else {
@@ -47,7 +47,7 @@ async fn new_sequence_from_media_holds_copied_fields_and_indirect_picture_size()
                     }
                 }
             });
-            let result = f.call("run", json!({"basis":basis,"steps":[{"command":"file.newSequence","params":{"name":"New","fromItem":source}}]})).await;
+            let result = f.call("run", json!({"basis":basis,"steps":[{"command":"sequence.new","params":{"name":"New","fromItem":source}}]})).await;
             let required =
                 matches!(change, "width" | "audio-stream" | "label" | "name") || (matches!(change, "parent-name" | "sample-rate" | "frame-rate") && !subclip);
             if required {
@@ -79,7 +79,7 @@ async fn new_sequence_from_nested_source_distinguishes_nesting_from_copying() {
         for change in ["duration", "name", "clip-name", "metadata", "track-name", "marks", "departed"] {
             let mut doc = FilmDocument::open(FILE, &project(4)).unwrap();
             let media = doc.inspect().unwrap()["sequence"]["video"][0]["items"][0]["item"].clone();
-            let source = doc.execute("file.newSequence", json!({"name":"Source","video":2,"audio":0})).unwrap()["sequence"].as_u64().unwrap();
+            let source = doc.execute("sequence.new", json!({"name":"Source","video":2,"audio":0})).unwrap()["sequence"].as_u64().unwrap();
             doc.execute("timeline.place", json!({"item":media,"track":"V1","time":0})).unwrap();
             let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
             let view = f.kits.open(kition_kits::Caller::User, FILE).await.unwrap();
@@ -115,7 +115,7 @@ async fn new_sequence_from_nested_source_distinguishes_nesting_from_copying() {
                     }
                 }
             });
-            let result = f.call("run", json!({"basis":basis,"steps":[{"command":"file.newSequence","params":{"name":"New","fromItem":source}}]})).await;
+            let result = f.call("run", json!({"basis":basis,"steps":[{"command":"sequence.new","params":{"name":"New","fromItem":source}}]})).await;
             let required = matches!(change, "duration" | "departed") || (change == "name" && !flatten) || (change == "clip-name" && flatten);
             if required {
                 if !matches!(result, Err(ref e) if e["error"]["code"] == "conflict") {
@@ -143,14 +143,14 @@ async fn new_sequence_from_nested_source_distinguishes_nesting_from_copying() {
 #[tokio::test(flavor = "multi_thread")]
 async fn new_sequence_media_ignores_an_unused_channel_format() {
     let mut doc = FilmDocument::open(FILE, &project(4)).unwrap();
-    let source = doc.execute("file.newOfflineFile", json!({"name":"Source","seconds":1,"audio":true})).unwrap()["item"].as_u64().unwrap();
+    let source = doc.execute("item.newOfflineFile", json!({"name":"Source","seconds":1,"audio":true})).unwrap()["item"].as_u64().unwrap();
     let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
     let (_, basis) = f.inspect().await;
     rewrite(&f.file(), |project| {
         project.item_mut(ItemId(source)).unwrap().as_media_mut().unwrap().interpret.audio_channels =
             Some(kition_film_project::AudioChannelMap { format: kition_film_project::AudioChannels::Mono, clips: Vec::new() });
     });
-    let result = f.call("run", json!({"basis":basis,"steps":[{"command":"file.newSequence","params":{"name":"New","fromItem":source}}]})).await;
+    let result = f.call("run", json!({"basis":basis,"steps":[{"command":"sequence.new","params":{"name":"New","fromItem":source}}]})).await;
     let applied = result.unwrap_or_else(|error| panic!("an unused format with no channel map changes no placement: {}", error["error"]));
     let id = applied["completed"][0]["result"]["sequence"].as_u64().unwrap();
     let saved = kition_film_format::decode(&std::fs::read(f.file()).unwrap()).unwrap();
@@ -166,7 +166,7 @@ async fn full_source_copy_uses_the_true_end_of_an_unsorted_loaded_track() {
     for related in [true, false] {
         let mut doc = FilmDocument::open(FILE, &project(4)).unwrap();
         let media = doc.inspect().unwrap()["sequence"]["video"][0]["items"][0]["item"].clone();
-        let source = doc.execute("file.newSequence", json!({"name":"Unsorted source","video":1,"audio":0})).unwrap()["sequence"].as_u64().unwrap();
+        let source = doc.execute("sequence.new", json!({"name":"Unsorted source","video":1,"audio":0})).unwrap()["sequence"].as_u64().unwrap();
         doc.execute("timeline.place", json!({"item":media,"track":"V1","time":0})).unwrap();
         doc.execute("timeline.place", json!({"item":media,"track":"V1","time":2*SECOND})).unwrap();
         let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
@@ -185,7 +185,7 @@ async fn full_source_copy_uses_the_true_end_of_an_unsorted_loaded_track() {
                 track.name = "Uncopied lane name".into();
             }
         });
-        let result = f.call("run", json!({"basis":basis,"steps":[{"command":"file.newSequence","params":{"name":"New","fromItem":source}}]})).await;
+        let result = f.call("run", json!({"basis":basis,"steps":[{"command":"sequence.new","params":{"name":"New","fromItem":source}}]})).await;
         if related {
             if !matches!(result, Err(ref e) if e["error"]["code"] == "conflict") {
                 failures.push("a copied far clip's changed name applied".to_owned());
@@ -212,7 +212,7 @@ fn new_sequence_from_item_failure_preserves_project_context_and_redo() {
     assert_eq!(doc.inspect().unwrap()["canRedo"], true);
     let before = doc.save(None).unwrap();
     let context = doc.inspect().unwrap()["stateDigest"].clone();
-    let error = doc.execute("file.newSequence", json!({"name":"Must not remain","fromItem":source,"video":0,"audio":0})).unwrap_err();
+    let error = doc.execute("sequence.new", json!({"name":"Must not remain","fromItem":source,"video":0,"audio":0})).unwrap_err();
     assert!(error.contains("no destination track"), "{error}");
     assert!(doc.save(None).unwrap() == before, "a refused compound command left a new sequence or changed the saved view");
     assert_eq!(doc.inspect().unwrap()["stateDigest"], context);
@@ -223,7 +223,7 @@ fn new_sequence_from_item_failure_preserves_project_context_and_redo() {
 fn new_sequence_from_item_success_is_one_undo_step() {
     let mut doc = FilmDocument::open(FILE, &project(4)).unwrap();
     let source = doc.inspect().unwrap()["sequence"]["video"][0]["items"][0]["item"].clone();
-    let created = doc.execute("file.newSequence", json!({"name":"One step","fromItem":source,"video":1,"audio":0})).unwrap()["sequence"].as_u64().unwrap();
+    let created = doc.execute("sequence.new", json!({"name":"One step","fromItem":source,"video":1,"audio":0})).unwrap()["sequence"].as_u64().unwrap();
     doc.execute("edit.undo", json!({})).unwrap();
     let saved = kition_film_format::decode(&doc.save(None).unwrap()).unwrap();
     assert!(saved.project.item(ItemId(created)).is_none(), "undo removed only the placement and left the new empty sequence");
@@ -240,7 +240,7 @@ async fn sequence_from_clip_holds_parent_placement_and_only_the_first_inherited_
             let original = kition_film_format::decode(&doc.save(None).unwrap()).unwrap();
             let active = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
             let expected_rate = original.project.sequence(ItemId(active)).unwrap().settings.frame_rate;
-            let parent = doc.execute("file.newOfflineFile", json!({"name":"Parent","seconds":1,"audio":false})).unwrap()["item"].as_u64().unwrap();
+            let parent = doc.execute("item.newOfflineFile", json!({"name":"Parent","seconds":1,"audio":false})).unwrap()["item"].as_u64().unwrap();
             let source = doc.execute("clip.makeSubclip", json!({"item":parent,"name":"Subclip","start":0,"end":SECOND/2})).unwrap()["item"].as_u64().unwrap();
             let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
             let (_, basis) = f.inspect().await;
@@ -262,7 +262,7 @@ async fn sequence_from_clip_holds_parent_placement_and_only_the_first_inherited_
                 }
             });
             let items = if first { json!([source]) } else { json!([leading, source]) };
-            let result = f.call("run", json!({"basis":basis,"steps":[{"command":"file.newSequenceFromClip","params":{"items":items}}]})).await;
+            let result = f.call("run", json!({"basis":basis,"steps":[{"command":"sequence.newFromClip","params":{"items":items}}]})).await;
             let required = matches!(change, "width" | "deleted-parent") || (first && change == "rate");
             if required {
                 if !matches!(result,Err(ref e) if e["error"]["code"] == "conflict") {

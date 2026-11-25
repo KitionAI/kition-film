@@ -4,8 +4,8 @@ for (const target of ['source', 'timeline']) {
   test(`F66 invalid ${target} audio channel numbers are rejected without changing routing or history`, async ({ film }) => {
     await film.open()
     await film.command('file.newProject', { name: 'Channel input validation' })
-    await film.command('file.newSequence', { name: 'Stereo', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
-    const { item } = await film.command('file.newBarsAndTone', { seconds: 0.5 })
+    await film.command('sequence.new', { name: 'Stereo', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
+    const { item } = await film.command('item.newBarsAndTone', { seconds: 0.5 })
     await film.command('timeline.place', { item, seconds: 0 })
     await film.command('project.select', { items: target === 'source' ? [item] : [] })
     const audio = clips(await film.sequence(), 'audio')[0].clip

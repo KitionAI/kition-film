@@ -485,7 +485,7 @@ pub fn commands() -> Vec<CommandSpec> {
         ),
         spec("transcript.removeFillers", "Remove Filler Words", &["Sequence", "Transcript"], r#"{"fillers":[str]?}"#, has_transcript, remove_fillers, true),
         spec(
-            "transcript.createCaptions",
+            "transcript.addCaptions",
             "Create Captions from Transcript…",
             &["Sequence", "Transcript"],
             r#"{"maxChars":n?,"lines":1|2?,"minSeconds":f?,"maxSeconds":f?,"gapFrames":n?,"format":str?,"name":str?}"#,

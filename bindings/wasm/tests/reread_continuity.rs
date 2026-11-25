@@ -6,7 +6,7 @@ use serde_json::{Value, json};
 
 fn fixture() -> (FilmDocument, Vec<Value>) {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
-    let item = doc.execute("file.newColorMatte", json!({"seconds":1})).unwrap()["item"].clone();
+    let item = doc.execute("item.newColorMatte", json!({"seconds":1})).unwrap()["item"].clone();
     let clips = (0..2).map(|time| doc.execute("timeline.place", json!({"item":item,"track":"V1","seconds":time})).unwrap()["clips"][0].clone()).collect();
     (doc, clips)
 }
@@ -39,7 +39,7 @@ fn deleted_selection_refuses_restoration_and_keeps_the_live_document() {
     let saved = live.editor_state();
     let bytes = live.save(None).unwrap();
     let mut fresh = FilmDocument::open("Edit.kfilm", &bytes).unwrap();
-    fresh.execute("edit.clear", json!({"clips":[clips[0]]})).unwrap();
+    fresh.execute("edit.delete", json!({"clips":[clips[0]]})).unwrap();
     fresh.carry_replica_objects(&live).unwrap();
     assert!(fresh.restore_editor_state(&saved).unwrap_err().contains("deleted selected target"));
     assert_eq!(live.save(None).unwrap(), bytes);
@@ -53,7 +53,7 @@ fn planning_fork_keeps_replica_identity_and_isolates_writes() {
     let bytes = live.save(None).unwrap();
     let mut fork = live.fork_for_premises().unwrap();
     assert_eq!(fork.doc_id(), live.doc_id());
-    fork.execute("file.newBin", json!({"name":"Scratch only"})).unwrap();
+    fork.execute("bin.add", json!({"name":"Scratch only"})).unwrap();
     assert_eq!(live.save(None).unwrap(), bytes);
     assert_ne!(fork.save(None).unwrap(), bytes);
 }

@@ -4,11 +4,11 @@ for (const difference of ['dimensions', 'frame rate']) {
   test(`F75 Consolidate Duplicates preserves distinct generator ${difference} and remaps only a true duplicate's subclip`, async ({ film }) => {
     await film.open()
     await film.command('file.newProject', { name: 'Distinct media formats' })
-    await film.command('file.newSequence', { name: 'First format', width: 64, height: 36, fps: 24, video: 1, audio: 0 })
-    const { item: first } = await film.command('file.newColorMatte', { color: '#ff0000', seconds: 1 })
+    await film.command('sequence.new', { name: 'First format', width: 64, height: 36, fps: 24, video: 1, audio: 0 })
+    const { item: first } = await film.command('item.newColorMatte', { color: '#ff0000', seconds: 1 })
     const width = difference === 'dimensions' ? 128 : 64, height = difference === 'dimensions' ? 72 : 36, fps = difference === 'frame rate' ? 60 : 24
-    await film.command('file.newSequence', { name: 'Second format', width, height, fps, video: 1, audio: 0 })
-    const { item: second } = await film.command('file.newColorMatte', { color: '#ff0000', seconds: 1 })
+    await film.command('sequence.new', { name: 'Second format', width, height, fps, video: 1, audio: 0 })
+    const { item: second } = await film.command('item.newColorMatte', { color: '#ff0000', seconds: 1 })
     await film.command('project.select', { items: [second] })
     const { items: [duplicate] } = await film.command('edit.duplicate')
     const { item: subclip } = await film.command('clip.makeSubclip', { item: duplicate, startFrame: 3, endFrame: 9 })

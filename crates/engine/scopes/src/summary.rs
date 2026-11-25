@@ -1,4 +1,4 @@
-//! Numeric summaries of scopes, for agents checking colour without looking (`scopes.read`).
+//! Numeric summaries of scopes, for agents checking colour without looking (`scope.read`).
 //! Levels are in percent of full scale (IRE-like: code value / 255 × 100 for 8-bit signals).
 
 use kition_film_color::rgb_to_ycbcr;

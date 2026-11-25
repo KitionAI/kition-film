@@ -4,10 +4,10 @@ for (const command of ['clip.replaceFromBin', 'clip.replaceFromSource', 'clip.re
   test(`F67 ${command} replaces both linked picture and sound with the subclip's nonzero source range`, async ({ film }) => {
     await film.open()
     await film.command('file.newProject', { name: 'Replace linked media' })
-    await film.command('file.newSequence', { name: 'Linked replacement', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
-    const { item: old } = await film.command('file.newBarsAndTone', { seconds: 0.5 })
+    await film.command('sequence.new', { name: 'Linked replacement', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
+    const { item: old } = await film.command('item.newBarsAndTone', { seconds: 0.5 })
     await film.command('timeline.place', { item: old, seconds: 0 })
-    const { item: parent } = await film.command('file.newBarsAndTone', { seconds: 2 })
+    const { item: parent } = await film.command('item.newBarsAndTone', { seconds: 2 })
     const { item } = await film.command('clip.makeSubclip', { item: parent, startFrame: 12, endFrame: 36 })
     await film.command('source.open', { item })
     await film.command('playhead.set', { frame: 0 })

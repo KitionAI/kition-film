@@ -75,28 +75,28 @@ enum Kind {
 /// selection acts on its frame at that time).
 fn kind(id: &str) -> Kind {
     match id {
-        "captions.setTrack"
-        | "captions.deleteTrack"
-        | "captions.setStyle"
-        | "captions.setText"
-        | "captions.setTimes"
-        | "captions.trim"
-        | "captions.move"
-        | "captions.delete"
-        | "captions.merge"
-        | "captions.split"
-        | "masks.add"
-        | "masks.remove"
-        | "masks.set"
-        | "masks.moveVertex"
-        | "masks.translate"
-        | "masks.addVertex"
-        | "masks.removeVertex"
-        | "masks.track"
-        | "masks.toggleVertexSmooth"
-        | "markers.edit"
-        | "markers.clearCurrent"
-        | "markers.clearAll"
+        "caption.setTrack"
+        | "caption.deleteTrack"
+        | "caption.setStyle"
+        | "caption.setText"
+        | "caption.setTimes"
+        | "caption.trim"
+        | "caption.move"
+        | "caption.delete"
+        | "caption.merge"
+        | "caption.split"
+        | "mask.add"
+        | "mask.remove"
+        | "mask.set"
+        | "mask.moveVertex"
+        | "mask.translate"
+        | "mask.addVertex"
+        | "mask.removeVertex"
+        | "mask.track"
+        | "mask.toggleVertexSmooth"
+        | "marker.edit"
+        | "marker.clearCurrent"
+        | "marker.clearAll"
         | "timeline.setTrack"
         | "timeline.roll"
         | "playhead.set"
@@ -109,19 +109,19 @@ fn kind(id: &str) -> Kind {
         | "playhead.end"
         | "playhead.selectedClipStart"
         | "playhead.selectedClipEnd"
-        | "markers.goNext"
-        | "markers.goPrev"
-        | "markers.goToIn"
-        | "markers.goToOut"
-        | "markers.goToSplitVideoIn"
-        | "markers.goToSplitVideoOut"
-        | "markers.goToSplitAudioIn"
-        | "markers.goToSplitAudioOut"
+        | "marker.goNext"
+        | "marker.goPrev"
+        | "marker.goToIn"
+        | "marker.goToOut"
+        | "marker.goToSplitVideoIn"
+        | "marker.goToSplitVideoOut"
+        | "marker.goToSplitAudioIn"
+        | "marker.goToSplitAudioOut"
         | "sequence.selectionFollowsPlayhead"
         | "edit.undo"
         | "edit.redo"
-        | "shortcuts.undo"
-        | "shortcuts.redo"
+        | "shortcut.undo"
+        | "shortcut.redo"
         | "edit.findNext"
         | "file.openDemoProject"
         | "file.exportMedia"
@@ -131,7 +131,7 @@ fn kind(id: &str) -> Kind {
         | "file.exportFrame"
         | "file.exportGraphicsTemplate"
         | "graphics.template.export"
-        | "presets.save"
+        | "preset.save"
         | "audioMixing.savePreset"
         | "trim.shuttle"
         | "trim.shuttleStop"
@@ -165,7 +165,7 @@ pub fn places(id: &str) -> &'static [&'static str] {
         "timeline.move" => &["moves"],
         "sequence.addTracks" => &["videoAfter", "audioAfter", "submixAfter"],
         "timeline.razor"
-        | "captions.add"
+        | "caption.add"
         | "graphics.newText"
         | "graphics.newShape"
         | "graphics.newVerticalText"
@@ -175,19 +175,19 @@ pub fn places(id: &str) -> &'static [&'static str] {
         "timeline.place" => &["track", "audioTrack", "time", "seconds", "frame", "timecode"],
         "sequence.addEdit"
         | "sequence.addEditAllTracks"
-        | "markers.add"
-        | "markers.addRange"
-        | "markers.addChapter"
-        | "markers.addFlashCue"
-        | "markers.markIn"
-        | "markers.markOut"
-        | "markers.markSplitVideoIn"
-        | "markers.markSplitVideoOut"
-        | "markers.markSplitAudioIn"
-        | "markers.markSplitAudioOut"
+        | "marker.add"
+        | "marker.addRange"
+        | "marker.addChapter"
+        | "marker.addFlashCue"
+        | "marker.markIn"
+        | "marker.markOut"
+        | "marker.markSplitVideoIn"
+        | "marker.markSplitVideoOut"
+        | "marker.markSplitAudioIn"
+        | "marker.markSplitAudioOut"
         | "sound.phrase" => TIME,
         "sequence.closeGap" | "audio.voiceover.start" | "clipMixer.release" => &["track", "time"],
-        "captions.split"
+        "caption.split"
         | "mixer.setValue"
         | "mixer.release"
         | "mixer.recordStop"
@@ -217,7 +217,7 @@ impl Session {
     /// (no place to tell), `Ok(Some(Under::default()))` when its place names no clip. A track the
     /// sequence lacks is the command's own error. No edit.
     pub fn under(&self, command: &str, params: &Value) -> crate::Result<Option<Under>> {
-        if command == "effects.apply"
+        if command == "effect.apply"
             && params
                 .get("effect")
                 .and_then(Value::as_str)
@@ -394,7 +394,7 @@ impl Session {
     fn place_time(&self, command: &str, params: &Value, sequence: &Sequence) -> (Tick, Tick) {
         let playhead = self.playhead();
         match command {
-            "markers.add" | "markers.addRange" | "markers.addChapter" | "markers.addFlashCue" => (marker_time_p(self, params).unwrap_or(playhead), Tick::ZERO),
+            "marker.add" | "marker.addRange" | "marker.addChapter" | "marker.addFlashCue" => (marker_time_p(self, params).unwrap_or(playhead), Tick::ZERO),
             "source.insert" | "source.overwrite" => {
                 let at = sequence.mark_in.unwrap_or(playhead);
                 let span = if command == "source.overwrite" {

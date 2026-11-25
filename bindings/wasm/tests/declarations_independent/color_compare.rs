@@ -38,12 +38,12 @@ fn leaf(id: Value, fields: &[&str]) -> Premise {
 #[test]
 fn color_paths_compare_video_eligibility_preferred_effects_library_refs_and_all_addresses() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
-    let item = doc.execute("file.newOfflineFile", json!({"seconds":1})).unwrap()["item"].clone();
+    let item = doc.execute("item.newOfflineFile", json!({"seconds":1})).unwrap()["item"].clone();
     let clips = doc.execute("timeline.place", json!({"item":item,"track":"V1","time":0})).unwrap()["clips"].as_array().unwrap().clone();
     let first = clips[0].as_u64().unwrap();
     let audio = clips[1].as_u64().unwrap();
     let second = doc.execute("timeline.place", json!({"item":item,"track":"V2","time":0,"audio":false})).unwrap()["clips"][0].as_u64().unwrap();
-    doc.execute("effects.apply", json!({"clips":[second],"effect":"color"})).unwrap();
+    doc.execute("effect.apply", json!({"clips":[second],"effect":"color"})).unwrap();
     let sequence = doc.inspect().unwrap()["sequence"].clone();
     let preset = doc.execute("color.presets", json!({})).unwrap()["presets"][0]["name"].clone();
     let owner = |id| if id == first { sequence["video"][0]["id"].clone() } else { sequence["video"][1]["id"].clone() };

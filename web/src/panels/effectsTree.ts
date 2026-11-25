@@ -2,17 +2,17 @@
 
 /**
  * The Effects panel's model (upstream `panels/effects.rs` `show`): the engine's effects
- * (`effects.list`) and saved presets (`presets.list`) as a folder tree in upstream's top-folder
+ * (`effect.list`) and saved presets (`preset.list`) as a folder tree in upstream's top-folder
  * order, filtered by the search box, with the folders a person opened. Pure, so `node --test`
  * runs it.
  */
 
 export type EffectKind = 'Video' | 'Audio' | 'VideoTransition' | 'AudioTransition'
 
-/** An effect as `effects.list` gives it: `category` is its folder path (`["Video Effects", "Blur & Sharpen"]`). */
+/** An effect as `effect.list` gives it: `category` is its folder path (`["Video Effects", "Blur & Sharpen"]`). */
 export type EffectDef = { id: string; name: string; kind: EffectKind; category: readonly string[] }
 
-/** A saved effect preset as `presets.list` gives it. */
+/** A saved effect preset as `preset.list` gives it. */
 export type EffectPreset = { name: string; description?: string; effects?: readonly string[] }
 
 /**
@@ -98,7 +98,7 @@ export function effectRows(defs: readonly EffectDef[], presets: readonly EffectP
 
 const compare = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0)
 
-/** The engine's `effects.list` answer as definitions (an array, or `{ effects }`), dropping what is malformed. */
+/** The engine's `effect.list` answer as definitions (an array, or `{ effects }`), dropping what is malformed. */
 export function effectDefsOf(answer: unknown): EffectDef[] {
   const list = Array.isArray(answer) ? answer : ((answer as { effects?: unknown } | null)?.effects ?? [])
   if (!Array.isArray(list)) return []
@@ -111,7 +111,7 @@ export function effectDefsOf(answer: unknown): EffectDef[] {
   })
 }
 
-/** The engine's `presets.list` answer as presets. */
+/** The engine's `preset.list` answer as presets. */
 export function presetsOf(answer: unknown): EffectPreset[] {
   const list = (answer as { presets?: unknown } | null)?.presets
   if (!Array.isArray(list)) return []
@@ -155,7 +155,7 @@ export function fitsTrack(kind: EffectKind, track: 'video' | 'audio') {
 
 /**
  * The parameter names and choice options Effect Controls draws for the engine's effects, from
- * `effects.list` with `detail` (each effect's `paramInfo`).
+ * `effect.list` with `detail` (each effect's `paramInfo`).
  */
 export function paramLabels(answer: unknown): Set<string> {
   const labels = new Set<string>()

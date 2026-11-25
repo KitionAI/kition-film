@@ -366,7 +366,7 @@ try {
   const marker = (await sequence()).markers[0]
   assert.ok(near(marker.start / frameTicks, frameAt(0.4)), `at the time right-clicked: ${marker.start / frameTicks} for ${frameAt(0.4)}`)
   assert.equal(await undoSteps(), steps + 1, 'one undo step')
-  // Dragged along the ruler, the marker moves later: drawn moving, one markers.edit on release, one undo step.
+  // Dragged along the ruler, the marker moves later: drawn moving, one marker.edit on release, one undo step.
   let markerFrom = await box(`film-marker-${marker.id}`)
   steps = await undoSteps()
   let markerMoving = false
@@ -431,7 +431,7 @@ try {
   assert.ok(await until(async () => (await v1()).items.length === 2), 'the Razor cut V1 in two')
   const [firstHalf, secondHalf] = (await v1()).items
   await frame.evaluate((clip) => window.filmPreview.run('timeline.select', { clips: [clip], linked: false }), firstHalf.clip)
-  await frame.evaluate(() => window.filmPreview.run('edit.clear', {}))
+  await frame.evaluate(() => window.filmPreview.run('edit.delete', {}))
   assert.ok(await until(async () => (await v1()).items.length === 1), 'the first half is cleared: a gap')
   await laneMenu('Video 1', 0.25)
   await shot('timeline-8-lane-menu')

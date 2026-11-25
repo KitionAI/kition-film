@@ -34,8 +34,8 @@ pub const FILES: &[FileParam] = &[
     FileParam::create("file.saveAsTemplate", "path", &[]),
     FileParam::create("file.exportMedia", "path", &[]),
     FileParam::folder("clip.extractAudio", "dir"),
-    FileParam::read("captions.import", "path", &[]),
-    FileParam::create("captions.export", "path", &[]),
+    FileParam::read("caption.import", "path", &[]),
+    FileParam::create("caption.export", "path", &[]),
     FileParam::create("color.presetThumbnails", "path", &[]),
     FileParam::read("lut.import", "path", &[]),
     FileParam::create("lut.export", "path", &[]),
@@ -46,8 +46,8 @@ pub const FILES: &[FileParam] = &[
     FileParam::create("file.exportGraphicsTemplate", "path", &[]),
     FileParam::read("graphics.template.install", "path", &[]),
     FileParam::create("graphics.template.thumbnail", "path", &[]),
-    FileParam::create("shortcuts.export", "path", &[]),
-    FileParam::read("shortcuts.import", "path", &[]),
+    FileParam::create("shortcut.export", "path", &[]),
+    FileParam::read("shortcut.import", "path", &[]),
     FileParam::read("media.relink", "path", &[]),
     FileParam::read("media.replaceFootage", "path", &[]),
     FileParam::folder("media.search", "folder"),
@@ -60,8 +60,8 @@ pub const FILES: &[FileParam] = &[
     FileParam::read("media.attachProxies", "paths", &[]),
     FileParam::read("media.reconnectFullRes", "path", &[]),
     FileParam::read("file.mediaPropertiesFile", "path", &[]),
-    FileParam::create("presets.export", "path", &[]),
-    FileParam::read("presets.import", "path", &[]),
+    FileParam::create("preset.export", "path", &[]),
+    FileParam::read("preset.import", "path", &[]),
     FileParam::read("export.presets.import", "path", &[]),
     FileParam::create("export.presets.export", "path", &[]),
     FileParam::create("export.resolve", "path", &[]),
@@ -80,7 +80,7 @@ pub const FILES: &[FileParam] = &[
     FileParam::read("mediaBrowser.probe", "path", &[]),
     // Folders the engine writes into (KHP A28: a parameter naming a folder is typed as one).
     FileParam::folder("file.projectManager", "destination"),
-    FileParam::folder("media.createProxies", "destination"),
+    FileParam::folder("media.addProxies", "destination"),
     FileParam::folder("project.ingestSettings", "destination"),
     FileParam::folder("file.projectSettings.scratchDisks", "captured"),
     FileParam::folder("file.projectSettings.scratchDisks", "videoPreviews"),
@@ -130,7 +130,7 @@ mod tests {
     /// Parameters whose names read like files but are not: ids, property paths, directions,
     /// folders of the kit's own panels, in-memory data.
     const NOT_FILES: &[(&str, &str)] =
-        &[("effects.list", "folder"), ("color.presets", "folder"), ("color.presetThumbnails", "folder"), ("masks.add", "path"), ("masks.set", "path")];
+        &[("effect.list", "folder"), ("color.presets", "folder"), ("color.presetThumbnails", "folder"), ("mask.add", "path"), ("mask.set", "path")];
 
     /// The manifest keeps from agents (`agent.exclude`) what the kit refuses them.
     #[test]

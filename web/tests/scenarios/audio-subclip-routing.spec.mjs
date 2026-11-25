@@ -21,7 +21,7 @@ for (const split of [false, true]) {
     await film.open()
     await lendMedia(film, 'media/stereo-routing.wav', stereoWav())
     await film.command('file.newProject', { name: 'Audio subclip routing' })
-    await film.command('file.newSequence', { name: 'Right channel', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
+    await film.command('sequence.new', { name: 'Right channel', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
     const { items: [parent] } = await film.command('file.import', { paths: ['../media/stereo-routing.wav'] })
     await film.command('project.select', { items: [parent] })
     await film.command('clip.audioChannels', { format: 'mono', clips: split ? [[1], [0]] : [[1]] })

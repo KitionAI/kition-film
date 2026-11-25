@@ -13,7 +13,7 @@ test('F60 moving an analyzed clip discards obsolete scene cuts; a fresh analysis
   await film.open()
   await lendMedia(film, 'media/two-shots.mp4', readFileSync(movie))
   await film.command('file.newProject', { name: 'Scene analysis edits' })
-  await film.command('file.newSequence', { name: 'Scenes', width: 64, height: 36, fps: 24, video: 1, audio: 0 })
+  await film.command('sequence.new', { name: 'Scenes', width: 64, height: 36, fps: 24, video: 1, audio: 0 })
   const { items: [item] } = await film.command('file.import', { paths: ['../media/two-shots.mp4'] })
   await film.command('timeline.place', { item, seconds: 0 })
   const clip = clips(await film.sequence())[0].clip
@@ -25,7 +25,7 @@ test('F60 moving an analyzed clip discards obsolete scene cuts; a fresh analysis
   await film.command('timeline.move', { moves: [{ clip, track: 'V1', time: TICKS / 4 }] })
   const before = editState(await film.sequence()), project = await film.command('project.items'), history = await film.history()
   await gate.release()
-  await expect.poll(async () => (await film.command('jobs.list')).find(each => each.id === job)?.finished).toBe(true)
+  await expect.poll(async () => (await film.command('job.list')).find(each => each.id === job)?.finished).toBe(true)
   expect(editState(await film.sequence())).toEqual(before)
   expect(await film.command('project.items')).toEqual(project)
   expect(await film.history()).toEqual(history)

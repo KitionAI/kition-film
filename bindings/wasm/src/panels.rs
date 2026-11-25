@@ -629,8 +629,8 @@ mod tests {
     #[test]
     fn n37_subclip_item_frames_use_the_parent_rate_instead_of_the_default_rate() {
         let mut doc = FilmDocument::create("Edit.kfilm", 320, 180).unwrap();
-        doc.execute("file.newSequence", json!({"width": 320, "height": 180, "fps": 60})).unwrap();
-        let parent = doc.execute("file.newCountingLeader", json!({})).unwrap()["item"].as_u64().unwrap();
+        doc.execute("sequence.new", json!({"width": 320, "height": 180, "fps": 60})).unwrap();
+        let parent = doc.execute("item.newCountingLeader", json!({})).unwrap()["item"].as_u64().unwrap();
         let item = doc.execute("clip.makeSubclip", json!({"item": parent, "startFrame": 1, "endFrame": 60})).unwrap()["item"].as_u64().unwrap();
         assert_ne!(doc.item_frame(parent, 0.0, 160).unwrap(), doc.item_frame(parent, 3.0 / 60.0, 160).unwrap(), "the original leader must move");
         for frame in [1, 2, 3, 4, 12, 37, 59] {
@@ -643,7 +643,7 @@ mod tests {
     fn an_item_frame_is_at_most_2048_wide_and_four_megapixels() {
         // A DCI 4K sequence asked at 4096 px comes back at 2048 x 1080, red over its whole width.
         let mut doc = FilmDocument::create("Edit.kfilm", 4096, 2160).unwrap();
-        let matte = doc.execute("file.newColorMatte", json!({ "color": "#ff0000", "seconds": 4.0 })).unwrap();
+        let matte = doc.execute("item.newColorMatte", json!({ "color": "#ff0000", "seconds": 4.0 })).unwrap();
         doc.execute("timeline.place", json!({ "item": matte["item"], "track": "V1", "seconds": 0.0 })).unwrap();
         let sequence = doc.session.state.active_sequence.unwrap().0;
         let frame = doc.item_frame(sequence, 1.0, 4096).unwrap();
@@ -654,7 +654,7 @@ mod tests {
         assert!(size(&doc.item_frame(matte, 1.0, 4096).unwrap()).0 <= MAX_ITEM_FRAME_WIDTH);
         // Square and tall pictures are bounded by their area.
         for (w, h) in [(3000, 3000), (1000, 9000)] {
-            doc.execute("file.newSequence", json!({ "name": format!("{w} x {h}"), "width": w, "height": h })).unwrap();
+            doc.execute("sequence.new", json!({ "name": format!("{w} x {h}"), "width": w, "height": h })).unwrap();
             let sequence = doc.session.state.active_sequence.unwrap().0;
             let (fw, fh) = size(&doc.item_frame(sequence, 0.0, 4096).unwrap());
             assert!(fw <= 2048 && u64::from(fw) * u64::from(fh) <= MAX_ITEM_FRAME_PIXELS, "{w} x {h} gave {fw} x {fh}");
@@ -729,7 +729,7 @@ mod tests {
     #[test]
     fn a_sequence_mixed_at_44_1_khz_plays_continuously_at_48_khz() {
         with_tone(|doc, tone| {
-            doc.execute("file.newSequence", json!({ "name": "44.1", "width": 64, "height": 36, "sampleRate": 44_100 })).unwrap();
+            doc.execute("sequence.new", json!({ "name": "44.1", "width": 64, "height": 36, "sampleRate": 44_100 })).unwrap();
             doc.execute("timeline.place", json!({ "item": tone, "track": "A1", "seconds": 0.0 })).unwrap();
             let sequence = doc.session.state.active_sequence.unwrap().0;
             let whole = doc.item_audio(sequence, 0.1, 2_000).unwrap();
@@ -838,21 +838,21 @@ mod tests {
     #[test]
     fn clip_effects_follow_edits_and_keyframes() {
         let (mut doc, clip) = with_clip();
-        doc.execute("effects.setParam", json!({ "clip": clip, "effect": "opacity", "param": "opacity", "value": 50.0 })).unwrap();
+        doc.execute("effect.setParam", json!({ "clip": clip, "effect": "opacity", "param": "opacity", "value": 50.0 })).unwrap();
         assert_eq!(param(&doc.clip_effects(clip).unwrap(), "opacity", "opacity")["value"], 50.0);
 
         let tick = |seconds: f64| Tick::from_seconds_f64(seconds).0;
         for seconds in [0.5, 2.0] {
-            doc.execute("effects.addKeyframe", json!({ "clip": clip, "effect": "motion", "param": "scale", "time": tick(seconds) })).unwrap();
+            doc.execute("effect.addKeyframe", json!({ "clip": clip, "effect": "motion", "param": "scale", "time": tick(seconds) })).unwrap();
         }
-        doc.execute("effects.setParam", json!({ "clip": clip, "effect": "motion", "param": "scale", "value": 50.0, "time": tick(2.0) })).unwrap();
+        doc.execute("effect.setParam", json!({ "clip": clip, "effect": "motion", "param": "scale", "value": 50.0, "time": tick(2.0) })).unwrap();
         let fx = doc.clip_effects(clip).unwrap();
         let keyframes = param(&fx, "motion", "scale")["keyframes"].as_array().unwrap().clone();
         assert_eq!(keyframes.len(), 2);
         assert_eq!(keyframes[0], json!({ "time": tick(0.5), "value": 100.0, "interpolation": "linear" }));
         assert_eq!(keyframes[1], json!({ "time": tick(2.0), "value": 50.0, "interpolation": "linear" }), "times are media time, as the commands take them");
         doc.execute(
-            "effects.setInterpolation",
+            "effect.setInterpolation",
             json!({ "clip": clip, "effect": "motion", "param": "scale", "mediaTime": tick(0.5), "interpolation": "autoBezier" }),
         )
         .unwrap();
@@ -864,8 +864,8 @@ mod tests {
         assert_eq!(fx["mediaTime"], doc.session.playhead().0, "the playhead on a clip at its start, at full speed");
         assert_eq!(param(&fx, "motion", "scale")["value"], 50.0);
 
-        doc.execute("effects.apply", json!({ "clips": [clip], "effect": "tint" })).unwrap();
-        doc.execute("effects.setParam", json!({ "clip": clip, "effect": "tint", "param": "black", "value": "#336699" })).unwrap();
+        doc.execute("effect.apply", json!({ "clips": [clip], "effect": "tint" })).unwrap();
+        doc.execute("effect.setParam", json!({ "clip": clip, "effect": "tint", "param": "black", "value": "#336699" })).unwrap();
         let fx = doc.clip_effects(clip).unwrap();
         let effects = fx["effects"].as_array().unwrap();
         let tint = &effects[3];
@@ -882,8 +882,8 @@ mod tests {
     #[test]
     fn clip_effects_name_a_lut_reference_as_upstream_param_text_reads_it() {
         let (mut doc, clip) = with_clip();
-        doc.execute("effects.apply", json!({ "clips": [clip], "effect": "color" })).unwrap();
-        doc.execute("effects.setParam", json!({ "clip": clip, "effect": "color", "param": "look_lut", "value": "builtin:look-teal-orange" })).unwrap();
+        doc.execute("effect.apply", json!({ "clips": [clip], "effect": "color" })).unwrap();
+        doc.execute("effect.setParam", json!({ "clip": clip, "effect": "color", "param": "look_lut", "value": "builtin:look-teal-orange" })).unwrap();
         let fx = doc.clip_effects(clip).unwrap();
         assert_eq!(param(&fx, "color", "look_lut")["lutLabel"], "Teal & Orange");
         assert_eq!(param(&fx, "color", "input_lut")["lutLabel"], "None");
@@ -893,7 +893,7 @@ mod tests {
     #[test]
     fn source_commands_are_the_ones_the_source_monitor_takes() {
         let ids = FilmDocument::source_commands();
-        for id in ["markers.markIn", "markers.goToSplitAudioIn", "markers.clearInOut"] {
+        for id in ["marker.markIn", "marker.goToSplitAudioIn", "marker.clearInOut"] {
             assert!(ids.iter().any(|known| known == id), "{id} in {ids:?}");
         }
         assert!(!ids.iter().any(|known| known == "sequence.lift"));
@@ -963,7 +963,7 @@ mod tests {
     #[test]
     fn a_render_scale_renders_smaller_and_scales_up() {
         let mut doc = FilmDocument::create("Edit.kfilm", 1920, 1080).unwrap();
-        let matte = doc.execute("file.newColorMatte", json!({ "color": "#ff0000", "seconds": 4.0 })).unwrap();
+        let matte = doc.execute("item.newColorMatte", json!({ "color": "#ff0000", "seconds": 4.0 })).unwrap();
         doc.execute("timeline.place", json!({ "item": matte["item"], "track": "V1", "seconds": 0.0 })).unwrap();
         let time = |doc: &FilmDocument| {
             (0..3)
@@ -1054,7 +1054,7 @@ mod tests {
         assert_eq!(shown["target"]["matrix"], json!([1.0, 0.0, 0.0, 1.0, 0.0, 0.0]));
 
         // The clip's Motion moves its layers: 50% about the frame's centre.
-        doc.execute("effects.setParam", json!({ "clip": clip, "effect": "motion", "param": "scale", "value": 50.0 })).unwrap();
+        doc.execute("effect.setParam", json!({ "clip": clip, "effect": "motion", "param": "scale", "value": 50.0 })).unwrap();
         let halved = doc.graphic_layers().unwrap();
         assert!(near(&corners(&halved["layers"][0]), &[(910.0, 515.0), (1010.0, 515.0), (1010.0, 565.0), (910.0, 565.0)]), "{}", halved["layers"][0]);
         assert_eq!(halved["target"]["matrix"], json!([0.5, 0.0, 0.0, 0.5, 480.0, 270.0]));
@@ -1115,7 +1115,7 @@ mod tests {
         assert!(near(&corners(shape), &mapped), "{shape}");
 
         // The clip's Motion at 50% about the frame's centre: the canvas map takes it, and the layer's map composes it.
-        doc.execute("effects.setParam", json!({ "clip": clip, "effect": "motion", "param": "scale", "value": 50.0 })).unwrap();
+        doc.execute("effect.setParam", json!({ "clip": clip, "effect": "motion", "param": "scale", "value": 50.0 })).unwrap();
         let halved = doc.graphic_layers().unwrap();
         let shape = &halved["layers"][1];
         assert_eq!(shape["canvas"], json!([0.5, 0.0, 0.0, 0.5, 480.0, 270.0]), "{shape}");
@@ -1170,7 +1170,7 @@ mod tests {
         doc.execute("sequence.matchFrame", json!({})).unwrap();
         assert_eq!(doc.take_events(), json!([{ "kind": "openSource", "item": matte }]));
         // A new sequence opens in the Timeline.
-        doc.execute("file.newSequence", json!({ "name": "Second" })).unwrap();
+        doc.execute("sequence.new", json!({ "name": "Second" })).unwrap();
         let sequence = doc.session.state.active_sequence.unwrap().0;
         let opened = doc.take_events();
         assert!(opened.as_array().unwrap().contains(&json!({ "kind": "openSequence", "item": sequence })), "{opened}");

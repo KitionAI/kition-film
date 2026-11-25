@@ -37,7 +37,7 @@ expected:
       details.sequence.video.0.items.0.enabled: true
 solution:
   - tool: film_run
-    args: { path: edit.kfilm, draft: true, steps: [{ command: file.newColorMatte, params: { color: "#ff0000" } }, { command: source.open, params: {} }, { command: playhead.end, params: {} }, { command: source.overwrite, params: {} }, { command: playhead.set, params: { frame: 72 } }, { command: sequence.addEdit, params: {} }, { command: timeline.selectClipAtPlayhead, params: {} }, { command: edit.clear, params: {} }] }
+    args: { path: edit.kfilm, draft: true, steps: [{ command: item.newColorMatte, params: { color: "#ff0000" } }, { command: source.open, params: {} }, { command: playhead.end, params: {} }, { command: source.overwrite, params: {} }, { command: playhead.set, params: { frame: 72 } }, { command: sequence.addEdit, params: {} }, { command: timeline.selectClipAtPlayhead, params: {} }, { command: edit.delete, params: {} }] }
   - tool: film_run
     args: { path: edit.kfilm, draft: true, steps: [{ command: playhead.set, params: { frame: 48 } }, { command: timeline.selectClipAtPlayhead, params: {} }, { command: clip.enable, params: {} }] }
 since: "2026-11-17"

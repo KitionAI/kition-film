@@ -13,7 +13,7 @@ pub fn complete(session: &Session, command: &str, params: &Value, under: Option<
     let transition_kind = match command {
         "sequence.applyVideoTransition" => Some(TrackKind::Video),
         "sequence.applyAudioTransition" => Some(TrackKind::Audio),
-        "effects.apply" => params
+        "effect.apply" => params
             .get("effect")
             .and_then(Value::as_str)
             .and_then(|name| {
@@ -33,7 +33,7 @@ pub fn complete(session: &Session, command: &str, params: &Value, under: Option<
     let Some(q) = session.active_sequence() else { return under };
     let Some(sequence) = session.state.active_sequence else { return under };
     let mut answer = under.unwrap_or_default();
-    if command == "effects.apply" && transition_kind.is_some() {
+    if command == "effect.apply" && transition_kind.is_some() {
         answer = Under::default();
     }
     if range {
@@ -96,7 +96,7 @@ pub fn complete(session: &Session, command: &str, params: &Value, under: Option<
     if let Some(kind) = transition_kind {
         answer.premises.push(leaf(sequence.0, &["sequence.settings.settings.frame_rate"]));
         let named = commands::clip_p(params, "clip").or_else(|| {
-            if command == "effects.apply" {
+            if command == "effect.apply" {
                 params.get("clips").and_then(Value::as_array).and_then(|ids| ids.first()).and_then(Value::as_u64).map(kition_film_engine::project::ClipId)
             } else {
                 None
@@ -166,7 +166,7 @@ pub fn complete(session: &Session, command: &str, params: &Value, under: Option<
         answer.premises.extend(owners.into_iter().map(|id| leaf(id.0, &["transitions"])));
         // A named clip skips the binding's place lookup, yet the cut's neighbourhood
         // decides which sides the transition joins (commands.rs transition_point).
-        if (command == "effects.apply" || named.is_some())
+        if (command == "effect.apply" || named.is_some())
             && let Ok(Some(found)) = session.under(delegate, &p)
         {
             answer.objects.extend(found.clips.into_iter().map(|id| json!(id.0)));
@@ -185,7 +185,7 @@ pub fn complete(session: &Session, command: &str, params: &Value, under: Option<
             }));
         }
         // Keep declaration order stable: search windows precede the chosen cut.
-        if command != "effects.apply" && answer.within.len() > 1 {
+        if command != "effect.apply" && answer.within.len() > 1 {
             answer.within.rotate_left(1);
         }
     }

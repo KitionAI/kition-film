@@ -8,7 +8,7 @@ use kition_kit::{EditorState, KitDocument, TimeSpan, Under, Within};
 use serde_json::{Value, json};
 
 pub const PATHS: &[(&str, &str)] = &[
-    ("clip.modifyTimecode", "timecode/frame/tape/reset"),
+    ("clip.setTimecode", "timecode/frame/tape/reset"),
     ("media.makeOffline", "explicit or project selection"),
     ("media.detachProxies", "explicit or project selection"),
 ];
@@ -52,8 +52,8 @@ pub(super) fn program(project: &Project, sequence: u64, at: i64) -> Under {
 fn direct_media_paths_compare_all_target_spellings_selection_and_assignment_branches() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
     let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let source = doc.execute("file.newOfflineFile", json!({"seconds":3})).unwrap()["item"].as_u64().unwrap();
-    let generated = doc.execute("file.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].as_u64().unwrap();
+    let source = doc.execute("item.newOfflineFile", json!({"seconds":3})).unwrap()["item"].as_u64().unwrap();
+    let generated = doc.execute("item.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].as_u64().unwrap();
     doc.execute("timeline.place", json!({"item":generated,"track":"V1","time":0})).unwrap();
     let project = kition_film_format::decode(&doc.save(None).unwrap()).unwrap().project;
     for selected in [vec![], vec![source], vec![sequence, generated], vec![generated, source]] {
@@ -64,7 +64,7 @@ fn direct_media_paths_compare_all_target_spellings_selection_and_assignment_bran
             for &(command, path) in PATHS {
                 assert!(compared_path(command, path));
                 let spec = doc.commands().into_iter().find(|s| s.id == command).unwrap();
-                let timecode = command == "clip.modifyTimecode";
+                let timecode = command == "clip.setTimecode";
                 assert!(spec.mutates);
                 assert_eq!(spec.reads, [EditorState::Selection]);
                 assert_eq!(spec.targets, Some(if timecode { "item" } else { "items" }));

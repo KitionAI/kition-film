@@ -544,5 +544,5 @@ export function editPointMarks(scene: Scene, points: readonly EditPoint[]) {
 
 /** `empty_state`'s drop: a project item dropped on the empty Timeline makes a sequence from it. */
 export function emptyDropCommand(payload: DropPayload): Command {
-  return { id: 'file.newSequence', params: { fromItem: payload.item } }
+  return { id: 'sequence.new', params: { fromItem: payload.item } }
 }

@@ -5,7 +5,7 @@
 //! ```json
 //! { "create": { "name": "x.kfilm", "width": 1280, "height": 720 },
 //!   "fonts": ["/abs/DroidSansFallbackFull.ttf"],
-//!   "steps": [{ "command": "file.newColorMatte", "params": { "color": "#1f4e8c" }, "as": "matte" },
+//!   "steps": [{ "command": "item.newColorMatte", "params": { "color": "#1f4e8c" }, "as": "matte" },
 //!             { "command": "timeline.place", "params": { "item": "$matte.item", "track": "V1" } }],
 //!   "save": "/abs/out/x.kfilm",
 //!   "renders": [{ "file": "/abs/out/thumb.png", "max": 640, "area": null,

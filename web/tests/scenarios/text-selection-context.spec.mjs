@@ -4,7 +4,7 @@ for (const choice of ['clear', 'another clip']) {
   test(`F63 changing selection to ${choice} cancels a pending text editor without editing the former title`, async ({ film, page }) => {
     await film.open()
     await film.command('file.newProject', { name: 'Pending text selection' })
-    await film.command('file.newSequence', { name: 'Titles', width: 640, height: 360, fps: 24, video: 2, audio: 0 })
+    await film.command('sequence.new', { name: 'Titles', width: 640, height: 360, fps: 24, video: 2, audio: 0 })
     const { clip: first } = await film.command('graphics.newText', { text: 'First title', position: [80, 100], size: 40, newClip: true })
     const { clip: second } = await film.command('graphics.newText', { text: 'Second title', position: [80, 200], size: 40, newClip: true })
     await film.command('timeline.select', { clips: [first] })

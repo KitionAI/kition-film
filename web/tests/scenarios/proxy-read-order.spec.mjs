@@ -51,8 +51,8 @@ for (const enabled of [false, true]) {
   test(`F88 late proxy preference read cannot overwrite the latest ${enabled ? 'enabled' : 'disabled'} state in either monitor`, async ({ film }) => {
     await film.open()
     await film.command('file.newProject', { name: 'Proxy read ordering' })
-    await film.command('file.newSequence', { width: 64, height: 36, fps: 24 })
-    const { item } = await film.command('file.newBarsAndTone', { seconds: 1 })
+    await film.command('sequence.new', { width: 64, height: 36, fps: 24 })
+    const { item } = await film.command('item.newBarsAndTone', { seconds: 1 })
     await film.command('source.open', { item })
     const button = which => film.kit.getByTestId(`film-monitor-${which}`).locator('[data-kit-ui-id="control:transport.toggleProxies"]')
     const shown = async value => {

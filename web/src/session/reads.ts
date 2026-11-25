@@ -43,7 +43,7 @@ export function createPrefsCheck(check: () => void, ms: number, setTimer: (task:
   }
 }
 
-const QUERIES = new Set(['prefs.get', 'shortcuts.list', 'shortcuts.get', 'shortcuts.conflicts'])
+const QUERIES = new Set(['prefs.get', 'shortcut.list', 'shortcut.get', 'shortcut.conflicts'])
 
 /**
  * Commands that change the Project panel's view (its preferences: view, columns, sort, presets)

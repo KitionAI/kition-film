@@ -104,10 +104,10 @@ fn metadata_targets_follow_the_selection() {
 #[test]
 fn events_log_failed_commands_jobs_and_messages() {
     let mut s = demo();
-    s.execute("events.clear", json!({})).unwrap();
+    s.execute("event.clear", json!({})).unwrap();
     assert!(s.execute("clip.rename", json!({})).is_err());
     assert!(s.execute("clip.rename", json!({})).is_err());
-    let l = s.execute("events.list", json!({})).unwrap();
+    let l = s.execute("event.list", json!({})).unwrap();
     let e = &l["entries"].as_array().unwrap()[0];
     assert_eq!((e["level"].as_str(), e["source"].as_str(), e["count"].as_u64()), (Some("error"), Some("clip.rename"), Some(2)));
     assert!(e["message"].as_str().unwrap().contains("name"), "{e}");
@@ -118,24 +118,24 @@ fn events_log_failed_commands_jobs_and_messages() {
     // messages are info
     s.toast("Saved");
     s.error_toast("autosave", "disk full");
-    let l = s.execute("events.list", json!({"level": "error"})).unwrap();
+    let l = s.execute("event.list", json!({"level": "error"})).unwrap();
     assert!(l["entries"].as_array().unwrap().iter().all(|e| e["level"] == "error"));
     assert_eq!(l["counts"]["error"], json!(2));
     assert_eq!(l["counts"]["info"], json!(1));
     let last = l["entries"].as_array().unwrap().last().unwrap()["id"].as_u64().unwrap();
-    assert!(s.execute("events.list", json!({"since": last})).unwrap()["entries"].as_array().unwrap().is_empty());
+    assert!(s.execute("event.list", json!({"since": last})).unwrap()["entries"].as_array().unwrap().is_empty());
     // nested commands report only the outer failure; queries and successes add nothing
     let before = s.log.entries.len();
-    s.execute("project.inspect", json!({})).unwrap();
+    s.execute("file.inspect", json!({})).unwrap();
     assert_eq!(s.log.entries.len(), before);
-    s.execute("events.clear", json!({})).unwrap();
+    s.execute("event.clear", json!({})).unwrap();
     assert!(s.log.entries.is_empty());
 }
 
 #[test]
 fn events_report_background_jobs() {
     let mut s = demo();
-    s.execute("events.clear", json!({})).unwrap();
+    s.execute("event.clear", json!({})).unwrap();
     let job = |id, label: &str| crate::Job { id, label: label.into(), progress: Arc::new(Default::default()), result: Arc::new(std::sync::Mutex::new(None)) };
     let (a, b, c) = (job(901, "Export a.mp4"), job(902, "Create Proxies"), job(903, "Scene Edit Detection"));
     s.jobs.extend([a.clone(), b.clone(), c.clone()]);
@@ -146,7 +146,7 @@ fn events_report_background_jobs() {
     *b.result.lock().unwrap() = Some(Err("disk full".into()));
     c.progress.cancel.store(true, std::sync::atomic::Ordering::Relaxed);
     *c.result.lock().unwrap() = Some(Err("cancelled".into()));
-    let l = s.execute("events.list", json!({})).unwrap();
+    let l = s.execute("event.list", json!({})).unwrap();
     let msgs: Vec<(String, String)> =
         l["entries"].as_array().unwrap().iter().map(|e| (e["level"].as_str().unwrap().into(), e["message"].as_str().unwrap().into())).collect();
     assert!(msgs.contains(&("info".into(), "Finished: Export a.mp4".into())), "{msgs:?}");

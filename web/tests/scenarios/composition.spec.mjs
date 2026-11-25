@@ -5,9 +5,9 @@ import { test, expect, clips, editState, TICKS } from './fixtures.mjs'
 test('F25 Nest preserves two colored shots through history, reopen, and actual exported frames', async ({ film, page }, testInfo) => {
   await film.open()
   await film.command('file.newProject', { name: 'Nested colors' })
-  const { sequence: outer } = await film.command('file.newSequence', { name: 'Outer', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
+  const { sequence: outer } = await film.command('sequence.new', { name: 'Outer', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
   for (const [seconds, color] of [[0, '#ff0000'], [0.25, '#0000ff']]) {
-    const { item } = await film.command('file.newColorMatte', { color, seconds: 0.25 })
+    const { item } = await film.command('item.newColorMatte', { color, seconds: 0.25 })
     await film.command('timeline.place', { item, seconds, track: 'V1' })
   }
   const before = await film.sequence()
@@ -53,11 +53,11 @@ for (const operation of ['lift', 'extract']) {
   test(`F26 ${operation} removes inclusive In/Out from linked media and preserves source ranges through history/reopen`, async ({ film }) => {
     await film.open()
     await film.command('file.newProject', { name: 'Range editing' })
-    await film.command('file.newSequence', { name: 'Range', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
-    const { item } = await film.command('file.newBarsAndTone', { seconds: 4 })
+    await film.command('sequence.new', { name: 'Range', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
+    const { item } = await film.command('item.newBarsAndTone', { seconds: 4 })
     await film.command('timeline.place', { item, seconds: 0 })
-    await film.command('markers.markIn', { time: TICKS, target: 'program' })
-    await film.command('markers.markOut', { time: 2 * TICKS - TICKS / 24, target: 'program' })
+    await film.command('marker.markIn', { time: TICKS, target: 'program' })
+    await film.command('marker.markOut', { time: 2 * TICKS - TICKS / 24, target: 'program' })
     const before = await film.sequence()
     const history = await film.history()
     await film.menu(`sequence.${operation}`)

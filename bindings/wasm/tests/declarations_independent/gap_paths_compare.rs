@@ -84,7 +84,7 @@ fn gaps_and_selection_follow_compare_target_sets_gap_directions_links_and_empty_
             doc.execute("sequence.settings", json!({"fps":30})).unwrap();
             let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
             if populated {
-                let item = doc.execute("file.newBarsAndTone", json!({"seconds":1})).unwrap()["item"].clone();
+                let item = doc.execute("item.newBarsAndTone", json!({"seconds":1})).unwrap()["item"].clone();
                 for (time, track, audio) in [(0, "V1", "A1"), (3 * SECOND, "V1", "A1"), (2 * SECOND, "V2", "A2"), (6 * SECOND, "V2", "A2")] {
                     doc.execute("timeline.place", json!({"item":item,"track":track,"audioTrack":audio,"time":time})).unwrap();
                 }

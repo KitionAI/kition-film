@@ -7,7 +7,7 @@ use serde_json::{Value, json};
 
 fn sound_document() -> (FilmDocument, Value, Value) {
     let mut doc = FilmDocument::open(FILE, &project(1)).unwrap();
-    let source = doc.execute("file.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
+    let source = doc.execute("item.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
     let bed = doc.execute("timeline.place", json!({"item":source,"track":"V1","audioTrack":"A1","time":0})).unwrap()["clips"][1].clone();
     (doc, source, bed)
 }
@@ -52,7 +52,7 @@ async fn ducking_holds_added_and_deleted_trigger_candidates_but_allows_their_nam
                 f.colleague(&[("audioMixing.setType", json!({"clips":[id],"type":"dialogue"}))]);
             }
             "delete" => {
-                f.colleague(&[("edit.clear", json!({"clips":[trigger]}))]);
+                f.colleague(&[("edit.delete", json!({"clips":[trigger]}))]);
             }
             "empty-lane" => {
                 f.colleague(&[("sequence.addTracks", json!({"audio":1}))]);

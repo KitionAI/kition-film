@@ -54,8 +54,8 @@ test('F12 exported original six-frame movie has the expected codec, size, rate a
 test('F20 exported sound is a 1 kHz stereo tone; muting its track produces silence', async ({ film, page }, testInfo) => {
   await film.open()
   await film.command('file.newProject', { name: 'Original bars and tone' })
-  await film.command('file.newSequence', { name: 'Tone', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
-  const { item } = await film.command('file.newBarsAndTone', { seconds: 0.5 })
+  await film.command('sequence.new', { name: 'Tone', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
+  const { item } = await film.command('item.newBarsAndTone', { seconds: 0.5 })
   await film.command('timeline.place', { item, seconds: 0 })
   const ffmpeg = process.env.KITION_FILM_FFMPEG ?? 'ffmpeg'
   const ffprobe = process.env.KITION_FILM_FFPROBE ?? 'ffprobe'

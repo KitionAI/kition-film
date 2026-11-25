@@ -106,25 +106,25 @@ test("Audio Channels' matrix maps to clips: [[ch]] for project items and to chan
 })
 
 test("Modify Timecode drops the timecode when Use the file's timecode is checked, as finish() does", async () => {
-  const ctx = engine({ 'clip.modifyTimecode': { params: { timecode: '01:00:00:00', tapeName: 'A001' }, info: null } })
-  assert.deepEqual(await ok('clip.modifyTimecode', ctx), [{ command: 'clip.modifyTimecode', params: { timecode: '01:00:00:00', tapeName: 'A001' } }])
-  assert.deepEqual((await ok('clip.modifyTimecode', ctx, (draft) => ({ ...draft, reset: true })))[0].params, { tapeName: 'A001', reset: true })
-  assert.deepEqual(await spec('clip.modifyTimecode').defaults(context()), { timecode: '00:00:00:00', tapeName: '' }, "upstream's draft without an item")
+  const ctx = engine({ 'clip.setTimecode': { params: { timecode: '01:00:00:00', tapeName: 'A001' }, info: null } })
+  assert.deepEqual(await ok('clip.setTimecode', ctx), [{ command: 'clip.setTimecode', params: { timecode: '01:00:00:00', tapeName: 'A001' } }])
+  assert.deepEqual((await ok('clip.setTimecode', ctx, (draft) => ({ ...draft, reset: true })))[0].params, { tapeName: 'A001', reset: true })
+  assert.deepEqual(await spec('clip.setTimecode').defaults(context()), { timecode: '00:00:00:00', tapeName: '' }, "upstream's draft without an item")
 })
 
 test('New Offline File drops an empty name, keeps a typed one, and disables the picture fields without video', async () => {
   const offline = { fileName: 'Offline.mov', name: '', tapeName: '', description: '', video: true, audio: true, width: 1920, height: 1080, fps: 24, timecode: '00:00:00:00', seconds: 10 }
-  const ctx = engine({ 'file.newOfflineFile': { params: offline, info: null } })
+  const ctx = engine({ 'item.newOfflineFile': { params: offline, info: null } })
   const { name, ...unnamed } = offline
-  assert.deepEqual(await ok('file.newOfflineFile', ctx), [{ command: 'file.newOfflineFile', params: unnamed }])
+  assert.deepEqual(await ok('item.newOfflineFile', ctx), [{ command: 'item.newOfflineFile', params: unnamed }])
   assert.equal(name, '')
-  assert.deepEqual((await ok('file.newOfflineFile', ctx, (draft) => ({ ...draft, name: 'Lost' })))[0].params, { ...offline, name: 'Lost' })
-  const rows = fieldRows(spec('file.newOfflineFile').layout)
+  assert.deepEqual((await ok('item.newOfflineFile', ctx, (draft) => ({ ...draft, name: 'Lost' })))[0].params, { ...offline, name: 'Lost' })
+  const rows = fieldRows(spec('item.newOfflineFile').layout)
   for (const field of ['width', 'height', 'fps']) assert.equal(rows.find((row) => row.field === field).enabled({ video: false }), false, field)
   assert.equal(rows.find((row) => row.field === 'seconds').min, 0.05)
   assert.equal(rows.find((row) => row.field === 'fps').max, 240)
   // Without the engine's answer, upstream's draft on a 1920 × 1080, 24 fps sequence.
-  assert.equal((await spec('file.newOfflineFile').defaults(context())).fileName, 'Offline.mov')
+  assert.equal((await spec('item.newOfflineFile').defaults(context())).fileName, 'Offline.mov')
 })
 
 test('Edit Offline File sends the item and its six fields as drafted', async () => {
@@ -168,14 +168,14 @@ test('Source Settings only shows the codec and its message: one OK button, nothi
 })
 
 test("each clip structure dialog's preview kinds follow the plan's table", () => {
-  const ids = ['clip.nest', 'clip.makeSubclip', 'clip.editSubclip', 'clip.audioChannels', 'clip.modifyTimecode', 'file.newOfflineFile', 'clip.editOffline', 'clip.synchronize', 'clip.mergeClips', 'clip.sourceSettings']
+  const ids = ['clip.nest', 'clip.makeSubclip', 'clip.editSubclip', 'clip.audioChannels', 'clip.setTimecode', 'item.newOfflineFile', 'clip.editOffline', 'clip.synchronize', 'clip.mergeClips', 'clip.sourceSettings']
   assert.deepEqual(Object.fromEntries(ids.map((id) => [id, spec(id).preview])), {
     'clip.nest': ['timeline', 'project'],
     'clip.makeSubclip': ['project'],
     'clip.editSubclip': ['project'],
     'clip.audioChannels': ['timeline', 'project'],
-    'clip.modifyTimecode': ['project'],
-    'file.newOfflineFile': ['project'],
+    'clip.setTimecode': ['project'],
+    'item.newOfflineFile': ['project'],
     'clip.editOffline': ['project'],
     'clip.synchronize': ['timeline'],
     'clip.mergeClips': ['project'],
@@ -206,7 +206,7 @@ test('Clip ▸ Rename… starts the Project panel\'s inline rename, and with a n
 })
 
 test('the dialogs open with no params and run at once with them, as upstream routes them', () => {
-  for (const id of ['clip.nest', 'clip.makeSubclip', 'clip.editSubclip', 'clip.audioChannels', 'clip.modifyTimecode', 'file.newOfflineFile', 'clip.editOffline', 'clip.synchronize', 'clip.mergeClips', 'clip.sourceSettings']) {
+  for (const id of ['clip.nest', 'clip.makeSubclip', 'clip.editSubclip', 'clip.audioChannels', 'clip.setTimecode', 'item.newOfflineFile', 'clip.editOffline', 'clip.synchronize', 'clip.mergeClips', 'clip.sourceSettings']) {
     assert.equal(routeOf(id, {}, 'timeline'), 'dialog', id)
   }
   assert.equal(routeOf('clip.nest', { name: 'X' }, 'timeline'), 'session')

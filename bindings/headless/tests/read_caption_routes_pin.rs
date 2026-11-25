@@ -7,25 +7,25 @@ use serde_json::json;
 
 #[tokio::test(flavor = "multi_thread")]
 async fn caption_routes_refuse_changed_inputs_and_allow_unrelated_sequence_names() {
-    for command in ["captions.next", "captions.goTo", "captions.showActiveOnly"] {
+    for command in ["caption.next", "caption.goTo", "caption.showActiveOnly"] {
         for related in [false, true] {
             let mut doc = FilmDocument::open(FILE, &project(1)).unwrap();
-            let track = doc.execute("captions.newTrack", json!({"name":"Observed"})).unwrap()["track"].clone();
-            let caption = doc.execute("captions.add", json!({"text":"Observed", "time":SECOND,"durationSeconds":1})).unwrap()["caption"].clone();
+            let track = doc.execute("caption.newTrack", json!({"name":"Observed"})).unwrap()["track"].clone();
+            let caption = doc.execute("caption.add", json!({"text":"Observed", "time":SECOND,"durationSeconds":1})).unwrap()["caption"].clone();
             let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
             let (_, basis) = f.inspect().await;
             let change = if !related {
                 ("sequence.settings", json!({"name":"Independent"}))
             } else {
                 match command {
-                    "captions.goTo" => ("captions.setTimes", json!({"caption":caption,"startTime":2*SECOND,"endTime":3*SECOND})),
-                    _ => ("captions.setTrack", json!({"track":track,"enabled":false})),
+                    "caption.goTo" => ("caption.setTimes", json!({"caption":caption,"startTime":2*SECOND,"endTime":3*SECOND})),
+                    _ => ("caption.setTrack", json!({"track":track,"enabled":false})),
                 }
             };
             f.colleague(&[change]);
             let params = match command {
-                "captions.goTo" => json!({"caption":caption}),
-                "captions.showActiveOnly" => json!({"track":track}),
+                "caption.goTo" => json!({"caption":caption}),
+                "caption.showActiveOnly" => json!({"track":track}),
                 _ => json!({}),
             };
             let before = std::fs::read(f.file()).unwrap();
@@ -45,14 +45,14 @@ async fn caption_routes_refuse_changed_inputs_and_allow_unrelated_sequence_names
 
 #[tokio::test(flavor = "multi_thread")]
 async fn caption_navigation_holds_frame_snapping_and_following_selection_geometry() {
-    for command in ["captions.next", "captions.previous", "captions.goTo"] {
+    for command in ["caption.next", "caption.previous", "caption.goTo"] {
         for geometry in [false, true] {
-            if geometry && command == "captions.goTo" {
+            if geometry && command == "caption.goTo" {
                 continue;
             }
             let mut doc = FilmDocument::open(FILE, &project(1)).unwrap();
             let clip = v1(&doc.inspect().unwrap()["sequence"])[0];
-            let caption = doc.execute("captions.add", json!({"text":"Observed", "time":SECOND,"durationSeconds":1})).unwrap()["caption"].clone();
+            let caption = doc.execute("caption.add", json!({"text":"Observed", "time":SECOND,"durationSeconds":1})).unwrap()["caption"].clone();
             let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
             if geometry {
                 let view = f.kits.open(kition_kits::Caller::User, FILE).await.unwrap();
@@ -74,11 +74,11 @@ async fn caption_navigation_holds_frame_snapping_and_following_selection_geometr
                 ("sequence.settings", json!({"fps":30}))
             }]);
             let before = std::fs::read(f.file()).unwrap();
-            let params = if command == "captions.goTo" { json!({"caption":caption}) } else { json!({}) };
+            let params = if command == "caption.goTo" { json!({"caption":caption}) } else { json!({}) };
             let error = f
                 .refused(
                     "run",
-                    json!({"basis":basis,"steps":[{"command":command,"params":params,"at":{"time":if command=="captions.previous" {1.5} else {0.0}}}]}),
+                    json!({"basis":basis,"steps":[{"command":command,"params":params,"at":{"time":if command=="caption.previous" {1.5} else {0.0}}}]}),
                 )
                 .await;
             assert_eq!(error["error"]["code"], "conflict", "{command}/geometry={geometry}: {error}");

@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 fn session() -> (Session, ItemId) {
     let mut s = Session::default();
-    s.execute("file.newSequence", json!({"width":128,"height":72,"fps":24})).unwrap();
+    s.execute("sequence.new", json!({"width":128,"height":72,"fps":24})).unwrap();
     let item = crate::demo::add_generator(
         Arc::make_mut(&mut s.project),
         &s.media,

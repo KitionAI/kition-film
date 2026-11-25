@@ -7,7 +7,7 @@
 //! (sequence) pixels, where the mask is seen; it is stored in the clip's own pixels, mapped through
 //! the clip's Motion at the edit's time, so a mask stays on its part of the picture as Motion moves
 //! the clip. Edits at the playhead add/replace a keyframe when the parameter is animated, like every effect parameter;
-//! keyframe commands (`effects.addKeyframe`, `effects.toggleAnimation`, …) take `"mask": n` to
+//! keyframe commands (`effect.addKeyframe`, `effect.toggleAnimation`, …) take `"mask": n` to
 //! address `path` / `feather` / `opacity` / `expansion`. Every edit is one undo step (`merge`: a
 //! key folds a continuous drag into one step).
 
@@ -38,36 +38,36 @@ fn spec(id: &'static str, label: &'static str, params: &'static str, run: Run) -
 pub(crate) fn commands() -> Vec<CommandSpec> {
     vec![
         spec(
-            "masks.add",
+            "mask.add",
             "Create Mask",
             r#"{"clip":id?,"effect":index|id?="opacity","shape":"ellipse"|"polygon"|"bezier","path":[[x,y]…]|{vertices}?,"center":[x,y]?,"size":[w,h]?}"#,
             add,
         ),
-        spec("masks.remove", "Delete Mask", r#"{"clip":id?,"effect":index|id?,"mask":n?}"#, remove),
+        spec("mask.remove", "Delete Mask", r#"{"clip":id?,"effect":index|id?,"mask":n?}"#, remove),
         spec(
-            "masks.set",
+            "mask.set",
             "Change Mask",
             r#"{"clip":id?,"effect":index|id?,"mask":n?,"name":str?,"inverted":bool?,"mode":"none|add|subtract|intersect|lighten|darken|difference"?,"trackMethod":"position|positionRotation|positionScaleRotation"?,"feather":px?,"opacity":pct?,"expansion":px?,"path":path?,"time":ticks?,"merge":key?}"#,
             set,
         ),
         spec(
-            "masks.moveVertex",
+            "mask.moveVertex",
             "Move Mask Vertex",
             r#"{"clip":id?,"effect":index|id?,"mask":n?,"vertex":n,"handle":"point"|"in"|"out"?,"to":[x,y]?|"delta":[dx,dy]?,"breakHandles":bool?,"merge":key?}"#,
             move_vertex,
         ),
-        spec("masks.translate", "Move Mask", r#"{"clip":id?,"effect":index|id?,"mask":n?,"delta":[dx,dy],"merge":key?}"#, translate),
-        spec("masks.addVertex", "Add Mask Vertex", r#"{"clip":id?,"effect":index|id?,"mask":n?,"after":n,"at":[x,y]}"#, add_vertex),
-        spec("masks.removeVertex", "Delete Mask Vertex", r#"{"clip":id?,"effect":index|id?,"mask":n?,"vertex":n}"#, remove_vertex),
+        spec("mask.translate", "Move Mask", r#"{"clip":id?,"effect":index|id?,"mask":n?,"delta":[dx,dy],"merge":key?}"#, translate),
+        spec("mask.addVertex", "Add Mask Vertex", r#"{"clip":id?,"effect":index|id?,"mask":n?,"after":n,"at":[x,y]}"#, add_vertex),
+        spec("mask.removeVertex", "Delete Mask Vertex", r#"{"clip":id?,"effect":index|id?,"mask":n?,"vertex":n}"#, remove_vertex),
         spec(
-            "masks.track",
+            "mask.track",
             "Track Selected Mask",
             r#"{"clip":id?,"effect":index|id?,"mask":n?,"direction":"forward"|"backward"?,"frames":n?,"method":"position|positionRotation|positionScaleRotation"?,"wait":bool?}"#,
             track,
         ),
-        spec("masks.toggleVertexSmooth", "Convert Mask Vertex", r#"{"clip":id?,"effect":index|id?,"mask":n?,"vertex":n}"#, toggle_smooth),
+        spec("mask.toggleVertexSmooth", "Convert Mask Vertex", r#"{"clip":id?,"effect":index|id?,"mask":n?,"vertex":n}"#, toggle_smooth),
         CommandSpec {
-            id: "masks.select",
+            id: "mask.select",
             label: "Select Mask",
             menu: &[],
             shortcut: None,
@@ -77,7 +77,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
             journal: false,
         },
         CommandSpec {
-            id: "masks.list",
+            id: "mask.list",
             label: "List Masks",
             menu: &[],
             shortcut: None,
@@ -262,38 +262,38 @@ fn add(s: &mut Session, p: &Value) -> Result<Value> {
     let ph = s.playhead();
     // the shape is drawn in frame pixels, then stored in the clip's pixels
     let to_frame = clip_to_frame(s, clip, media_time(s, clip, ph));
-    let to_clip = to_frame.inverse().ok_or_else(|| collapsed("masks.add"))?;
+    let to_clip = to_frame.inverse().ok_or_else(|| collapsed("mask.add"))?;
     let shape = str_p(p, "shape").unwrap_or("ellipse").to_ascii_lowercase();
     let center = p.get("center").and_then(pt).unwrap_or_else(|| to_frame.apply(Vec2::new(w / 2.0, h / 2.0)));
     // default size: 40 % of the clip's shorter side, as the clip is seen in the frame
     let r = w.min(h) * 0.2 * to_frame.determinant().abs().sqrt();
     let size = p.get("size").and_then(pt).unwrap_or(Vec2::new(r * 2.0, r * 2.0));
     let path = match p.get("path") {
-        Some(v) => path_from_json(v).ok_or_else(|| bad("masks.add", "bad `path`"))?,
+        Some(v) => path_from_json(v).ok_or_else(|| bad("mask.add", "bad `path`"))?,
         None => match shape.as_str() {
             "ellipse" => MaskPath::ellipse(center, size * 0.5),
             "polygon" | "rectangle" | "rect" | "4-point" => {
                 MaskPath::rect(center.x - size.x / 2.0, center.y - size.y / 2.0, center.x + size.x / 2.0, center.y + size.y / 2.0)
             }
-            _ => return Err(bad("masks.add", "a bezier mask needs `path` (pen points)")),
+            _ => return Err(bad("mask.add", "a bezier mask needs `path` (pen points)")),
         },
     }
     .transformed(&to_clip);
     if path.len() < 3 && path.closed {
-        return Err(bad("masks.add", "a mask needs at least 3 vertices"));
+        return Err(bad("mask.add", "a mask needs at least 3 vertices"));
     }
     let eff = p.get("effect").cloned();
     let seq_id = s.state.active_sequence.ok_or(EngineError::NoSequence)?;
     let (ei, mi, name) = s.edit("Create Mask", move |pr, st| {
         let q = pr.sequence_mut(seq_id).ok_or(EngineError::NoSequence)?;
         let (_, it) = q.find_item_mut(clip).ok_or(kition_film_edit::EditError::NoItem(clip))?;
-        let ei = effect_index(&it.effects, eff.as_ref(), None, clip).ok_or_else(|| bad("masks.add", "no such effect on clip"))?;
+        let ei = effect_index(&it.effects, eff.as_ref(), None, clip).ok_or_else(|| bad("mask.add", "no such effect on clip"))?;
         let e = &mut it.effects[ei];
         if e.def().is_none_or(|d| d.kind != kition_film_project::EffectKind::Video) {
-            return Err(bad("masks.add", "masks apply to video effects"));
+            return Err(bad("mask.add", "masks apply to video effects"));
         }
         if e.effect == "motion" {
-            return Err(bad("masks.add", "Motion has no masks"));
+            return Err(bad("mask.add", "Motion has no masks"));
         }
         let n = e
             .masks
@@ -302,7 +302,7 @@ fn add(s: &mut Session, p: &Value) -> Result<Value> {
             .max()
             .unwrap_or(0)
             .checked_add(1)
-            .ok_or_else(|| bad("masks.add", "the generated mask-name counter is exhausted"))?;
+            .ok_or_else(|| bad("mask.add", "the generated mask-name counter is exhausted"))?;
         let name = format!("Mask ({n})");
         e.masks.push(Mask::new(name.clone(), path));
         let mi = e.masks.len() - 1;
@@ -316,15 +316,15 @@ fn remove(s: &mut Session, p: &Value) -> Result<Value> {
     let clip = target_clip(s, p)?;
     let sel = s.state.selected_mask;
     let eff = p.get("effect").cloned();
-    let mask_i = u64_p(p, "mask").map(|m| m as usize).or(sel.filter(|x| x.clip == clip).map(|x| x.mask)).ok_or_else(|| bad("masks.remove", "need `mask`"))?;
+    let mask_i = u64_p(p, "mask").map(|m| m as usize).or(sel.filter(|x| x.clip == clip).map(|x| x.mask)).ok_or_else(|| bad("mask.remove", "need `mask`"))?;
     let seq_id = s.state.active_sequence.ok_or(EngineError::NoSequence)?;
     s.edit("Delete Mask", move |pr, st| {
         let q = pr.sequence_mut(seq_id).ok_or(EngineError::NoSequence)?;
         let (_, it) = q.find_item_mut(clip).ok_or(kition_film_edit::EditError::NoItem(clip))?;
-        let ei = effect_index(&it.effects, eff.as_ref(), sel, clip).ok_or_else(|| bad("masks.remove", "no such effect on clip"))?;
+        let ei = effect_index(&it.effects, eff.as_ref(), sel, clip).ok_or_else(|| bad("mask.remove", "no such effect on clip"))?;
         let e = &mut it.effects[ei];
         if mask_i >= e.masks.len() {
-            return Err(bad("masks.remove", format!("no mask {mask_i}")));
+            return Err(bad("mask.remove", format!("no mask {mask_i}")));
         }
         e.masks.remove(mask_i);
         if st.selected_mask.is_some_and(|x| x.clip == clip && x.effect == ei) {
@@ -337,15 +337,15 @@ fn remove(s: &mut Session, p: &Value) -> Result<Value> {
 
 fn set(s: &mut Session, p: &Value) -> Result<Value> {
     let path = match p.get("path") {
-        Some(v) => Some(path_from_json(v).ok_or_else(|| bad("masks.set", "bad `path`"))?),
+        Some(v) => Some(path_from_json(v).ok_or_else(|| bad("mask.set", "bad `path`"))?),
         None => None,
     };
     let mode = match str_p(p, "mode") {
-        Some(m) => Some(MaskMode::from_name(m).ok_or_else(|| bad("masks.set", format!("unknown mode `{m}`")))?),
+        Some(m) => Some(MaskMode::from_name(m).ok_or_else(|| bad("mask.set", format!("unknown mode `{m}`")))?),
         None => None,
     };
     let method = match str_p(p, "trackMethod") {
-        Some(m) => Some(TrackMethod::from_name(m).ok_or_else(|| bad("masks.set", format!("unknown tracking method `{m}`")))?),
+        Some(m) => Some(TrackMethod::from_name(m).ok_or_else(|| bad("mask.set", format!("unknown tracking method `{m}`")))?),
         None => None,
     };
     let name = str_p(p, "name").map(str::to_string);
@@ -383,20 +383,20 @@ fn set(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 fn move_vertex(s: &mut Session, p: &Value) -> Result<Value> {
-    let vi = u64_p(p, "vertex").ok_or_else(|| bad("masks.moveVertex", "need `vertex`"))? as usize;
+    let vi = u64_p(p, "vertex").ok_or_else(|| bad("mask.moveVertex", "need `vertex`"))? as usize;
     let handle = str_p(p, "handle").unwrap_or("point").to_string();
     let to = p.get("to").and_then(pt);
     let delta = p.get("delta").and_then(pt);
     let broken = bool_p(p, "breakHandles").unwrap_or(false);
     if to.is_none() && delta.is_none() {
-        return Err(bad("masks.moveVertex", "need `to` or `delta`"));
+        return Err(bad("mask.moveVertex", "need `to` or `delta`"));
     }
     edit_mask(s, p, "Move Mask Vertex", move |m, t, to_clip| {
         // `to` is a frame point and `delta` a frame offset: both in the clip's pixels here
         let to = to.map(|q| to_clip.apply(q));
         let delta = delta.map(|d| linear(&to_clip).apply(d));
         let mut path = m.path_at(t);
-        let v = path.vertices.get_mut(vi).ok_or_else(|| bad("masks.moveVertex", format!("no vertex {vi}")))?;
+        let v = path.vertices.get_mut(vi).ok_or_else(|| bad("mask.moveVertex", format!("no vertex {vi}")))?;
         match handle.as_str() {
             "in" | "out" => {
                 let cur = if handle == "in" { v.p + v.t_in } else { v.p + v.t_out };
@@ -425,7 +425,7 @@ fn move_vertex(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 fn translate(s: &mut Session, p: &Value) -> Result<Value> {
-    let d = p.get("delta").and_then(pt).ok_or_else(|| bad("masks.translate", "need `delta`"))?;
+    let d = p.get("delta").and_then(pt).ok_or_else(|| bad("mask.translate", "need `delta`"))?;
     edit_mask(s, p, "Move Mask", move |m, t, to_clip| {
         let d = linear(&to_clip).apply(d);
         let path = m.path_at(t).transformed(&Affine::translate(d.x, d.y));
@@ -436,8 +436,8 @@ fn translate(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 fn add_vertex(s: &mut Session, p: &Value) -> Result<Value> {
-    let after = u64_p(p, "after").ok_or_else(|| bad("masks.addVertex", "need `after`"))? as usize;
-    let at = p.get("at").and_then(pt).ok_or_else(|| bad("masks.addVertex", "need `at`"))?;
+    let after = u64_p(p, "after").ok_or_else(|| bad("mask.addVertex", "need `after`"))? as usize;
+    let at = p.get("at").and_then(pt).ok_or_else(|| bad("mask.addVertex", "need `at`"))?;
     edit_mask(s, p, "Add Mask Vertex", move |m, t, to_clip| {
         let at = to_clip.apply(at);
         if m.path.is_animated() && m.path.keyframes.len() > 1 {
@@ -446,7 +446,7 @@ fn add_vertex(s: &mut Session, p: &Value) -> Result<Value> {
                 if let ParamValue::Path(path) = &mut k.value {
                     let len = path.vertices.len();
                     if len == 0 {
-                        return Err(bad("masks.addVertex", "an animated mask keyframe has no vertices"));
+                        return Err(bad("mask.addVertex", "an animated mask keyframe has no vertices"));
                     }
                     let i = after.saturating_add(1).min(len);
                     let a = path.vertices[after.min(len - 1)].p;
@@ -458,7 +458,7 @@ fn add_vertex(s: &mut Session, p: &Value) -> Result<Value> {
         let mut path = m.path_at(t);
         let i = after.saturating_add(1).min(path.vertices.len());
         if m.path.keyframes.len() > 1 {
-            let vertex = path.vertices.get_mut(i).ok_or_else(|| bad("masks.addVertex", "the animated mask has no path at this time"))?;
+            let vertex = path.vertices.get_mut(i).ok_or_else(|| bad("mask.addVertex", "the animated mask has no path at this time"))?;
             *vertex = MaskVertex::corner(at);
         } else {
             path.vertices.insert(i, MaskVertex::corner(at));
@@ -470,10 +470,10 @@ fn add_vertex(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 fn remove_vertex(s: &mut Session, p: &Value) -> Result<Value> {
-    let vi = u64_p(p, "vertex").ok_or_else(|| bad("masks.removeVertex", "need `vertex`"))? as usize;
+    let vi = u64_p(p, "vertex").ok_or_else(|| bad("mask.removeVertex", "need `vertex`"))? as usize;
     edit_mask(s, p, "Delete Mask Vertex", move |m, t, _| {
         if m.path_at(t).len() <= 3 {
-            return Err(bad("masks.removeVertex", "a mask keeps at least 3 vertices"));
+            return Err(bad("mask.removeVertex", "a mask keeps at least 3 vertices"));
         }
         let drop = |path: &mut MaskPath| {
             if vi < path.vertices.len() {
@@ -499,12 +499,12 @@ fn drop_all(m: &mut Mask, _t: Tick, f: impl Fn(&mut MaskPath)) {
 }
 
 fn toggle_smooth(s: &mut Session, p: &Value) -> Result<Value> {
-    let vi = u64_p(p, "vertex").ok_or_else(|| bad("masks.toggleVertexSmooth", "need `vertex`"))? as usize;
+    let vi = u64_p(p, "vertex").ok_or_else(|| bad("mask.toggleVertexSmooth", "need `vertex`"))? as usize;
     edit_mask(s, p, "Convert Mask Vertex", move |m, t, _| {
         let mut path = m.path_at(t);
         let n = path.vertices.len();
         if vi >= n {
-            return Err(bad("masks.toggleVertexSmooth", format!("no vertex {vi}")));
+            return Err(bad("mask.toggleVertexSmooth", format!("no vertex {vi}")));
         }
         let v = path.vertices[vi];
         if v.is_corner() {
@@ -529,11 +529,11 @@ fn select(s: &mut Session, p: &Value) -> Result<Value> {
     }
     let clip = target_clip(s, p)?;
     let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;
-    let (_, it) = seq.find_item(clip).ok_or_else(|| bad("masks.select", "no such clip"))?;
-    let ei = effect_index(&it.effects, p.get("effect"), None, clip).ok_or_else(|| bad("masks.select", "no such effect on clip"))?;
+    let (_, it) = seq.find_item(clip).ok_or_else(|| bad("mask.select", "no such clip"))?;
+    let ei = effect_index(&it.effects, p.get("effect"), None, clip).ok_or_else(|| bad("mask.select", "no such effect on clip"))?;
     let mi = u64_p(p, "mask").unwrap_or(0) as usize;
     if mi >= it.effects[ei].masks.len() {
-        return Err(bad("masks.select", format!("no mask {mi}")));
+        return Err(bad("mask.select", format!("no mask {mi}")));
     }
     s.state.selected_mask = Some(MaskSel { clip, effect: ei, mask: mi });
     Ok(Value::Null)
@@ -552,7 +552,7 @@ fn list(s: &mut Session, p: &Value) -> Result<Value> {
             }
             let end = it.end();
             if end <= it.start {
-                return Err(bad("masks.list", format!("clip {} has no frame (non-positive duration)", it.id.0)));
+                return Err(bad("mask.list", format!("clip {} has no frame (non-positive duration)", it.id.0)));
             }
             let mt = it.source_time_at(ph.clamp(it.start, end - Tick(1)));
             let to_frame = match kition_film_render::source_size(&s.project, it.item) {
@@ -621,25 +621,25 @@ fn track(s: &mut Session, p: &Value) -> Result<Value> {
     let sel = s.state.selected_mask;
     let seq_id = s.state.active_sequence.ok_or(EngineError::NoSequence)?;
     let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;
-    let (track_id, it) = seq.find_item(clip).ok_or_else(|| bad("masks.track", "no such clip"))?;
+    let (track_id, it) = seq.find_item(clip).ok_or_else(|| bad("mask.track", "no such clip"))?;
     let it = it.clone();
-    let ei = effect_index(&it.effects, p.get("effect"), sel, clip).ok_or_else(|| bad("masks.track", "no such effect on clip"))?;
+    let ei = effect_index(&it.effects, p.get("effect"), sel, clip).ok_or_else(|| bad("mask.track", "no such effect on clip"))?;
     let mi = u64_p(p, "mask")
         .map(|m| m as usize)
         .or(sel.filter(|x| x.clip == clip && x.effect == ei).map(|x| x.mask))
-        .ok_or_else(|| bad("masks.track", "need `mask`"))?;
-    let mask = it.effects[ei].masks.get(mi).cloned().ok_or_else(|| bad("masks.track", format!("no mask {mi}")))?;
+        .ok_or_else(|| bad("mask.track", "need `mask`"))?;
+    let mask = it.effects[ei].masks.get(mi).cloned().ok_or_else(|| bad("mask.track", format!("no mask {mi}")))?;
     if s.mask_jobs.iter().any(|j| j.target.clip == clip && j.target.effect == ei && j.target.mask == mi) {
-        return Err(bad("masks.track", "this mask is already being tracked"));
+        return Err(bad("mask.track", "this mask is already being tracked"));
     }
     let method = match str_p(p, "method") {
-        Some(m) => TrackMethod::from_name(m).ok_or_else(|| bad("masks.track", format!("unknown method `{m}`")))?,
+        Some(m) => TrackMethod::from_name(m).ok_or_else(|| bad("mask.track", format!("unknown method `{m}`")))?,
         None => mask.track_method,
     };
     let backward = match str_p(p, "direction").unwrap_or("forward") {
         "forward" => false,
         "backward" => true,
-        d => return Err(bad("masks.track", format!("direction `{d}`: forward or backward"))),
+        d => return Err(bad("mask.track", format!("direction `{d}`: forward or backward"))),
     };
     let rate = s.project.item(it.item).map(|i| i.frame_rate()).unwrap_or(seq.settings.frame_rate);
     let fd = rate.frame_duration();
@@ -654,11 +654,11 @@ fn track(s: &mut Session, p: &Value) -> Result<Value> {
     }
     .max(0) as usize;
     if steps == 0 {
-        return Err(bad("masks.track", if backward { "already at the clip's first frame" } else { "already at the clip's last frame" }));
+        return Err(bad("mask.track", if backward { "already at the clip's first frame" } else { "already at the clip's last frame" }));
     }
     let src = s.source(it.item).ok_or_else(|| EngineError::Other("the clip has no media to track".into()))?;
     let input = crate::analysis_input::AnalysisInput::new(&s.project, seq, track_id, &it, &src);
-    let size = kition_film_render::source_size(&s.project, it.item).ok_or_else(|| bad("masks.track", "the clip has no picture"))?;
+    let size = kition_film_render::source_size(&s.project, it.item).ok_or_else(|| bad("mask.track", "the clip has no picture"))?;
     let scale = (TRACK_MAX_WIDTH / size.0.max(1) as f64).min(1.0) as f32;
     let id = s.jobs.iter().map(|j| j.id).max().unwrap_or(0) + 1;
     let label = format!("Track {} ({})", mask.name, if backward { "backward" } else { "forward" });
@@ -799,7 +799,7 @@ pub fn poll(s: &mut Session) {
             let r = s.edit_merged("Track Mask", &key, move |pr, _| {
                 let q = pr.sequence_mut(seq_id).ok_or(EngineError::NoSequence)?;
                 let (_, it) = q.find_item_mut(target.clip).ok_or(kition_film_edit::EditError::NoItem(target.clip))?;
-                let m = it.effects.get_mut(target.effect).and_then(|e| e.masks.get_mut(target.mask)).ok_or_else(|| bad("masks.track", "the mask is gone"))?;
+                let m = it.effects.get_mut(target.effect).and_then(|e| e.masks.get_mut(target.mask)).ok_or_else(|| bad("mask.track", "the mask is gone"))?;
                 for (t, path) in new {
                     m.path.put_keyframe(t, ParamValue::Path(path));
                 }
@@ -811,7 +811,7 @@ pub fn poll(s: &mut Session) {
                     s.mask_jobs[i].expected_mask = mask;
                 }
                 Err(e) => {
-                    s.error_toast("masks.track", e.to_string());
+                    s.error_toast("mask.track", e.to_string());
                     if let Some(j) = s.jobs.iter().find(|j| j.id == s.mask_jobs[i].job) {
                         j.progress.cancel.store(true, Ordering::Relaxed);
                     }

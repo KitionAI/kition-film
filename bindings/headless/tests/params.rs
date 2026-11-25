@@ -27,13 +27,13 @@ fn a_parameter_of_the_wrong_type_is_refused() {
     kit.set_host(folder.host());
     let id = kit.open(OpenRequest { file: &folder.file("a.kfilm").unwrap(), read_only: false, create: None }).unwrap().id;
     for origin in [Origin::Agent, Origin::User] {
-        let error = kit.execute(&id, "file.newColorMatte", params(json!({ "color": { "not": "a colour" }, "seconds": 2 })), origin).unwrap_err();
+        let error = kit.execute(&id, "item.newColorMatte", params(json!({ "color": { "not": "a colour" }, "seconds": 2 })), origin).unwrap_err();
         assert_eq!(error.code, ErrorReason::InvalidParams.code());
         let detail = error.data.unwrap()["detail"].as_str().unwrap().to_owned();
         assert!(detail.contains("`color`: expected a string"), "{detail}");
         assert!(!kit.document(&id).unwrap().dirty, "the project stays as it was");
     }
-    let made = kit.execute(&id, "file.newColorMatte", params(json!({ "color": "#ff0000", "seconds": 2 })), Origin::Agent).unwrap();
+    let made = kit.execute(&id, "item.newColorMatte", params(json!({ "color": "#ff0000", "seconds": 2 })), Origin::Agent).unwrap();
     assert!(made.changed);
     let _ = std::fs::remove_dir_all(root);
 }

@@ -136,7 +136,7 @@ async fn a_local_effect_does_not_hold_an_adjustment_layer() {
         let f = Fixture::new(2);
         let (sequence, _) = f.inspect().await;
         let target = v1(&sequence)[0];
-        let item = f.colleague(&[("file.newAdjustmentLayer", json!({"seconds":2}))])[0]["item"].clone();
+        let item = f.colleague(&[("item.newAdjustmentLayer", json!({"seconds":2}))])[0]["item"].clone();
         f.colleague(&[("timeline.place", json!({"item":item,"track":"V2","seconds":0}))]);
         let (sequence, basis) = f.inspect().await;
         let adjustment = sequence["video"][1]["items"][0]["clip"].as_u64().unwrap();
@@ -155,15 +155,14 @@ async fn a_local_effect_does_not_hold_an_adjustment_layer() {
 async fn multicam_flatten_holds_the_angle_it_copies() {
     for dependent in [true, false] {
         let mut doc = FilmDocument::create(FILE, 64, 36).unwrap();
-        let source =
-            doc.execute("file.newSequence", json!({"name":"Cameras","width":64,"height":36,"fps":24,"video":2,"audio":1})).unwrap()["sequence"].clone();
+        let source = doc.execute("sequence.new", json!({"name":"Cameras","width":64,"height":36,"fps":24,"video":2,"audio":1})).unwrap()["sequence"].clone();
         for (track, color) in [("V1", "#ff0000"), ("V2", "#0000ff")] {
-            let item = doc.execute("file.newColorMatte", json!({"color":color,"seconds":2})).unwrap()["item"].clone();
+            let item = doc.execute("item.newColorMatte", json!({"color":color,"seconds":2})).unwrap()["item"].clone();
             doc.execute("timeline.place", json!({"item":item,"track":track,"seconds":0})).unwrap();
         }
         let cameras = doc.inspect().unwrap()["sequence"].clone();
         let inside = cameras["video"][if dependent { 0 } else { 1 }]["items"][0]["clip"].as_u64().unwrap();
-        let program = doc.execute("file.newSequence", json!({"name":"Program","width":64,"height":36,"fps":24})).unwrap()["sequence"].clone();
+        let program = doc.execute("sequence.new", json!({"name":"Program","width":64,"height":36,"fps":24})).unwrap()["sequence"].clone();
         doc.execute("timeline.place", json!({"item":source,"track":"V1","seconds":0})).unwrap();
         let target = v1(&doc.inspect().unwrap()["sequence"])[0];
         doc.execute("clip.multicamEnable", json!({"clips":[target],"enabled":true})).unwrap();

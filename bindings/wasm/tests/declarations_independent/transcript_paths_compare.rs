@@ -16,7 +16,7 @@ pub const PATHS: &[(&str, &str)] = &[
     ("transcript.extract", "word index -> time range"),
     ("transcript.removePauses", "derived ranges"),
     ("transcript.removeFillers", "derived ranges"),
-    ("transcript.createCaptions", "derived words"),
+    ("transcript.addCaptions", "derived words"),
 ];
 pub fn compared_path(command: &str, path: &str) -> bool {
     let hash = |s: &str| s.bytes().fold(0xcbf29ce484222325u64, |h, b| (h ^ u64::from(b)).wrapping_mul(0x100000001b3));
@@ -26,7 +26,7 @@ pub fn compared_path(command: &str, path: &str) -> bool {
 }
 pub fn more(command: &str) -> Vec<&'static str> {
     let mut out = vec!["whole-transcript-library"];
-    if !matches!(command, "transcript.set" | "transcript.delete" | "transcript.renameSpeaker" | "transcript.createCaptions") {
+    if !matches!(command, "transcript.set" | "transcript.delete" | "transcript.renameSpeaker" | "transcript.addCaptions") {
         out.push("whole-transcript-sequence");
     }
     if matches!(command, "transcript.select" | "transcript.lift" | "transcript.extract") {
@@ -43,7 +43,7 @@ fn transcript_paths_compare_all_source_routes_word_operations_and_empty_audio_me
     for populated in [false, true] {
         let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
         let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-        let source = doc.execute("file.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].as_u64().unwrap();
+        let source = doc.execute("item.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].as_u64().unwrap();
         let sub = doc.execute("clip.makeSubclip", json!({"item":source,"start":0,"end":254_016_000_000i64})).unwrap()["item"].as_u64().unwrap();
         if populated {
             doc.execute("timeline.place", json!({"item":source,"track":"V1","audioTrack":"A1","time":0})).unwrap();
@@ -82,7 +82,7 @@ fn transcript_paths_compare_all_source_routes_word_operations_and_empty_audio_me
                             want.premises.push(leaf(json!(source), ["kind", "props.parent"]));
                         }
                     }
-                } else if command == "transcript.createCaptions" {
+                } else if command == "transcript.addCaptions" {
                     want.premises.push(leaf(json!(sequence), ["~audioTrackOrder", "sequence.settings.settings.frame_rate"]));
                     for track in &q.audio_tracks {
                         want.premises.push(leaf(json!(track.id.0), ["~clipOrder"]));

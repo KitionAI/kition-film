@@ -3,8 +3,8 @@ import { test, expect } from './fixtures.mjs'
 test('F83 fixed magnification survives a render before the first viewport layout', async ({ film }) => {
   await film.open()
   await film.command('file.newProject', { name: 'Monitor layout order' })
-  await film.command('file.newSequence', { width: 64, height: 36, fps: 24 })
-  const { item } = await film.command('file.newColorMatte', { color: '#ff0000', seconds: 1 })
+  await film.command('sequence.new', { width: 64, height: 36, fps: 24 })
+  const { item } = await film.command('item.newColorMatte', { color: '#ff0000', seconds: 1 })
   await film.command('timeline.place', { item, seconds: 0 })
   await film.kit.getByTestId('film-program-zoom').click()
   await film.kit.getByTestId('film-program-zoom-200').click()

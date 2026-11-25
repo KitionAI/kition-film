@@ -121,7 +121,7 @@ fn expected(project: &Project, sequence: u64, q: &Sequence, command: &str, param
 fn sound_paths_compare_target_precedence_link_closure_gain_modes_reconciliation_and_media_routes() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
     let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let parent = doc.execute("file.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
+    let parent = doc.execute("item.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
     let sub = doc.execute("clip.makeSubclip", json!({"item":parent,"start":0,"end":254_016_000_000i64})).unwrap()["item"].clone();
     let mut clips = Vec::new();
     for (item, video, audio) in [(parent, "V1", "A1"), (sub, "V2", "A2")] {

@@ -11,8 +11,8 @@ async fn nest_and_flatten_refuse_changed_destination_locks_and_allow_uncopied_na
         for related in [true, false] {
             let mut doc = FilmDocument::create(FILE, 64, 36).unwrap();
             let seq = doc.inspect().unwrap()["sequence"]["id"].clone();
-            let source = doc.execute("file.newSequence", json!({"name":"Camera","video":2,"audio":1})).unwrap()["sequence"].clone();
-            let item = doc.execute("file.newBarsAndTone", json!({"seconds":3})).unwrap()["item"].clone();
+            let source = doc.execute("sequence.new", json!({"name":"Camera","video":2,"audio":1})).unwrap()["sequence"].clone();
+            let item = doc.execute("item.newBarsAndTone", json!({"seconds":3})).unwrap()["item"].clone();
             doc.execute("timeline.place", json!({"item":item,"track":"V1","time":0})).unwrap();
             doc.execute("sequence.open", json!({"item":seq})).unwrap();
             let clips = doc.execute("timeline.place", json!({"item":source,"track":"V1","time":0})).unwrap()["clips"].clone();
@@ -44,8 +44,8 @@ async fn nest_and_flatten_refuse_changed_destination_locks_and_allow_uncopied_na
 async fn flatten_retains_the_default_camera_track_order() {
     let mut doc = FilmDocument::create(FILE, 64, 36).unwrap();
     let seq = doc.inspect().unwrap()["sequence"]["id"].clone();
-    let source = doc.execute("file.newSequence", json!({"name":"Camera","video":2,"audio":1})).unwrap()["sequence"].as_u64().unwrap();
-    let item = doc.execute("file.newColorMatte", json!({"seconds":3})).unwrap()["item"].clone();
+    let source = doc.execute("sequence.new", json!({"name":"Camera","video":2,"audio":1})).unwrap()["sequence"].as_u64().unwrap();
+    let item = doc.execute("item.newColorMatte", json!({"seconds":3})).unwrap()["item"].clone();
     for track in ["V1", "V2"] {
         doc.execute("timeline.place", json!({"item":item,"track":track,"time":0})).unwrap();
     }

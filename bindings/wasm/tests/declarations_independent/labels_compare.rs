@@ -62,9 +62,9 @@ fn label_paths_compare_all_target_presence_and_selection_combinations() {
     for timeline_selected in [false, true] {
         for project_selected in [false, true] {
             let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
-            let item = doc.execute("file.newColorMatte", json!({"seconds":1})).unwrap()["item"].as_u64().unwrap();
+            let item = doc.execute("item.newColorMatte", json!({"seconds":1})).unwrap()["item"].as_u64().unwrap();
             let clip = doc.execute("timeline.place", json!({"item":item,"track":"V1","seconds":0})).unwrap()["clips"][0].as_u64().unwrap();
-            let other = doc.execute("file.newColorMatte", json!({"seconds":1})).unwrap()["item"].as_u64().unwrap();
+            let other = doc.execute("item.newColorMatte", json!({"seconds":1})).unwrap()["item"].as_u64().unwrap();
             let timeline: Vec<u64> = if timeline_selected { vec![clip] } else { vec![] };
             let project: Vec<u64> = if project_selected { vec![item] } else { vec![] };
             doc.execute("timeline.select", json!({"clips":timeline,"linked":false})).unwrap();

@@ -23,7 +23,7 @@ async fn replacement_holds_copied_source_fields_but_preserves_unrelated_clip_con
     for command in ["clip.replaceFromSource", "clip.replaceFromSourceMatchFrame", "clip.replaceFromBin"] {
         for change in ["source-name", "source-label", "source-metadata", "target-effect", "target-time"] {
             let mut doc = FilmDocument::open(FILE, &project(1)).unwrap();
-            let source = doc.execute("file.newOfflineFile", json!({"name":"Observed source","seconds":4,"audio":false})).unwrap()["item"].as_u64().unwrap();
+            let source = doc.execute("item.newOfflineFile", json!({"name":"Observed source","seconds":4,"audio":false})).unwrap()["item"].as_u64().unwrap();
             let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
             let (q, _) = f.inspect().await;
             let sequence = ItemId(q["id"].as_u64().unwrap());

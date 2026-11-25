@@ -10,10 +10,10 @@ use serde_json::{Value, json};
 #[test]
 fn later_subclip_parent_dimensions_do_not_hold_its_unused_rate() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
-    let leading = doc.execute("file.newColorMatte", json!({"seconds":2})).unwrap()["item"].clone();
-    let parent = doc.execute("file.newOfflineFile", json!({"name":"Parent","seconds":1,"audio":false})).unwrap()["item"].as_u64().unwrap();
+    let leading = doc.execute("item.newColorMatte", json!({"seconds":2})).unwrap()["item"].clone();
+    let parent = doc.execute("item.newOfflineFile", json!({"name":"Parent","seconds":1,"audio":false})).unwrap()["item"].as_u64().unwrap();
     let source = doc.execute("clip.makeSubclip", json!({"item":parent,"name":"Subclip","start":0,"end":127_008_000_000i64})).unwrap()["item"].clone();
-    let under = doc.under("file.newSequenceFromClip", &json!({"items":[leading,source]})).unwrap().unwrap();
+    let under = doc.under("sequence.newFromClip", &json!({"items":[leading,source]})).unwrap().unwrap();
     let need = under.premises.iter().find(|need| need.id == json!(parent)).unwrap();
     assert_eq!(
         need.fields,
@@ -33,9 +33,9 @@ fn later_subclip_parent_dimensions_do_not_hold_its_unused_rate() {
 }
 
 pub const PATHS: &[(&str, &str)] = &[
-    ("presets.save", "keyframes retained"),
-    ("presets.save", "keyframes none"),
-    ("presets.apply", "library preset"),
+    ("preset.save", "keyframes retained"),
+    ("preset.save", "keyframes none"),
+    ("preset.apply", "library preset"),
     ("clip.fitToFrame", "video targets"),
     ("clip.fillFrame", "video targets"),
     ("clip.setPosterFrame", "explicit or default item"),
@@ -101,7 +101,7 @@ pub(super) fn dimensions(project: &Project, sequence: u64, source: ItemId, want:
 fn fixture() -> (FilmDocument, u64, Vec<u64>) {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
     let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let item = doc.execute("file.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
+    let item = doc.execute("item.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
     let mut clips = doc.execute("timeline.place", json!({"item":item,"track":"V1","time":0})).unwrap()["clips"]
         .as_array()
         .unwrap()
@@ -116,7 +116,7 @@ fn fixture() -> (FilmDocument, u64, Vec<u64>) {
             .iter()
             .map(|id| id.as_u64().unwrap()),
     );
-    let adjustment = doc.execute("file.newAdjustmentLayer", json!({"seconds":1})).unwrap()["item"].clone();
+    let adjustment = doc.execute("item.newAdjustmentLayer", json!({"seconds":1})).unwrap()["item"].clone();
     clips.push(doc.execute("timeline.place", json!({"item":adjustment,"track":"V3","time":0})).unwrap()["clips"][0].as_u64().unwrap());
     clips.push(doc.execute("graphics.newText", json!({"newClip":true,"text":"Text","track":2,"time":762_048_000_000i64})).unwrap()["clip"].as_u64().unwrap());
     (doc, sequence, clips)
@@ -125,15 +125,15 @@ fn fixture() -> (FilmDocument, u64, Vec<u64>) {
 #[test]
 fn fit_fill_and_presets_compare_selection_precedence_source_routes_geometry_and_keyframe_modes() {
     let (mut doc, sequence, clips) = fixture();
-    doc.execute("presets.save", json!({"clip":clips[0],"effects":[0],"name":"Geometry"})).unwrap();
-    doc.execute("presets.save", json!({"clip":clips[0],"effects":[1],"name":"Scalar"})).unwrap();
+    doc.execute("preset.save", json!({"clip":clips[0],"effects":[0],"name":"Geometry"})).unwrap();
+    doc.execute("preset.save", json!({"clip":clips[0],"effects":[1],"name":"Scalar"})).unwrap();
     let project = kition_film_format::decode(&doc.save(None).unwrap()).unwrap().project;
     let q = project.sequence(ItemId(sequence)).unwrap();
     for selected in [vec![], vec![clips[1]], vec![clips[1], clips[2]], vec![clips[4], clips[0]], clips.clone()] {
         doc.execute("timeline.select", json!({"clips":selected,"linked":false})).unwrap();
         for &(command, path) in &PATHS[..5] {
             assert!(compared_path(command, path));
-            let save = command == "presets.save";
+            let save = command == "preset.save";
             let preset = command.starts_with("presets.");
             let spec = doc.commands().into_iter().find(|spec| spec.id == command).unwrap();
             assert!(spec.mutates);

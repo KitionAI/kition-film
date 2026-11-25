@@ -109,7 +109,7 @@ try {
   }
 
   // The sample's clip is small (160×90 in a 1280×720 sequence): scaled up first, as the person would.
-  await person('effects.setParam', { clip: 10, effect: 'motion', param: 'scale', value: 300 })
+  await person('effect.setParam', { clip: 10, effect: 'motion', param: 'scale', value: 300 })
   assert.ok(await until(async () => (await motion(10)).scale === 300), 'set up: the clip at 300%')
   // Nothing selected: no box.
   await kit.getByTestId('film-timeline').click({ position: { x: 5, y: 5 } }).catch(() => undefined)
@@ -229,7 +229,7 @@ try {
   }
   assert.ok(await until(async () => JSON.stringify((await motion(10)).position) === JSON.stringify(before.position)), 'undone')
 
-  // Drags that change two Motion parameters are live and one undo step too (effects.setParam merged
+  // Drags that change two Motion parameters are live and one undo step too (effect.setParam merged
   // by the drag's key): the anchor point (Anchor Point and Position), and a corner with Uniform
   // Scale off (Scale Height and Scale Width).
   box = await settledBox()
@@ -249,7 +249,7 @@ try {
     const params = clip.effects.find((effect) => effect.effect === 'motion').params
     return { height: params.scale.value, width: params.scale_width.value }
   }
-  await frame.evaluate(() => window.filmPreview.run('effects.setParam', { clip: 10, effect: 'motion', param: 'uniform_scale', value: false }))
+  await frame.evaluate(() => window.filmPreview.run('effect.setParam', { clip: 10, effect: 'motion', param: 'uniform_scale', value: false }))
   assert.ok(await until(async () => (await scaleWidth()).width != null), 'Uniform Scale off')
   box = await settledBox()
   steps4 = await undoSteps()
@@ -316,7 +316,7 @@ try {
   const top = async () => (await sequence()).video[1].items[0]?.clip ?? null
   assert.ok(await until(async () => (await top()) != null), 'set up: a clip on V2')
   const upper = await top()
-  await person('effects.setParam', { clip: upper, effect: 'motion', param: 'scale', value: 150 })
+  await person('effect.setParam', { clip: upper, effect: 'motion', param: 'scale', value: 150 })
   await person('timeline.select', { clips: [] })
   await page.mouse.click(middle.x, middle.y)
   assert.ok(await until(async () => (await selection()).includes(upper) && !(await selection()).includes(10)), `the top-most clip under the pointer is selected: ${await selection()}`)
@@ -351,7 +351,7 @@ try {
   assert.ok(await until(async () => near((await motion(upper)).position[0], nudgeFrom[0] + 1, 1e-6)), `Cmd+Right nudges it: ${JSON.stringify((await motion(upper)).position)} from ${JSON.stringify(nudgeFrom)}`)
 
   // Keyframed Position: a drag at another time writes a keyframe at the playhead.
-  await person('effects.toggleAnimation', { clip: upper, effect: 'motion', param: 'position' })
+  await person('effect.toggleAnimation', { clip: upper, effect: 'motion', param: 'position' })
   assert.ok(await until(async () => (await motion(upper)).keyframes === 1), 'set up: Position animated, one keyframe')
   await person('playhead.set', { frame: 20 })
   const keyedBox = await settledBox()

@@ -9,7 +9,7 @@ test('F31 imported H.264 reverses and retimes real frames through Speed Duration
   await film.open()
   const reads = await lendMedia(film, 'clips/original-red-blue.mp4', readFileSync(source))
   await film.command('file.newProject', { name: 'Reverse imported footage' })
-  await film.command('file.newSequence', { name: 'Reverse', width: 64, height: 36, fps: 24, video: 1, audio: 0 })
+  await film.command('sequence.new', { name: 'Reverse', width: 64, height: 36, fps: 24, video: 1, audio: 0 })
   const imported = await film.command('file.import', { paths: ['../clips/original-red-blue.mp4'] })
   expect(imported.errors).toEqual([])
   expect(imported.items).toHaveLength(1)

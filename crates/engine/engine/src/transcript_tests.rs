@@ -119,7 +119,7 @@ fn remove_fillers_pauses_and_create_captions() {
     assert_eq!(words(&mut s).len(), 5);
     s.active_sequence().unwrap().check().unwrap();
 
-    let r = s.execute("transcript.createCaptions", json!({"maxChars": 32})).unwrap();
+    let r = s.execute("transcript.addCaptions", json!({"maxChars": 32})).unwrap();
     assert_eq!(r["captions"], 2, "one caption per speaker: {r}");
     let q = s.active_sequence().unwrap();
     let tr = &q.caption_tracks[0];

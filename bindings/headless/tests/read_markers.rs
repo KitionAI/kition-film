@@ -5,7 +5,7 @@ use common::*;
 use kition_film_project::{ItemId, SplitMarks};
 use serde_json::json;
 
-const SPLIT_COMMANDS: [&str; 4] = ["markers.markSplitVideoIn", "markers.markSplitVideoOut", "markers.markSplitAudioIn", "markers.markSplitAudioOut"];
+const SPLIT_COMMANDS: [&str; 4] = ["marker.markSplitVideoIn", "marker.markSplitVideoOut", "marker.markSplitAudioIn", "marker.markSplitAudioOut"];
 
 fn change_split(marks: &mut SplitMarks, channel: &str, side: &str, value: i64) {
     let value = Some(serde_json::from_value(json!(value)).unwrap());
@@ -60,21 +60,21 @@ async fn a_range_marker_holds_its_in_out_and_rate_but_not_existing_marker_text()
     for change in ["in", "out", "rate", "marker-text"] {
         let f = Fixture::new(6);
         let marker = f.colleague(&[
-            ("markers.markIn", json!({"time":SECOND})),
-            ("markers.markOut", json!({"time":3*SECOND})),
-            ("markers.add", json!({"time":5*SECOND,"name":"old"})),
+            ("marker.markIn", json!({"time":SECOND})),
+            ("marker.markOut", json!({"time":3*SECOND})),
+            ("marker.add", json!({"time":5*SECOND,"name":"old"})),
         ])[2]["marker"]
             .as_u64()
             .unwrap();
         let (_, basis) = f.inspect().await;
         f.colleague(&[match change {
-            "in" => ("markers.markIn", json!({"time":2*SECOND})),
-            "out" => ("markers.markOut", json!({"time":4*SECOND})),
+            "in" => ("marker.markIn", json!({"time":2*SECOND})),
+            "out" => ("marker.markOut", json!({"time":4*SECOND})),
             "rate" => ("sequence.settings", json!({"fps":30})),
-            "marker-text" => ("markers.edit", json!({"marker":marker,"comment":"unrelated"})),
+            "marker-text" => ("marker.edit", json!({"marker":marker,"comment":"unrelated"})),
             _ => panic!("test change"),
         }]);
-        let answer = f.call("run", json!({"basis":basis,"steps":[{"command":"markers.addRangeInOut","params":{"name":"mine"}}]})).await;
+        let answer = f.call("run", json!({"basis":basis,"steps":[{"command":"marker.addRangeInOut","params":{"name":"mine"}}]})).await;
         if change == "marker-text" {
             answer.unwrap_or_else(|error| panic!("{change}: {error}"));
         } else {
@@ -88,11 +88,11 @@ async fn a_range_marker_holds_its_in_out_and_rate_but_not_existing_marker_text()
 async fn a_range_marker_holds_the_marked_material_and_allows_material_at_the_playhead_outside_it() {
     for in_range in [true, false] {
         let f = Fixture::new(6);
-        f.colleague(&[("markers.markIn", json!({"time":SECOND})), ("markers.markOut", json!({"time":3*SECOND}))]);
+        f.colleague(&[("marker.markIn", json!({"time":SECOND})), ("marker.markOut", json!({"time":3*SECOND}))]);
         let (sequence, basis) = f.inspect().await;
         let clips = v1(&sequence);
         f.colleague(&[("clip.enable", json!({"clips":[clips[if in_range {2} else {0}]]}))]);
-        let answer = f.call("run", json!({"basis":basis,"steps":[{"command":"markers.addRangeInOut","params":{"name":"mine"}}]})).await;
+        let answer = f.call("run", json!({"basis":basis,"steps":[{"command":"marker.addRangeInOut","params":{"name":"mine"}}]})).await;
         if in_range {
             assert_eq!(answer.expect_err("changed material under marked range")["error"]["code"], "conflict");
         } else {
@@ -125,7 +125,7 @@ async fn a_stored_marked_range_replays_its_membership() {
     use kition_film_project::ClipId;
     for in_range in [true, false] {
         let f = Fixture::new(6);
-        f.colleague(&[("markers.markIn", json!({"time":SECOND})), ("markers.markOut", json!({"time":3*SECOND}))]);
+        f.colleague(&[("marker.markIn", json!({"time":SECOND})), ("marker.markOut", json!({"time":3*SECOND}))]);
         let (sequence, basis) = f.inspect().await;
         let clip = v1(&sequence)[if in_range { 2 } else { 5 }];
         rewrite(&f.file(), |p| {
@@ -135,7 +135,7 @@ async fn a_stored_marked_range_replays_its_membership() {
                 track.items.sort_by_key(|clip| clip.start);
             }
         });
-        let answer = f.call("run", json!({"basis":basis,"steps":[{"command":"markers.addRangeInOut","params":{"name":"mine"}}]})).await;
+        let answer = f.call("run", json!({"basis":basis,"steps":[{"command":"marker.addRangeInOut","params":{"name":"mine"}}]})).await;
         if in_range {
             assert_eq!(answer.expect_err("range member moved away")["error"]["code"], "conflict");
         } else {

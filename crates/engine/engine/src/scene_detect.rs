@@ -2,7 +2,7 @@
 //!
 //! `clip.sceneEditDetection {clips?, sensitivity=50, minShotFrames=6, applyCuts=true,
 //! createSubclips=false, generateMarkers=false, wait=false}` analyses the selected timeline video
-//! clips in a background job (`jobs.list` shows the progress, `jobs.cancel` stops it without
+//! clips in a background job (`job.list` shows the progress, `job.cancel` stops it without
 //! changing anything). Every sequence frame of each clip is decoded at reduced size and compared
 //! with the previous one ([`kition_film_render::scene`]). When the job finishes, the results are
 //! applied in one undo step ("Scene Edit Detection"):

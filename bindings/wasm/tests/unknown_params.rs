@@ -21,9 +21,9 @@ fn every_command_refuses_a_parameter_it_does_not_take() {
 fn a_misspelled_parameter_names_the_one_it_resembles_and_changes_nothing() {
     let mut doc = project();
     let before = doc.inspect().unwrap();
-    let error = doc.execute("markers.filterColors", json!({ "colour": "red", "visible": false })).unwrap_err();
+    let error = doc.execute("marker.filterColors", json!({ "colour": "red", "visible": false })).unwrap_err();
     assert!(error.contains("`colour`") && error.contains("did you mean `color`"), "{error}");
     assert_eq!(doc.inspect().unwrap(), before);
     // Either form of the command's parameters is a valid call.
-    doc.execute("markers.filterColors", json!({ "color": "violet", "visible": false })).unwrap();
+    doc.execute("marker.filterColors", json!({ "color": "violet", "visible": false })).unwrap();
 }

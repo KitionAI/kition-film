@@ -367,6 +367,6 @@ test("selected edit points draw upstream's brackets: a roll marks both sides of 
 
 test('a drop on the empty Timeline makes a sequence from the item (upstream `empty_state`)', async () => {
   const { emptyDropCommand } = await import('./gestures.ts')
-  assert.deepEqual(emptyDropCommand({ item: 9 }), { id: 'file.newSequence', params: { fromItem: 9 } })
-  assert.deepEqual(emptyDropCommand({ item: 9, sourceIn: at(1), duration: at(2), video: true, audio: true }), { id: 'file.newSequence', params: { fromItem: 9 } })
+  assert.deepEqual(emptyDropCommand({ item: 9 }), { id: 'sequence.new', params: { fromItem: 9 } })
+  assert.deepEqual(emptyDropCommand({ item: 9, sourceIn: at(1), duration: at(2), video: true, audio: true }), { id: 'sequence.new', params: { fromItem: 9 } })
 })

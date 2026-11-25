@@ -415,7 +415,7 @@ fn delegated_reads(origin: &str, command: &str, reads: &BTreeSet<&'static str>) 
         // color.rs:171-191 passes effect="color" and explicit clips. The
         // transition-only time/target/default-mode path of commands.rs:2680-2688
         // is unreachable for the literal Color effect.
-        ("color::color_clip", "effects.apply") => &["time", "selection", "active", "mode"],
+        ("color::color_clip", "effect.apply") => &["time", "selection", "active", "mode"],
         // Both callers supply an items array; transcript::targets (transcript.rs)
         // returns it before consulting the Project selection.
         ("sequence_extras::transcribe" | "command:file.import", "transcript.generate") => &["selection"],
@@ -804,7 +804,7 @@ fn derived(ids: &[String]) -> BTreeMap<String, BTreeSet<&'static str>> {
         }
         // commands.rs:943-1000 / clip_ops.rs:661-714 create/open a new destination before
         // targeting/place_item consume Part. This is no read of the old Part.
-        if id == "file.newSequence" || id == "file.newSequenceFromClip" {
+        if id == "sequence.new" || id == "sequence.newFromClip" {
             now.remove("part");
             now.remove("active");
         }
@@ -1017,7 +1017,7 @@ fn scanner_classifies_restored_object_contexts_as_active() {
 fn mask_commands_declare_the_selected_mask_input() {
     let doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
     let commands = doc.commands();
-    for id in ["masks.add", "masks.set", "masks.remove", "masks.select"] {
+    for id in ["mask.add", "mask.set", "mask.remove", "mask.select"] {
         let command = commands.iter().find(|command| command.id == id).unwrap();
         assert!(command.reads.contains(&kition_kit::EditorState::Active), "{id}: {:?}", command.reads);
     }

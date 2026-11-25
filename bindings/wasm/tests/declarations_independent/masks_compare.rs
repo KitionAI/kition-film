@@ -7,15 +7,15 @@ use serde_json::{Value, json};
 use super::sync_compare::normalized;
 
 pub const PATHS: &[(&str, &str)] = &[
-    ("masks.add", "clip/effect/default path"),
-    ("masks.remove", "index/default mask"),
-    ("masks.set", "metadata or parameter/path"),
-    ("masks.moveVertex", "path at time"),
-    ("masks.translate", "path at time"),
-    ("masks.toggleVertexSmooth", "path at time"),
-    ("masks.addVertex", "topology all keys"),
-    ("masks.removeVertex", "topology all keys"),
-    ("masks.track", "job/synchronous"),
+    ("mask.add", "clip/effect/default path"),
+    ("mask.remove", "index/default mask"),
+    ("mask.set", "metadata or parameter/path"),
+    ("mask.moveVertex", "path at time"),
+    ("mask.translate", "path at time"),
+    ("mask.toggleVertexSmooth", "path at time"),
+    ("mask.addVertex", "topology all keys"),
+    ("mask.removeVertex", "topology all keys"),
+    ("mask.track", "job/synchronous"),
 ];
 
 pub fn compared_path(command: &str, path: &str) -> bool {
@@ -30,7 +30,7 @@ pub fn compared_path(command: &str, path: &str) -> bool {
 
 pub fn more(command: &str) -> Vec<&'static str> {
     let mut more = vec!["whole-effect-profile", "coarse-selection-state", "coarse-active-state", "unused-mask-editor-inputs"];
-    if command == "masks.track" {
+    if command == "mask.track" {
         more.extend(["whole-clip-default", "coarse-source-profile"]);
     }
     more
@@ -48,18 +48,18 @@ fn mask_paths_compare_target_effect_mask_defaults_geometry_and_animation() {
             let mut clips = Vec::new();
             let mut items = Vec::new();
             for n in 0..2 {
-                let item = doc.execute("file.newColorMatte", json!({"seconds":2})).unwrap()["item"].as_u64().unwrap();
+                let item = doc.execute("item.newColorMatte", json!({"seconds":2})).unwrap()["item"].as_u64().unwrap();
                 let clip = doc.execute("timeline.place", json!({"item":item,"track":"V1","seconds":n*2})).unwrap()["clips"][0].as_u64().unwrap();
-                doc.execute("masks.add", json!({"clip":clip,"shape":"rectangle"})).unwrap();
+                doc.execute("mask.add", json!({"clip":clip,"shape":"rectangle"})).unwrap();
                 if animated {
-                    doc.execute("effects.addKeyframe", json!({"clip":clip,"effect":"opacity","mask":0,"param":"path","time":0})).unwrap();
+                    doc.execute("effect.addKeyframe", json!({"clip":clip,"effect":"opacity","mask":0,"param":"path","time":0})).unwrap();
                 }
                 if mapping == "fitted" {
                     doc.execute("timeline.select", json!({"clips":[clip]})).unwrap();
                     doc.execute("clip.scaleToFrameSize", json!({})).unwrap();
                 }
                 if mapping == "disabled" {
-                    doc.execute("effects.toggleEnabled", json!({"clip":clip,"index":0})).unwrap();
+                    doc.execute("effect.toggleEnabled", json!({"clip":clip,"index":0})).unwrap();
                 }
                 clips.push(clip);
                 items.push(item);
@@ -79,13 +79,13 @@ fn mask_paths_compare_target_effect_mask_defaults_geometry_and_animation() {
             let owner = doc.inspect().unwrap()["sequence"]["video"][0]["id"].as_u64().unwrap();
             for selected_mask in [false, true] {
                 doc.execute("timeline.select", json!({"clips":[clips[1]],"linked":false})).unwrap();
-                doc.execute("masks.select", if selected_mask { json!({"clip":clips[0],"effect":"opacity","mask":0}) } else { json!({"none":true}) }).unwrap();
+                doc.execute("mask.select", if selected_mask { json!({"clip":clips[0],"effect":"opacity","mask":0}) } else { json!({"none":true}) }).unwrap();
                 for &(command, path) in PATHS {
                     assert!(compared_path(command, path), "source review expired: {command}");
                     let spec = doc.commands().into_iter().find(|spec| spec.id == command).unwrap();
                     assert_eq!(
                         spec.reads,
-                        if command == "masks.remove" {
+                        if command == "mask.remove" {
                             vec![EditorState::Part, EditorState::Selection, EditorState::Active]
                         } else {
                             vec![EditorState::Part, EditorState::Selection, EditorState::Time, EditorState::Active]
@@ -107,7 +107,7 @@ fn mask_paths_compare_target_effect_mask_defaults_geometry_and_animation() {
                                         params["clip"] = json!(clip);
                                     }
                                     let mut expected = Under::default();
-                                    if command == "masks.track" {
+                                    if command == "mask.track" {
                                         expected.premises.push(Premise::on(json!(clip)));
                                         expected.premises.push(leaf(owner, &["props.locked"]));
                                         expected.premises.push(leaf(sequence, &["sequence.settings.settings.frame_rate"]));
@@ -125,7 +125,7 @@ fn mask_paths_compare_target_effect_mask_defaults_geometry_and_animation() {
                                                 "sequence",
                                             ],
                                         ));
-                                    } else if command == "masks.remove" {
+                                    } else if command == "mask.remove" {
                                         expected.premises.push(leaf(clip, &["effects"]));
                                     } else {
                                         expected.premises.push(

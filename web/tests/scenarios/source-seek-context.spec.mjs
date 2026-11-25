@@ -2,15 +2,15 @@ import { test, expect, editState, TICKS, holdWorkerCommandReply } from './fixtur
 
 async function project(film) {
   await film.command('file.newProject', { name: 'Queued Source seeks' })
-  await film.command('file.newSequence', { width: 64, height: 36, fps: 24 })
-  return (await film.command('file.newBarsAndTone', { seconds: 2 })).item
+  await film.command('sequence.new', { width: 64, height: 36, fps: 24 })
+  return (await film.command('item.newBarsAndTone', { seconds: 2 })).item
 }
 
 for (const interruption of ['source', 'project', 'stop']) {
   test(`F92 queued Source scrub respects ${interruption}`, async ({ film, page }) => {
     await film.open()
     const first = await project(film)
-    const second = (await film.command('file.newBarsAndTone', { seconds: 3 })).item
+    const second = (await film.command('item.newBarsAndTone', { seconds: 3 })).item
     await film.command('source.open', { item: first })
     const bar = film.kit.getByTestId('film-source-scrub')
     await expect(bar).toBeVisible()

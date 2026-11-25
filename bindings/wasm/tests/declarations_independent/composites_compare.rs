@@ -120,15 +120,15 @@ fn expected(p: &Project, seq: u64, command: &str, params: &Value) -> Under {
 fn compound_paths_compare_all_source_forms_options_locked_lanes_marks_and_time_spellings() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
     let seq = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let media = doc.execute("file.newOfflineFile", json!({"seconds":4})).unwrap()["item"].clone();
+    let media = doc.execute("item.newOfflineFile", json!({"seconds":4})).unwrap()["item"].clone();
     let sub = doc.execute("clip.makeSubclip", json!({"item":media,"start":0,"end":254_016_000_000i64})).unwrap()["item"].clone();
     let clip = doc.execute("timeline.place", json!({"item":media,"track":"V1","audioTrack":"A1","time":0})).unwrap()["clips"][1].clone();
     for locked in [false, true] {
         doc.execute("timeline.setTrack", json!({"track":"A1","locked":locked})).unwrap();
         for marked in [false, true] {
             if marked {
-                doc.execute("markers.markIn", json!({"time":0})).unwrap();
-                doc.execute("markers.markOut", json!({"time":254_016_000_000i64})).unwrap();
+                doc.execute("marker.markIn", json!({"time":0})).unwrap();
+                doc.execute("marker.markOut", json!({"time":254_016_000_000i64})).unwrap();
             }
             let project = kition_film_format::decode(&doc.save(None).unwrap()).unwrap().project;
             for &(command, path) in PATHS {

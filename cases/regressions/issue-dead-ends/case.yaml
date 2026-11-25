@@ -7,7 +7,7 @@ intent: >-
   this editor yet" (14 panels and Libraries did); Preferences, the interchange exports and Export
   mode are gone; Export Frame and Caption track options are not drawn; the Play button shows
   Pause while it plays; a refusal reads in the person's language without the command's id
-  ("command `edit.clear` is not available right now: nothing selected" before); Shift+Delete and
+  ("command `edit.delete` is not available right now: nothing selected" before); Shift+Delete and
   Shift+Backspace ripple-delete; Sequence ▸ Close Gap closes the gap the playhead is in (it failed
   with "need `track`") or says how to use it; the Program monitor's duration says when it is the
   In to Out length.

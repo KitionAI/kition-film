@@ -15,13 +15,13 @@ type Query = (id: string, params?: Record<string, unknown>) => Promise<unknown>
  * once.
  */
 export const NEW_ITEMS: ReadonlyArray<{ label: string; command: string; later?: boolean }> = [
-  { label: 'Sequence…', command: 'file.newSequence' },
-  { label: 'Adjustment Layer…', command: 'file.newAdjustmentLayer' },
-  { label: 'Bars and Tone…', command: 'file.newBarsAndTone' },
-  { label: 'Black Video…', command: 'file.newBlackVideo' },
-  { label: 'Color Matte…', command: 'file.newColorMatte' },
-  { label: 'Universal Counting Leader…', command: 'file.newCountingLeader' },
-  { label: 'Transparent Video…', command: 'file.newTransparentVideo' },
+  { label: 'Sequence…', command: 'sequence.new' },
+  { label: 'Adjustment Layer…', command: 'item.newAdjustmentLayer' },
+  { label: 'Bars and Tone…', command: 'item.newBarsAndTone' },
+  { label: 'Black Video…', command: 'item.newBlackVideo' },
+  { label: 'Color Matte…', command: 'item.newColorMatte' },
+  { label: 'Universal Counting Leader…', command: 'item.newCountingLeader' },
+  { label: 'Transparent Video…', command: 'item.newTransparentVideo' },
   { label: 'Demo Footage', command: 'file.importDemoFootage', later: true },
 ]
 
@@ -88,7 +88,7 @@ function ItemMenuRows({ row, invoke, phrase, labels, ui }: Omit<ItemMenuProps, '
       <MenuItem label={phrase('Rename')} uiId="control:project.itemMenu.rename" testId="film-project-item-rename" onSelect={() => void invoke('projectPanel.rename', { item })} />
       <MenuItem label={phrase('Open in Source Monitor')} uiId="control:project.itemMenu.openInSourceMonitor" testId="film-project-item-source" onSelect={() => void invoke('source.open', { item })} />
       {row.kind === 'sequence' ? <MenuItem label={phrase('Open in Timeline')} uiId="control:project.itemMenu.openInTimeline" testId="film-project-item-timeline" onSelect={() => void invoke('sequence.open', { item })} /> : null}
-      <MenuItem label={phrase('New Sequence From Clip')} uiId="control:project.itemMenu.newSequenceFromClip" testId="film-project-item-new-sequence" onSelect={() => void invoke('file.newSequence', { fromItem: item })} />
+      <MenuItem label={phrase('New Sequence From Clip')} uiId="control:project.itemMenu.newSequenceFromClip" testId="film-project-item-new-sequence" onSelect={() => void invoke('sequence.new', { fromItem: item })} />
       <MenuItem label={phrase('Duplicate')} uiId="control:project.itemMenu.duplicate" testId="film-project-item-duplicate" onSelect={() => then('edit.duplicate')} />
       <MenuItem
         label={phrase('Set Poster Frame')}
@@ -233,7 +233,7 @@ export function BinMenu({ at, bin, onClose, invoke, phrase, open }: { at: Contex
       <MenuItem label={phrase('Open in New Window')} uiId="control:project.binMenu.newWindow" testId="film-project-bin-new-window" onSelect={() => open(bin, 'openNewWindow')} />
       <MenuSeparator />
       <MenuItem label={phrase('Rename')} uiId="control:project.binMenu.rename" testId="film-project-bin-rename" onSelect={() => void invoke('projectPanel.rename', { bin })} />
-      <MenuItem label={phrase('New Bin')} uiId="control:project.binMenu.newBin" testId="film-project-bin-new-bin" onSelect={() => void invoke('file.newBin', { name: phrase('New Bin'), parent: bin })} />
+      <MenuItem label={phrase('New Bin')} uiId="control:project.binMenu.newBin" testId="film-project-bin-new-bin" onSelect={() => void invoke('bin.add', { name: phrase('New Bin'), parent: bin })} />
     </ContextMenu>
   )
 }
@@ -271,8 +271,8 @@ export function BackgroundMenu({ at, onClose, invoke, phrase, bin }: { at: Conte
 function BackgroundRows({ invoke, phrase, bin }: { invoke: Invoke; phrase: Phrases; bin: number | null }) {
   return (
     <>
-      <MenuItem label={phrase('New Bin')} uiId="control:project.backgroundMenu.newBin" testId="film-project-background-new-bin" onSelect={() => void invoke('file.newBin', { name: phrase('New Bin'), parent: bin })} />
-      <MenuItem label={phrase('New Search Bin')} uiId="control:project.backgroundMenu.newSearchBin" testId="film-project-background-search-bin" onSelect={() => void invoke('file.newSearchBin', {})} />
+      <MenuItem label={phrase('New Bin')} uiId="control:project.backgroundMenu.newBin" testId="film-project-background-new-bin" onSelect={() => void invoke('bin.add', { name: phrase('New Bin'), parent: bin })} />
+      <MenuItem label={phrase('New Search Bin')} uiId="control:project.backgroundMenu.newSearchBin" testId="film-project-background-search-bin" onSelect={() => void invoke('bin.addSearch', {})} />
       <MenuItem label={phrase('Find…')} uiId="control:project.backgroundMenu.find" testId="film-project-background-find" onSelect={() => void invoke('edit.find', {})} />
       <MenuItem label={phrase('Automate to Sequence…')} uiId="control:project.backgroundMenu.automateToSequence" testId="film-project-background-automate" onSelect={() => void invoke('clip.automateToSequence', {})} />
       <MenuItem label={phrase('Import…')} uiId="control:project.backgroundMenu.import" testId="film-project-background-import" onSelect={() => void invoke('file.import', bin != null ? { bin } : {})} />
@@ -340,9 +340,9 @@ export function ProjectMenu({ close, view, mode, selection, ui, parent, invoke, 
   return (
     <>
       <MenuSeparator />
-      <MenuItem label={phrase('New Bin')} uiId="control:project.menu" testId="film-project-menu-newBin" onSelect={() => run('file.newBin', { name: phrase('New Bin'), parent })} />
-      <MenuItem label={phrase('New Bin From Selection')} shortcut="Shift+B" disabled={!any} uiId="control:project.menu" testId="film-project-menu-newBinFromSelection" onSelect={() => run('file.newBinFromSelection')} />
-      <MenuItem label={phrase('New Search Bin')} uiId="control:project.menu" testId="film-project-menu-newSearchBin" onSelect={() => run('file.newSearchBin')} />
+      <MenuItem label={phrase('New Bin')} uiId="control:project.menu" testId="film-project-menu-newBin" onSelect={() => run('bin.add', { name: phrase('New Bin'), parent })} />
+      <MenuItem label={phrase('New Bin From Selection')} shortcut="Shift+B" disabled={!any} uiId="control:project.menu" testId="film-project-menu-newBinFromSelection" onSelect={() => run('bin.addFromSelection')} />
+      <MenuItem label={phrase('New Search Bin')} uiId="control:project.menu" testId="film-project-menu-newSearchBin" onSelect={() => run('bin.addSearch')} />
       <Later label={phrase('New Project Shortcut')} uiId="control:project.menu" testId="film-project-menu-newProjectShortcut" />
       <MenuItem label={phrase('Rename')} disabled={!any && ui.get().selectedBin == null} uiId="control:project.menu" testId="film-project-menu-rename" onSelect={() => run('projectPanel.rename')} />
       <MenuItem label={phrase('Delete')} shortcut="Backspace" disabled={!any} uiId="control:project.menu" testId="film-project-menu-delete" onSelect={() => run('project.delete')} />

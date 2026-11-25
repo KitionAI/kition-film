@@ -269,13 +269,13 @@ pub fn derived(session: &Session, ids: &[Value], names: &[String]) -> Vec<kition
 }
 
 fn presets(session: &Session, command: &str, params: &Value) -> Option<Under> {
-    if !matches!(command, "presets.save" | "presets.apply") {
+    if !matches!(command, "preset.save" | "preset.apply") {
         return None;
     }
     let seq = session.active_sequence()?;
     // Capture stores source_size even for scalar effects. Applying a preset
     // consumes size only when instantiate can scale a point parameter or mask.
-    let size_used = command == "presets.save"
+    let size_used = command == "preset.save"
         || params
             .get("preset")
             .and_then(Value::as_str)
@@ -292,7 +292,7 @@ fn presets(session: &Session, command: &str, params: &Value) -> Option<Under> {
                         })
                 })
             });
-    let clips: Vec<ClipId> = if command == "presets.save" {
+    let clips: Vec<ClipId> = if command == "preset.save" {
         kition_film_engine::commands::clip_p(params, "clip")
             .or_else(|| session.state.selection.iter().copied().find(|c| seq.video_tracks.iter().any(|t| t.item(*c).is_some())))
             .or_else(|| session.state.selection.first().copied())
@@ -310,7 +310,7 @@ fn presets(session: &Session, command: &str, params: &Value) -> Option<Under> {
         let Some((track, clip)) = seq.find_item(id) else { continue };
         let mut premise = need(json!(id.0), ["effects", "item", "sourceIn", "speed"].map(str::to_owned));
         premise.positions = Some(vec!["duration".to_owned(), "clips".to_owned()]);
-        if command == "presets.save" && params.get("keyframes").and_then(Value::as_str).is_some_and(|k| k.eq_ignore_ascii_case("none")) {
+        if command == "preset.save" && params.get("keyframes").and_then(Value::as_str).is_some_and(|k| k.eq_ignore_ascii_case("none")) {
             premise.fields.get_or_insert_with(Vec::new).extend(["reverse", "props.frame_hold"].map(str::to_owned));
             premise.positions.get_or_insert_with(Vec::new).push("start".to_owned());
         }
@@ -622,9 +622,9 @@ mod tests {
     #[test]
     fn metadata_predicates_match_the_handlers_rows_for_every_item_kind() {
         let mut session = Session::default();
-        session.execute("file.newSequence", json!({"name":"Sequence","width":64,"height":36})).unwrap();
+        session.execute("sequence.new", json!({"name":"Sequence","width":64,"height":36})).unwrap();
         let sequence = session.state.active_sequence.unwrap();
-        let media = ItemId(session.execute("file.newOfflineFile", json!({"name":"Source","seconds":1})).unwrap()["item"].as_u64().unwrap());
+        let media = ItemId(session.execute("item.newOfflineFile", json!({"name":"Source","seconds":1})).unwrap()["item"].as_u64().unwrap());
         let sub = ItemId(session.execute("clip.makeSubclip", json!({"item":media.0,"name":"Sub"})).unwrap()["item"].as_u64().unwrap());
         let nested = {
             let project = std::sync::Arc::make_mut(&mut session.project);
@@ -635,7 +635,7 @@ mod tests {
                 None,
             )
         };
-        let adjustment = ItemId(session.execute("file.newAdjustmentLayer", json!({})).unwrap()["item"].as_u64().unwrap());
+        let adjustment = ItemId(session.execute("item.newAdjustmentLayer", json!({})).unwrap()["item"].as_u64().unwrap());
         session.execute("graphics.newText", json!({"text":"Example","track":0,"time":0})).unwrap();
         let graphic = session.project.items.values().find(|item| matches!(item.kind, ItemKind::Graphic { .. })).unwrap().id;
         let original = session.project.item(media).unwrap().as_media().unwrap().info.clone();

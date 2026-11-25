@@ -75,7 +75,7 @@ test (`pnpm test:flow`) drags from the Source monitor in a browser.
 
 Ctrl+Shift+X (Cmd+Shift+X on macOS) clears In/Out on the focused Source clip, including split
 points, and restores the implicit full span. It is undoable and leaves Program marks unchanged.
-The command `markers.clearInOut` accepts `target: "source"|"program"`; omitting it addresses Program.
+The command `marker.clearInOut` accepts `target: "source"|"program"`; omitting it addresses Program.
 
 Source range braces use the playhead's theme color and the gray selection band is translucent,
 so the ruler ticks remain visible. The clear shortcut uses the primary modifier: Ctrl on

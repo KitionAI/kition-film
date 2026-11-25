@@ -135,16 +135,16 @@ fn selected_trim_edits_compare_all_wrappers_kinds_edges_links_marker_modes_and_m
     for source_kind in ["synthetic", "finite", "restricted", "open", "adjustment", "sequence"] {
         let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
         let nested = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-        let finite = doc.execute("file.newOfflineFile", json!({"seconds":8})).unwrap()["item"].clone();
+        let finite = doc.execute("item.newOfflineFile", json!({"seconds":8})).unwrap()["item"].clone();
         doc.execute("timeline.place", json!({"item":finite,"track":"V1","time":0})).unwrap();
-        let sequence = doc.execute("file.newSequence", json!({"name":"Outer"})).unwrap()["sequence"].as_u64().unwrap();
+        let sequence = doc.execute("sequence.new", json!({"name":"Outer"})).unwrap()["sequence"].as_u64().unwrap();
         let source = match source_kind {
-            "synthetic" => doc.execute("file.newBarsAndTone", json!({"seconds":4})).unwrap()["item"].clone(),
+            "synthetic" => doc.execute("item.newBarsAndTone", json!({"seconds":4})).unwrap()["item"].clone(),
             "restricted" | "open" => doc
                 .execute("clip.makeSubclip", json!({"item":finite,"start":0,"end":1_016_064_000_000i64,"restrictTrims":source_kind=="restricted"}))
                 .unwrap()["item"]
                 .clone(),
-            "adjustment" => doc.execute("file.newAdjustmentLayer", json!({"seconds":4})).unwrap()["item"].clone(),
+            "adjustment" => doc.execute("item.newAdjustmentLayer", json!({"seconds":4})).unwrap()["item"].clone(),
             "sequence" => json!(nested),
             _ => finite,
         };
@@ -156,7 +156,7 @@ fn selected_trim_edits_compare_all_wrappers_kinds_edges_links_marker_modes_and_m
         for linked in [false, true] {
             doc.execute("sequence.linkedSelection", json!({"on":linked})).unwrap();
             for markers in [false, true] {
-                doc.execute("markers.rippleSequenceMarkers", json!({"on":markers})).unwrap();
+                doc.execute("marker.rippleSequenceMarkers", json!({"on":markers})).unwrap();
                 for point in [None, Some(first), Some(second)] {
                     for out in [false, true] {
                         for &kind in KINDS {

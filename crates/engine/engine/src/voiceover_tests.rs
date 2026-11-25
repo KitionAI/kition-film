@@ -150,8 +150,8 @@ fn recording_lands_sample_accurately_after_the_preroll() {
 fn punch_in_records_between_in_and_out_only() {
     let (mut s, rt, ti) = demo();
     let dir = tmp("punch");
-    s.execute("markers.markIn", json!({"time": sec(1.0)})).unwrap();
-    s.execute("markers.markOut", json!({"time": sec(2.0)})).unwrap();
+    s.execute("marker.markIn", json!({"time": sec(1.0)})).unwrap();
+    s.execute("marker.markOut", json!({"time": sec(2.0)})).unwrap();
     // a ramp so every sample is identifiable: value = capture sample / 1e6
     let ramp: Vec<f32> = (0..400_000).map(|i| i as f32 * 1e-6).collect();
     s.voiceover.input = Some(Box::new(SyntheticInput::new(Synthetic::Buffer(vec![ramp]))));
@@ -215,11 +215,11 @@ fn n30_voiceover_cannot_write_into_a_replacement_project_with_reused_ids() {
     let root = crate::media_test_util::tmp_dir("voiceover-project-context");
     let mut s = Session::default();
     s.execute("file.newProject", json!({"name": "First"})).unwrap();
-    s.execute("file.newSequence", json!({"width": 64, "height": 36, "fps": 24, "video": 0, "audio": 1})).unwrap();
+    s.execute("sequence.new", json!({"width": 64, "height": 36, "fps": 24, "video": 0, "audio": 1})).unwrap();
     s.execute("audio.voiceover.start", json!({"track": "A1", "time": 0, "preroll": 0})).unwrap();
     let old_sequence = s.state.active_sequence;
     s.execute("file.newProject", json!({"name": "Replacement"})).unwrap();
-    s.execute("file.newSequence", json!({"width": 64, "height": 36, "fps": 24, "video": 0, "audio": 1})).unwrap();
+    s.execute("sequence.new", json!({"width": 64, "height": 36, "fps": 24, "video": 0, "audio": 1})).unwrap();
     assert_eq!(s.state.active_sequence, old_sequence);
     let before = kition_film_format::encode(&s.project, false);
     let history = s.history.undo.len();

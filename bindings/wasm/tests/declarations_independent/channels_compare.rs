@@ -69,7 +69,7 @@ fn expected(project: &Project, sequence: u64, selection: &[u64], items: &[u64], 
 fn audio_channels_compare_project_candidates_channel_values_timeline_owners_and_source_routes() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
     let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let media = doc.execute("file.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].as_u64().unwrap();
+    let media = doc.execute("item.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].as_u64().unwrap();
     let sub = doc.execute("clip.makeSubclip", json!({"item":media,"start":0,"end":254_016_000_000i64})).unwrap()["item"].as_u64().unwrap();
     let clips: Vec<_> = doc.execute("timeline.place", json!({"item":sub,"track":"V1","time":0})).unwrap()["clips"]
         .as_array()

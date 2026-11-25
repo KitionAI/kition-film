@@ -2,7 +2,7 @@ format: 1
 id: regressions/issue-17
 feature: film.markers.basics
 intent: >-
-  markers.markIn, markers.markOut, timeline.razor, sequence.addEdit and sequence.addEditAllTracks
+  marker.markIn, marker.markOut, timeline.razor, sequence.addEdit and sequence.addEditAllTracks
   take their time as the other time-taking commands do: time in ticks, seconds, frame or timecode
   (a Source mark: time or seconds), and a seconds value is not refused as an unknown parameter.
 layer: gate

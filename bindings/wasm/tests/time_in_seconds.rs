@@ -14,8 +14,8 @@ fn run(doc: &mut FilmDocument, command: &str, params: Value) -> Value {
 
 fn fixture() -> FilmDocument {
     let mut doc = FilmDocument::create("Cuts.kfilm", 64, 36).unwrap();
-    run(&mut doc, "file.newSequence", json!({ "name": "Edit", "width": 64, "height": 36, "fps": 24, "video": 1, "audio": 1 }));
-    let item = run(&mut doc, "file.newColorMatte", json!({ "color": "#203040", "seconds": 6 }))["item"].clone();
+    run(&mut doc, "sequence.new", json!({ "name": "Edit", "width": 64, "height": 36, "fps": 24, "video": 1, "audio": 1 }));
+    let item = run(&mut doc, "item.newColorMatte", json!({ "color": "#203040", "seconds": 6 }))["item"].clone();
     run(&mut doc, "timeline.place", json!({ "item": item, "track": "V1", "seconds": 0 }));
     doc
 }
@@ -27,8 +27,8 @@ fn starts(doc: &FilmDocument) -> Vec<i64> {
 #[test]
 fn marks_and_cuts_take_seconds() {
     let mut doc = fixture();
-    run(&mut doc, "markers.markIn", json!({ "seconds": 1.5 }));
-    run(&mut doc, "markers.markOut", json!({ "frame": 96 }));
+    run(&mut doc, "marker.markIn", json!({ "seconds": 1.5 }));
+    run(&mut doc, "marker.markOut", json!({ "frame": 96 }));
     let sequence = doc.inspect().unwrap()["sequence"].clone();
     assert_eq!(sequence["in"], json!(SECOND * 3 / 2), "{}", sequence["in"]);
     assert_eq!(sequence["out"], json!(SECOND * 4), "{}", sequence["out"]);

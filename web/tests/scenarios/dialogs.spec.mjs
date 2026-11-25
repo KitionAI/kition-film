@@ -12,7 +12,7 @@ for (const interruption of ['new project', 'new sequence', 'permissions']) {
       await film.configure({ disable: [] })
     } else {
       if (interruption === 'new project') await film.command('file.newProject', { name: 'Replacement' })
-      await film.command('file.newSequence', { name: 'Replacement sequence', width: 64, height: 36, fps: 24 })
+      await film.command('sequence.new', { name: 'Replacement sequence', width: 64, height: 36, fps: 24 })
     }
     const before = await film.details()
     const history = await film.history()
@@ -36,7 +36,7 @@ test('F22 an older dialog read cannot replace the newer dialog or discard its ty
   const gate = await holdWorkerCall(film, 'dialogDefaults')
   await film.menu('sequence.settings')
   await gate.wait()
-  await film.menu('file.newSequence')
+  await film.menu('sequence.new')
   await expect(film.kit.getByRole('heading', { name: 'New Sequence', exact: true })).toBeVisible()
   const name = film.kit.getByTestId('film-dialog-sequenceSettings-name')
   await name.fill('Keep the newer draft')
@@ -88,8 +88,8 @@ test('F18 Sequence Settings previews without modifying the project; Cancel and o
 test('F19 Speed Duration ripple changes linked picture and sound and moves the following clip once', async ({ film }) => {
   await film.open()
   await film.command('file.newProject', { name: 'Three shots' })
-  await film.command('file.newSequence', { name: '24 fps', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
-  const { item } = await film.command('file.newBarsAndTone', { seconds: 4 })
+  await film.command('sequence.new', { name: '24 fps', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
+  const { item } = await film.command('item.newBarsAndTone', { seconds: 4 })
   for (let second = 0; second < 3; second += 1) await film.command('timeline.place', { item, seconds: second, sourceIn: TICKS, duration: TICKS })
   const before = await film.sequence()
   await film.command('timeline.select', { clips: [clips(before)[1].clip] })

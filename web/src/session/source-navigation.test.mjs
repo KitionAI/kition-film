@@ -23,8 +23,8 @@ function setup() {
       if (seekGate) { const gate = seekGate; seekGate = null; await gate.promise }
     } else {
       session.push({ id, params })
-      if (id === 'markers.goToIn') position = T
-      if (id === 'markers.goToOut') position = 9 * T
+      if (id === 'marker.goToIn') position = T
+      if (id === 'marker.goToOut') position = 9 * T
     }
     return null
   }
@@ -47,7 +47,7 @@ function setup() {
   }
 }
 
-for (const [id, time] of [['markers.goToIn', T], ['markers.goToOut', 9 * T]]) {
+for (const [id, time] of [['marker.goToIn', T], ['marker.goToOut', 9 * T]]) {
   test(`${id} replaces queued scrubs with its absolute destination`, async () => {
     const f = setup(), gate = f.holdSeek()
     try {
@@ -84,9 +84,9 @@ for (const sameId of [false, true]) {
   test(`navigation read cancels on ${sameId ? 'project replacement reusing IDs' : 'source replacement'}`, async () => {
     const f = setup(), gate = f.holdInspect()
     try {
-      const old = f.invoke('markers.goToOut')
+      const old = f.invoke('marker.goToOut')
       f.replace(sameId)
-      await f.invoke('markers.goToIn')
+      await f.invoke('marker.goToIn')
       await f.playback.settleSource()
       const before = [...f.seeks]
       gate.resolve(); await old; await f.playback.settleSource()
@@ -101,9 +101,9 @@ test('late navigation read cannot overwrite a newer navigation or scrub', async 
   for (const scrub of [false, true]) {
     const f = setup(), gate = f.holdInspect()
     try {
-      const old = f.invoke('markers.goToOut')
+      const old = f.invoke('marker.goToOut')
       if (scrub) f.playback.moveSource(3 * T)
-      else await f.invoke('markers.goToIn')
+      else await f.invoke('marker.goToIn')
       gate.resolve(); await old; await f.playback.settleSource()
       assert.equal(f.position(), (scrub ? 3 : 1) * T)
     } finally { gate.resolve(); f.playback.dispose() }
@@ -113,7 +113,7 @@ test('late navigation read cannot overwrite a newer navigation or scrub', async 
 test('navigation keeps its Source target after focus changes during a read', async () => {
   const f = setup(), gate = f.holdInspect()
   try {
-    const pending = f.invoke('markers.goToOut')
+    const pending = f.invoke('marker.goToOut')
     f.focus('program'); gate.resolve(); await pending; await f.playback.settleSource()
     assert.equal(f.position(), 9 * T)
     assert.equal(f.session.length, 0)
@@ -121,7 +121,7 @@ test('navigation keeps its Source target after focus changes during a read', asy
 })
 
 test('explicit target wins over monitor and focus; invalid targets reach engine validation', () => {
-  for (const id of ['markers.goToIn', 'markers.goToOut']) {
+  for (const id of ['marker.goToIn', 'marker.goToOut']) {
     for (const [params, focused, expected] of [
       [{}, 'source', 'playback'], [{}, 'program', 'session'],
       [{ monitor: 'source' }, 'program', 'playback'], [{ monitor: 'program' }, 'source', 'session'],
@@ -134,7 +134,7 @@ test('explicit target wins over monitor and focus; invalid targets reach engine 
 test('failed navigation read reports the error and sends no seek', async () => {
   const f = setup(); f.failRead()
   try {
-    assert.equal(await f.invoke('markers.goToIn'), null)
+    assert.equal(await f.invoke('marker.goToIn'), null)
     assert.deepEqual(f.errors, ['read failed'])
     assert.deepEqual(f.seeks, [])
   } finally { f.playback.dispose() }

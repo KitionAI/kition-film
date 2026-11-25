@@ -13,7 +13,7 @@ async fn core_field_patches_keep_sequence_scope_and_allow_lane_moves() {
         for change in ["none", "video", "audio", "sequence"] {
             let mut doc = FilmDocument::open(FILE, &project(1)).unwrap();
             let sequence = ItemId(doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap());
-            let other = ItemId(doc.execute("file.newSequence", json!({"name":"Other"})).unwrap()["sequence"].as_u64().unwrap());
+            let other = ItemId(doc.execute("sequence.new", json!({"name":"Other"})).unwrap()["sequence"].as_u64().unwrap());
             doc.execute("sequence.open", json!({"item":sequence.0})).unwrap();
             let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
             let (q, basis) = f.inspect().await;
@@ -57,7 +57,7 @@ async fn core_field_patches_keep_sequence_scope_and_allow_lane_moves() {
 async fn explicit_unlinked_selection_does_not_require_sequence_ownership() {
     let mut doc = FilmDocument::open(FILE, &project(1)).unwrap();
     let sequence = ItemId(doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap());
-    let other = ItemId(doc.execute("file.newSequence", json!({"name":"Other"})).unwrap()["sequence"].as_u64().unwrap());
+    let other = ItemId(doc.execute("sequence.new", json!({"name":"Other"})).unwrap()["sequence"].as_u64().unwrap());
     doc.execute("sequence.open", json!({"item":sequence.0})).unwrap();
     let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
     let (q, basis) = f.inspect().await;

@@ -14,7 +14,7 @@ fn range(s: &Session, c: ClipId) -> (Tick, Tick) {
 /// Three 48-frame clips in a row, pictures on V1 and their linked sounds on A1: [(picture, sound); 3].
 fn three_clips(s: &mut Session) -> [(ClipId, ClipId); 3] {
     s.execute("file.openDemoProject", json!({})).unwrap();
-    s.execute("file.newSequence", json!({"name": "Speed", "video": 1, "audio": 1})).unwrap();
+    s.execute("sequence.new", json!({"name": "Speed", "video": 1, "audio": 1})).unwrap();
     let rate = s.sequence_rate();
     let item = s.project.items.values().find(|i| i.has_video() && i.has_audio() && i.as_media().is_some()).map(|i| i.id).unwrap();
     for n in 0..3 {

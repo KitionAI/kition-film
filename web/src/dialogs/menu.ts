@@ -1,6 +1,6 @@
 // Upstream's Scene Edit Detection, Flash Cue Marker, Update Metadata, Properties, and Project
 // Settings dialogs (`panels/menu_dialogs.rs` `defaults`, `show`, `run`), and the marker dialog a
-// Markers row opens (Premiere's Marker dialog over the engine's `markers.edit`; upstream's panel
+// Markers row opens (Premiere's Marker dialog over the engine's `marker.edit`; upstream's panel
 // opens none): each one's title, draft, fields, and params. Imports carry `.ts` so `node --test`
 // loads this module as it is.
 import type { FilmBin, FilmInfo, FilmMarker } from '../film.ts'
@@ -67,7 +67,7 @@ const sceneDetect: DialogSpec = {
  * engine adds at the playhead; an empty name is left out, so the engine names it "Cue Point n".
  */
 const flashCue: DialogSpec = {
-  id: 'markers.addFlashCue',
+  id: 'marker.addFlashCue',
   family: 'menu',
   title: 'Flash Cue Marker',
   prefix: 'flashCue',
@@ -105,13 +105,13 @@ function markerOf(ctx: DialogContext): FilmMarker | null {
 }
 
 /**
- * The marker dialog (`marker`, the engine's `markers.edit`), opened by a double-click on a Markers
+ * The marker dialog (`marker`, the engine's `marker.edit`), opened by a double-click on a Markers
  * row (Premiere's Marker dialog; upstream's panel opens none) or with no marker named on the one
  * at the playhead: its name, duration, comments, and colour. OK edits that marker of the active
  * sequence; the rulers and the Markers panel preview it.
  */
 const editMarker: DialogSpec = {
-  id: 'markers.edit',
+  id: 'marker.edit',
   family: 'menu',
   title: 'Marker',
   prefix: 'marker',

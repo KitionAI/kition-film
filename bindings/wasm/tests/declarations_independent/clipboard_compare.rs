@@ -12,9 +12,9 @@ pub const PATHS: &[(&str, &str)] = &[
     ("edit.cut", "copy"),
     ("edit.paste", "clipboard"),
     ("edit.pasteInsert", "clipboard"),
-    ("edit.clear", "clips"),
+    ("edit.delete", "clips"),
     ("edit.rippleDelete", "clips"),
-    ("edit.clear", "captions"),
+    ("edit.delete", "captions"),
     ("edit.rippleDelete", "captions"),
 ];
 pub fn compared_path(command: &str, path: &str) -> bool {
@@ -28,7 +28,7 @@ pub fn more(command: &str) -> Vec<&'static str> {
     if command.contains("ripple") {
         out.extend(["whole-delete-geometry", "whole-delete-transition-list"]);
     }
-    if command == "edit.cut" || command == "edit.clear" {
+    if command == "edit.cut" || command == "edit.delete" {
         out.push("whole-delete-transition-list");
     }
     out
@@ -102,7 +102,7 @@ fn expected(project: &Project, sequence: u64, command: &str, selected: &[u64], l
     if copy || paste {
         want.premises.push(leaf(json!(sequence), ["sequence.settings.settings.frame_rate"]));
     }
-    if markers && command != "edit.clear" {
+    if markers && command != "edit.delete" {
         want.premises.push(leaf(json!(sequence), ["sequence.markers"]));
     }
     if paste {
@@ -119,7 +119,7 @@ fn expected(project: &Project, sequence: u64, command: &str, selected: &[u64], l
             }
             if ripple || paste && member {
                 want.premises.push(leaf(json!(track.id.0), ["~clipOrder", "transitions"]));
-            } else if matches!(command, "edit.clear" | "edit.cut") && member && !track.locked {
+            } else if matches!(command, "edit.delete" | "edit.cut") && member && !track.locked {
                 want.premises.push(leaf(json!(track.id.0), ["transitions"]));
             }
             for clip in &track.items {
@@ -149,7 +149,7 @@ fn clipboard_paths_compare_links_locks_rates_track_ordinals_captions_and_markers
     for linked in [false, true] {
         let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
         let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-        let source = doc.execute("file.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
+        let source = doc.execute("item.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
         let clips: Vec<u64> = doc.execute("timeline.place", json!({"item":source,"track":"V1","audioTrack":"A1","time":0})).unwrap()["clips"]
             .as_array()
             .unwrap()
@@ -157,15 +157,15 @@ fn clipboard_paths_compare_links_locks_rates_track_ordinals_captions_and_markers
             .filter_map(Value::as_u64)
             .collect();
         doc.execute("timeline.place", json!({"item":source,"track":"V1","audioTrack":"A1","time":1_016_064_000_000i64})).unwrap();
-        doc.execute("captions.newTrack", json!({})).unwrap();
-        let caption = doc.execute("captions.add", json!({"time":0,"text":"Caption","durationSeconds":1})).unwrap()["caption"].clone();
+        doc.execute("caption.newTrack", json!({})).unwrap();
+        let caption = doc.execute("caption.add", json!({"time":0,"text":"Caption","durationSeconds":1})).unwrap()["caption"].clone();
         doc.execute("sequence.linkedSelection", json!({"on":linked})).unwrap();
         for locked in [false, true] {
             doc.execute("timeline.setTrack", json!({"track":"V1","locked":locked})).unwrap();
             let project = kition_film_format::decode(&doc.save(None).unwrap()).unwrap().project;
             for markers in [false, true] {
-                doc.execute("markers.copyPasteIncludesSequenceMarkers", json!({"on":markers})).unwrap();
-                doc.execute("markers.rippleSequenceMarkers", json!({"on":markers})).unwrap();
+                doc.execute("marker.copyPasteIncludesSequenceMarkers", json!({"on":markers})).unwrap();
+                doc.execute("marker.rippleSequenceMarkers", json!({"on":markers})).unwrap();
                 for selected in [vec![clips[0]], clips.clone()] {
                     doc.execute("timeline.select", json!({"clips":selected,"linked":false})).unwrap();
                     doc.execute("edit.copy", json!({})).unwrap();
@@ -175,7 +175,7 @@ fn clipboard_paths_compare_links_locks_rates_track_ordinals_captions_and_markers
                             continue;
                         }
                         assert!(compared_path(command, path));
-                        let params = if matches!(command, "edit.clear" | "edit.rippleDelete") { json!({"clips":selected}) } else { json!({}) };
+                        let params = if matches!(command, "edit.delete" | "edit.rippleDelete") { json!({"clips":selected}) } else { json!({}) };
                         for at in [0, 254_016_000_000i64, 1_270_080_000_000i64] {
                             doc.execute("playhead.set", json!({"time":at})).unwrap();
                             assert_eq!(
@@ -197,8 +197,8 @@ fn clipboard_paths_compare_links_locks_rates_track_ordinals_captions_and_markers
                 }
             }
             doc.execute("timeline.select", json!({"clips":[],"linked":false})).unwrap();
-            doc.execute("captions.select", json!({"captions":[caption]})).unwrap();
-            for command in ["edit.clear", "edit.rippleDelete"] {
+            doc.execute("caption.select", json!({"captions":[caption]})).unwrap();
+            for command in ["edit.delete", "edit.rippleDelete"] {
                 assert!(compared_path(command, "captions"));
                 assert_eq!(
                     normalized(doc.under(command, &json!({})).unwrap().unwrap_or_default()),

@@ -381,8 +381,8 @@ fn reveal_nested_sequence_opens_it_at_the_matching_frame() {
 fn n38_subclip_poster_frame_uses_the_parent_rate_and_survives_history() {
     let mut s = Session::default();
     s.execute("file.newProject", json!({})).unwrap();
-    s.execute("file.newSequence", json!({"fps": 60, "width": 64, "height": 36})).unwrap();
-    let parent = s.execute("file.newColorMatte", json!({"seconds": 1})).unwrap()["item"].clone();
+    s.execute("sequence.new", json!({"fps": 60, "width": 64, "height": 36})).unwrap();
+    let parent = s.execute("item.newColorMatte", json!({"seconds": 1})).unwrap()["item"].clone();
     let item = s.execute("clip.makeSubclip", json!({"item": parent, "startFrame": 1, "endFrame": 5})).unwrap()["item"].clone();
     let id = ItemId(item.as_u64().unwrap());
     let frame = Tick(kition_film_time::TICKS_PER_SECOND / 60);

@@ -13,7 +13,7 @@ test('F44 real H.264 B-frames decode in presentation order after a source trim, 
   await film.open()
   const reads = await lendMedia(film, 'clips/original-b-frames.mp4', readFileSync(source))
   await film.command('file.newProject', { name: 'Presentation order' })
-  await film.command('file.newSequence', { name: 'B-frame trim', width: 64, height: 36, fps: 24, video: 1, audio: 0 })
+  await film.command('sequence.new', { name: 'B-frame trim', width: 64, height: 36, fps: 24, video: 1, audio: 0 })
   const imported = await film.command('file.import', { paths: ['../clips/original-b-frames.mp4'] })
   expect(imported.errors).toEqual([])
   expect(imported.items).toHaveLength(1)

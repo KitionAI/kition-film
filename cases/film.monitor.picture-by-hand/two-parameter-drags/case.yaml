@@ -7,7 +7,7 @@ intent: >-
   it is held, and one undo puts both Anchor Point and Position back; with Uniform Scale off a corner
   handle dragged sideways widens the clip while it is held (Scale Width more than Scale Height),
   and one undo puts both back. Before, these drags showed only an outline and landed on release as
-  two undo steps, because effects.setParam merged one parameter's changes only. The whole script
+  two undo steps, because effect.setParam merged one parameter's changes only. The whole script
   also runs the other picture steps.
 layer: gate
 source:

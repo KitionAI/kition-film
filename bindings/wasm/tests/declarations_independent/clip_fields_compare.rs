@@ -61,7 +61,7 @@ fn clips(params: &Value, selected: &[u64]) -> Vec<u64> {
 
 fn fixture() -> (FilmDocument, u64, u64, u64) {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
-    let item = doc.execute("file.newBarsAndTone", json!({"seconds":1})).unwrap()["item"].as_u64().unwrap();
+    let item = doc.execute("item.newBarsAndTone", json!({"seconds":1})).unwrap()["item"].as_u64().unwrap();
     let placed = doc.execute("timeline.place", json!({"item":item,"track":"V1","seconds":0})).unwrap();
     (doc, item, placed["clips"][0].as_u64().unwrap(), placed["clips"][1].as_u64().unwrap())
 }

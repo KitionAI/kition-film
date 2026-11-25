@@ -57,7 +57,7 @@ const TIMELINE_VIEW_IDS = new Set([
 const MONITOR_VIEW_PREFIXES = ['view.playbackRes.', 'view.pausedRes.', 'view.magnification.', 'view.programZoom', 'view.sourceZoom', 'view.display.', 'view.guideTemplates.']
 const MONITOR_VIEW_IDS = new Set(['view.highQualityPlayback', 'view.safeMargins', 'view.compare.setReference', 'view.showRulers', 'view.showGuides', 'view.lockGuides', 'view.clearGuides', 'view.addGuide', 'view.snapInProgramMonitor'])
 const SOURCE_STEPS = new Set(['playhead.stepBack', 'playhead.stepForward', 'playhead.stepBack5', 'playhead.stepForward5'])
-const SOURCE_MARK_EDITS = new Set(['markers.markIn', 'markers.markOut', 'markers.clearIn', 'markers.clearOut', 'markers.clearInOut'])
+const SOURCE_MARK_EDITS = new Set(['marker.markIn', 'marker.markOut', 'marker.clearIn', 'marker.clearOut', 'marker.clearInOut'])
 /** The Program monitor's own UI commands (`keyboard.rs`): Begin Text Editing for a Graphic Layer. */
 const PROGRAM_IDS = new Set(['graphics.beginTextEditing'])
 /** Upstream's About and Keyboard Shortcuts, and Kition's Help rows for them (`kit:help.about`, `kit:help.shortcuts`). */
@@ -85,7 +85,7 @@ export function routeOf(id: string, params: Params, focused: string): InvokeRout
   if (id.startsWith('playback.') || id.startsWith('source.playback.')) return 'playback'
   // Source absolute navigation must move the playback clock and its seek queue too.
   // An explicit target takes precedence; leave Program and invalid targets to the engine.
-  if ((id === 'markers.goToIn' || id === 'markers.goToOut') &&
+  if ((id === 'marker.goToIn' || id === 'marker.goToOut') &&
     (params.target === 'source' || (params.target === undefined && targetsSource(focused, params)))) return 'playback'
   if (TIMELINE_VIEW_IDS.has(id)) return 'timelineView'
   if (MONITOR_VIEW_IDS.has(id) || MONITOR_VIEW_PREFIXES.some((prefix) => id.startsWith(prefix))) return 'monitorView'
@@ -220,7 +220,7 @@ export function createInvoke(handlers: InvokeHandlers) {
           const queuedHistory = (id === 'edit.undo' || id === 'edit.redo') && sourceMarks !== null && sourceMarksContext === handlers.sourceContext()
           if (sourceEdit || queuedHistory) {
             const context = handlers.sourceContext()
-            const implicit = (id === 'markers.markIn' || id === 'markers.markOut') && params.time === undefined
+            const implicit = (id === 'marker.markIn' || id === 'marker.markOut') && params.time === undefined
             const time = implicit ? handlers.sourceMarkTime() : undefined
             const markedParams: Params = sourceEdit ? { ...params, target: 'source' } : { ...params }
             if (sourceMarksContext !== context) {

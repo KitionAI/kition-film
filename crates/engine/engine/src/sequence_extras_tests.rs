@@ -52,9 +52,9 @@ fn sequence_and_markers_menu_order_matches_premiere() {
     assert_eq!(Session::default().shortcuts.primary("trim.applyDefaultTransition").as_deref(), Some("Shift+D"));
     assert_eq!(crate::commands::find("sequence.normalizeMixTrack").unwrap().label, "Normalize Mix Track…");
     let caps = menu_ids(&["Sequence", "Captions"]);
-    assert_eq!(pos(&caps, "captions.showActiveOnly"), pos(&caps, "captions.showAll") + 1);
+    assert_eq!(pos(&caps, "caption.showActiveOnly"), pos(&caps, "caption.showAll") + 1);
     let markers = menu_ids(&["Markers"]);
-    assert_eq!(pos(&markers, "markers.addFlashCue"), pos(&markers, "markers.addChapter") + 1);
+    assert_eq!(pos(&markers, "marker.addFlashCue"), pos(&markers, "marker.addChapter") + 1);
 }
 
 #[test]
@@ -98,7 +98,7 @@ fn normalize_mix_track_hits_the_target_peak() {
     assert_eq!(s.active_sequence().unwrap().master_volume_db, 0.0);
     assert!(s.execute("sequence.normalizeMixTrack", json!({"db": 40.0})).is_err());
     // no audio: disabled
-    s.execute("file.newSequence", json!({"name": "Empty"})).unwrap();
+    s.execute("sequence.new", json!({"name": "Empty"})).unwrap();
     assert!(!s.is_enabled("sequence.normalizeMixTrack"));
 }
 
@@ -131,12 +131,12 @@ fn simplify_sequence_makes_a_clean_copy() {
     let overlay = orig.video_tracks[1].items[0].id;
     let score = orig.audio_tracks[1].items[0].id;
     s.execute("timeline.select", json!({"clips": [overlay.0, score.0]})).unwrap();
-    s.execute("edit.clear", json!({"clips": [overlay.0, score.0]})).unwrap();
+    s.execute("edit.delete", json!({"clips": [overlay.0, score.0]})).unwrap();
     let c2 = orig.video_tracks[0].items[1].id;
     s.execute("timeline.select", json!({"clips": [c2.0]})).unwrap();
     s.execute("clip.enable", json!({})).unwrap();
     let blur = orig.video_tracks[0].items[0].id;
-    s.execute("effects.apply", json!({"clips": [blur.0], "effect": "gaussian_blur"})).unwrap();
+    s.execute("effect.apply", json!({"clips": [blur.0], "effect": "gaussian_blur"})).unwrap();
     let n_items = s.project.items.len();
     let r = s.execute("sequence.simplify", json!({"removeDisabled": true, "removeEmptyTracks": true, "closeGaps": true, "removeVideoEffects": true})).unwrap();
     assert_eq!(s.project.items.len(), n_items + 1);
@@ -201,26 +201,26 @@ fn simplify_moves_clips_down_where_they_fit() {
 #[test]
 fn show_active_caption_track_only() {
     let mut s = demo();
-    assert!(!s.is_enabled("captions.showActiveOnly"), "no caption tracks");
-    let a = s.execute("captions.newTrack", json!({"name": "English"})).unwrap();
-    let b = s.execute("captions.newTrack", json!({"name": "French"})).unwrap();
+    assert!(!s.is_enabled("caption.showActiveOnly"), "no caption tracks");
+    let a = s.execute("caption.newTrack", json!({"name": "English"})).unwrap();
+    let b = s.execute("caption.newTrack", json!({"name": "French"})).unwrap();
     let id_of = |v: &serde_json::Value| v["track"].as_u64().or_else(|| v.as_u64()).unwrap();
     let (ta, tb) = (id_of(&a), id_of(&b));
-    s.execute("captions.showActiveOnly", json!({"track": tb})).unwrap();
+    s.execute("caption.showActiveOnly", json!({"track": tb})).unwrap();
     let on: Vec<(u64, bool)> = s.active_sequence().unwrap().caption_tracks.iter().map(|t| (t.id.0, t.enabled)).collect();
     assert!(on.contains(&(tb, true)) && on.contains(&(ta, false)), "{on:?}");
-    s.execute("captions.showActiveOnly", json!({"track": "C1"})).unwrap();
+    s.execute("caption.showActiveOnly", json!({"track": "C1"})).unwrap();
     let first = s.active_sequence().unwrap().caption_tracks[0].id.0;
     assert!(s.active_sequence().unwrap().caption_tracks.iter().all(|t| t.enabled == (t.id.0 == first)));
     s.execute("edit.undo", json!({})).unwrap();
     assert!(s.active_sequence().unwrap().caption_tracks.iter().any(|t| t.id.0 == tb && t.enabled));
-    assert!(s.execute("captions.showActiveOnly", json!({"track": "C9"})).is_err());
+    assert!(s.execute("caption.showActiveOnly", json!({"track": "C9"})).is_err());
 }
 
 #[test]
 fn flash_cue_markers_round_trip() {
     let mut s = demo();
-    let r = s.execute("markers.addFlashCue", json!({"seconds": 2.0, "comment": "cue"})).unwrap();
+    let r = s.execute("marker.addFlashCue", json!({"seconds": 2.0, "comment": "cue"})).unwrap();
     let id = r["marker"].as_u64().unwrap();
     let q = s.active_sequence().unwrap();
     let m = q.markers.iter().find(|m| m.id.0 == id).unwrap();
@@ -228,7 +228,7 @@ fn flash_cue_markers_round_trip() {
     assert_eq!(m.start, s.sequence_rate().snap(Tick::from_seconds_f64(2.0)));
     let back = kition_film_format::decode(&kition_film_format::encode(&s.project, false)).unwrap().project;
     assert_eq!(back, *s.project);
-    let r2 = s.execute("markers.addFlashCue", json!({})).unwrap();
+    let r2 = s.execute("marker.addFlashCue", json!({})).unwrap();
     let q = s.active_sequence().unwrap();
     assert_eq!(q.markers.iter().find(|m| m.id.0 == r2["marker"].as_u64().unwrap()).unwrap().name, "Cue Point 2");
     s.execute("edit.undo", json!({})).unwrap();

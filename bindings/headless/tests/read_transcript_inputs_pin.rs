@@ -20,11 +20,11 @@ async fn transcript_edits_retain_word_inputs_and_accept_unrelated_source_names()
         "transcript.extract",
         "transcript.removePauses",
         "transcript.removeFillers",
-        "transcript.createCaptions",
+        "transcript.addCaptions",
     ] {
         for change in ["words", "name"] {
             let mut doc = FilmDocument::open(FILE, &project(0)).unwrap();
-            let item = doc.execute("file.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
+            let item = doc.execute("item.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
             doc.execute("timeline.place", json!({"item":item,"track":"V1","audioTrack":"A1","time":0})).unwrap();
             doc.execute("transcript.set", json!({"item":item,"transcript":words("um")})).unwrap();
             let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());

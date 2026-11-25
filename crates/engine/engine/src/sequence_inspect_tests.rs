@@ -20,7 +20,7 @@ fn sequence_inspect_reports_clip_ends_gain_and_marker_comments() {
     s.execute("clip.speedDuration", json!({"speed": 200})).unwrap();
     s.execute("timeline.select", json!({"clips": [loud.0]})).unwrap();
     s.execute("clip.audioGain", json!({"mode": "set", "db": -6.5})).unwrap();
-    let marker = s.execute("markers.add", json!({"time": rate.tick_of(12).0, "name": "Beat", "comment": "cut on the downbeat"})).unwrap()["marker"].clone();
+    let marker = s.execute("marker.add", json!({"time": rate.tick_of(12).0, "name": "Beat", "comment": "cut on the downbeat"})).unwrap()["marker"].clone();
 
     let q = s.active_sequence().unwrap().clone();
     let js = s.execute("sequence.inspect", json!({})).unwrap();

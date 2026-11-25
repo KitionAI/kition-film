@@ -3,8 +3,8 @@ import { test, expect, editState } from './fixtures.mjs'
 test('F74 failed Automate to Sequence restores content and the full history when its insert gap reached the history limit', async ({ film }) => {
   await film.open()
   await film.command('file.newProject', { name: 'Atomic automatic placement' })
-  await film.command('file.newSequence', { name: 'Before', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
-  const { item } = await film.command('file.newColorMatte', { color: '#ff0000', seconds: 0.5 })
+  await film.command('sequence.new', { name: 'Before', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
+  const { item } = await film.command('item.newColorMatte', { color: '#ff0000', seconds: 0.5 })
   await film.command('timeline.place', { item, seconds: 0 })
   const renamed = await film.commands(Array.from({ length: 205 }, (_, i) => ({ command: 'clip.rename', params: { item, name: `Take ${i}` } })))
   expect(renamed).toHaveLength(205)

@@ -35,10 +35,10 @@ fn names(rows: &Value) -> Vec<String> {
 #[test]
 fn n35_subclip_project_rows_report_their_actual_parent_streams_and_metadata() {
     let mut s = demo();
-    s.execute("file.newSequence", json!({"width": 64, "height": 36, "fps": 60})).unwrap();
+    s.execute("sequence.new", json!({"width": 64, "height": 36, "fps": 60})).unwrap();
     let audio = s.project.items.values().find(|i| !i.has_video() && i.has_audio()).unwrap().id;
     let av = s.project.items.values().find(|i| i.has_video() && i.has_audio() && i.as_media().is_some()).unwrap().id;
-    let video = ItemId(s.execute("file.newColorMatte", json!({"width": 64, "height": 36, "seconds": 2})).unwrap()["item"].as_u64().unwrap());
+    let video = ItemId(s.execute("item.newColorMatte", json!({"width": 64, "height": 36, "seconds": 2})).unwrap()["item"].as_u64().unwrap());
     for (parent, has_video, has_audio) in [(audio, false, true), (av, true, true), (video, true, false)] {
         let item = s.execute("clip.makeSubclip", json!({"item": parent.0, "start": TICKS_PER_SECOND / 2, "end": TICKS_PER_SECOND})).unwrap()["item"].clone();
         let rows = s.execute("project.items", json!({"recursive": true})).unwrap();
@@ -275,8 +275,8 @@ fn freeform_stacks_and_arrangements() {
 #[test]
 fn bins_rename_nest_and_list() {
     let mut s = demo();
-    let b = s.execute("file.newBin", json!({"name": "Footage"})).unwrap()["bin"].as_u64().unwrap();
-    let inner = s.execute("file.newBin", json!({"name": "Day 1", "parent": b})).unwrap()["bin"].as_u64().unwrap();
+    let b = s.execute("bin.add", json!({"name": "Footage"})).unwrap()["bin"].as_u64().unwrap();
+    let inner = s.execute("bin.add", json!({"name": "Day 1", "parent": b})).unwrap()["bin"].as_u64().unwrap();
     let ids = media(&s);
     s.execute("project.moveToBin", json!({"items": [ids[0].0], "bin": inner})).unwrap();
     s.execute("project.renameBin", json!({"bin": b, "name": "Camera"})).unwrap();
@@ -411,7 +411,7 @@ fn the_offline_badge_names_missing_media_as_upstream() {
 
 /// The `stamp` a media row carries, as upstream's `item_revision`: it moves when the item's
 /// pictures do on this host (made offline, linked again, missing from its folder, a proxy shown),
-/// so its thumbnails draw again, and not with any other edit. Its item in `project.inspect`
+/// so its thumbnails draw again, and not with any other edit. Its item in `file.inspect`
 /// carries the document's part only (made offline, its file, its proxy file), the same on every
 /// peer: what this host sees of the files never reaches `inspect()`. A subclip follows its
 /// parent; a sequence keeps its own content stamp.
@@ -491,7 +491,7 @@ fn a_sequence_row_stamp_follows_its_own_content_only() {
     let m = media(&s)[0];
     s.execute("project.select", json!({"items": [m.0]})).unwrap();
     s.execute("edit.label", json!({"label": "Iris"})).unwrap();
-    s.execute("file.newBin", json!({"name": "Other"})).unwrap();
+    s.execute("bin.add", json!({"name": "Other"})).unwrap();
     s.execute("playhead.set", json!({"seconds": 1.0})).unwrap();
     assert_eq!(stamp(&mut s, seq), first);
     // A clip placed in it moves it.
@@ -499,7 +499,7 @@ fn a_sequence_row_stamp_follows_its_own_content_only() {
     let placed = stamp(&mut s, seq);
     assert_ne!(placed, first);
     // A sequence that nests it follows it too.
-    s.execute("file.newSequence", json!({"name": "Outer"})).unwrap();
+    s.execute("sequence.new", json!({"name": "Outer"})).unwrap();
     let outer = s.state.active_sequence.unwrap();
     s.execute("timeline.place", json!({"item": seq.0, "track": "V1", "seconds": 0.0})).unwrap();
     let nesting = stamp(&mut s, outer);
@@ -522,7 +522,7 @@ fn a_sequence_row_stamp_follows_the_items_its_clips_use() {
     };
     let items = media(&s);
     let (placed, other) = (items[0], items[1]);
-    s.execute("file.newSequence", json!({"name": "Uses one"})).unwrap();
+    s.execute("sequence.new", json!({"name": "Uses one"})).unwrap();
     let seq = s.state.active_sequence.unwrap();
     s.execute("timeline.place", json!({"item": placed.0, "track": "V1", "seconds": 0.0})).unwrap();
     let before = stamp(&mut s, seq);
@@ -561,8 +561,8 @@ fn freeform_commands_that_lay_cards_out_declare_their_width() {
 fn n39_project_rows_expose_the_absolute_media_range_for_subclip_thumbnails() {
     let mut s = Session::default();
     s.execute("file.newProject", json!({})).unwrap();
-    s.execute("file.newSequence", json!({"fps": 24, "width": 64, "height": 36})).unwrap();
-    let parent = s.execute("file.newColorMatte", json!({"seconds": 1})).unwrap()["item"].clone();
+    s.execute("sequence.new", json!({"fps": 24, "width": 64, "height": 36})).unwrap();
+    let parent = s.execute("item.newColorMatte", json!({"seconds": 1})).unwrap()["item"].clone();
     let item = s.execute("clip.makeSubclip", json!({"item": parent, "startFrame": 13, "endFrame": 17})).unwrap()["item"].clone();
     let row = |s: &mut Session, id: &Value| {
         s.execute("project.items", json!({})).unwrap()["rows"].as_array().unwrap().iter().find(|row| row["item"] == *id).unwrap().clone()

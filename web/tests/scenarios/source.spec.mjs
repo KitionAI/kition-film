@@ -4,8 +4,8 @@ for (const operation of ['insert', 'overwrite']) {
   test(`F13 source In/Out ${operation} uses the inclusive source range, keeps sequence marks and survives undo/save`, async ({ film, page }) => {
     await film.open()
     const source = clips(await film.sequence())[0].item
-    await film.command('file.newSequence', { name: 'Source edit', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
-    const red = await film.command('file.newColorMatte', { color: '#ff0000', seconds: 4 })
+    await film.command('sequence.new', { name: 'Source edit', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
+    const red = await film.command('item.newColorMatte', { color: '#ff0000', seconds: 4 })
     await film.command('timeline.place', { item: red.item, track: 'V1', seconds: 0 })
     await film.command('source.open', { item: source })
     await film.command('source.setPlayhead', { frame: 12 })

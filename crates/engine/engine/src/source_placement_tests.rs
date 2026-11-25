@@ -6,7 +6,7 @@ use serde_json::json;
 fn setup() -> Session {
     let mut s = Session::default();
     s.execute("file.openDemoProject", json!({})).unwrap();
-    s.execute("file.newSequence", json!({"name":"Source test","width":1280,"height":720,"fps":24})).unwrap();
+    s.execute("sequence.new", json!({"name":"Source test","width":1280,"height":720,"fps":24})).unwrap();
     s.execute("source.open", json!({"item":5})).unwrap();
     s
 }

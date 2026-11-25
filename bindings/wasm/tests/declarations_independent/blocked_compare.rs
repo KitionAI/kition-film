@@ -38,7 +38,7 @@ pub const PATHS: &[(&str, &str)] = &[
     ("media.relink", "one explicit source, optionally other missing"),
     ("media.replaceFootage", "force replacement only one"),
     ("media.autoRelink", "folder-prefix or folder-tree missing sources"),
-    ("media.createProxies", "start then attach async"),
+    ("media.addProxies", "start then attach async"),
     ("media.attachProxies", "checked or force"),
     ("media.reconnectFullRes", "single"),
     ("mediaCache.clean", "cache deletion"),
@@ -59,9 +59,9 @@ pub const PATHS: &[(&str, &str)] = &[
     ("sequence.renderInToOut", "external preview job"),
     ("sequence.renderSelection", "external preview job"),
     ("sequence.renderAudio", "external preview job"),
-    ("captions.export", "external"),
-    ("captions.import", "active sequence"),
-    ("captions.import", "no sequence"),
+    ("caption.export", "external"),
+    ("caption.import", "active sequence"),
+    ("caption.import", "no sequence"),
 ];
 
 pub fn compared_path(command: &str, path: &str) -> bool {

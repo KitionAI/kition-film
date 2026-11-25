@@ -59,10 +59,10 @@ fn expected(project: &Project, sequence: u64, command: &str, selected: &[u64], i
 fn media_targets_compare_explicit_empty_lists_project_precedence_timeline_sources_and_parent_bins() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
     let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let media = doc.execute("file.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].as_u64().unwrap();
-    let silent = doc.execute("file.newColorMatte", json!({"seconds":2})).unwrap()["item"].as_u64().unwrap();
+    let media = doc.execute("item.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].as_u64().unwrap();
+    let silent = doc.execute("item.newColorMatte", json!({"seconds":2})).unwrap()["item"].as_u64().unwrap();
     let sub = doc.execute("clip.makeSubclip", json!({"item":media,"start":0,"end":254_016_000_000i64})).unwrap()["item"].as_u64().unwrap();
-    let bin = doc.execute("file.newBin", json!({"name":"Sources"})).unwrap()["bin"].clone();
+    let bin = doc.execute("bin.add", json!({"name":"Sources"})).unwrap()["bin"].clone();
     doc.execute("project.moveToBin", json!({"items":[media],"bin":bin})).unwrap();
     let clips: Vec<_> = doc.execute("timeline.place", json!({"item":media,"track":"V1","time":0})).unwrap()["clips"]
         .as_array()

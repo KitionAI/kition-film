@@ -153,7 +153,7 @@ fn n28_scene_results_survive_unrelated_edits_and_active_sequence_switch() {
     }
     assert!(job.result.lock().unwrap().as_ref().unwrap().is_ok());
     s.execute("timeline.setTrack", json!({"track": "V1", "name": "Renamed during analysis"})).unwrap();
-    let other = s.execute("file.newSequence", json!({"name": "Another edit", "width": 64, "height": 36})).unwrap()["sequence"].as_u64().unwrap();
+    let other = s.execute("sequence.new", json!({"name": "Another edit", "width": 64, "height": 36})).unwrap()["sequence"].as_u64().unwrap();
     let history = s.history.undo.len();
     s.poll_persistence();
     let track = &s.project.sequence(original).unwrap().video_tracks[0];
@@ -238,7 +238,7 @@ fn background_job_reports_progress_and_cancel_changes_nothing() {
     let t0 = std::time::Instant::now();
     loop {
         s.poll_persistence();
-        let j = s.execute("jobs.list", json!({})).unwrap();
+        let j = s.execute("job.list", json!({})).unwrap();
         let j = j.as_array().unwrap().iter().find(|x| x["id"] == job).unwrap().clone();
         if j["finished"] == true && s.scene_jobs.is_empty() {
             assert_eq!(j["total"], 36);
@@ -254,7 +254,7 @@ fn background_job_reports_progress_and_cancel_changes_nothing() {
     select_v1(&mut s);
     let rev = s.revision;
     let r = s.execute("clip.sceneEditDetection", json!({})).unwrap();
-    s.execute("jobs.cancel", json!({"job": r["job"]})).unwrap();
+    s.execute("job.cancel", json!({"job": r["job"]})).unwrap();
     let t0 = std::time::Instant::now();
     while !s.scene_jobs.is_empty() {
         s.poll_persistence();
@@ -471,12 +471,12 @@ fn a_document_without_threads_steps_its_detection_and_replicates_the_one_step() 
     s.execute("edit.undo", json!({})).unwrap();
     assert_eq!(s.active_sequence().unwrap().video_tracks[0].items.len(), 1, "its own undo takes it back");
 
-    // jobs.cancel mid-job: nothing changes.
+    // job.cancel mid-job: nothing changes.
     select_v1(&mut s);
     let revision = s.revision;
     let r = s.execute("clip.sceneEditDetection", json!({})).unwrap();
     s.pump_jobs(Duration::ZERO);
-    s.execute("jobs.cancel", json!({"job": r["job"]})).unwrap();
+    s.execute("job.cancel", json!({"job": r["job"]})).unwrap();
     while !s.stepped.is_empty() || !s.scene_jobs.is_empty() {
         s.pump_jobs(Duration::ZERO);
         s.poll_persistence();

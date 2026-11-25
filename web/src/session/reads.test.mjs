@@ -14,15 +14,15 @@ test('the playheads never read the session state: playback moves them every fram
 
 test('a command that changes state without a new revision reads it once more; one with a new revision leaves it to the revision', () => {
   assert.equal(rereadsAfter('sequence.snap', 4, 4).state, true)
-  assert.equal(rereadsAfter('markers.markIn', 4, 5).state, false)
+  assert.equal(rereadsAfter('marker.markIn', 4, 5).state, false)
 })
 
 test('preferences and shortcut changes read the labels and the key table again; their queries do not', () => {
   assert.equal(rereadsAfter('prefs.set', 4, 4).labels, true)
   assert.equal(rereadsAfter('prefs.get', 4, 4).labels, false)
-  assert.equal(rereadsAfter('shortcuts.set', 4, 4).keys, true)
-  assert.equal(rereadsAfter('shortcuts.list', 4, 4).keys, false)
-  assert.equal(rereadsAfter('markers.markIn', 4, 5).keys, false)
+  assert.equal(rereadsAfter('shortcut.set', 4, 4).keys, true)
+  assert.equal(rereadsAfter('shortcut.list', 4, 4).keys, false)
+  assert.equal(rereadsAfter('marker.markIn', 4, 5).keys, false)
 })
 
 test("the preferences' revision is asked after a command, not after a playhead move or a drag's merged steps (once on its release)", () => {

@@ -40,13 +40,13 @@ struct Fixture {
 
 fn fixture() -> Fixture {
     let mut doc = FilmDocument::create("Edit.kfilm", 320, 180).unwrap();
-    let other = run(&mut doc, "file.newSequence", json!({ "name": "Other", "width": 320, "height": 180, "fps": 24 }))["sequence"].as_u64().unwrap();
-    let green_item = run(&mut doc, "file.newColorMatte", json!({ "color": "#00ff00", "seconds": 3 }))["item"].as_u64().unwrap();
+    let other = run(&mut doc, "sequence.new", json!({ "name": "Other", "width": 320, "height": 180, "fps": 24 }))["sequence"].as_u64().unwrap();
+    let green_item = run(&mut doc, "item.newColorMatte", json!({ "color": "#00ff00", "seconds": 3 }))["item"].as_u64().unwrap();
     let green = run(&mut doc, "timeline.place", json!({ "item": green_item, "track": "V1", "seconds": 0 }))["clips"][0].as_u64().unwrap();
-    let main = run(&mut doc, "file.newSequence", json!({ "name": "Main", "width": 320, "height": 180, "fps": 24 }))["sequence"].as_u64().unwrap();
+    let main = run(&mut doc, "sequence.new", json!({ "name": "Main", "width": 320, "height": 180, "fps": 24 }))["sequence"].as_u64().unwrap();
     let mut clips = Vec::new();
     for (color, seconds) in [("#ff0000", 0), ("#0000ff", 2)] {
-        let matte = run(&mut doc, "file.newColorMatte", json!({ "color": color, "seconds": 2 }))["item"].clone();
+        let matte = run(&mut doc, "item.newColorMatte", json!({ "color": color, "seconds": 2 }))["item"].clone();
         clips.push(run(&mut doc, "timeline.place", json!({ "item": matte, "track": "V1", "seconds": seconds }))["clips"][0].as_u64().unwrap());
     }
     run(&mut doc, "playhead.set", json!({ "seconds": 1 }));
@@ -106,7 +106,7 @@ fn a_context_moves_the_editor_and_restoring_puts_it_back() {
 #[test]
 fn a_time_is_seconds_on_the_sequences_frames() {
     let mut doc = FilmDocument::create("Edit.kfilm", 320, 180).unwrap();
-    let matte = run(&mut doc, "file.newColorMatte", json!({ "color": "#ff0000", "seconds": 5 }))["item"].clone();
+    let matte = run(&mut doc, "item.newColorMatte", json!({ "color": "#ff0000", "seconds": 5 }))["item"].clone();
     run(&mut doc, "timeline.place", json!({ "item": matte, "track": "V1", "seconds": 0 }));
     doc.set_context(&context(&[], None, Some(3.5))).unwrap();
     let rate = kition_film_engine::time::FrameRate::new(24_000, 1_001);
@@ -136,7 +136,7 @@ fn two_steps_at_two_times() {
     let saved = f.doc.editor_state();
     for time in [0.5, 3.0] {
         f.doc.set_context(&context(&[], None, Some(time))).unwrap();
-        agent(&mut f.doc, "markers.add", json!({})).unwrap();
+        agent(&mut f.doc, "marker.add", json!({})).unwrap();
     }
     f.doc.restore_editor_state(&saved).unwrap();
     let markers: Vec<i64> = f.doc.inspect().unwrap()["sequence"]["markers"].as_array().unwrap().iter().map(|m| m["start"].as_i64().unwrap()).collect();

@@ -10,8 +10,8 @@ async fn an_unnamed_new_sequence_holds_the_sequence_count_but_not_sequence_names
     for related in [true, false] {
         let f = Fixture::new(2);
         let (_, basis) = f.inspect().await;
-        f.colleague(&[if related { ("file.newSequence", json!({"name":"Theirs"})) } else { ("sequence.settings", json!({"name":"Theirs"})) }]);
-        let answer = f.call("run", json!({"basis":basis,"steps":[{"command":"file.newSequence","params":{}}]})).await;
+        f.colleague(&[if related { ("sequence.new", json!({"name":"Theirs"})) } else { ("sequence.settings", json!({"name":"Theirs"})) }]);
+        let answer = f.call("run", json!({"basis":basis,"steps":[{"command":"sequence.new","params":{}}]})).await;
         if related {
             assert_eq!(answer.expect_err("the default sequence name counts sequences")["error"]["code"], "conflict");
         } else {
@@ -27,7 +27,7 @@ fn transition_effect_application_honors_the_clip_it_names() {
     let mut doc = kition_film_kit::FilmDocument::open(FILE, &project(4)).unwrap();
     let clip = v1(&doc.inspect().unwrap()["sequence"])[0];
     doc.execute("playhead.set", json!({"seconds":3})).unwrap();
-    doc.execute("effects.apply", json!({"clips":[clip],"effect":"cross_dissolve"})).unwrap();
+    doc.execute("effect.apply", json!({"clips":[clip],"effect":"cross_dissolve"})).unwrap();
     let seq = doc.inspect().unwrap()["sequence"].clone();
     let transition = &seq["video"][0]["transitions"][0];
     assert!(transition["from"] == clip || transition["to"] == clip, "clips names the addressed clip, even away from the playhead: {transition}");
@@ -56,7 +56,7 @@ async fn proportional_motion_scaling_holds_distant_motion_but_not_names() {
         let (seq, basis) = f.inspect().await;
         let clip = v1(&seq)[3];
         f.colleague(&[if related {
-            ("effects.setParam", json!({"clip":clip,"effect":"motion","param":"scale","value":75}))
+            ("effect.setParam", json!({"clip":clip,"effect":"motion","param":"scale","value":75}))
         } else {
             ("clip.rename", json!({"clip":clip,"name":"Unrelated"}))
         }]);
@@ -77,7 +77,7 @@ async fn effect_default_points_hold_sequence_size_but_not_sequence_name() {
         let f = Fixture::new(2);
         let (seq, basis) = f.inspect().await;
         f.colleague(&[("sequence.settings", if related { json!({"width":640}) } else { json!({"name":"Unrelated"}) })]);
-        let answer = f.call("run", json!({"basis":basis,"steps":[{"command":"effects.apply","params":{"clips":[v1(&seq)[1]],"effect":"lens_flare"}}]})).await;
+        let answer = f.call("run", json!({"basis":basis,"steps":[{"command":"effect.apply","params":{"clips":[v1(&seq)[1]],"effect":"lens_flare"}}]})).await;
         if related {
             assert_eq!(answer.expect_err("the default flare center moved")["error"]["code"], "conflict");
         } else {

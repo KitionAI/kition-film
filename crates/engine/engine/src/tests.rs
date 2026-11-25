@@ -3,7 +3,7 @@ use super::*;
 #[test]
 fn invalid_preview_scales_are_rejected_without_allocating() {
     let mut s = Session::default();
-    s.execute("file.newSequence", serde_json::json!({"width":160,"height":90})).unwrap();
+    s.execute("sequence.new", serde_json::json!({"width":160,"height":90})).unwrap();
     for scale in [0.0, -1.0, f32::NAN, f32::INFINITY, f32::MAX] {
         assert!(s.render_program(scale).is_none());
         assert!(s.render_program_working(scale).is_none());
@@ -125,7 +125,7 @@ fn sequence_parameters_are_bounded_and_failed_changes_are_atomic() {
     let mut s = demo();
     let before = (*s.project).clone();
     let history = s.history.undo.len();
-    for command in ["file.newSequence", "sequence.settings"] {
+    for command in ["sequence.new", "sequence.settings"] {
         for params in [
             json!({"width":0}),
             json!({"height":0}),
@@ -146,12 +146,12 @@ fn sequence_parameters_are_bounded_and_failed_changes_are_atomic() {
         }
     }
     for params in [json!({"video":u64::MAX}), json!({"audio":u64::MAX}), json!({"video":257}), json!({"audio":-1})] {
-        assert!(s.execute("file.newSequence", params.clone()).is_err(), "{params}");
+        assert!(s.execute("sequence.new", params.clone()).is_err(), "{params}");
         assert_eq!(*s.project, before);
     }
-    s.execute("file.newSequence", json!({"width":7680,"height":4320,"video":0,"audio":0})).unwrap();
+    s.execute("sequence.new", json!({"width":7680,"height":4320,"video":0,"audio":0})).unwrap();
     assert_eq!(s.active_sequence().unwrap().settings.width, 7680, "standard 8K remains supported");
-    s.execute("file.newSequence", json!({"width":15360.0,"height":8640.0,"sampleRate":48000.0,"video":1.0,"audio":0})).unwrap();
+    s.execute("sequence.new", json!({"width":15360.0,"height":8640.0,"sampleRate":48000.0,"video":1.0,"audio":0})).unwrap();
     assert_eq!(s.active_sequence().unwrap().settings.width, 15360, "16K, and integer-valued floats, are accepted");
     s.execute("sequence.settings", json!({"width":16384,"height":8192})).unwrap();
     assert_eq!(s.active_sequence().unwrap().settings.height, 8192, "a 16384x8192 panorama is accepted");
@@ -232,29 +232,29 @@ fn sequence_settings_timecode_render_quality_and_colour() {
 fn zero_fps_is_refused() {
     let mut s = demo();
     let rate = s.sequence_rate();
-    assert!(s.execute("file.newSequence", json!({"name": "z", "fps": 0})).is_err());
+    assert!(s.execute("sequence.new", json!({"name": "z", "fps": 0})).is_err());
     assert!(s.execute("sequence.settings", json!({"fps": 0})).is_err());
     assert!(s.execute("sequence.settings", json!({"fps": -24})).is_err());
     assert_eq!(s.sequence_rate(), rate, "the active sequence keeps its rate");
-    s.execute("markers.markIn", json!({"time": 0})).unwrap();
+    s.execute("marker.markIn", json!({"time": 0})).unwrap();
 }
 
 #[test]
 fn effects_and_keyframes() {
     let mut s = demo();
     let c = s.active_sequence().unwrap().video_tracks[0].items[1].id.0;
-    s.execute("effects.apply", json!({"clips": [c], "effect": "Gaussian Blur"})).unwrap();
-    s.execute("effects.setParam", json!({"clip": c, "effect": "gaussian_blur", "param": "blurriness", "value": 25.0})).unwrap();
+    s.execute("effect.apply", json!({"clips": [c], "effect": "Gaussian Blur"})).unwrap();
+    s.execute("effect.setParam", json!({"clip": c, "effect": "gaussian_blur", "param": "blurriness", "value": 25.0})).unwrap();
     let q = s.active_sequence().unwrap();
     let it = q.find_item(kition_film_project::ClipId(c)).unwrap().1;
     assert_eq!(it.effects[0].effect, "gaussian_blur", "standard effects render before intrinsics");
     assert_eq!(it.effects[0].params["blurriness"].value, kition_film_project::ParamValue::Float(25.0));
-    s.execute("effects.toggleAnimation", json!({"clip": c, "effect": "motion", "param": "scale"})).unwrap();
+    s.execute("effect.toggleAnimation", json!({"clip": c, "effect": "motion", "param": "scale"})).unwrap();
     let it = s.active_sequence().unwrap().find_item(kition_film_project::ClipId(c)).unwrap().1.clone();
     assert!(it.effect("motion").unwrap().params["scale"].is_animated());
 }
 
-/// `effects.addKeyframe` is the keyframe diamond of Effect Controls and Properties: it adds a
+/// `effect.addKeyframe` is the keyframe diamond of Effect Controls and Properties: it adds a
 /// keyframe at the playhead or removes the one there, and the value then follows the keyframes
 /// that are left (Premiere's Add/Remove Keyframe), unlike the stopwatch, which drops them all.
 #[test]
@@ -268,14 +268,14 @@ fn add_keyframe_toggles_the_keyframe_at_the_playhead() {
     };
     let key = json!({"clip": c, "effect": "motion", "param": "scale"});
     s.execute("playhead.set", json!({"seconds": 0.5})).unwrap();
-    s.execute("effects.addKeyframe", key.clone()).unwrap();
+    s.execute("effect.addKeyframe", key.clone()).unwrap();
     assert_eq!(scale(&s), (1, 100.0), "the first keyframe turns animation on");
     s.execute("playhead.set", json!({"seconds": 2.5})).unwrap();
-    s.execute("effects.addKeyframe", key.clone()).unwrap();
-    s.execute("effects.setParam", json!({"clip": c, "effect": "motion", "param": "scale", "value": 50.0})).unwrap();
+    s.execute("effect.addKeyframe", key.clone()).unwrap();
+    s.execute("effect.setParam", json!({"clip": c, "effect": "motion", "param": "scale", "value": 50.0})).unwrap();
     assert_eq!(scale(&s), (2, 50.0));
     // on a keyframe: only that keyframe goes, and Scale is the other keyframe's 100 again
-    s.execute("effects.addKeyframe", key.clone()).unwrap();
+    s.execute("effect.addKeyframe", key.clone()).unwrap();
     assert_eq!(scale(&s), (1, 100.0));
     s.undo();
     assert_eq!(scale(&s), (2, 50.0));
@@ -291,11 +291,11 @@ fn add_keyframe_toggles_the_keyframe_at_the_playhead() {
         json!({"clip": c, "effect": "motion", "param": "nope"}),
         json!({"clip": c, "effect": "motion", "param": "scale", "mask": 7}),
     ] {
-        assert!(s.execute("effects.addKeyframe", bad.clone()).is_err(), "{bad}");
+        assert!(s.execute("effect.addKeyframe", bad.clone()).is_err(), "{bad}");
     }
     assert_eq!(scale(&s), (1, 100.0));
     // the stopwatch ends the animation and keeps the value at the playhead
-    s.execute("effects.toggleAnimation", key).unwrap();
+    s.execute("effect.toggleAnimation", key).unwrap();
     assert_eq!(scale(&s), (0, 100.0));
 }
 
@@ -309,7 +309,7 @@ fn transitions_and_markers() {
     let q = s.active_sequence().unwrap();
     assert!(q.video_tracks[0].transitions.iter().any(|t| t.effect.effect == "wipe"));
     let n = q.markers.len();
-    s.execute("markers.add", json!({"name": "Test"})).unwrap();
+    s.execute("marker.add", json!({"name": "Test"})).unwrap();
     assert_eq!(s.active_sequence().unwrap().markers.len(), n + 1);
 }
 
@@ -381,10 +381,10 @@ fn transition_params_and_reverse_via_commands() {
 fn effects_list_reports_transition_folders() {
     let s = demo();
     let mut s = s;
-    let all = s.execute("effects.list", json!({"kind": "VideoTransition"})).unwrap();
+    let all = s.execute("effect.list", json!({"kind": "VideoTransition"})).unwrap();
     let all = all.as_array().unwrap();
     assert!(all.iter().all(|e| e["kind"] == "VideoTransition" && e["folder"].is_string()));
-    let wipes = s.execute("effects.list", json!({"folder": "Video Transitions/Wipe", "detail": true})).unwrap();
+    let wipes = s.execute("effect.list", json!({"folder": "Video Transitions/Wipe", "detail": true})).unwrap();
     let wipes = wipes.as_array().unwrap();
     assert_eq!(wipes.len(), 9);
     let lw = wipes.iter().find(|e| e["id"] == "linear_wipe").unwrap();
@@ -393,10 +393,10 @@ fn effects_list_reports_transition_folders() {
     let aa = lw["paramInfo"].as_array().unwrap().iter().find(|p| p["id"] == "antialias").unwrap();
     assert_eq!(aa["type"], "choice");
     assert_eq!(aa["options"].as_array().unwrap().len(), 4);
-    let legacy = s.execute("effects.list", json!({"folder": "Legacy/Video Transitions"})).unwrap();
+    let legacy = s.execute("effect.list", json!({"folder": "Legacy/Video Transitions"})).unwrap();
     assert_eq!(legacy.as_array().unwrap().len(), 21);
     // the default transition accepts names shared with video effects
-    s.execute("effects.setDefaultTransition", json!({"effect": "Mosaic"})).unwrap();
+    s.execute("effect.setDefaultTransition", json!({"effect": "Mosaic"})).unwrap();
     assert_eq!(s.state.default_video_transition, "mosaic_transition");
 }
 
@@ -551,7 +551,7 @@ fn export_interchange_refuses_an_unknown_format() {
 #[test]
 fn move_items_to_bin_and_back_with_undo() {
     let mut s = demo();
-    let bin = s.execute("file.newBin", json!({"name": "Selects"})).unwrap()["bin"].as_u64().unwrap();
+    let bin = s.execute("bin.add", json!({"name": "Selects"})).unwrap()["bin"].as_u64().unwrap();
     let mut items = Vec::new();
     s.project.root.all_items(&mut items);
     let item = items[0];
@@ -581,7 +581,7 @@ fn fps_validation_keeps_real_rates_and_refuses_degenerate_ones() {
     let mut s = demo();
     // real rates still work, through both commands
     for fps in [23.976, 25.0, 29.97, 59.94, 120.0] {
-        s.execute("file.newSequence", json!({"name": format!("r{fps}"), "fps": fps})).unwrap_or_else(|e| panic!("{fps}: {e}"));
+        s.execute("sequence.new", json!({"name": format!("r{fps}"), "fps": fps})).unwrap_or_else(|e| panic!("{fps}: {e}"));
         let r = s.sequence_rate();
         assert!((r.as_f64() - fps).abs() < 0.01, "{fps} -> {}", r.as_f64());
         s.execute("sequence.settings", json!({"fps": 24})).unwrap();
@@ -589,11 +589,11 @@ fn fps_validation_keeps_real_rates_and_refuses_degenerate_ones() {
     }
     // a rate that rounds to nothing is refused, and nothing changes
     let before = s.sequence_rate();
-    let n = s.execute("project.inspect", json!({})).unwrap().to_string().len();
-    assert!(s.execute("file.newSequence", json!({"name": "tiny", "fps": 1e-12})).is_err());
+    let n = s.execute("file.inspect", json!({})).unwrap().to_string().len();
+    assert!(s.execute("sequence.new", json!({"name": "tiny", "fps": 1e-12})).is_err());
     assert!(s.execute("sequence.settings", json!({"fps": -0.0})).is_err());
     assert_eq!(s.sequence_rate(), before);
-    assert_eq!(s.execute("project.inspect", json!({})).unwrap().to_string().len(), n, "no sequence was created");
+    assert_eq!(s.execute("file.inspect", json!({})).unwrap().to_string().len(), n, "no sequence was created");
 }
 
 /// With a clip selected, Q/W trim only its tracks (and its linked sound), not every
@@ -626,7 +626,7 @@ fn empty_items_do_not_panic_keyframe_commands() {
         item.id
     };
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        s.execute("effects.toggleAnimation", json!({"clip":clip.0,"effect":"motion","param":"position"}))
+        s.execute("effect.toggleAnimation", json!({"clip":clip.0,"effect":"motion","param":"position"}))
     }));
     assert!(result.is_ok(), "an empty clip must not supply reversed clamp bounds");
     let error = result.unwrap().unwrap_err();
@@ -647,7 +647,7 @@ fn dragging_an_effect_parameter_is_one_undo_step() {
     };
     let start = opacity(&s);
     let set = |s: &mut Session, v: f64, begin: bool| {
-        s.execute("effects.setParam", json!({"clip": id, "effect": "opacity", "param": "opacity", "value": v, "merge": true, "begin": begin})).unwrap();
+        s.execute("effect.setParam", json!({"clip": id, "effect": "opacity", "param": "opacity", "value": v, "merge": true, "begin": begin})).unwrap();
     };
     set(&mut s, 90.0, true);
     set(&mut s, 70.0, false);
@@ -760,7 +760,7 @@ fn a_scratch_session_settles_the_documents_live_trim_on_the_copy() {
     assert!(Arc::ptr_eq(&s.project, &project) && s.history.undo.len() == steps);
 }
 
-/// `effects.setParam` (and the keyframe commands) take an effect by its display name as
+/// `effect.setParam` (and the keyframe commands) take an effect by its display name as
 /// well as its id or index, and a choice by its option's name as well as its index; an unknown
 /// option is refused with the options it has.
 #[test]
@@ -768,11 +768,11 @@ fn set_param_takes_effect_names_and_choice_names() {
     use kition_film_project::ParamValue;
     let mut s = demo();
     let c = s.active_sequence().unwrap().video_tracks[0].items[1].id.0;
-    s.execute("effects.apply", json!({"clips": [c], "effect": "Gaussian Blur"})).unwrap();
-    s.execute("effects.setParam", json!({"clip": c, "effect": "Gaussian Blur", "param": "blurriness", "value": 12.0})).unwrap();
-    s.execute("effects.setParam", json!({"clip": c, "effect": "Gaussian Blur", "param": "dimensions", "value": "Horizontal"})).unwrap();
-    s.execute("effects.setParam", json!({"clip": c, "effect": "opacity", "param": "blend", "value": "Screen"})).unwrap();
-    s.execute("effects.toggleAnimation", json!({"clip": c, "effect": "Gaussian Blur", "param": "blurriness"})).unwrap();
+    s.execute("effect.apply", json!({"clips": [c], "effect": "Gaussian Blur"})).unwrap();
+    s.execute("effect.setParam", json!({"clip": c, "effect": "Gaussian Blur", "param": "blurriness", "value": 12.0})).unwrap();
+    s.execute("effect.setParam", json!({"clip": c, "effect": "Gaussian Blur", "param": "dimensions", "value": "Horizontal"})).unwrap();
+    s.execute("effect.setParam", json!({"clip": c, "effect": "opacity", "param": "blend", "value": "Screen"})).unwrap();
+    s.execute("effect.toggleAnimation", json!({"clip": c, "effect": "Gaussian Blur", "param": "blurriness"})).unwrap();
     let it = s.active_sequence().unwrap().find_item(kition_film_project::ClipId(c)).unwrap().1.clone();
     let blur = it.effect("gaussian_blur").unwrap();
     assert_eq!(blur.params["blurriness"].value, ParamValue::Float(12.0));
@@ -782,7 +782,7 @@ fn set_param_takes_effect_names_and_choice_names() {
     let kition_film_project::ParamKind::Choice(names) = modes else { panic!("blend is a choice") };
     let screen = names.iter().position(|n| *n == "Screen").unwrap() as u32;
     assert_eq!(it.effect("opacity").unwrap().params["blend"].value, ParamValue::Choice(screen));
-    let err = s.execute("effects.setParam", json!({"clip": c, "effect": "Gaussian Blur", "param": "dimensions", "value": "Sideways"})).unwrap_err();
+    let err = s.execute("effect.setParam", json!({"clip": c, "effect": "Gaussian Blur", "param": "dimensions", "value": "Sideways"})).unwrap_err();
     assert!(err.to_string().contains("Horizontal"), "{err}");
 }
 
@@ -821,7 +821,7 @@ fn markers_take_colour_names_and_seconds() {
     use kition_film_project::Label;
     let mut s = demo();
     let rate = s.sequence_rate();
-    let r = s.execute("markers.add", json!({"seconds": 3.4, "color": "Red", "name": "Hit"})).unwrap();
+    let r = s.execute("marker.add", json!({"seconds": 3.4, "color": "Red", "name": "Hit"})).unwrap();
     let id = r["marker"].as_u64().unwrap();
     let m = s.active_sequence().unwrap().markers.iter().find(|m| m.id.0 == id).unwrap().clone();
     assert_eq!(m.color, Label::Rose, "Red is the red marker colour");
@@ -836,21 +836,21 @@ fn markers_take_colour_names_and_seconds() {
         ("Green", Label::Green),
         ("Lavender", Label::Lavender),
     ] {
-        s.execute("markers.edit", json!({"marker": id, "color": name})).unwrap();
+        s.execute("marker.edit", json!({"marker": id, "color": name})).unwrap();
         let m = s.active_sequence().unwrap().markers.iter().find(|m| m.id.0 == id).unwrap().clone();
         assert_eq!(m.color, want, "{name}");
     }
     let n = s.active_sequence().unwrap().markers.len();
-    let err = s.execute("markers.add", json!({"seconds": 1, "color": "Chartreuse"})).unwrap_err();
+    let err = s.execute("marker.add", json!({"seconds": 1, "color": "Chartreuse"})).unwrap_err();
     assert!(err.to_string().contains("Red"), "the error lists the colours: {err}");
     assert_eq!(s.active_sequence().unwrap().markers.len(), n, "nothing was added");
-    assert!(s.execute("markers.edit", json!({"marker": id, "color": "Chartreuse"})).is_err());
-    let r = s.execute("markers.addRange", json!({"seconds": 2, "durationSeconds": 1.5, "color": "Cyan"})).unwrap();
+    assert!(s.execute("marker.edit", json!({"marker": id, "color": "Chartreuse"})).is_err());
+    let r = s.execute("marker.addRange", json!({"seconds": 2, "durationSeconds": 1.5, "color": "Cyan"})).unwrap();
     let m = s.active_sequence().unwrap().markers.iter().find(|m| m.id.0 == r["marker"].as_u64().unwrap()).unwrap().clone();
     assert_eq!((m.start, m.duration, m.color), (rate.snap(Tick::from_seconds_f64(2.0)), rate.snap_nearest(Tick::from_seconds_f64(1.5)), Label::Teal));
-    let r = s.execute("markers.addChapter", json!({"seconds": 5, "color": "Orange"})).unwrap();
+    let r = s.execute("marker.addChapter", json!({"seconds": 5, "color": "Orange"})).unwrap();
     assert!(r["marker"].is_u64());
-    assert!(s.execute("markers.addFlashCue", json!({"seconds": 6, "color": "nope"})).is_err());
+    assert!(s.execute("marker.addFlashCue", json!({"seconds": 6, "color": "nope"})).is_err());
 }
 
 /// `sequence.inspect` (and the document's `inspect`) answers parameter values as JSON
@@ -862,12 +862,12 @@ fn inspect_answers_json_values_keyframes_holds_and_track_mix() {
     let q = s.active_sequence().unwrap().clone();
     let it = q.video_tracks[0].items[1].clone();
     let c = it.id.0;
-    s.execute("effects.setParam", json!({"clip": c, "effect": "motion", "param": "position", "value": [100.0, 200.0]})).unwrap();
-    s.execute("effects.setParam", json!({"clip": c, "effect": "opacity", "param": "blend", "value": 1})).unwrap();
+    s.execute("effect.setParam", json!({"clip": c, "effect": "motion", "param": "position", "value": [100.0, 200.0]})).unwrap();
+    s.execute("effect.setParam", json!({"clip": c, "effect": "opacity", "param": "blend", "value": 1})).unwrap();
     let rate = s.sequence_rate();
     let (t0, t1) = (it.start, it.start + rate.tick_of(12));
-    s.execute("effects.setParam", json!({"clip": c, "effect": "motion", "param": "scale", "value": 50.0, "time": t0.0})).unwrap();
-    s.execute("effects.setParam", json!({"clip": c, "effect": "motion", "param": "scale", "value": 80.0, "time": t1.0})).unwrap();
+    s.execute("effect.setParam", json!({"clip": c, "effect": "motion", "param": "scale", "value": 50.0, "time": t0.0})).unwrap();
+    s.execute("effect.setParam", json!({"clip": c, "effect": "motion", "param": "scale", "value": 80.0, "time": t1.0})).unwrap();
     s.execute("timeline.setTrack", json!({"track": "A1", "volumeDb": -6.0, "pan": 25.0})).unwrap();
     let r =
         s.execute("clip.insertFrameHoldSegment", json!({"clip": c, "time": (it.start + rate.tick_of(30)).0, "seconds": 1})).unwrap_or(serde_json::Value::Null);
@@ -902,26 +902,26 @@ fn inspect_answers_json_values_keyframes_holds_and_track_mix() {
     }
 }
 
-/// `effects.list {effect}` answers the exact id first (`dynamics` before Dynamics,
+/// `effect.list {effect}` answers the exact id first (`dynamics` before Dynamics,
 /// whose id is `dynamics_rack`); the keyframe commands document `mask`; and an unknown
 /// interpolation is refused instead of becoming linear.
 #[test]
 fn effects_list_ranks_the_exact_id_and_keyframe_commands_take_mask() {
     let mut s = demo();
-    let list = s.execute("effects.list", json!({"effect": "dynamics"})).unwrap();
+    let list = s.execute("effect.list", json!({"effect": "dynamics"})).unwrap();
     assert_eq!(list[0]["id"], "dynamics", "{list}");
     assert_eq!(kition_film_project::effect::find_effect_by_name("dynamics").unwrap().id, "dynamics");
-    for id in ["effects.setInterpolation", "effects.deleteKeyframe", "effects.moveKeyframe", "effects.setKeyframe", "effects.addKeyframe"] {
+    for id in ["effect.setInterpolation", "effect.deleteKeyframe", "effect.moveKeyframe", "effect.setKeyframe", "effect.addKeyframe"] {
         let spec = crate::commands::command_specs().iter().find(|c| c.id == id).unwrap();
         assert!(spec.params.contains("\"mask\""), "{id} documents `mask`: {}", spec.params);
     }
     let c = s.active_sequence().unwrap().video_tracks[0].items[1].clone();
     let t = c.start;
-    s.execute("effects.setParam", json!({"clip": c.id.0, "effect": "motion", "param": "scale", "value": 50.0, "time": t.0})).unwrap();
+    s.execute("effect.setParam", json!({"clip": c.id.0, "effect": "motion", "param": "scale", "value": 50.0, "time": t.0})).unwrap();
     let mt = c.source_time_at(t).0;
-    let err = s.execute("effects.setInterpolation", json!({"clip": c.id.0, "effect": "motion", "param": "scale", "mediaTime": mt, "interpolation": "wobbly"}));
+    let err = s.execute("effect.setInterpolation", json!({"clip": c.id.0, "effect": "motion", "param": "scale", "mediaTime": mt, "interpolation": "wobbly"}));
     assert!(err.is_err(), "an unknown interpolation is refused");
-    s.execute("effects.setInterpolation", json!({"clip": c.id.0, "effect": "motion", "param": "scale", "mediaTime": mt, "interpolation": "Ease In"})).unwrap();
+    s.execute("effect.setInterpolation", json!({"clip": c.id.0, "effect": "motion", "param": "scale", "mediaTime": mt, "interpolation": "Ease In"})).unwrap();
     let it = s.active_sequence().unwrap().find_item(c.id).unwrap().1.clone();
     assert_eq!(it.effect("motion").unwrap().params["scale"].keyframes[0].interp, kition_film_project::Interpolation::EaseIn);
 }
@@ -932,22 +932,22 @@ fn effects_list_ranks_the_exact_id_and_keyframe_commands_take_mask() {
 #[test]
 fn settings_preset_follows_and_scale_width_needs_uniform_scale_off() {
     let mut s = Session::default();
-    s.execute("file.newSequence", json!({"name": "P", "fps": 23.976, "width": 1280, "height": 720, "video": 1, "audio": 1})).unwrap();
+    s.execute("sequence.new", json!({"name": "P", "fps": 23.976, "width": 1280, "height": 720, "video": 1, "audio": 1})).unwrap();
     let preset = |s: &mut Session| s.execute("sequence.inspect", json!({})).unwrap()["settings"]["preset"].as_str().unwrap().to_string();
     assert_eq!(preset(&mut s), "1280x720 23.976");
     s.execute("sequence.settings", json!({"fps": 24})).unwrap();
     assert_eq!(preset(&mut s), "1280x720 24");
     s.execute("sequence.settings", json!({"width": 1920, "height": 1080})).unwrap();
     assert_eq!(preset(&mut s), "1920x1080 24");
-    let m = s.execute("file.newColorMatte", json!({"color": "#ffffff", "seconds": 2})).unwrap();
+    let m = s.execute("item.newColorMatte", json!({"color": "#ffffff", "seconds": 2})).unwrap();
     let r = s.execute("timeline.place", json!({"item": m["item"], "track": "V1", "seconds": 0})).unwrap();
     let c = r["clips"][0].as_u64().unwrap();
-    let err = s.execute("effects.setParam", json!({"clip": c, "effect": "motion", "param": "scale_width", "value": 50.0})).unwrap_err();
+    let err = s.execute("effect.setParam", json!({"clip": c, "effect": "motion", "param": "scale_width", "value": 50.0})).unwrap_err();
     assert!(err.to_string().contains("uniform_scale"), "{err}");
-    let err = s.execute("effects.toggleAnimation", json!({"clip": c, "effect": "motion", "param": "scale_width"})).unwrap_err();
+    let err = s.execute("effect.toggleAnimation", json!({"clip": c, "effect": "motion", "param": "scale_width"})).unwrap_err();
     assert!(err.to_string().contains("uniform_scale"), "{err}");
-    s.execute("effects.setParam", json!({"clip": c, "effect": "motion", "param": "uniform_scale", "value": false})).unwrap();
-    s.execute("effects.setParam", json!({"clip": c, "effect": "motion", "param": "scale_width", "value": 50.0})).unwrap();
+    s.execute("effect.setParam", json!({"clip": c, "effect": "motion", "param": "uniform_scale", "value": false})).unwrap();
+    s.execute("effect.setParam", json!({"clip": c, "effect": "motion", "param": "scale_width", "value": 50.0})).unwrap();
     let img = s.render_program(0.25).unwrap();
     // half as wide: the matte covers the middle half of the frame only
     assert!(img.get(img.w / 2, img.h / 2)[0] > 0.9);
@@ -1051,8 +1051,8 @@ fn transitions_align_move_resize_and_clear() {
 fn effects_move_reorders_standard_effects() {
     let mut s = demo();
     let c = s.active_sequence().unwrap().video_tracks[0].items[1].id.0;
-    s.execute("effects.apply", json!({"clips": [c], "effect": "Gaussian Blur"})).unwrap();
-    s.execute("effects.apply", json!({"clips": [c], "effect": "Invert"})).unwrap();
+    s.execute("effect.apply", json!({"clips": [c], "effect": "Gaussian Blur"})).unwrap();
+    s.execute("effect.apply", json!({"clips": [c], "effect": "Invert"})).unwrap();
     let names = |s: &Session| -> Vec<String> {
         s.active_sequence().unwrap().find_item(kition_film_project::ClipId(c)).unwrap().1.effects.iter().map(|e| e.effect.clone()).collect()
     };
@@ -1088,16 +1088,16 @@ fn set_param_merge_key_joins_parameters() {
     let c = s.active_sequence().unwrap().video_tracks[0].items[1].id.0;
     let undo = s.history.undo.len();
     for (i, v) in [10.0, 20.0, 30.0].into_iter().enumerate() {
-        s.execute("effects.setParam", json!({"clip": c, "param": "position", "value": [v, v], "merge": "anchor", "begin": i == 0})).unwrap();
-        s.execute("effects.setParam", json!({"clip": c, "param": "anchor", "value": [v, v], "merge": "anchor"})).unwrap();
+        s.execute("effect.setParam", json!({"clip": c, "param": "position", "value": [v, v], "merge": "anchor", "begin": i == 0})).unwrap();
+        s.execute("effect.setParam", json!({"clip": c, "param": "anchor", "value": [v, v], "merge": "anchor"})).unwrap();
     }
     assert_eq!(s.history.undo.len(), undo + 1, "one undo step for both parameters");
     // a new drag (`begin`) is a new step
-    s.execute("effects.setParam", json!({"clip": c, "param": "position", "value": [1.0, 1.0], "merge": "anchor", "begin": true})).unwrap();
+    s.execute("effect.setParam", json!({"clip": c, "param": "position", "value": [1.0, 1.0], "merge": "anchor", "begin": true})).unwrap();
     assert_eq!(s.history.undo.len(), undo + 2);
     // a boolean merge still merges one parameter only
-    s.execute("effects.setParam", json!({"clip": c, "param": "scale", "value": 50.0, "merge": true, "begin": true})).unwrap();
-    s.execute("effects.setParam", json!({"clip": c, "param": "rotation", "value": 5.0, "merge": true})).unwrap();
+    s.execute("effect.setParam", json!({"clip": c, "param": "scale", "value": 50.0, "merge": true, "begin": true})).unwrap();
+    s.execute("effect.setParam", json!({"clip": c, "param": "rotation", "value": 5.0, "merge": true})).unwrap();
     assert_eq!(s.history.undo.len(), undo + 4);
 }
 
@@ -1163,24 +1163,24 @@ fn move_copy_leaves_the_originals_in_one_undo_step() {
     assert!(s.execute("timeline.move", json!({"moves": [{"clip": first.id.0, "track": "V2", "time": end.0}], "copy": true})).is_err());
 }
 
-/// `markers.edit` moves a sequence marker with `time` (ticks; a drag along the ruler), one undo
+/// `marker.edit` moves a sequence marker with `time` (ticks; a drag along the ruler), one undo
 /// step, the markers kept in time order; hostile times are refused.
 #[test]
 fn markers_edit_moves_a_marker_in_time() {
     let mut s = demo();
     let rate = s.sequence_rate();
-    let a = s.execute("markers.add", json!({"frame": 10, "name": "A"})).unwrap()["marker"].as_u64().unwrap();
-    let b = s.execute("markers.add", json!({"frame": 40, "name": "B"})).unwrap()["marker"].as_u64().unwrap();
+    let a = s.execute("marker.add", json!({"frame": 10, "name": "A"})).unwrap()["marker"].as_u64().unwrap();
+    let b = s.execute("marker.add", json!({"frame": 40, "name": "B"})).unwrap()["marker"].as_u64().unwrap();
     let starts = |s: &Session| s.active_sequence().unwrap().markers.iter().map(|m| (m.id.0, m.start)).collect::<Vec<_>>();
     let undo = s.history.undo.len();
-    s.execute("markers.edit", json!({"marker": a, "time": rate.tick_of(60).0})).unwrap();
+    s.execute("marker.edit", json!({"marker": a, "time": rate.tick_of(60).0})).unwrap();
     assert_eq!(s.history.undo.len(), undo + 1);
     let now = starts(&s);
     assert_eq!(now.iter().find(|m| m.0 == a).unwrap().1, rate.tick_of(60));
     let ia = now.iter().position(|m| m.0 == a).unwrap();
     let ib = now.iter().position(|m| m.0 == b).unwrap();
     assert!(ib < ia, "kept in time order: {now:?}");
-    s.execute("markers.edit", json!({"marker": a, "time": rate.tick_of(5).0, "name": "A2"})).unwrap();
+    s.execute("marker.edit", json!({"marker": a, "time": rate.tick_of(5).0, "name": "A2"})).unwrap();
     let m = s.active_sequence().unwrap().markers.iter().find(|m| m.id.0 == a).unwrap().clone();
     assert_eq!((m.start, m.name.as_str()), (rate.tick_of(5), "A2"));
     s.undo();
@@ -1194,12 +1194,12 @@ fn markers_edit_moves_a_marker_in_time() {
         json!({"marker": u64::MAX, "time": 0}),
         json!({"marker": a, "time": 0, "target": "source"}),
     ] {
-        assert!(s.execute("markers.edit", bad.clone()).is_err(), "{bad}");
+        assert!(s.execute("marker.edit", bad.clone()).is_err(), "{bad}");
         assert_eq!(starts(&s), before, "{bad}");
     }
 }
 
-/// `effects.moveKeyframe` takes a new `value` with its new time, and `merge` makes a keyframe's
+/// `effect.moveKeyframe` takes a new `value` with its new time, and `merge` makes a keyframe's
 /// drag on the timeline (time and level at once) one undo step; `begin` starts a new one.
 #[test]
 fn move_keyframe_takes_a_value_and_merges_a_drag() {
@@ -1207,8 +1207,8 @@ fn move_keyframe_takes_a_value_and_merges_a_drag() {
     let c = s.active_sequence().unwrap().video_tracks[0].items[1].clone();
     let rate = s.sequence_rate();
     let (t0, t1) = (c.start, c.start + rate.tick_of(12));
-    s.execute("effects.setParam", json!({"clip": c.id.0, "param": "scale", "value": 50.0, "time": t0.0})).unwrap();
-    s.execute("effects.setParam", json!({"clip": c.id.0, "param": "scale", "value": 80.0, "time": t1.0})).unwrap();
+    s.execute("effect.setParam", json!({"clip": c.id.0, "param": "scale", "value": 50.0, "time": t0.0})).unwrap();
+    s.execute("effect.setParam", json!({"clip": c.id.0, "param": "scale", "value": 80.0, "time": t1.0})).unwrap();
     let keys = |s: &Session| {
         let it = s.active_sequence().unwrap().find_item(c.id).unwrap().1.clone();
         it.effect("motion").unwrap().params["scale"].keyframes.iter().map(|k| (k.time, k.value.as_f64())).collect::<Vec<_>>()
@@ -1218,7 +1218,7 @@ fn move_keyframe_takes_a_value_and_merges_a_drag() {
     let mut at = m1;
     for (i, (df, v)) in [(1, 70.0), (2, 60.0), (3, 55.0)].into_iter().enumerate() {
         let to = m1 + rate.tick_of(df);
-        s.execute("effects.moveKeyframe", json!({"clip": c.id.0, "param": "scale", "mediaTime": at.0, "to": to.0, "value": v, "merge": true, "begin": i == 0}))
+        s.execute("effect.moveKeyframe", json!({"clip": c.id.0, "param": "scale", "mediaTime": at.0, "to": to.0, "value": v, "merge": true, "begin": i == 0}))
             .unwrap();
         at = to;
     }
@@ -1227,7 +1227,7 @@ fn move_keyframe_takes_a_value_and_merges_a_drag() {
     s.undo();
     assert_eq!(keys(&s)[1], (m1, Some(80.0)), "one undo takes the whole drag back");
     // without merge each move is its own step; without a value the level stays
-    s.execute("effects.moveKeyframe", json!({"clip": c.id.0, "param": "scale", "mediaTime": m1.0, "to": (m1 + rate.tick_of(1)).0})).unwrap();
+    s.execute("effect.moveKeyframe", json!({"clip": c.id.0, "param": "scale", "mediaTime": m1.0, "to": (m1 + rate.tick_of(1)).0})).unwrap();
     assert_eq!(keys(&s)[1], (m1 + rate.tick_of(1), Some(80.0)));
     assert_eq!(s.history.undo.len(), undo + 1);
     let before = keys(&s);
@@ -1239,7 +1239,7 @@ fn move_keyframe_takes_a_value_and_merges_a_drag() {
         json!({"clip": c.id.0, "param": "nope", "mediaTime": at.0, "to": at.0, "value": 3.0}),
         json!({"clip": u64::MAX, "param": "scale", "mediaTime": at.0, "to": at.0}),
     ] {
-        assert!(s.execute("effects.moveKeyframe", bad.clone()).is_err(), "{bad}");
+        assert!(s.execute("effect.moveKeyframe", bad.clone()).is_err(), "{bad}");
         assert_eq!(keys(&s), before, "{bad}");
     }
 }

@@ -30,7 +30,7 @@ fn graphic_duration_does_not_set_its_timeline_position() {
         for playhead_frame in [0, 72] {
             for seconds in [1, 2] {
                 let mut s = Session::default();
-                s.execute("file.newSequence", json!({"name": "Placement", "fps": 24, "width": 128, "height": 128, "video": 1, "audio": 1})).unwrap();
+                s.execute("sequence.new", json!({"name": "Placement", "fps": 24, "width": 128, "height": 128, "video": 1, "audio": 1})).unwrap();
                 s.execute("playhead.set", json!({"frame": playhead_frame})).unwrap();
                 let start = s.playhead();
                 let r = s.execute(command, json!({"seconds": seconds})).unwrap();
@@ -53,7 +53,7 @@ fn graphic_duration_keeps_explicit_time_frame_and_timecode_placement() {
     for command in ["graphics.newText", "graphics.newShape"] {
         for mut params in [json!({"time": 0}), json!({"frame": 0}), json!({"timecode": "00:00:00:00"})] {
             let mut s = Session::default();
-            s.execute("file.newSequence", json!({"name": "Placement", "fps": 24, "width": 128, "height": 128, "video": 1, "audio": 1})).unwrap();
+            s.execute("sequence.new", json!({"name": "Placement", "fps": 24, "width": 128, "height": 128, "video": 1, "audio": 1})).unwrap();
             s.execute("playhead.set", json!({"frame": 72})).unwrap();
             params["seconds"] = json!(2);
             let r = s.execute(command, params).unwrap();
@@ -188,7 +188,7 @@ fn graphic_renders_in_the_program_and_survives_save() {
     s2.execute("file.open", json!({"path": path.to_string_lossy()})).unwrap();
     assert_eq!(s2.project.items, s.project.items, "graphic clips round-trip");
     let _ = std::fs::remove_dir_all(&dir);
-    let fonts = s.execute("fonts.list", json!({"system": false})).unwrap();
+    let fonts = s.execute("font.list", json!({"system": false})).unwrap();
     assert!(fonts.as_array().unwrap().iter().any(|f| f["family"] == "Inter"));
 }
 
@@ -628,7 +628,7 @@ fn frame_px(img: &kition_film_render::Image, x: f64, y: f64, scale: f64) -> [f32
 #[test]
 fn path_shape_points_are_frame_pixels() {
     let mut s = Session::default();
-    s.execute("file.newSequence", json!({"name": "Path", "fps": 24, "width": 1920, "height": 1080, "video": 1, "audio": 1})).unwrap();
+    s.execute("sequence.new", json!({"name": "Path", "fps": 24, "width": 1920, "height": 1080, "video": 1, "audio": 1})).unwrap();
     let r = s.execute("graphics.newShape", json!({"shape": "path", "points": [[960, 300], [1200, 780], [720, 780]]})).unwrap();
     let clip = ClipId(r["clip"].as_u64().unwrap());
     s.execute("graphics.set", json!({"clip": clip.0, "props": {"fill_color": "#ff0000"}})).unwrap();
@@ -651,7 +651,7 @@ fn path_shape_points_are_frame_pixels() {
 fn outer_stroke_without_fill_draws_only_the_outline() {
     for kind in ["outer", "center", "inner"] {
         let mut s = Session::default();
-        s.execute("file.newSequence", json!({"name": "Stroke", "fps": 24, "width": 1920, "height": 1080, "video": 1, "audio": 1})).unwrap();
+        s.execute("sequence.new", json!({"name": "Stroke", "fps": 24, "width": 1920, "height": 1080, "video": 1, "audio": 1})).unwrap();
         let r = s.execute("graphics.newShape", json!({"shape": "rectangle", "position": [960, 540], "size": [800, 400]})).unwrap();
         let clip = r["clip"].as_u64().unwrap();
         s.execute(

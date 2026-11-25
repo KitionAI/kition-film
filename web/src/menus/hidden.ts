@@ -43,7 +43,7 @@ const HIDDEN: Readonly<Record<string, string>> = {
   'media.relink': 'Links media to other local files.',
   // Its job writes the proxy files into a local folder next to the media; the web engine cannot
   // write them (the job fails at its first file), so Create Proxies… is hidden with its fields.
-  'media.createProxies': CREATE_PROXIES,
+  'media.addProxies': CREATE_PROXIES,
   'media.findMissing': 'Searches local folders for missing media.',
   'media.autoRelink': 'Searches local folders for missing media.',
   // Upstream opens Project Settings at Scratch Disks: local folders for captures, render previews,
@@ -187,7 +187,7 @@ const HIDDEN_FIELDS: Readonly<Record<string, string>> = {
   'proxies.browse': PROXY_FOLDER,
   'makeOffline.delete': 'Deleting media files belongs to the host.',
   'projectSettings.ingest.destination': 'Ingests into a local folder next to the media; the host keeps media files.',
-  // The Project item menu's Create Proxies… row, as its menu row (`media.createProxies`).
+  // The Project item menu's Create Proxies… row, as its menu row (`media.addProxies`).
   'project.itemMenu.createProxies': CREATE_PROXIES,
 }
 /** Hidden fields by id prefix: every Scratch Disks row, Link Media's candidate files, and Create Proxies' others (its command is hidden). */

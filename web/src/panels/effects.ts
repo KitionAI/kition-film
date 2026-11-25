@@ -208,11 +208,11 @@ export function createParamEdit(run: Run, frame: Frame, dragged: () => void = ()
     // Timeline, the host and collaborators) refreshes once, with the release, and the panels read
     // the effects again.
     if (!item.final) {
-      await run('effects.setParam', params, { refresh: 'repaint' })
+      await run('effect.setParam', params, { refresh: 'repaint' })
       dragged()
       return
     }
-    await run('effects.setParam', params)
+    await run('effect.setParam', params)
   }
   // Only the parameters being dragged keep a sender and their drag's last value; a final value
   // lets go of both.

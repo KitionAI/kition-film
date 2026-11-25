@@ -15,7 +15,7 @@ fn start(s: &Session, c: ClipId) -> Tick {
 /// sound starts 12 frames before its picture. Returns (first picture, second picture, second sound).
 fn j_cut(s: &mut Session) -> (ClipId, ClipId, ClipId) {
     s.execute("file.openDemoProject", json!({})).unwrap();
-    s.execute("file.newSequence", json!({"name": "J cut", "video": 1, "audio": 2})).unwrap();
+    s.execute("sequence.new", json!({"name": "J cut", "video": 1, "audio": 2})).unwrap();
     let rate = s.sequence_rate();
     let item = s.project.items.values().find(|i| i.has_video() && i.has_audio() && i.as_media().is_some()).map(|i| i.id).unwrap();
     let (source_in, len) = (rate.tick_of(48).0, rate.tick_of(48).0);

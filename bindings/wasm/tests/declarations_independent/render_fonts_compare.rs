@@ -124,12 +124,12 @@ fn picture(project: &Project, clip: &TrackItem, want: &mut Under) {
 fn render_consumers_compare_mix_graph_and_reference_frame_membership() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
     let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let item = doc.execute("file.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
+    let item = doc.execute("item.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
     let clips = doc.execute("timeline.place", json!({"item":item,"track":"V1","time":0})).unwrap()["clips"].as_array().unwrap().clone();
     let target = clips[0].as_u64().unwrap();
     doc.execute("timeline.place", json!({"item":item,"track":"V2","seconds":3})).unwrap();
     doc.execute("timeline.select", json!({"clips":[target],"linked":false})).unwrap();
-    doc.execute("effects.apply", json!({"clips":[target],"effect":"color"})).unwrap();
+    doc.execute("effect.apply", json!({"clips":[target],"effect":"color"})).unwrap();
     for enabled in [true, false] {
         doc.execute("timeline.setTrack", json!({"track":"V2","enabled":enabled})).unwrap();
         let project = kition_film_format::decode(&doc.save(None).unwrap()).unwrap().project;

@@ -51,8 +51,8 @@ async fn custom_metadata_holds_its_field_through_every_target_route() {
 async fn a_subclips_parent_decides_whether_a_metadata_field_is_editable() {
     for related in [true, false] {
         let mut doc = FilmDocument::open(FILE, &project(2)).unwrap();
-        let parent = doc.execute("file.newOfflineFile", json!({"name":"Sound","seconds":1,"video":false})).unwrap()["item"].as_u64().unwrap();
-        let video = doc.execute("file.newOfflineFile", json!({"name":"Picture","seconds":1,"audio":false})).unwrap()["item"].as_u64().unwrap();
+        let parent = doc.execute("item.newOfflineFile", json!({"name":"Sound","seconds":1,"video":false})).unwrap()["item"].as_u64().unwrap();
+        let video = doc.execute("item.newOfflineFile", json!({"name":"Picture","seconds":1,"audio":false})).unwrap()["item"].as_u64().unwrap();
         let sub = doc.execute("clip.makeSubclip", json!({"item":parent,"name":"Sub","start":0,"end":SECOND/2})).unwrap()["item"].clone();
         let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
         let (_, basis) = f.inspect().await;
@@ -79,8 +79,8 @@ async fn a_subclips_parent_decides_whether_a_metadata_field_is_editable() {
 async fn metadata_editability_holds_the_predicate_instead_of_its_unused_values() {
     for change in ["mark-value", "equivalent-parent"] {
         let mut doc = FilmDocument::open(FILE, &project(2)).unwrap();
-        let parent = doc.execute("file.newOfflineFile", json!({"name":"A","seconds":1,"video":false})).unwrap()["item"].as_u64().unwrap();
-        let other = doc.execute("file.newOfflineFile", json!({"name":"B","seconds":1,"video":false})).unwrap()["item"].as_u64().unwrap();
+        let parent = doc.execute("item.newOfflineFile", json!({"name":"A","seconds":1,"video":false})).unwrap()["item"].as_u64().unwrap();
+        let other = doc.execute("item.newOfflineFile", json!({"name":"B","seconds":1,"video":false})).unwrap()["item"].as_u64().unwrap();
         doc.execute("project.setMarks", json!({"item":parent,"in":SECOND/8})).unwrap();
         let sub = doc.execute("clip.makeSubclip", json!({"item":parent,"name":"Sub","start":0,"end":SECOND/2})).unwrap()["item"].as_u64().unwrap();
         let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());

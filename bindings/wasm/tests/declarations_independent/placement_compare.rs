@@ -242,18 +242,18 @@ fn expected(project: &Project, seq: u64, command: &str, p: &Value, source_id: u6
 fn placements_compare_named_default_auto_source_and_automation_layouts() {
     let mut doc = FilmDocument::create("Placement.kfilm", 64, 36).unwrap();
     let seq = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let item = doc.execute("file.newBarsAndTone", json!({"seconds":1})).unwrap()["item"].as_u64().unwrap();
+    let item = doc.execute("item.newBarsAndTone", json!({"seconds":1})).unwrap()["item"].as_u64().unwrap();
     let sub = doc.execute("clip.makeSubclip", json!({"item":item,"start":0,"end":kition_film_time::TICKS_PER_SECOND})).unwrap()["item"].as_u64().unwrap();
     doc.execute("timeline.place", json!({"item":item,"track":"V1","audioTrack":"A1","seconds":4})).unwrap();
-    doc.execute("markers.add", json!({"time":0})).unwrap();
-    doc.execute("markers.add", json!({"seconds":2})).unwrap();
+    doc.execute("marker.add", json!({"time":0})).unwrap();
+    doc.execute("marker.add", json!({"seconds":2})).unwrap();
     // A sync-locked caption track an insert shifts, and a locked one it does not.
-    let shifted = doc.execute("captions.newTrack", json!({"name":"Shifted"})).unwrap()["track"].as_u64().unwrap();
-    doc.execute("captions.add", json!({"track":shifted,"seconds":6,"text":"after"})).unwrap();
-    let kept = doc.execute("captions.newTrack", json!({"name":"Kept"})).unwrap()["track"].as_u64().unwrap();
-    doc.execute("captions.setTrack", json!({"track":kept,"locked":true})).unwrap();
+    let shifted = doc.execute("caption.newTrack", json!({"name":"Shifted"})).unwrap()["track"].as_u64().unwrap();
+    doc.execute("caption.add", json!({"track":shifted,"seconds":6,"text":"after"})).unwrap();
+    let kept = doc.execute("caption.newTrack", json!({"name":"Kept"})).unwrap()["track"].as_u64().unwrap();
+    doc.execute("caption.setTrack", json!({"track":kept,"locked":true})).unwrap();
     for marked in [false, true] {
-        doc.execute("markers.rippleSequenceMarkers", json!({"on":marked})).unwrap();
+        doc.execute("marker.rippleSequenceMarkers", json!({"on":marked})).unwrap();
         for locked in [false, true] {
             doc.execute("timeline.setTrack", json!({"track":"V1","locked":locked})).unwrap();
             for source_id in [item, sub] {

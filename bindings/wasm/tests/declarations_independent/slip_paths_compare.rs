@@ -61,14 +61,14 @@ fn bounds(project: &Project, id: ItemId, want: &mut Under) {
 fn slips_compare_all_keys_link_closures_restricted_routes_frame_holds_and_delta_units() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
     let nested = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let finite = doc.execute("file.newOfflineFile", json!({"name":"Finite","seconds":4})).unwrap()["item"].as_u64().unwrap();
+    let finite = doc.execute("item.newOfflineFile", json!({"name":"Finite","seconds":4})).unwrap()["item"].as_u64().unwrap();
     doc.execute("timeline.place", json!({"item":finite,"track":"V1","time":0})).unwrap();
     let restricted = doc.execute("clip.makeSubclip", json!({"item":finite,"start":0,"end":762_048_000_000i64})).unwrap()["item"].as_u64().unwrap();
     let open =
         doc.execute("clip.makeSubclip", json!({"item":restricted,"start":0,"end":508_032_000_000i64,"restrictTrims":false})).unwrap()["item"].as_u64().unwrap();
-    let tone = doc.execute("file.newBarsAndTone", json!({"seconds":4})).unwrap()["item"].as_u64().unwrap();
-    let adjustment = doc.execute("file.newAdjustmentLayer", json!({"seconds":2})).unwrap()["item"].as_u64().unwrap();
-    let sequence = doc.execute("file.newSequence", json!({"name":"Outer"})).unwrap()["sequence"].as_u64().unwrap();
+    let tone = doc.execute("item.newBarsAndTone", json!({"seconds":4})).unwrap()["item"].as_u64().unwrap();
+    let adjustment = doc.execute("item.newAdjustmentLayer", json!({"seconds":2})).unwrap()["item"].as_u64().unwrap();
+    let sequence = doc.execute("sequence.new", json!({"name":"Outer"})).unwrap()["sequence"].as_u64().unwrap();
     let mut clips = Vec::new();
     for (index, item) in [finite, restricted, open, tone, adjustment, nested].into_iter().enumerate() {
         let placed = doc

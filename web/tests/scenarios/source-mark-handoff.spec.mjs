@@ -3,8 +3,8 @@ import { test, expect, editState, TICKS, holdWorkerCommandReply } from './fixtur
 async function setup(film) {
   await film.open()
   await film.command('file.newProject', { name: 'Source marks during queued seeks' })
-  await film.command('file.newSequence', { width: 64, height: 36, fps: 24 })
-  const item = (await film.command('file.newBarsAndTone', { seconds: 10 })).item
+  await film.command('sequence.new', { width: 64, height: 36, fps: 24 })
+  const item = (await film.command('item.newBarsAndTone', { seconds: 10 })).item
   await film.command('source.open', { item })
   const bar = film.kit.getByTestId('film-source-scrub')
   await expect(bar).toBeVisible()

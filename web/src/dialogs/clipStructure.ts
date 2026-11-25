@@ -164,7 +164,7 @@ const audioChannels: DialogSpec = {
 
 /** Clip ▸ Modify ▸ Timecode… (`timecode`): Set Timecode, Tape Name, and Use the file's timecode, which drops the timecode (`finish()`). */
 const modifyTimecode: DialogSpec = {
-  id: 'clip.modifyTimecode',
+  id: 'clip.setTimecode',
   family: 'clipStructure',
   title: 'Modify Clip: Timecode',
   prefix: 'timecode',
@@ -174,7 +174,7 @@ const modifyTimecode: DialogSpec = {
     { kind: 'text', field: 'tapeName', label: 'Tape Name:', width: 200 },
     { kind: 'check', field: 'reset', label: "Use the file's timecode" },
   ],
-  defaults: (ctx) => opened(ctx, 'clip.modifyTimecode', { timecode: '00:00:00:00', tapeName: '' }),
+  defaults: (ctx) => opened(ctx, 'clip.setTimecode', { timecode: '00:00:00:00', tapeName: '' }),
   toParams: (draft) => {
     const params = withoutInfo(draft)
     if (params.reset === true) delete params.timecode
@@ -190,7 +190,7 @@ const hasVideo = (draft: Draft) => draft.video !== false
  * and Duration; an empty Clip Name is dropped (`finish()`), so the engine names it.
  */
 const newOfflineFile: DialogSpec = {
-  id: 'file.newOfflineFile',
+  id: 'item.newOfflineFile',
   family: 'clipStructure',
   title: 'New Offline File',
   prefix: 'offlineFile',
@@ -215,7 +215,7 @@ const newOfflineFile: DialogSpec = {
     { kind: 'number', field: 'seconds', label: 'Duration:', min: 0.05, max: 86_400, step: 0.01, unit: 's' },
   ],
   defaults: (ctx) =>
-    opened(ctx, 'file.newOfflineFile', {
+    opened(ctx, 'item.newOfflineFile', {
       fileName: 'Offline.mov',
       name: '',
       tapeName: '',

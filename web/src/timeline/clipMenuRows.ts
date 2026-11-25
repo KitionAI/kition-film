@@ -10,7 +10,7 @@ export const CLIP_MENU: ReadonlyArray<ReadonlyArray<readonly [label: string, com
     ['Copy', 'edit.copy'],
     ['Paste Attributes…', 'edit.pasteAttributes'],
     ['Remove Attributes…', 'edit.removeAttributes'],
-    ['Clear', 'edit.clear'],
+    ['Clear', 'edit.delete'],
     ['Ripple Delete', 'edit.rippleDelete'],
   ],
   [

@@ -100,7 +100,7 @@ async function query<T>(doc: KitEngine, id: string, params: Record<string, unkno
  *
  * It also keeps what the editor reads beside `inspect()`, one request in flight each (see
  * `reads.ts` for when): the session state (`state.inspect`), the label colours and names, and the
- * key table (`shortcuts.list` plus upstream's UI keys, without Kition's reserved keys and the
+ * key table (`shortcut.list` plus upstream's UI keys, without Kition's reserved keys and the
  * host's `hostShortcuts`, which reach the host).
  */
 export function useFilmSession<S extends Session>(session: S, hostShortcuts: readonly string[] = NO_SHORTCUTS, onEvents?: (events: EngineEvent[]) => void, gate?: { readonly current: PreviewGate | null }, onError?: { readonly current: (message: string) => void }, view?: FilmViewStateKeeper) {
@@ -178,7 +178,7 @@ export function useFilmSession<S extends Session>(session: S, hostShortcuts: rea
   const [keys, setKeys] = useState<KeyTable>(() => keyTable([], upstream, isMac(), reserved))
   // The engine's default bindings, for the keys pressed before its key table is read (`createKeyHold`).
   const earlyKeys = useMemo(() => keyTable(defaultEngineShortcuts(upstream), upstream, isMac(), reserved), [reserved])
-  // The engine's live shortcut set (`shortcuts.list`), which the menus show; null until read.
+  // The engine's live shortcut set (`shortcut.list`), which the menus show; null until read.
   const [shortcuts, setShortcuts] = useState<ShortcutRow[] | null>(null)
   // Moves when the Project panel's view may have changed with no revision (its preferences: a
   // view, column, sort, or preset command of the editor's own, or a refresh made elsewhere, such
@@ -218,7 +218,7 @@ export function useFilmSession<S extends Session>(session: S, hostShortcuts: rea
       keys: oneInFlight(async () => {
         const open = docNow.current
         if (!open) return
-        const rows = await query<ShortcutRow[]>(open, 'shortcuts.list')
+        const rows = await query<ShortcutRow[]>(open, 'shortcut.list')
         if (docNow.current === open) {
           setKeys(keyTable(rows, upstream, isMac(), reservedNow.current))
           setShortcuts(rows)
@@ -263,7 +263,7 @@ export function useFilmSession<S extends Session>(session: S, hostShortcuts: rea
           setJob(running)
         },
         // A query refreshes the editor's info (the revision, the replica's version for the host).
-        onChanged: () => void baseRunNow.current('jobs.list', {}).catch(() => undefined),
+        onChanged: () => void baseRunNow.current('job.list', {}).catch(() => undefined),
       }),
     [],
   )
@@ -285,7 +285,7 @@ export function useFilmSession<S extends Session>(session: S, hostShortcuts: rea
     // Upstream registers its UI commands with the shortcut set at startup (`register_external`):
     // the panel tables then bind them (the Project panel's arrows, I, O), and the keys are read after.
     void doc
-      .execute('shortcuts.registerExternal', { commands: EXTERNAL })
+      .execute('shortcut.registerExternal', { commands: EXTERNAL })
       .catch(() => undefined)
       .then(() => readers.keys())
   }, [doc, readers])

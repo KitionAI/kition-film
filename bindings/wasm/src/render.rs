@@ -127,7 +127,7 @@ fn main_sequence(project: &Project) -> Result<ItemId, String> {
     match top[..] {
         [one] => Ok(one),
         [] if all_sequences(project).is_empty() => {
-            Err(wrong("/target/sequence", "the project has no sequence to render: make one with file.newSequence".to_owned(), "a sequence's item id"))
+            Err(wrong("/target/sequence", "the project has no sequence to render: make one with sequence.new".to_owned(), "a sequence's item id"))
         }
         _ => {
             let candidates = if top.is_empty() { all_sequences(project) } else { top };

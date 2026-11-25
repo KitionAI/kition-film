@@ -21,7 +21,7 @@ async function coloredMedia(film, testInfo, colors, rate) {
   await film.open()
   await lendMedia(film, 'media/thumbnail-colors.mp4', readFileSync(movie))
   await film.command('file.newProject', { name: 'Project thumbnail ranges' })
-  await film.command('file.newSequence', { name: 'Thumbnails', width: 64, height: 36, fps: rate, video: 1, audio: 0 })
+  await film.command('sequence.new', { name: 'Thumbnails', width: 64, height: 36, fps: rate, video: 1, audio: 0 })
   return (await film.command('file.import', { paths: ['../media/thumbnail-colors.mp4'] })).items[0]
 }
 

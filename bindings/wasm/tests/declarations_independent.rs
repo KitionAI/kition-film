@@ -475,7 +475,7 @@ fn current_path_difference_bounds_can_only_decrease() {
         } else if settings_compare::compared_path(row.command, row.path) {
             Some(settings_compare::more(row.command))
         } else if generators_compare::compared_path(row.command, row.path) {
-            Some(if row.command == "file.newOfflineFile" { vec!["explicit-offline-part"] } else { vec![] })
+            Some(if row.command == "item.newOfflineFile" { vec!["explicit-offline-part"] } else { vec![] })
         } else if targeting_compare::compared_path(row.command, row.path) {
             // lib.rs::editor_state Active includes Source and Media Browser,
             // whereas these handlers consume only the current targeting map.

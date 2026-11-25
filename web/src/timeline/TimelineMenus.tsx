@@ -21,7 +21,7 @@ export function RulerMenu({ at, seconds, marker, film, invoke, onClose, phrase }
     <ContextMenu at={at} onClose={onClose} label={phrase('time ruler')} testId="film-ruler-menu">
       {found ? (
         <>
-          <MenuItem label={phrase('Edit Marker…')} uiId="control:timeline.markerMenu.edit" testId="film-ruler-menu-edit-marker" onSelect={() => run('markers.edit', { marker: found.id })} />
+          <MenuItem label={phrase('Edit Marker…')} uiId="control:timeline.markerMenu.edit" testId="film-ruler-menu-edit-marker" onSelect={() => run('marker.edit', { marker: found.id })} />
           <MenuItem
             label={phrase('Clear Selected Marker')}
             uiId="control:timeline.markerMenu.clear"
@@ -29,18 +29,18 @@ export function RulerMenu({ at, seconds, marker, film, invoke, onClose, phrase }
             onSelect={() => {
               onClose()
               // Clear Selected Marker clears the marker at the playhead: the playhead goes to this one first (no edit).
-              void invoke('playhead.set', { time: Math.round(found.start * film.ticksPerSecond) }).then(() => invoke('markers.clearCurrent', {}))
+              void invoke('playhead.set', { time: Math.round(found.start * film.ticksPerSecond) }).then(() => invoke('marker.clearCurrent', {}))
             }}
           />
           <MenuSeparator />
         </>
       ) : null}
-      <MenuItem label={phrase('Mark In')} uiId="control:timeline.rulerMenu.markIn" testId="film-ruler-menu-mark-in" onSelect={() => run('markers.markIn', { time })} />
-      <MenuItem label={phrase('Mark Out')} uiId="control:timeline.rulerMenu.markOut" testId="film-ruler-menu-mark-out" onSelect={() => run('markers.markOut', { time })} />
+      <MenuItem label={phrase('Mark In')} uiId="control:timeline.rulerMenu.markIn" testId="film-ruler-menu-mark-in" onSelect={() => run('marker.markIn', { time })} />
+      <MenuItem label={phrase('Mark Out')} uiId="control:timeline.rulerMenu.markOut" testId="film-ruler-menu-mark-out" onSelect={() => run('marker.markOut', { time })} />
       <MenuSeparator />
-      <MenuItem label={phrase('Clear In and Out')} disabled={film.in == null && film.out == null} uiId="control:timeline.rulerMenu.clearInOut" testId="film-ruler-menu-clear-in-out" onSelect={() => run('markers.clearInOut', {})} />
+      <MenuItem label={phrase('Clear In and Out')} disabled={film.in == null && film.out == null} uiId="control:timeline.rulerMenu.clearInOut" testId="film-ruler-menu-clear-in-out" onSelect={() => run('marker.clearInOut', {})} />
       <MenuSeparator />
-      <MenuItem label={phrase('Add Marker')} uiId="control:timeline.rulerMenu.addMarker" testId="film-ruler-menu-add-marker" onSelect={() => run('markers.add', { time })} />
+      <MenuItem label={phrase('Add Marker')} uiId="control:timeline.rulerMenu.addMarker" testId="film-ruler-menu-add-marker" onSelect={() => run('marker.add', { time })} />
     </ContextMenu>
   )
 }

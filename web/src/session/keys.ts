@@ -3,7 +3,7 @@ import { focusedPanel } from '../panels/projectModel.ts'
 
 /**
  * The key router, as upstream's `menus.rs` `bindings` and `parse_shortcut` and `lib.rs`
- * `handle_shortcuts`. The table is the engine's shortcut set (`shortcuts.list`) plus upstream's
+ * `handle_shortcuts`. The table is the engine's shortcut set (`shortcut.list`) plus upstream's
  * own UI commands and their default keys (the parity manifest's UI rows and keys), which the web
  * engine does not hold. Pure, so `node --test` runs it.
  */
@@ -16,7 +16,7 @@ export type KeyBinding = { chord: Chord; command: string; panel: string | null }
 
 export type KeyTable = { mac: boolean; bindings: readonly KeyBinding[] }
 
-/** A row of the engine's `shortcuts.list`; its bindings name their panel by title. */
+/** A row of the engine's `shortcut.list`; its bindings name their panel by title. */
 export type ShortcutRow = { id: string; shortcuts: ReadonlyArray<{ keys: string; panel?: string | null }> }
 
 /** What the table reads from the parity manifest. */
@@ -26,7 +26,7 @@ export type KeyManifest = {
   panels: ReadonlyArray<{ id: string; title: string }>
 }
 
-/** A frontend command for the engine's `shortcuts.registerExternal`. */
+/** A frontend command for the engine's `shortcut.registerExternal`. */
 export type ExternalCommand = { id: string; label: string; menu?: string[]; shortcut?: string }
 
 /**
@@ -216,7 +216,7 @@ export type HeldKey = { press: KeyPress; focused: string }
 
 /**
  * Keys pressed in the moment after a document opens, before the engine's key table
- * (`shortcuts.list`) is read: until then only the editor's own keys resolve, so a key the engine
+ * (`shortcut.list`) is read: until then only the editor's own keys resolve, so a key the engine
  * binds (Right, Home, I) did nothing and a person tapping Right twelve times at once ended a few
  * frames short. They are kept in order (at most `max`; only plain or Shift keys, never a chord
  * with Cmd, Ctrl or Alt, which may be the browser's or the host's) and run once the table is read.

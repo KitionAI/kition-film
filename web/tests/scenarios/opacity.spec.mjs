@@ -5,18 +5,18 @@ import { test, expect, editState, TICKS } from './fixtures.mjs'
 test('F40 opacity keyframes blend two video tracks in linear light; disabling the upper clip reveals the lower shot', async ({ film, page }, testInfo) => {
   await film.open()
   await film.command('file.newProject', { name: 'Original opacity animation' })
-  await film.command('file.newSequence', { name: 'Opacity', width: 64, height: 36, fps: 24, video: 2, audio: 0 })
+  await film.command('sequence.new', { name: 'Opacity', width: 64, height: 36, fps: 24, video: 2, audio: 0 })
   for (const [track, color] of [['V1', '#ff0000'], ['V2', '#0000ff']]) {
-    const { item } = await film.command('file.newColorMatte', { color, seconds: 0.5 })
+    const { item } = await film.command('item.newColorMatte', { color, seconds: 0.5 })
     await film.command('timeline.place', { item, track, seconds: 0 })
   }
   const clip = (await film.sequence()).video[1].items[0].clip
   await film.command('playhead.set', { frame: 0 })
   const param = { clip, effect: 'opacity', param: 'opacity' }
-  await film.command('effects.setParam', { ...param, value: 0 })
-  await film.command('effects.toggleAnimation', param)
+  await film.command('effect.setParam', { ...param, value: 0 })
+  await film.command('effect.toggleAnimation', param)
   const before = await film.sequence()
-  await film.command('effects.setParam', { ...param, value: 100, time: 11 * TICKS / 24 })
+  await film.command('effect.setParam', { ...param, value: 100, time: 11 * TICKS / 24 })
   const after = await film.sequence()
   expect(after.video[1].items[0].effects.find(effect => effect.effect === 'opacity').params.opacity.keyframes).toHaveLength(2)
   await film.undo()

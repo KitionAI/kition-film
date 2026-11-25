@@ -23,7 +23,7 @@ fn source_and_empty(s: &mut Session) -> (ItemId, ItemId) {
     let v1: Vec<u64> = clips(s, TrackKind::Video, 0).iter().take(3).map(|c| c.id.0).collect();
     s.execute("timeline.select", json!({"clips": v1})).unwrap();
     let source = ItemId(s.execute("sequence.makeSubsequence", json!({"name": "Source"})).unwrap()["sequence"].as_u64().unwrap());
-    let empty = ItemId(s.execute("file.newSequence", json!({"name": "Target"})).unwrap()["sequence"].as_u64().unwrap());
+    let empty = ItemId(s.execute("sequence.new", json!({"name": "Target"})).unwrap()["sequence"].as_u64().unwrap());
     s.execute("sequence.open", json!({"item": empty.0})).unwrap();
     (source, empty)
 }
@@ -219,8 +219,8 @@ fn mark_in_and_out_in_the_source_monitor_mark_a_sequence_like_a_clip() {
     let (source, _) = source_and_empty(&mut s);
     let rate = s.sequence_rate();
     s.execute("source.open", json!({"item": source.0})).unwrap();
-    s.execute("markers.markIn", json!({"target": "source", "time": rate.tick_of(10).0})).unwrap();
-    s.execute("markers.markOut", json!({"target": "source", "time": rate.tick_of(40).0})).unwrap();
+    s.execute("marker.markIn", json!({"target": "source", "time": rate.tick_of(10).0})).unwrap();
+    s.execute("marker.markOut", json!({"target": "source", "time": rate.tick_of(40).0})).unwrap();
     let q = s.project.sequence(source).unwrap();
     assert_eq!((q.mark_in, q.mark_out), (Some(rate.tick_of(10)), Some(rate.tick_of(40))));
     // and can be cleared again

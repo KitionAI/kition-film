@@ -9,13 +9,13 @@
 //! - **Geometry.** Point parameters and mask paths are in clip pixels; they are scaled by the
 //!   target / source frame-size ratio so a preset made on 4K media lands in the same place on HD.
 //! - **Intrinsic effects** (Motion, Opacity, Time Remapping) replace the target clip's own instance;
-//!   standard effects are added before the intrinsic ones (render order), like `effects.apply`.
+//!   standard effects are added before the intrinsic ones (render order), like `effect.apply`.
 //! - **Library.** Built-in presets are authored in code ([`builtin_presets`]); user presets persist
 //!   in `<data dir>/effect-presets.json`. Preset files (export/import) are JSON:
 //!   `{"format": "kition-film.effect-presets", "version": 1, "presets": [EffectPreset…]}`.
 //!
-//! Commands: `presets.list`, `presets.save`, `presets.apply` (undoable), `presets.delete`,
-//! `presets.rename`, `presets.export`, `presets.import`.
+//! Commands: `preset.list`, `preset.save`, `preset.apply` (undoable), `preset.delete`,
+//! `preset.rename`, `preset.export`, `preset.import`.
 
 use std::path::{Path, PathBuf};
 
@@ -397,20 +397,20 @@ fn spec(
 
 pub(crate) fn commands() -> Vec<CommandSpec> {
     vec![
-        spec("presets.list", "List Effect Presets", "{}", always, list, false),
+        spec("preset.list", "List Effect Presets", "{}", always, list, false),
         spec(
-            "presets.save",
+            "preset.save",
             "Save Preset",
             r#"{"clip":id?,"effects":[index]?,"name":str,"description":str?,"keyframes":"scale"|"anchorIn"|"anchorOut"|"none"?}"#,
             has_seq,
             save,
             true,
         ),
-        spec("presets.apply", "Apply Preset", r#"{"preset":str,"clips":[id]?}"#, has_seq, apply, true),
-        spec("presets.delete", "Delete Preset", r#"{"name":str}"#, always, delete, true),
-        spec("presets.rename", "Rename Preset", r#"{"name":str,"to":str}"#, always, rename, true),
-        spec("presets.export", "Export Presets", r#"{"path":str,"names":[str]?}"#, always, export, false),
-        spec("presets.import", "Import Presets", r#"{"path":str}"#, always, import, true),
+        spec("preset.apply", "Apply Preset", r#"{"preset":str,"clips":[id]?}"#, has_seq, apply, true),
+        spec("preset.delete", "Delete Preset", r#"{"name":str}"#, always, delete, true),
+        spec("preset.rename", "Rename Preset", r#"{"name":str,"to":str}"#, always, rename, true),
+        spec("preset.export", "Export Presets", r#"{"path":str,"names":[str]?}"#, always, export, false),
+        spec("preset.import", "Import Presets", r#"{"path":str}"#, always, import, true),
     ]
 }
 
@@ -435,13 +435,13 @@ fn clip_size(s: &Session, it: &TrackItem) -> (u32, u32) {
 }
 
 fn save(s: &mut Session, p: &Value) -> Result<Value> {
-    let name = str_p(p, "name").map(str::trim).filter(|n| !n.is_empty()).ok_or_else(|| bad("presets.save", "need a `name`"))?.to_string();
+    let name = str_p(p, "name").map(str::trim).filter(|n| !n.is_empty()).ok_or_else(|| bad("preset.save", "need a `name`"))?.to_string();
     let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;
     let clip = clip_p(p, "clip")
         .or_else(|| s.state.selection.iter().copied().find(|c| seq.find_item(*c).and_then(|(t, _)| seq.track(t)).is_some_and(|t| t.kind == TrackKind::Video)))
         .or_else(|| s.state.selection.first().copied())
-        .ok_or_else(|| bad("presets.save", "select a clip"))?;
-    let (_, it) = seq.find_item(clip).ok_or_else(|| bad("presets.save", "no such clip"))?;
+        .ok_or_else(|| bad("preset.save", "select a clip"))?;
+    let (_, it) = seq.find_item(clip).ok_or_else(|| bad("preset.save", "no such clip"))?;
     let idx: Vec<usize> = match p.get("effects").and_then(Value::as_array) {
         Some(a) => a.iter().filter_map(|v| v.as_u64().map(|n| n as usize)).filter(|i| *i < it.effects.len()).collect(),
         // default: the standard (non-intrinsic, non-layer) effects
@@ -453,12 +453,12 @@ fn save(s: &mut Session, p: &Value) -> Result<Value> {
             .collect(),
     };
     if idx.is_empty() {
-        return Err(bad("presets.save", "no effects to save (pass `effects`)"));
+        return Err(bad("preset.save", "no effects to save (pass `effects`)"));
     }
     let mode = match str_p(p, "keyframes") {
         None => Some(KeyframeMode::Scale),
         Some(k) if k.eq_ignore_ascii_case("none") => None,
-        Some(k) => Some(KeyframeMode::from_name(k).ok_or_else(|| bad("presets.save", format!("unknown keyframe mode `{k}`")))?),
+        Some(k) => Some(KeyframeMode::from_name(k).ok_or_else(|| bad("preset.save", format!("unknown keyframe mode `{k}`")))?),
     };
     let mt = it.source_time_at(s.playhead().clamp(it.start, it.end() - Tick(1)));
     let size = clip_size(s, it);
@@ -471,14 +471,14 @@ fn save(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 fn apply(s: &mut Session, p: &Value) -> Result<Value> {
-    let name = str_p(p, "preset").or_else(|| str_p(p, "name")).ok_or_else(|| bad("presets.apply", "need `preset`"))?;
-    let preset = s.presets.find(name).ok_or_else(|| bad("presets.apply", format!("no preset `{name}`")))?;
+    let name = str_p(p, "preset").or_else(|| str_p(p, "name")).ok_or_else(|| bad("preset.apply", "need `preset`"))?;
+    let preset = s.presets.find(name).ok_or_else(|| bad("preset.apply", format!("no preset `{name}`")))?;
     let clips: Vec<ClipId> = match p.get("clips").and_then(Value::as_array) {
         Some(a) => a.iter().filter_map(|v| v.as_u64().map(ClipId)).collect(),
         None => s.state.selection.clone(),
     };
     if clips.is_empty() {
-        return Err(bad("presets.apply", "select clips first"));
+        return Err(bad("preset.apply", "select clips first"));
     }
     let audio = preset.effects.iter().all(|e| e.def().is_some_and(|d| d.kind == kition_film_project::EffectKind::Audio));
     let sizes: Vec<(ClipId, (u32, u32))> = {
@@ -500,7 +500,7 @@ fn apply(s: &mut Session, p: &Value) -> Result<Value> {
             }
         }
         if n == 0 {
-            return Err(bad("presets.apply", "the preset doesn't fit the selected clips (video/audio)"));
+            return Err(bad("preset.apply", "the preset doesn't fit the selected clips (video/audio)"));
         }
         Ok(n)
     })?;
@@ -508,12 +508,12 @@ fn apply(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 fn delete(s: &mut Session, p: &Value) -> Result<Value> {
-    let name = str_p(p, "name").ok_or_else(|| bad("presets.delete", "need `name`"))?;
+    let name = str_p(p, "name").ok_or_else(|| bad("preset.delete", "need `name`"))?;
     let before = s.presets.user.len();
     s.presets.user.retain(|x| x.name != name);
     if s.presets.user.len() == before {
         return Err(bad(
-            "presets.delete",
+            "preset.delete",
             if builtin_presets().iter().any(|b| b.name == name) { "built-in presets cannot be deleted" } else { "no such preset" },
         ));
     }
@@ -522,33 +522,33 @@ fn delete(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 fn rename(s: &mut Session, p: &Value) -> Result<Value> {
-    let name = str_p(p, "name").ok_or_else(|| bad("presets.rename", "need `name`"))?;
-    let to = str_p(p, "to").map(str::trim).filter(|t| !t.is_empty()).ok_or_else(|| bad("presets.rename", "need `to`"))?.to_string();
+    let name = str_p(p, "name").ok_or_else(|| bad("preset.rename", "need `name`"))?;
+    let to = str_p(p, "to").map(str::trim).filter(|t| !t.is_empty()).ok_or_else(|| bad("preset.rename", "need `to`"))?.to_string();
     if s.presets.user.iter().any(|x| x.name == to) {
-        return Err(bad("presets.rename", format!("a preset named `{to}` exists")));
+        return Err(bad("preset.rename", format!("a preset named `{to}` exists")));
     }
-    let pr = s.presets.user.iter_mut().find(|x| x.name == name).ok_or_else(|| bad("presets.rename", "no such user preset"))?;
+    let pr = s.presets.user.iter_mut().find(|x| x.name == name).ok_or_else(|| bad("preset.rename", "no such user preset"))?;
     pr.name = to;
     s.presets.persist().map_err(EngineError::Other)?;
     Ok(Value::Null)
 }
 
 fn export(s: &mut Session, p: &Value) -> Result<Value> {
-    let path = str_p(p, "path").ok_or_else(|| bad("presets.export", "need `path`"))?;
+    let path = str_p(p, "path").ok_or_else(|| bad("preset.export", "need `path`"))?;
     let all = s.presets.all();
     let chosen: Vec<EffectPreset> = match p.get("names").and_then(Value::as_array) {
         Some(n) => {
             let names: Vec<&str> = n.iter().filter_map(Value::as_str).collect();
             let v: Vec<EffectPreset> = all.into_iter().filter(|x| names.contains(&x.name.as_str())).collect();
             if v.len() != names.len() {
-                return Err(bad("presets.export", "unknown preset name"));
+                return Err(bad("preset.export", "unknown preset name"));
             }
             v
         }
         None => s.presets.user.clone(),
     };
     if chosen.is_empty() {
-        return Err(bad("presets.export", "no presets to export"));
+        return Err(bad("preset.export", "no presets to export"));
     }
     // through the host: atomic on the desktop, a download on the web (no filesystem there)
     s.services.write_file(path, &file_bytes(&chosen)).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
@@ -556,7 +556,7 @@ fn export(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 fn import(s: &mut Session, p: &Value) -> Result<Value> {
-    let path = str_p(p, "path").ok_or_else(|| bad("presets.import", "need `path`"))?;
+    let path = str_p(p, "path").ok_or_else(|| bad("preset.import", "need `path`"))?;
     let bytes = s.services.read_file(path).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
     let presets = parse_file(&bytes).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
     let names: Vec<String> = presets.iter().map(|x| x.name.clone()).collect();

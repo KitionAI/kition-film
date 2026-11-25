@@ -5,8 +5,8 @@ import { test, expect, TICKS } from './fixtures.mjs'
 test('F54 Latch automation holds after release, changes gain at the next touch, and exports the saved stereo envelope', async ({ film, page }, testInfo) => {
   await film.open()
   await film.command('file.newProject', { name: 'Original automation tone' })
-  await film.command('file.newSequence', { name: 'Latch', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
-  const { item } = await film.command('file.newBarsAndTone', { seconds: 0.5 })
+  await film.command('sequence.new', { name: 'Latch', width: 64, height: 36, fps: 24, video: 1, audio: 1 })
+  const { item } = await film.command('item.newBarsAndTone', { seconds: 0.5 })
   await film.command('timeline.place', { item, seconds: 0 })
   const exportWindows = async (path, name) => {
     await film.kit.getByTestId('film-export').click()

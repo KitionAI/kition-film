@@ -37,7 +37,7 @@ async fn offline_file_defaults_hold_inherited_size_and_explicit_size_does_not() 
             let (_, basis) = f.inspect().await;
             f.colleague(&[("sequence.settings", if related { json!({"width":640}) } else { json!({"name":"Unrelated"}) })]);
             let params = if explicit { json!({"width":64,"height":36,"fps":24}) } else { json!({}) };
-            let answer = f.call("run", json!({"basis":basis,"steps":[{"command":"file.newOfflineFile","params":params}]})).await;
+            let answer = f.call("run", json!({"basis":basis,"steps":[{"command":"item.newOfflineFile","params":params}]})).await;
             if related && !explicit {
                 assert_eq!(answer.expect_err("the offline file inherits the active frame size")["error"]["code"], "conflict");
             } else {
@@ -50,7 +50,7 @@ async fn offline_file_defaults_hold_inherited_size_and_explicit_size_does_not() 
 
 #[tokio::test(flavor = "multi_thread")]
 async fn source_mark_assignments_hold_the_source_side_but_not_source_metadata() {
-    for command in ["project.setMarks", "markers.markIn", "markers.clearIn"] {
+    for command in ["project.setMarks", "marker.markIn", "marker.clearIn"] {
         for related in [true, false] {
             let f = Fixture::new(2);
             let (seq, _) = f.inspect().await;
@@ -72,7 +72,7 @@ async fn source_mark_assignments_hold_the_source_side_but_not_source_metadata() 
             });
             let params = match command {
                 "project.setMarks" => json!({"in":SECOND/4}),
-                "markers.markIn" => json!({"target":"source","time":SECOND/4}),
+                "marker.markIn" => json!({"target":"source","time":SECOND/4}),
                 _ => json!({"target":"source"}),
             };
             let answer = f.call("run", json!({"basis":basis,"steps":[{"command":command,"params":params}]})).await;
@@ -88,12 +88,12 @@ async fn source_mark_assignments_hold_the_source_side_but_not_source_metadata() 
 
 #[tokio::test(flavor = "multi_thread")]
 async fn program_in_marks_preserve_the_unassigned_out_split_and_clear_in_preserves_out() {
-    for command in ["markers.markIn", "markers.clearIn"] {
+    for command in ["marker.markIn", "marker.clearIn"] {
         let f = Fixture::new(2);
         let (seq, basis) = f.inspect().await;
         rewrite(&f.file(), |p| {
             let q = p.sequence_mut(ItemId(seq["id"].as_u64().unwrap())).unwrap();
-            if command == "markers.markIn" {
+            if command == "marker.markIn" {
                 q.split.video_out = Some(serde_json::from_value(json!(SECOND)).unwrap());
             } else {
                 q.mark_out = Some(serde_json::from_value(json!(SECOND)).unwrap());
@@ -101,7 +101,7 @@ async fn program_in_marks_preserve_the_unassigned_out_split_and_clear_in_preserv
         });
         f.ok(
             "run",
-            json!({"basis":basis,"steps":[{"command":command,"params":if command == "markers.markIn" { json!({"time":SECOND/4}) } else { json!({}) }}]}),
+            json!({"basis":basis,"steps":[{"command":command,"params":if command == "marker.markIn" { json!({"time":SECOND/4}) } else { json!({}) }}]}),
         )
         .await;
         f.shutdown().await;

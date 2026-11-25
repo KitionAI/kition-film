@@ -8,14 +8,14 @@ import { createKeyHold, defaultEngineShortcuts, externalCommands, keyTable, pars
 
 const manifest = JSON.parse(readFileSync(new URL('../../parity/film-upstream.json', import.meta.url), 'utf8'))
 
-/** A fake engine's `shortcuts.list` (its rows carry the panel's title, as the engine does). */
+/** A fake engine's `shortcut.list` (its rows carry the panel's title, as the engine does). */
 const SHORTCUTS = [
   { id: 'edit.undo', shortcuts: [{ keys: 'Cmd+Z', panel: null }, { keys: 'Left', panel: 'History' }] },
   { id: 'edit.redo', shortcuts: [{ keys: 'Cmd+Shift+Z', panel: null }, { keys: 'Right', panel: 'History' }] },
   { id: 'playhead.stepBack', shortcuts: [{ keys: 'Left', panel: null }] },
   { id: 'playhead.stepBack5', shortcuts: [{ keys: 'Shift+Left', panel: null }] },
-  { id: 'markers.markIn', shortcuts: [{ keys: 'I', panel: null }] },
-  { id: 'markers.goToIn', shortcuts: [{ keys: 'Shift+I', panel: null }] },
+  { id: 'marker.markIn', shortcuts: [{ keys: 'I', panel: null }] },
+  { id: 'marker.goToIn', shortcuts: [{ keys: 'Shift+I', panel: null }] },
   { id: 'file.save', shortcuts: [{ keys: 'Cmd+S', panel: null }] },
   { id: 'edit.selectAll', shortcuts: [{ keys: 'Cmd+A', panel: null }] },
   { id: 'source.overwrite', shortcuts: [{ keys: '.', panel: null }] },
@@ -43,8 +43,8 @@ test('Left in History is Undo; Left in the Timeline steps back a frame', () => {
 })
 
 test('Shift+I is Go to In, not Mark In: more modifiers win', () => {
-  assert.equal(resolveKey(press('I', { shiftKey: true }), 'timeline', mac), 'markers.goToIn')
-  assert.equal(resolveKey(press('i'), 'timeline', mac), 'markers.markIn')
+  assert.equal(resolveKey(press('I', { shiftKey: true }), 'timeline', mac), 'marker.goToIn')
+  assert.equal(resolveKey(press('i'), 'timeline', mac), 'marker.markIn')
   assert.equal(resolveKey(press('ArrowLeft', { shiftKey: true }), 'timeline', mac), 'playhead.stepBack5')
 })
 
@@ -128,7 +128,7 @@ test("Kition's reserved keys and the host's own keys are left to the host", () =
   const pcHosted = keyTable(SHORTCUTS, manifest, false, reserved)
   assert.equal(resolveKey(press('w', { ctrlKey: true }), 'timeline', pcHosted), null)
   // Other keys still resolve.
-  assert.equal(resolveKey(press('i'), 'timeline', hosted), 'markers.markIn')
+  assert.equal(resolveKey(press('i'), 'timeline', hosted), 'marker.markIn')
   assert.equal(resolveKey(press('z', { metaKey: true }), 'timeline', hosted), 'edit.undo')
 })
 
@@ -166,15 +166,15 @@ test('a binding whose command nothing serves yet gives way to the next match, so
     { id: 'view.showRulers', shortcuts: [{ keys: 'Cmd+Shift+R', panel: 'Program' }] },
     { id: 'graphics.alignTextRight', shortcuts: [{ keys: 'Cmd+Shift+R', panel: null }] },
     { id: 'textPanel.rippleDelete', shortcuts: [{ keys: 'Backspace', panel: 'Text' }] },
-    { id: 'edit.clear', shortcuts: [{ keys: 'Backspace', panel: null }] },
+    { id: 'edit.delete', shortcuts: [{ keys: 'Backspace', panel: null }] },
     { id: 'textPanel.showProgramTranscript', shortcuts: [{ keys: 'Shift+X', panel: 'Text' }] },
-    { id: 'markers.markClip', shortcuts: [{ keys: 'X', panel: null }] },
+    { id: 'marker.markClip', shortcuts: [{ keys: 'X', panel: null }] },
   ]
   const table = keyTable(listed, manifest, true)
   const serves = (id) => !id.startsWith('view.showRulers') && !id.startsWith('textPanel.')
   assert.equal(resolveKey(press('r', { metaKey: true, shiftKey: true }, 'KeyR'), 'program', table, serves), 'graphics.alignTextRight')
-  assert.equal(resolveKey(press('Backspace', {}, 'Backspace'), 'text', table, serves), 'edit.clear')
-  assert.equal(resolveKey(press('X', { shiftKey: true }, 'KeyX'), 'text', table, serves), 'markers.markClip')
+  assert.equal(resolveKey(press('Backspace', {}, 'Backspace'), 'text', table, serves), 'edit.delete')
+  assert.equal(resolveKey(press('X', { shiftKey: true }, 'KeyX'), 'text', table, serves), 'marker.markClip')
   // Without a predicate every binding counts, as the shortcuts list shows them.
   assert.equal(resolveKey(press('r', { metaKey: true, shiftKey: true }, 'KeyR'), 'program', table), 'view.showRulers')
 })
@@ -206,8 +206,8 @@ test("every wave-1 key the status file does not hide runs its command in its pan
   const sdk = await import(new URL('kition_film_kit.js', engineDir).href)
   sdk.initSync({ module: readFileSync(new URL('kition_film_kit_bg.wasm', engineDir)) })
   const doc = sdk.FilmDocument.create('Untitled', 1920, 1080)
-  doc.execute('shortcuts.registerExternal', JSON.stringify({ commands: externalCommands(manifest) }))
-  const rows = JSON.parse(doc.execute('shortcuts.list', '{}'))
+  doc.execute('shortcut.registerExternal', JSON.stringify({ commands: externalCommands(manifest) }))
+  const rows = JSON.parse(doc.execute('shortcut.list', '{}'))
   const table = keyTable(rows, manifest, true, RESERVED_SHORTCUTS)
   const panelIds = new Map(manifest.panels.map((panel) => [panel.title, panel.id]))
   const KEYS = { Left: 'ArrowLeft', Right: 'ArrowRight', Up: 'ArrowUp', Down: 'ArrowDown', Space: ' ' }
@@ -247,7 +247,7 @@ test('every engine-routed wave-1 key command runs in a fixture project: it chang
   const fixture = (selected) => {
     const doc = sdk.FilmDocument.create('Untitled', 640, 360)
     const run = (command, params = {}) => JSON.parse(doc.execute(command, JSON.stringify(params)))
-    const bars = run('file.newBarsAndTone')
+    const bars = run('item.newBarsAndTone')
     for (const seconds of [0, 12]) run('timeline.place', { item: bars.item ?? bars.items[0], track: 1, audioTrack: 4, seconds })
     run('graphics.newText', { text: 'Title', seconds: 4, time: 2 * TICKS })
     run('playhead.set', { seconds: 3 })
@@ -280,9 +280,9 @@ test('every engine-routed wave-1 key command runs in a fixture project: it chang
 })
 
 test('Shift+Delete and Shift+Backspace ripple-delete in the Timeline; Delete and Backspace there clear', () => {
-  // The engine's own bindings (`shortcuts.list` of the Kition Film Default set).
+  // The engine's own bindings (`shortcut.list` of the Kition Film Default set).
   const rows = [
-    { id: 'edit.clear', shortcuts: [{ keys: 'Backspace', panel: null }, { keys: 'Delete', panel: 'Timeline' }, { keys: 'Backspace', panel: 'Properties' }] },
+    { id: 'edit.delete', shortcuts: [{ keys: 'Backspace', panel: null }, { keys: 'Delete', panel: 'Timeline' }, { keys: 'Backspace', panel: 'Properties' }] },
     { id: 'edit.rippleDelete', shortcuts: [{ keys: 'Shift+Delete', panel: null }] },
     { id: 'project.delete', shortcuts: [{ keys: 'Delete', panel: null }, { keys: 'Backspace', panel: 'Project' }] },
   ]
@@ -291,8 +291,8 @@ test('Shift+Delete and Shift+Backspace ripple-delete in the Timeline; Delete and
       assert.equal(resolveKey(press('Delete', { shiftKey: true }, 'Delete'), panel, table), 'edit.rippleDelete', `Shift+Delete in ${panel}`)
       assert.equal(resolveKey(press('Backspace', { shiftKey: true }, 'Backspace'), panel, table), 'edit.rippleDelete', `Shift+Backspace in ${panel}`)
     }
-    assert.equal(resolveKey(press('Delete', {}, 'Delete'), 'timeline', table), 'edit.clear')
-    assert.equal(resolveKey(press('Backspace', {}, 'Backspace'), 'timeline', table), 'edit.clear')
+    assert.equal(resolveKey(press('Delete', {}, 'Delete'), 'timeline', table), 'edit.delete')
+    assert.equal(resolveKey(press('Backspace', {}, 'Backspace'), 'timeline', table), 'edit.delete')
     // A chord the set binds on Backspace keeps it: Backspace in the Project panel deletes items.
     assert.equal(resolveKey(press('Backspace', {}, 'Backspace'), 'project', table), 'project.delete')
   }

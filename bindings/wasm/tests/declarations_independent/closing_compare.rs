@@ -22,7 +22,7 @@ fn closing_paths_compare_force_dirty_eligibility_and_terminal_results() {
             for force in [None, Some(Value::Null), Some(json!(false)), Some(json!(true))] {
                 let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
                 if dirty {
-                    doc.execute("file.newBin", json!({"name":"Unsaved"})).unwrap();
+                    doc.execute("bin.add", json!({"name":"Unsaved"})).unwrap();
                 }
                 assert_eq!(doc.dirty(), dirty);
                 let spec = doc.commands().into_iter().find(|spec| spec.id == command).unwrap();

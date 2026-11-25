@@ -4,8 +4,8 @@ const template = 'builtin:title-centered'
 async function setup(film, edits) {
   await film.open()
   await film.command('file.newProject', { name: 'Graphics transactions' })
-  await film.command('file.newSequence', { width: 64, height: 36, fps: 24 })
-  const { item } = await film.command('file.newColorMatte', { seconds: 0.5 })
+  await film.command('sequence.new', { width: 64, height: 36, fps: 24 })
+  const { item } = await film.command('item.newColorMatte', { seconds: 0.5 })
   const result = await film.commands(Array.from({ length: edits }, (_, n) => ({ command: 'clip.rename', params: { item, name: `Take ${n}` } })))
   expect(result).toHaveLength(edits)
   return item
@@ -14,7 +14,7 @@ async function refusal(film, command, params) {
   return film.attempt(command, params)
 }
 async function snapshot(film) {
-  return { items: await film.command('project.items'), sequence: await film.sequence(), captions: await film.command('captions.list'), history: await film.history() }
+  return { items: await film.command('project.items'), sequence: await film.sequence(), captions: await film.command('caption.list'), history: await film.history() }
 }
 async function values(film, clip) {
   const result = await film.command('graphics.template.controls', { clip })
@@ -61,27 +61,27 @@ for (const edits of [0, 205]) {
 
   test(`F80 multiple captions upgrade as one complete undo step after ${edits} prior edits`, async ({ film }) => {
     await setup(film, edits)
-    await film.command('captions.add', { text: 'First', seconds: 0, durationSeconds: 1 })
-    await film.command('captions.add', { text: 'Second', seconds: 2, durationSeconds: 1 })
-    const before = await film.command('captions.list')
+    await film.command('caption.add', { text: 'First', seconds: 0, durationSeconds: 1 })
+    await film.command('caption.add', { text: 'Second', seconds: 2, durationSeconds: 1 })
+    const before = await film.command('caption.list')
     const captions = before.tracks[0].captions.map(caption => caption.id)
     const result = await film.command('graphics.upgradeCaption', { captions })
     expect(result.upgraded).toBe(2)
     expect(clips(await film.sequence())).toHaveLength(2)
     await film.command('edit.undo')
     expect(clips(await film.sequence())).toHaveLength(0)
-    expect((await film.command('captions.list')).tracks).toEqual(before.tracks)
+    expect((await film.command('caption.list')).tracks).toEqual(before.tracks)
     await film.command('edit.redo')
     await film.saveReopen()
     expect(clips(await film.sequence())).toHaveLength(2)
-    expect((await film.command('captions.list')).tracks[0].captions).toHaveLength(0)
+    expect((await film.command('caption.list')).tracks[0].captions).toHaveLength(0)
   })
 
   test(`F81 locked caption upgrade refuses without leaving graphics after ${edits} prior edits`, async ({ film }) => {
     const item = await setup(film, edits)
-    await film.command('captions.add', { text: 'Locked caption', seconds: 0, durationSeconds: 1 })
-    const captions = (await film.command('captions.list')).tracks[0].captions.map(caption => caption.id)
-    await film.command('captions.setTrack', { track: 'C1', locked: true })
+    await film.command('caption.add', { text: 'Locked caption', seconds: 0, durationSeconds: 1 })
+    const captions = (await film.command('caption.list')).tracks[0].captions.map(caption => caption.id)
+    await film.command('caption.setTrack', { track: 'C1', locked: true })
     await film.command('clip.rename', { item, name: 'Redo survives' })
     await film.command('edit.undo')
     const before = await snapshot(film)
@@ -89,12 +89,12 @@ for (const edits of [0, 205]) {
     expect(await snapshot(film)).toEqual(before)
     await film.command('edit.redo')
     expect((await film.command('project.items')).rows.find(row => row.item === item).name).toBe('Redo survives')
-    await film.command('captions.setTrack', { track: 'C1', locked: false })
-    const unlocked = await film.command('captions.list')
+    await film.command('caption.setTrack', { track: 'C1', locked: false })
+    const unlocked = await film.command('caption.list')
     expect((await film.command('graphics.upgradeCaption', { captions })).upgraded).toBe(1)
     await film.command('edit.undo')
     expect(clips(await film.sequence())).toHaveLength(0)
-    expect((await film.command('captions.list')).tracks).toEqual(unlocked.tracks)
+    expect((await film.command('caption.list')).tracks).toEqual(unlocked.tracks)
     await film.command('edit.redo')
     await film.saveReopen()
     expect(clips(await film.sequence())).toHaveLength(1)

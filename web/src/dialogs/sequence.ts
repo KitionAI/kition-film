@@ -143,7 +143,7 @@ export function sequenceChanges(draft: Draft, current: SequenceKeys): Params {
 const trackCount = (value: unknown) => Math.max(0, Math.min(256, Math.round(Number(value) || 0)))
 
 /**
- * Upstream's `new_sequence_params`: `file.newSequence`'s params (a blank name lets the command
+ * Upstream's `new_sequence_params`: `sequence.new`'s params (a blank name lets the command
  * name it), then `sequence.settings` on the new sequence for what that command has no param for
  * (drop-frame timecode, Maximum Render Quality), only when they are not the defaults.
  */
@@ -163,7 +163,7 @@ export function newSequenceSteps(draft: Draft, defaults: SequenceKeys = DEFAULT_
   const after: SequenceKeys = { ...defaults, name, fpsNum: rate.num, fpsDen: rate.den, width: Number(draft.width), height: Number(draft.height), sampleRate: Number(draft.sampleRate) }
   const all = sequenceChanges(draft, after)
   const rest = Object.fromEntries(Object.entries(all).filter(([key]) => key === 'dropFrame' || key === 'maxRenderQuality'))
-  return [{ command: 'file.newSequence', params }, ...(Object.keys(rest).length ? [{ command: 'sequence.settings', params: rest }] : [])]
+  return [{ command: 'sequence.new', params }, ...(Object.keys(rest).length ? [{ command: 'sequence.settings', params: rest }] : [])]
 }
 
 /** What upstream's `defaults()` answers for `command` (the `dialogDefaults` extra), or null. */
@@ -374,12 +374,12 @@ const sequenceSettings: DialogSpec = {
 
 /**
  * File ▸ New ▸ Sequence… (upstream `open_new`): the General tab from the default settings, named
- * "Sequence NN" as `file.newSequence` would, and a Tracks tab (3 video, 3 audio). OK runs
- * `file.newSequence`, then `sequence.settings` for drop-frame timecode and Maximum Render Quality
+ * "Sequence NN" as `sequence.new` would, and a Tracks tab (3 video, 3 audio). OK runs
+ * `sequence.new`, then `sequence.settings` for drop-frame timecode and Maximum Render Quality
  * when they are on: two history steps then, as upstream.
  */
 const newSequence: DialogSpec = {
-  id: 'file.newSequence',
+  id: 'sequence.new',
   family: 'sequence',
   title: 'New Sequence',
   prefix: 'sequenceSettings',
@@ -399,7 +399,7 @@ const newSequence: DialogSpec = {
   ],
   // What it makes follows the draft only.
   dependsOn: () => null,
-  defaults: (ctx) => settingsDraft(ctx, 'file.newSequence', true),
+  defaults: (ctx) => settingsDraft(ctx, 'sequence.new', true),
   steps: (draft) => newSequenceSteps(draft, sequenceInfo(draft).current),
 }
 

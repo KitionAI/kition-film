@@ -112,7 +112,7 @@ test('one drag sends begin once, then merge, at most once per frame, and its rel
       [70, false, true],
     ],
   )
-  assert.ok(sent.every(([id, params]) => id === 'effects.setParam' && params.clip === 7 && params.effect === 1 && params.param === 'opacity'))
+  assert.ok(sent.every(([id, params]) => id === 'effect.setParam' && params.clip === 7 && params.effect === 1 && params.param === 'opacity'))
 })
 
 test('a second drag begins its own step; a typed value is a step of its own, neither begun nor merged', async () => {

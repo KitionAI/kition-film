@@ -139,25 +139,25 @@ test("Scene Edit Detection's job preview settles each animation frame with its p
 // ---- Flash Cue Marker and the marker dialog
 
 test('Flash Cue Marker sends its comment and drops an empty name, as upstream; it previews the marker and follows the playhead', async () => {
-  const cue = spec('markers.addFlashCue')
+  const cue = spec('marker.addFlashCue')
   assert.deepEqual(cue.preview, ['markers'])
-  assert.deepEqual(await opened('markers.addFlashCue'), { name: '', comment: '' })
-  assert.deepEqual(await ok('markers.addFlashCue', [['comment', 'go']]), [{ command: 'markers.addFlashCue', params: { comment: 'go' } }])
-  assert.deepEqual(await ok('markers.addFlashCue', [['name', 'Cue A']]), [{ command: 'markers.addFlashCue', params: { name: 'Cue A', comment: '' } }])
+  assert.deepEqual(await opened('marker.addFlashCue'), { name: '', comment: '' })
+  assert.deepEqual(await ok('marker.addFlashCue', [['comment', 'go']]), [{ command: 'marker.addFlashCue', params: { comment: 'go' } }])
+  assert.deepEqual(await ok('marker.addFlashCue', [['name', 'Cue A']]), [{ command: 'marker.addFlashCue', params: { name: 'Cue A', comment: '' } }])
   assert.notDeepEqual(previewDepends(cue, context()), previewDepends(cue, context({ on: { ...film, playhead: 9 } })))
 })
 
-test('the marker dialog opens on the marker a Markers row names (or the one at the playhead) and sends markers.edit with its frames', async () => {
-  const edit = spec('markers.edit')
+test('the marker dialog opens on the marker a Markers row names (or the one at the playhead) and sends marker.edit with its frames', async () => {
+  const edit = spec('marker.edit')
   assert.deepEqual(edit.preview, ['markers'])
-  assert.equal(routeOf('markers.edit', {}, 'markers'), 'dialog')
-  assert.equal(routeOf('markers.edit', { marker: 41 }, 'markers'), 'dialog')
-  assert.equal(routeOf('markers.edit', { marker: 41, name: 'X' }, 'markers'), 'session')
-  const draft = await opened('markers.edit', context({ params: { marker: 41 } }))
+  assert.equal(routeOf('marker.edit', {}, 'markers'), 'dialog')
+  assert.equal(routeOf('marker.edit', { marker: 41 }, 'markers'), 'dialog')
+  assert.equal(routeOf('marker.edit', { marker: 41, name: 'X' }, 'markers'), 'session')
+  const draft = await opened('marker.edit', context({ params: { marker: 41 } }))
   assert.equal(draft.marker, 41)
   assert.deepEqual([draft.name, draft.comment, draft.color, draft.duration], ['Cue', 'note', 'Green', 0])
   const [step] = await ok(
-    'markers.edit',
+    'marker.edit',
     [
       ['name', 'Cue 2'],
       ['comment', 'two lines\nhere'],
@@ -166,22 +166,22 @@ test('the marker dialog opens on the marker a Markers row names (or the one at t
     ],
     context({ params: { marker: 41 } }),
   )
-  assert.deepEqual(step, { command: 'markers.edit', params: { marker: 41, name: 'Cue 2', comment: 'two lines\nhere', color: 'Rose', durationFrames: 48 } })
+  assert.deepEqual(step, { command: 'marker.edit', params: { marker: 41, name: 'Cue 2', comment: 'two lines\nhere', color: 'Rose', durationFrames: 48 } })
   // No marker named: the one at the playhead (5 s), its own colour listed though the filter's seven lack it.
-  const at = await opened('markers.edit')
+  const at = await opened('marker.edit')
   assert.equal(at.marker, 42)
-  const colors = rowsOf('markers.edit').get('color').options(at, context())
+  const colors = rowsOf('marker.edit').get('color').options(at, context())
   assert.deepEqual(colors.map(([value]) => value), [...MARKER_COLORS, 'Iris'])
-  await assert.rejects(() => opened('markers.edit', context({ on: { ...film, playhead: 3 } })), /no marker at the playhead/)
+  await assert.rejects(() => opened('marker.edit', context({ on: { ...film, playhead: 3 } })), /no marker at the playhead/)
 })
 
 test("the marker dialog rebases on a peer's change to a field left alone, and keeps the one the person changed", async () => {
-  const edit = spec('markers.edit')
+  const edit = spec('marker.edit')
   assert.equal(edit.rebase, true)
   const ctx = context({ params: { marker: 41 } })
-  const draft = setAll('markers.edit', await opened('markers.edit', ctx), [['name', 'Mine']], ctx)
+  const draft = setAll('marker.edit', await opened('marker.edit', ctx), [['name', 'Mine']], ctx)
   const peer = context({ params: { marker: 41 }, on: { ...film, markers: [{ ...markers[0], name: 'Theirs', color: 'Blue' }, markers[1]] } })
-  const rebased = rebaseDraft(edit, draft, await opened('markers.edit', peer))
+  const rebased = rebaseDraft(edit, draft, await opened('marker.edit', peer))
   assert.equal(rebased.name, 'Mine')
   assert.equal(rebased.color, 'Blue')
 })
@@ -327,13 +327,13 @@ test("the Source monitor's bar draws a preview's markers of the item it shows: a
 // ---- routes and ids
 
 test('the dialogs open with no params and run at once with them; Add Chapter Marker stays direct', () => {
-  for (const id of ['clip.sceneEditDetection', 'markers.addFlashCue', 'clip.updateMetadata', 'file.mediaProperties', 'file.projectSettings.general', 'project.ingestSettings']) {
+  for (const id of ['clip.sceneEditDetection', 'marker.addFlashCue', 'clip.updateMetadata', 'file.mediaProperties', 'file.projectSettings.general', 'project.ingestSettings']) {
     assert.equal(routeOf(id, {}, 'timeline'), 'dialog', id)
   }
   assert.equal(routeOf('clip.sceneEditDetection', { applyCuts: true }, 'timeline'), 'session')
-  assert.equal(routeOf('markers.addFlashCue', { name: 'A' }, 'timeline'), 'session')
+  assert.equal(routeOf('marker.addFlashCue', { name: 'A' }, 'timeline'), 'session')
   assert.equal(routeOf('project.ingestSettings', { enabled: true }, 'project'), 'session')
-  assert.equal(routeOf('markers.addChapter', {}, 'timeline'), 'session')
+  assert.equal(routeOf('marker.addChapter', {}, 'timeline'), 'session')
 })
 
 test("every field upstream's Scene Edit Detection, Flash Cue Marker, and Project Settings register has a declared id standing for it, the hidden ones aside", () => {

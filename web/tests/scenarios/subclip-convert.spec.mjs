@@ -10,7 +10,7 @@ test('F64 converting a subclip to a master preserves its source range after dele
   await film.open()
   await lendMedia(film, 'media/subclip-master.mp4', readFileSync(source))
   await film.command('file.newProject', { name: 'Independent master' })
-  await film.command('file.newSequence', { name: 'Excerpt', width: 64, height: 36, fps: 24, video: 1, audio: 0 })
+  await film.command('sequence.new', { name: 'Excerpt', width: 64, height: 36, fps: 24, video: 1, audio: 0 })
   const { items: [parent] } = await film.command('file.import', { paths: ['../media/subclip-master.mp4'] })
   const { item } = await film.command('clip.makeSubclip', { item: parent, startFrame: 6, endFrame: 18 })
   await film.command('timeline.place', { item, seconds: 0 })

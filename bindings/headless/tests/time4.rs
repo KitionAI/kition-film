@@ -27,7 +27,7 @@ async fn missing_item_fixture_is_readable_and_keeps_the_missing_reference() {
 #[tokio::test(flavor = "multi_thread")]
 async fn relinking_a_missing_source_clears_and_receipts_its_missing_id() {
     let f = Fixture::from_bytes(include_bytes!("../../../conformance/check-missing-item.kfilm"), Default::default());
-    let made = f.colleague(&[("file.newColorMatte", json!({"seconds": 2}))]);
+    let made = f.colleague(&[("item.newColorMatte", json!({"seconds": 2}))]);
     let source = made[0]["item"].as_u64().unwrap().to_string();
     let (sequence, _) = f.inspect().await;
     let clip = v1(&sequence)[0];
@@ -83,37 +83,37 @@ async fn deleting_a_sequence_receipts_every_owned_track_and_clip() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn caption_track_commands_hold_only_the_named_track() {
-    for command in ["captions.setTrack", "captions.deleteTrack", "captions.setStyle"] {
+    for command in ["caption.setTrack", "caption.deleteTrack", "caption.setStyle"] {
         for change in ["clip", "other track", "same track"] {
             let f = Fixture::new(3);
-            f.colleague(&[("captions.newTrack", json!({"name": "Mine"})), ("captions.newTrack", json!({"name": "Other"}))]);
-            let tracks = f.ok("run", json!({"steps": [{"command": "captions.list"}]})).await;
+            f.colleague(&[("caption.newTrack", json!({"name": "Mine"})), ("caption.newTrack", json!({"name": "Other"}))]);
+            let tracks = f.ok("run", json!({"steps": [{"command": "caption.list"}]})).await;
             let track = tracks["completed"][0]["result"]["tracks"][0]["id"].as_u64().unwrap();
             let (sequence, basis) = f.inspect().await;
             f.colleague(&[match change {
                 "clip" => opacity(v1(&sequence)[0], 30.0),
-                "other track" => ("captions.setTrack", json!({"track": "C2", "name": "Theirs"})),
-                _ => ("captions.setTrack", json!({"track": track, "name": "Theirs"})),
+                "other track" => ("caption.setTrack", json!({"track": "C2", "name": "Theirs"})),
+                _ => ("caption.setTrack", json!({"track": track, "name": "Theirs"})),
             }]);
             let params = match command {
-                "captions.setTrack" => json!({"track": track, "name": "Mine again"}),
-                "captions.setStyle" => json!({"track": track, "size": 40}),
+                "caption.setTrack" => json!({"track": track, "name": "Mine again"}),
+                "caption.setStyle" => json!({"track": track, "size": 40}),
                 _ => json!({"track": track}),
             };
             let answer = f.call("run", json!({"basis": basis, "steps": [{"command": command, "params": params}]})).await;
             // A size patch does not read
             // name. captions.rs:361-418 writes only supplied style leaves.
             // Same-track rename + setStyle: conflict -> apply, preserving name.
-            if change == "same track" && command != "captions.setStyle" {
+            if change == "same track" && command != "caption.setStyle" {
                 assert_conflict(&answer.expect_err(command), &sequence["id"].as_u64().unwrap().to_string(), "changed");
             } else {
                 answer.unwrap_or_else(|e| panic!("{command} after {change}: {e}"));
                 let mut disk = kition_film_kit::FilmDocument::open(FILE, &std::fs::read(f.file()).unwrap()).unwrap();
-                let saved = kition_kit::KitDocument::execute(&mut disk, "captions.list", json!({})).unwrap();
+                let saved = kition_kit::KitDocument::execute(&mut disk, "caption.list", json!({})).unwrap();
                 let mine = saved["tracks"].as_array().unwrap().iter().find(|found| found["id"] == track);
                 match command {
-                    "captions.setTrack" => assert_eq!(mine.unwrap()["name"], "Mine again"),
-                    "captions.setStyle" => assert_eq!(mine.unwrap()["style"]["size"], 40.0),
+                    "caption.setTrack" => assert_eq!(mine.unwrap()["name"], "Mine again"),
+                    "caption.setStyle" => assert_eq!(mine.unwrap()["style"]["size"], 40.0),
                     _ => assert!(mine.is_none()),
                 }
                 if change == "clip" {
@@ -131,12 +131,12 @@ async fn caption_track_commands_hold_only_the_named_track() {
 async fn caption_track_ordinals_cannot_retarget_after_a_delete() {
     for target in [json!("C1"), serde_json::Value::Null] {
         let f = Fixture::new(2);
-        f.colleague(&[("captions.newTrack", json!({"name": "First"})), ("captions.newTrack", json!({"name": "Second"}))]);
+        f.colleague(&[("caption.newTrack", json!({"name": "First"})), ("caption.newTrack", json!({"name": "Second"}))]);
         let (sequence, basis) = f.inspect().await;
-        f.colleague(&[("captions.deleteTrack", json!({"track": "C1"}))]);
+        f.colleague(&[("caption.deleteTrack", json!({"track": "C1"}))]);
         let before = std::fs::read(f.file()).unwrap();
         let answer =
-            f.refused("run", json!({"basis": basis, "steps": [{"command": "captions.setTrack", "params": {"track": target, "name": "Wrong track"}}]})).await;
+            f.refused("run", json!({"basis": basis, "steps": [{"command": "caption.setTrack", "params": {"track": target, "name": "Wrong track"}}]})).await;
         assert_conflict(&answer, &sequence["id"].as_u64().unwrap().to_string(), "changed");
         assert_eq!(std::fs::read(f.file()).unwrap(), before);
         f.shutdown().await;
@@ -158,9 +158,9 @@ async fn automation_holds_only_the_tracks_and_intervals_it_writes() {
             })
             .map(|clip| clip["clip"].clone())
             .collect::<Vec<_>>();
-        f.colleague(&[("edit.clear", json!({"clips": clear}))]);
+        f.colleague(&[("edit.delete", json!({"clips": clear}))]);
         if case == "between markers" {
-            f.colleague(&[("markers.add", json!({"seconds": 10})), ("markers.add", json!({"seconds": 20}))]);
+            f.colleague(&[("marker.add", json!({"seconds": 10})), ("marker.add", json!({"seconds": 20}))]);
         }
         let (sequence, basis) = f.inspect().await;
         let item = sequence["video"][0]["items"][1]["item"].as_u64().unwrap();
@@ -196,15 +196,15 @@ async fn automation_holds_only_the_tracks_and_intervals_it_writes() {
 async fn automation_at_markers_holds_captions_it_ripples() {
     for sync in [true, false] {
         let f = Fixture::new(2);
-        let made = f.colleague(&[("captions.newTrack", json!({"name": "Captions"})), ("markers.add", json!({"seconds": 10}))]);
+        let made = f.colleague(&[("caption.newTrack", json!({"name": "Captions"})), ("marker.add", json!({"seconds": 10}))]);
         let track = made[0]["track"].as_u64().unwrap();
-        f.colleague(&[("captions.setTrack", json!({"track": track, "syncLock": sync}))]);
+        f.colleague(&[("caption.setTrack", json!({"track": track, "syncLock": sync}))]);
         let (sequence, basis) = f.inspect().await;
         let item = sequence["video"][0]["items"][0]["item"].as_u64().unwrap();
-        f.colleague(&[("captions.add", json!({"track": track, "seconds": 15, "durationSeconds": 1, "text": "Theirs"}))]);
+        f.colleague(&[("caption.add", json!({"track": track, "seconds": 15, "durationSeconds": 1, "text": "Theirs"}))]);
         let before = std::fs::read(f.file()).unwrap();
         let mut disk = kition_film_kit::FilmDocument::open(FILE, &before).unwrap();
-        let captions_before = disk.execute("captions.list", json!({})).unwrap();
+        let captions_before = disk.execute("caption.list", json!({})).unwrap();
         let answer = f.call("run", json!({"basis": basis, "steps": [{"command": "clip.automateToSequence", "params": {"items": [item], "method": "insert", "placement": "unnumberedMarkers"}}]})).await;
         if sync {
             assert_conflict(&answer.expect_err("the newly added caption would ripple"), &sequence["id"].as_u64().unwrap().to_string(), "changed");
@@ -212,7 +212,7 @@ async fn automation_at_markers_holds_captions_it_ripples() {
         } else {
             answer.unwrap();
             let mut disk = kition_film_kit::FilmDocument::open(FILE, &std::fs::read(f.file()).unwrap()).unwrap();
-            let saved = disk.execute("captions.list", json!({})).unwrap();
+            let saved = disk.execute("caption.list", json!({})).unwrap();
             assert_eq!(saved["tracks"][0]["captions"], captions_before["tracks"][0]["captions"]);
         }
         f.shutdown().await;

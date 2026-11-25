@@ -5,9 +5,9 @@ import { test, expect, clips, editState, TICKS } from './fixtures.mjs'
 test('F34 default Cross Dissolve joins two shots with exact handles and the expected linear-light exported colors', async ({ film, page }, testInfo) => {
   await film.open()
   await film.command('file.newProject', { name: 'Original dissolve' })
-  await film.command('file.newSequence', { name: 'Dissolve', width: 64, height: 36, fps: 24, video: 1, audio: 0 })
+  await film.command('sequence.new', { name: 'Dissolve', width: 64, height: 36, fps: 24, video: 1, audio: 0 })
   for (const [seconds, color] of [[0, '#ff0000'], [0.5, '#0000ff']]) {
-    const { item } = await film.command('file.newColorMatte', { color, seconds: 0.5 })
+    const { item } = await film.command('item.newColorMatte', { color, seconds: 0.5 })
     await film.command('timeline.place', { item, track: 'V1', seconds })
   }
   await film.command('prefs.set', { values: { 'timeline.videoTransitionDuration': 6, 'timeline.videoTransitionUnit': 'frames' } })

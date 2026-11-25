@@ -130,7 +130,7 @@ fn expected(project: &Project, seq: u64, p: &Value, linked: bool) -> Under {
 fn direct_moves_compare_ordinal_destinations_links_negative_alignment_and_insert_windows() {
     let mut doc = FilmDocument::create("Move.kfilm", 64, 36).unwrap();
     let seq = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let item = doc.execute("file.newBarsAndTone", json!({"seconds":1})).unwrap()["item"].clone();
+    let item = doc.execute("item.newBarsAndTone", json!({"seconds":1})).unwrap()["item"].clone();
     let clip = doc.execute("timeline.place", json!({"item":item,"track":"V1","audioTrack":"A1","time":254_016_000_000i64})).unwrap()["clips"][0].clone();
     doc.execute("timeline.place", json!({"item":item,"track":"V2","audioTrack":"A2","seconds":4})).unwrap();
     let project = kition_film_format::decode(&doc.save(None).unwrap()).unwrap().project;

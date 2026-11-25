@@ -1,5 +1,5 @@
 //! The Premiere audio-effect set through engine commands: listed with folders by
-//! `effects.list`, applicable as clip effects (`effects.apply`) and track effects
+//! `effect.list`, applicable as clip effects (`effect.apply`) and track effects
 //! (`mixer.addInsert`), parameters settable by id, and the sequence still renders.
 
 use super::*;
@@ -25,7 +25,7 @@ fn render(s: &Session, frames: usize) -> kition_film_frame::AudioBuffer {
 #[test]
 fn effects_list_has_every_audio_effect_in_its_folder() {
     let mut s = demo();
-    let list = s.execute("effects.list", json!({})).unwrap();
+    let list = s.execute("effect.list", json!({})).unwrap();
     let arr = list.as_array().unwrap();
     for id in PREMIERE_AUDIO_EFFECTS {
         let e = arr.iter().find(|e| e["id"] == id).unwrap_or_else(|| panic!("{id} not listed"));
@@ -45,7 +45,7 @@ fn every_audio_effect_applies_to_clips_and_tracks_and_renders() {
     let clip = a1_clip(&s);
     for id in PREMIERE_AUDIO_EFFECTS {
         let n0 = s.active_sequence().unwrap().find_item(ClipId(clip)).unwrap().1.effects.len();
-        s.execute("effects.apply", json!({"clips": [clip], "effect": id})).unwrap_or_else(|e| panic!("{id}: {e}"));
+        s.execute("effect.apply", json!({"clips": [clip], "effect": id})).unwrap_or_else(|e| panic!("{id}: {e}"));
         let it = s.active_sequence().unwrap().find_item(ClipId(clip)).unwrap().1.clone();
         assert_eq!(it.effects.len(), n0 + 1, "{id}");
         assert_eq!(it.effects.last().unwrap().effect, id);
@@ -55,7 +55,7 @@ fn every_audio_effect_applies_to_clips_and_tracks_and_renders() {
         assert_eq!(b.frames(), 2400);
         assert!(b.channels.iter().flatten().all(|v| v.is_finite()), "{id}: non-finite mix");
         s.execute("mixer.removeInsert", json!({"strip": "A1", "slot": 0})).unwrap();
-        s.execute("effects.remove", json!({"clip": clip, "index": n0})).unwrap();
+        s.execute("effect.remove", json!({"clip": clip, "index": n0})).unwrap();
     }
 }
 
@@ -67,10 +67,10 @@ fn parameters_are_set_by_id_and_change_the_sound() {
     let peak = |b: &kition_film_frame::AudioBuffer| b.channels.iter().flatten().fold(0.0f32, |a, v| a.max(v.abs()));
     assert!(peak(&before) > 1e-3, "the demo has audio on A1");
     // Mute (a loose item) silences the clip.
-    s.execute("effects.apply", json!({"clips": [clip], "effect": "Mute"})).unwrap();
+    s.execute("effect.apply", json!({"clips": [clip], "effect": "Mute"})).unwrap();
     let it = s.active_sequence().unwrap().find_item(ClipId(clip)).unwrap().1.clone();
     let idx = it.effects.iter().position(|e| e.effect == "mute").unwrap();
-    s.execute("effects.setParam", json!({"clip": clip, "effect": idx, "param": "mute", "value": true})).unwrap();
+    s.execute("effect.setParam", json!({"clip": clip, "effect": idx, "param": "mute", "value": true})).unwrap();
     let it = s.active_sequence().unwrap().find_item(ClipId(clip)).unwrap().1.clone();
     assert_eq!(it.effects[idx].param("mute").unwrap().value, ParamValue::Bool(true));
     // the clip's own signal (other tracks of the demo keep playing)
@@ -101,13 +101,13 @@ fn shared_names_resolve_by_track_kind() {
     let mut s = demo();
     let clip = a1_clip(&s);
     for (name, id) in [("Invert", "invert_a"), ("Volume", "volume_a"), ("Channel Volume", "channel_volume_a"), ("Balance", "balance_a")] {
-        s.execute("effects.apply", json!({"clips": [clip], "effect": name})).unwrap();
+        s.execute("effect.apply", json!({"clips": [clip], "effect": name})).unwrap();
         let it = s.active_sequence().unwrap().find_item(ClipId(clip)).unwrap().1.clone();
         assert_eq!(it.effects.last().unwrap().effect, id, "{name}");
     }
     // On a video clip "Invert" is still the video effect.
     let v = s.active_sequence().unwrap().video_tracks[0].items[0].id.0;
-    s.execute("effects.apply", json!({"clips": [v], "effect": "Invert"})).unwrap();
+    s.execute("effect.apply", json!({"clips": [v], "effect": "Invert"})).unwrap();
     let it = s.active_sequence().unwrap().find_item(ClipId(v)).unwrap().1.clone();
     assert!(it.effects.iter().any(|e| e.effect == "invert"));
 }

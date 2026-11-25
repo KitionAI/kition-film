@@ -25,8 +25,8 @@ async function timelineProject(page, kit) {
     steps.push({ command: 'timeline.place', params: { item: 8, track: 1, audioTrack: 4, seconds: 2.5 + index * 2.5 } })
     steps.push({ command: 'timeline.place', params: { item: 8, track: 2, audioTrack: 5, seconds: 3.5 + index * 2.5 } })
   }
-  steps.push({ command: 'playhead.set', params: { seconds: 3 } }, { command: 'markers.add', params: {} }, { command: 'playhead.set', params: { seconds: 9 } }, { command: 'markers.add', params: {} })
-  steps.push({ command: 'markers.markIn', params: {} }, { command: 'playhead.set', params: { seconds: 12 } }, { command: 'markers.markOut', params: {} }, { command: 'timeline.select', params: { clips: [10] } })
+  steps.push({ command: 'playhead.set', params: { seconds: 3 } }, { command: 'marker.add', params: {} }, { command: 'playhead.set', params: { seconds: 9 } }, { command: 'marker.add', params: {} })
+  steps.push({ command: 'marker.markIn', params: {} }, { command: 'playhead.set', params: { seconds: 12 } }, { command: 'marker.markOut', params: {} }, { command: 'timeline.select', params: { clips: [10] } })
   await page.evaluate(async (list) => window.devHost.connection().ai.run(list, false), steps)
   await kit.locator('.kui-app').focus()
   await page.keyboard.press('\\')
@@ -74,7 +74,7 @@ async function picturePoint(page, kit, fx, fy) {
 async function projectShown(page, kit) {
   await page.evaluate(async () => {
     const run = (list) => window.devHost.connection().ai.run(list, false)
-    await run([{ command: 'file.newBin', params: { name: 'Selects' } }, { command: 'file.newBarsAndTone', params: {} }])
+    await run([{ command: 'bin.add', params: { name: 'Selects' } }, { command: 'item.newBarsAndTone', params: {} }])
     const root = (await window.devHost.connection().ai.inspect()).details.project.root
     const bin = root.children.find((child) => child.children && child.name === 'Selects')
     const bars = root.children.find((child) => child.item != null && child.name?.includes('bars'))
@@ -125,11 +125,11 @@ async function effectControlsShown(page, kit) {
     const at = (fraction) => Math.round(clip.start + clip.duration * fraction)
     await run([
       { command: 'playhead.set', params: { time: at(0.15) } },
-      { command: 'effects.toggleAnimation', params: { clip: 10, effect: 'motion', param: 'scale' } },
-      { command: 'effects.toggleAnimation', params: { clip: 10, effect: 'motion', param: 'position' } },
+      { command: 'effect.toggleAnimation', params: { clip: 10, effect: 'motion', param: 'scale' } },
+      { command: 'effect.toggleAnimation', params: { clip: 10, effect: 'motion', param: 'position' } },
       { command: 'playhead.set', params: { time: at(0.8) } },
-      { command: 'effects.setParam', params: { clip: 10, effect: 'motion', param: 'scale', value: 140 } },
-      { command: 'effects.setParam', params: { clip: 10, effect: 'motion', param: 'position', value: [700, 400] } },
+      { command: 'effect.setParam', params: { clip: 10, effect: 'motion', param: 'scale', value: 140 } },
+      { command: 'effect.setParam', params: { clip: 10, effect: 'motion', param: 'position', value: [700, 400] } },
       { command: 'playhead.set', params: { time: at(0.5) } },
     ])
   })
@@ -150,8 +150,8 @@ async function clipDialogSetup(page, { copy }) {
     const target = clips.find((clip) => clip.clip !== 10) ?? clips[0]
     const steps = copying
       ? [
-          { command: 'effects.apply', params: { clips: [10], effect: 'gaussian_blur' } },
-          { command: 'effects.setParam', params: { clip: 10, effect: 'opacity', param: 'opacity', value: 40 } },
+          { command: 'effect.apply', params: { clips: [10], effect: 'gaussian_blur' } },
+          { command: 'effect.setParam', params: { clip: 10, effect: 'opacity', param: 'opacity', value: 40 } },
           { command: 'timeline.select', params: { clips: [10], linked: false } },
           { command: 'edit.copy', params: {} },
         ]
@@ -647,7 +647,7 @@ const STATES = [
     show: async (page, kit) => {
       await projectShown(page, kit)
       await kit.getByTestId('film-project-new-item').click()
-      await kit.getByTestId('film-project-new-file.newBarsAndTone').waitFor()
+      await kit.getByTestId('film-project-new-item.newBarsAndTone').waitFor()
     },
   },
   // Effect Controls and Properties (Task 19): the Timeline's selected clip with Scale and
@@ -891,7 +891,7 @@ const STATES = [
       await projectPlain(page, kit)
       await run(page, [{ command: 'project.select', params: { items: [8] } }])
     },
-    dialog: 'clip.modifyTimecode',
+    dialog: 'clip.setTimecode',
     after: async (page, kit) => {
       await kit.getByTestId('film-dialog-timecode-timecode').fill('01:00:00:00')
       await kit.locator('[data-testid^="film-project-item-"][data-preview="changed"]').first().waitFor({ timeout: 10000 })
@@ -901,7 +901,7 @@ const STATES = [
   {
     name: 'dialog-offline-file',
     setup: projectPlain,
-    dialog: 'file.newOfflineFile',
+    dialog: 'item.newOfflineFile',
     after: async (page, kit) => {
       await kit.getByTestId('film-dialog-offlineFile-name').fill('Lost Take')
       await kit.locator('[data-testid^="film-project-item-"][data-preview="added"]').first().waitFor({ timeout: 10000 })
@@ -912,7 +912,7 @@ const STATES = [
     name: 'dialog-edit-offline',
     setup: async (page, kit) => {
       await projectPlain(page, kit)
-      const made = await run(page, [{ command: 'file.newOfflineFile', params: { name: 'Lost Take', tapeName: 'A001' } }])
+      const made = await run(page, [{ command: 'item.newOfflineFile', params: { name: 'Lost Take', tapeName: 'A001' } }])
       await run(page, [{ command: 'project.select', params: { items: [made.completed[0].result.item] } }])
     },
     dialog: 'clip.editOffline',
@@ -940,7 +940,7 @@ const STATES = [
     name: 'dialog-merge-clips',
     setup: async (page, kit) => {
       await projectPlain(page, kit)
-      const made = await run(page, [{ command: 'file.newOfflineFile', params: { name: 'Tone', video: false, audio: true, seconds: 3 } }])
+      const made = await run(page, [{ command: 'item.newOfflineFile', params: { name: 'Tone', video: false, audio: true, seconds: 3 } }])
       await run(page, [{ command: 'timeline.select', params: { clips: [] } }, { command: 'project.select', params: { items: [8, made.completed[0].result.item] } }])
     },
     dialog: 'clip.mergeClips',
@@ -983,7 +983,7 @@ const STATES = [
   ...['general', 'tracks'].map((tab) => ({
     name: `dialog-new-sequence-${tab}`,
     setup: timelineProject,
-    dialog: 'file.newSequence',
+    dialog: 'sequence.new',
     after: async (page, kit) => {
       await kit.getByTestId('film-dialog-sequenceSettings-name').fill('Cut 2')
       if (tab !== 'general') await kit.getByTestId(`film-dialog-sequenceSettings-tab-${tab}`).click()
@@ -1061,7 +1061,7 @@ const STATES = [
   {
     name: 'dialog-new-color-matte',
     setup: projectShown,
-    dialog: 'file.newColorMatte',
+    dialog: 'item.newColorMatte',
     after: async (page, kit) => {
       await kit.getByTestId('film-dialog-colorMatte-color').click()
       const hex = kit.getByTestId('film-dialog-colorMatte-color-picker-hex')
@@ -1078,7 +1078,7 @@ const STATES = [
     name: 'dialog-matte-color',
     show: async (page, kit) => {
       await projectShown(page, kit)
-      const made = await page.evaluate(async () => (await window.devHost.connection().ai.run([{ command: 'file.newColorMatte', params: { color: '#d83a3a', seconds: 2 } }], false)).completed[0].result?.item)
+      const made = await page.evaluate(async () => (await window.devHost.connection().ai.run([{ command: 'item.newColorMatte', params: { color: '#d83a3a', seconds: 2 } }], false)).completed[0].result?.item)
       const row = kit.locator(`[data-testid="film-project"] [data-testid="film-project-item-${made}"]`).first()
       await row.scrollIntoViewIfNeeded()
       await row.dblclick()
@@ -1125,10 +1125,10 @@ const STATES = [
     name: 'dialog-search-bin',
     show: async (page, kit) => {
       await projectShown(page, kit)
-      await run(page, [{ command: 'file.newOfflineFile', params: { name: 'Room Tone', video: false, audio: true, seconds: 3 } }])
+      await run(page, [{ command: 'item.newOfflineFile', params: { name: 'Room Tone', video: false, audio: true, seconds: 3 } }])
       await kit.getByTestId('film-project-view-list').click()
       await kit.getByTestId('film-project-list').waitFor()
-      await fromMenu(page, kit, 'file.newSearchBin')
+      await fromMenu(page, kit, 'bin.addSearch')
       await kit.getByTestId('film-dialog-searchBin').waitFor({ timeout: 10000 })
       await kit.getByTestId('film-dialog-searchBin-name').fill('Movies')
       await kit.getByTestId('film-dialog-searchBin-column').selectOption('Media Type')
@@ -1145,7 +1145,7 @@ const STATES = [
         const all = (node) => [...(node?.item != null ? [node] : []), ...(node?.children ?? []).flatMap(all)]
         return all((await window.devHost.connection().ai.inspect()).details.project.root).filter((each) => each.type !== 'Sequence').map((each) => each.item)
       })
-      const tone = (await run(page, [{ command: 'file.newOfflineFile', params: { name: 'Room Tone', video: false, audio: true, seconds: 3 } }])).completed[0].result?.item
+      const tone = (await run(page, [{ command: 'item.newOfflineFile', params: { name: 'Room Tone', video: false, audio: true, seconds: 3 } }])).completed[0].result?.item
       await run(page, [{ command: 'project.select', params: { items: [...items.slice(0, 1), tone] } }, { command: 'playhead.set', params: { seconds: 1 } }])
       await kit.getByTestId('film-project-automate').click()
       await kit.getByTestId('film-dialog-automate').waitFor({ timeout: 10000 })
@@ -1164,7 +1164,7 @@ const STATES = [
     name: 'dialog-scene-detect',
     show: async (page, kit) => {
       await timelineProject(page, kit)
-      const leader = (await run(page, [{ command: 'file.newCountingLeader', params: {} }])).completed[0].result?.item
+      const leader = (await run(page, [{ command: 'item.newCountingLeader', params: {} }])).completed[0].result?.item
       await run(page, [{ command: 'timeline.place', params: { item: leader, track: 'V3', seconds: 0 } }])
       const clip = await page.evaluate(async (item) => (await window.devHost.connection().ai.inspect()).details.sequence.video.flatMap((track) => track.items ?? []).find((each) => each.item === item)?.clip, leader)
       await run(page, [{ command: 'timeline.select', params: { clips: [clip] } }, { command: 'source.open', params: { item: leader } }])
@@ -1185,7 +1185,7 @@ const STATES = [
       await timelineProject(page, kit)
       await fromMenu(page, kit, 'window.panel.Markers')
       await run(page, [{ command: 'playhead.set', params: { seconds: 6 } }])
-      await fromMenu(page, kit, 'markers.addFlashCue')
+      await fromMenu(page, kit, 'marker.addFlashCue')
       await kit.getByTestId('film-dialog-flashCue').waitFor({ timeout: 10000 })
       await kit.getByTestId('film-dialog-flashCue-name').fill('Cue A')
       await kit.getByTestId('film-dialog-flashCue-comment').fill('Fade the title in')
@@ -1268,7 +1268,7 @@ const STATES = [
     setup: async (page, kit) => {
       await projectPlain(page, kit)
       await run(page, [
-        { command: 'file.newOfflineFile', params: { name: 'Tone', video: false, audio: true, seconds: 3 } },
+        { command: 'item.newOfflineFile', params: { name: 'Tone', video: false, audio: true, seconds: 3 } },
         { command: 'media.makeOffline', params: { items: [8] } },
       ])
     },
@@ -1394,7 +1394,7 @@ const STATES = [
     name: 'preview-project',
     show: async (page, kit) => {
       await projectShown(page, kit)
-      await openFake(page, { id: 'file.newColorMatte', family: 'tracks', title: 'New Color Matte', prefix: 'colorMatte', preview: ['project'], draft: { color: '#3a8fd8', seconds: 2 } })
+      await openFake(page, { id: 'item.newColorMatte', family: 'tracks', title: 'New Color Matte', prefix: 'colorMatte', preview: ['project'], draft: { color: '#3a8fd8', seconds: 2 } })
       const added = kit.locator('[data-testid^="film-project-item-"][data-preview="added"]').first()
       await added.waitFor({ timeout: 10000 })
       await added.scrollIntoViewIfNeeded()
@@ -1408,7 +1408,7 @@ const STATES = [
       await projectShown(page, kit)
       await kit.getByTestId('film-project-view-list').click()
       await kit.getByTestId('film-project-list').waitFor()
-      await openFake(page, { id: 'file.newColorMatte', family: 'tracks', title: 'New Color Matte', prefix: 'colorMatte', preview: ['project'], draft: { color: '#3a8fd8', seconds: 2 } })
+      await openFake(page, { id: 'item.newColorMatte', family: 'tracks', title: 'New Color Matte', prefix: 'colorMatte', preview: ['project'], draft: { color: '#3a8fd8', seconds: 2 } })
       await kit.locator('[data-testid^="film-project-item-"][data-preview="added"]').first().waitFor({ timeout: 10000 })
       await page.waitForTimeout(600)
     },
@@ -1422,7 +1422,7 @@ const STATES = [
       // The playhead away from the cue, so the cue's outline shows on its own.
       await page.evaluate(async () => window.devHost.connection().ai.run([{ command: 'playhead.set', params: { seconds: 3.5 } }], false))
       await page.waitForTimeout(400)
-      await openFake(page, { id: 'markers.addFlashCue', family: 'menu', title: 'Flash Cue Marker', prefix: 'flashCue', preview: ['markers'], draft: { name: 'Cue Point 1', seconds: 6 } })
+      await openFake(page, { id: 'marker.addFlashCue', family: 'menu', title: 'Flash Cue Marker', prefix: 'flashCue', preview: ['markers'], draft: { name: 'Cue Point 1', seconds: 6 } })
       await kit.locator('[data-testid^="film-markers-row-"][data-preview="added"]').first().waitFor({ timeout: 10000 })
       await page.waitForTimeout(600)
     },

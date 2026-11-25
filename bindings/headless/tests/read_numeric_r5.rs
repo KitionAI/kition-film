@@ -74,7 +74,7 @@ async fn explicit_integral_float_dimensions_do_not_inherit_sequence_size() {
             } else {
                 json!({"name":"Explicit","width":640,"height":360,"fps":25,"seconds":1,"audio":false})
             };
-            let result = f.call("run", json!({"basis":basis,"steps":[{"command":"file.newOfflineFile","params":params}]})).await;
+            let result = f.call("run", json!({"basis":basis,"steps":[{"command":"item.newOfflineFile","params":params}]})).await;
             if let Err(error) = result {
                 failures.push(format!("floating={floating}/{change}: explicit size does not inherit sequence dimensions: {}", error["error"]));
             } else {
@@ -97,7 +97,7 @@ async fn integral_float_dimensions_hold_motion_scaling_inputs() {
             let (sequence, basis) = f.inspect().await;
             let clip = v1(&sequence)[3];
             f.colleague(&[if related {
-                ("effects.setParam", json!({"clip":clip,"effect":"motion","param":"scale","value":75}))
+                ("effect.setParam", json!({"clip":clip,"effect":"motion","param":"scale","value":75}))
             } else {
                 ("clip.rename", json!({"clip":clip,"name":"Unrelated"}))
             }]);

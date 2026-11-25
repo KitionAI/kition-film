@@ -12,7 +12,7 @@ async fn selection_steps_retain_the_neighbour_chosen_from_track_order() {
             let clips = v1(&seen);
             let anchor = if command == "timeline.selectNextClip" { clips[0] } else { clips[2] };
             if deleted {
-                f.colleague(&[("edit.clear", json!({"clips":[clips[1]]}))]);
+                f.colleague(&[("edit.delete", json!({"clips":[clips[1]]}))]);
             } else {
                 f.colleague(&[("clip.rename", json!({"clip":clips[1],"name":"Unused neighbour name"}))]);
             }

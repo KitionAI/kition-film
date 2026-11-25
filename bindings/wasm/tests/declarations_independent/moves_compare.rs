@@ -143,7 +143,7 @@ fn expected(project: &Project, sequence: u64, selected: &[u64], command: &str, l
 fn keyboard_moves_compare_every_direction_links_boundaries_and_destination_overwrites() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
     let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let item = doc.execute("file.newBarsAndTone", json!({"seconds":3})).unwrap()["item"].clone();
+    let item = doc.execute("item.newBarsAndTone", json!({"seconds":3})).unwrap()["item"].clone();
     let mut selected = Vec::new();
     for (video, audio, time) in [("V1", "A1", 0), ("V2", "A2", 1_016_064_000_000i64)] {
         selected.push(doc.execute("timeline.place", json!({"item":item,"track":video,"audioTrack":audio,"time":time})).unwrap()["clips"][0].as_u64().unwrap());

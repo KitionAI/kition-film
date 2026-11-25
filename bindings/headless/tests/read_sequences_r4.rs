@@ -9,7 +9,7 @@ use serde_json::json;
 async fn processed_bin_reuses_the_observed_named_bin_and_ignores_other_bin_names() {
     for related in [true, false] {
         let f = Fixture::new(2);
-        let made = f.colleague(&[("file.newBin", json!({"name":"Processed Clips"})), ("file.newBin", json!({"name":"Other"}))]);
+        let made = f.colleague(&[("bin.add", json!({"name":"Processed Clips"})), ("bin.add", json!({"name":"Other"}))]);
         let processed = made[0]["bin"].as_u64().unwrap();
         let other = made[1]["bin"].as_u64().unwrap();
         let (seq, basis) = f.inspect().await;
@@ -24,7 +24,7 @@ async fn processed_bin_reuses_the_observed_named_bin_and_ignores_other_bin_names
         let answer = f
             .call(
                 "run",
-                json!({"basis":basis,"steps":[{"command":"clip.createMulticam","params":{"items":items,"method":"in","name":"Mine","processedBin":true}}]}),
+                json!({"basis":basis,"steps":[{"command":"clip.addMulticam","params":{"items":items,"method":"in","name":"Mine","processedBin":true}}]}),
             )
             .await;
         if related {
@@ -40,7 +40,7 @@ async fn processed_bin_reuses_the_observed_named_bin_and_ignores_other_bin_names
 fn normalization_stays_representable_by_the_project_model() {
     use kition_kit::KitDocument;
     let mut doc = kition_film_kit::FilmDocument::open(FILE, &project(1)).unwrap();
-    let tone = doc.execute("file.newBarsAndTone", json!({"seconds":1})).unwrap()["item"].clone();
+    let tone = doc.execute("item.newBarsAndTone", json!({"seconds":1})).unwrap()["item"].clone();
     doc.execute("timeline.place", json!({"item":tone,"track":"A1","time":0})).unwrap();
     let normalized = doc.execute("sequence.normalizeMixTrack", json!({"db":-3})).unwrap();
     assert!(normalized["masterVolumeDb"].as_f64().unwrap() <= 15.0, "the schema's Mix fader maximum is +15 dB: {normalized}");
@@ -66,7 +66,7 @@ fn duplicated_sequences_have_independent_timeline_identities() {
 async fn mix_normalization_holds_audio_gain_but_not_audio_names() {
     for related in [true, false] {
         let f = Fixture::new(2);
-        let tone = f.colleague(&[("file.newBarsAndTone", json!({"seconds":2}))])[0]["item"].as_u64().unwrap();
+        let tone = f.colleague(&[("item.newBarsAndTone", json!({"seconds":2}))])[0]["item"].as_u64().unwrap();
         let clip = f.colleague(&[("timeline.place", json!({"item":tone,"track":"A1","time":0}))])[0]["clips"][0].as_u64().unwrap();
         let (seq, basis) = f.inspect().await;
         rewrite(&f.file(), |p| {
@@ -107,7 +107,7 @@ async fn multicamera_creation_holds_parent_timecode_but_not_parent_metadata() {
                 source.metadata.insert("note".into(), "Unrelated".into());
             }
         });
-        let answer = f.call("run", json!({"basis":basis,"steps":[{"command":"clip.createMulticam","params":{"items":[subs[0]["item"],subs[1]["item"]],"method":"timecode","name":"Mine"}}]})).await;
+        let answer = f.call("run", json!({"basis":basis,"steps":[{"command":"clip.addMulticam","params":{"items":[subs[0]["item"],subs[1]["item"]],"method":"timecode","name":"Mine"}}]})).await;
         if related {
             assert_eq!(answer.expect_err("timecode is resolved through the subclip parent")["error"]["code"], "conflict");
         } else {

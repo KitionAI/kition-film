@@ -3,7 +3,7 @@ id: regressions/issue-13
 feature: film.effects.keyframes
 intent: >-
   Wave Warp has Premiere Pro's Pinning, so pinned edges stay still instead of rippling into the
-  frame; effects.list names the exact id first (dynamics before the Dynamics rack); the keyframe
+  frame; effect.list names the exact id first (dynamics before the Dynamics rack); the keyframe
   commands document mask and refuse an unknown interpolation instead of making it linear.
 layer: gate
 source:

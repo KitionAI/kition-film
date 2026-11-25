@@ -74,9 +74,9 @@ fn expected(project: &Project, sequence: u64, ids: &[u64], enabled: bool, mode: 
 fn frame_hold_options_compare_every_mode_selector_source_route_and_time_spelling() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
     let sequence = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let source = doc.execute("file.newOfflineFile", json!({"seconds":3})).unwrap()["item"].as_u64().unwrap();
+    let source = doc.execute("item.newOfflineFile", json!({"seconds":3})).unwrap()["item"].as_u64().unwrap();
     let subclip = doc.execute("clip.makeSubclip", json!({"item":source,"start":0,"end":254_016_000_000i64})).unwrap()["item"].as_u64().unwrap();
-    let adjustment = doc.execute("file.newAdjustmentLayer", json!({})).unwrap()["item"].as_u64().unwrap();
+    let adjustment = doc.execute("item.newAdjustmentLayer", json!({})).unwrap()["item"].as_u64().unwrap();
     let mut ids = Vec::new();
     for (source, track) in [(source, "V1"), (subclip, "V2"), (adjustment, "V3")] {
         ids.extend(

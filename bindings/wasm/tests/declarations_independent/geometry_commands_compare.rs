@@ -218,7 +218,7 @@ fn expected(
 fn geometry_commands_compare_empty_selections_link_modes_locked_lanes_and_explicit_targets() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
     let seq = doc.inspect().unwrap()["sequence"]["id"].as_u64().unwrap();
-    let item = doc.execute("file.newOfflineFile", json!({"seconds":4})).unwrap()["item"].clone();
+    let item = doc.execute("item.newOfflineFile", json!({"seconds":4})).unwrap()["item"].clone();
     let mut clips = Vec::new();
     for at in 0..3 {
         clips.extend(

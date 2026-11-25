@@ -14,7 +14,7 @@ fn small_nest() -> (Session, ClipId) {
     let main = s.state.active_sequence.unwrap();
     assert_eq!((s.active_sequence().unwrap().settings.width, s.active_sequence().unwrap().settings.height), (1920, 1080));
     let footage = s.active_sequence().unwrap().video_tracks[0].items[0].item;
-    let small = ItemId(s.execute("file.newSequence", json!({"name": "Small", "width": 1280, "height": 720})).unwrap()["sequence"].as_u64().unwrap());
+    let small = ItemId(s.execute("sequence.new", json!({"name": "Small", "width": 1280, "height": 720})).unwrap()["sequence"].as_u64().unwrap());
     s.execute("sequence.open", json!({"item": small.0})).unwrap();
     s.execute("timeline.place", json!({"item": footage.0, "seconds": 0.0})).unwrap();
     s.execute("sequence.open", json!({"item": main.0})).unwrap();

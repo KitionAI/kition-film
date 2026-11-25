@@ -3,8 +3,8 @@ import { test, expect, editState, TICKS, holdWorkerCommandReply } from './fixtur
 async function queuedScrubs(film) {
   await film.open()
   await film.command('file.newProject', { name: 'Scrub then Source step' })
-  await film.command('file.newSequence', { width: 64, height: 36, fps: 24 })
-  const item = (await film.command('file.newBarsAndTone', { seconds: 10 })).item
+  await film.command('sequence.new', { width: 64, height: 36, fps: 24 })
+  const item = (await film.command('item.newBarsAndTone', { seconds: 10 })).item
   await film.command('source.open', { item })
   await film.command('project.setMarks', { item, in: TICKS, out: 9 * TICKS })
   await film.command('prefs.set', { key: 'playback.stepManyFrames', value: 7 })

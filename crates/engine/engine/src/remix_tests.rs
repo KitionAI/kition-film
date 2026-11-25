@@ -23,7 +23,7 @@ fn music() -> (Vec<Vec<f32>>, dsp::Analysis) {
 /// clip selected.
 fn session(m: &[Vec<f32>], next: Option<f64>) -> (Session, ClipId) {
     let mut s = Session::default();
-    s.execute("file.newSequence", json!({"name": "remix", "audio": 2, "video": 1})).unwrap();
+    s.execute("sequence.new", json!({"name": "remix", "audio": 2, "video": 1})).unwrap();
     let inter: Vec<f32> = (0..m[0].len()).flat_map(|i| [m[0][i], m[1][i]]).collect();
     let bytes: Arc<[u8]> = crate::previews::write_wav_f32(&inter, SR).into();
     let item = crate::commands::import_bytes(&mut s, "/music.wav", bytes, None).unwrap();

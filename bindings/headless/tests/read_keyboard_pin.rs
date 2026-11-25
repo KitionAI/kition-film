@@ -50,14 +50,14 @@ async fn volume_shortcuts_retain_linked_audio_levels_but_not_names() {
     ] {
         for related in [false, true] {
             let mut doc = FilmDocument::create(FILE, 64, 36).unwrap();
-            let item = doc.execute("file.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
+            let item = doc.execute("item.newBarsAndTone", json!({"seconds":2})).unwrap()["item"].clone();
             let placed = doc.execute("timeline.place", json!({"item":item,"time":SECOND,"track":"V1"})).unwrap();
             let video = placed["clips"][0].clone();
             let audio = placed["clips"][1].clone();
             let f = Fixture::from_bytes(&doc.save(None).unwrap(), Default::default());
             let (_, basis) = f.inspect().await;
             f.colleague(&[if related {
-                ("effects.setParam", json!({"clip":audio,"effect":"volume","param":"level","value":-12}))
+                ("effect.setParam", json!({"clip":audio,"effect":"volume","param":"level","value":-12}))
             } else {
                 ("clip.rename", json!({"clip":audio,"name":"Colleague's name"}))
             }]);

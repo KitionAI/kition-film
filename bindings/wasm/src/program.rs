@@ -176,7 +176,7 @@ mod tests {
 
     fn matte() -> FilmDocument {
         let mut doc = FilmDocument::create("Edit.kfilm", 320, 180).unwrap();
-        let matte = doc.execute("file.newColorMatte", json!({ "color": "#ff0000", "seconds": 4.0 })).unwrap();
+        let matte = doc.execute("item.newColorMatte", json!({ "color": "#ff0000", "seconds": 4.0 })).unwrap();
         doc.execute("timeline.place", json!({ "item": matte["item"], "track": "V1", "seconds": 0.0 })).unwrap();
         doc
     }
@@ -198,7 +198,7 @@ mod tests {
         let (moved, ..) = doc.frame().unwrap();
         assert!(!Arc::ptr_eq(&first, &moved), "another playhead renders again");
         // An edit (a new revision) renders again too, even back at the same playhead.
-        doc.execute("file.newColorMatte", json!({ "color": "#00ff00", "seconds": 1.0 })).unwrap();
+        doc.execute("item.newColorMatte", json!({ "color": "#00ff00", "seconds": 1.0 })).unwrap();
         let (edited, ..) = doc.frame().unwrap();
         assert!(!Arc::ptr_eq(&moved, &edited));
     }
@@ -217,7 +217,7 @@ mod tests {
         // A still picture (a generator) is exact whatever the motion.
         doc.frame().unwrap();
         assert!(doc.program_frame_exact());
-        doc.execute("file.newColorMatte", json!({ "color": "#00ff00", "seconds": 1.0 })).unwrap();
+        doc.execute("item.newColorMatte", json!({ "color": "#00ff00", "seconds": 1.0 })).unwrap();
         assert_eq!(doc.services.program.motion(), Motion::Still);
     }
 }

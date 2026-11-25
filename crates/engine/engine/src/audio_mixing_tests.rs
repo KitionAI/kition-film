@@ -59,7 +59,7 @@ fn add(a: &[f32], b: &[f32]) -> Vec<f32> {
 /// A session with one sequence and each signal on its own audio track (A1, A2…) at `start` seconds.
 fn session_with(tracks: &[(Vec<f32>, f64)]) -> (Session, Vec<ClipId>) {
     let mut s = Session::default();
-    s.execute("file.newSequence", json!({"name": "es", "audio": tracks.len().max(2), "video": 1})).unwrap();
+    s.execute("sequence.new", json!({"name": "es", "audio": tracks.len().max(2), "video": 1})).unwrap();
     let mut clips = Vec::new();
     for (k, (x, start)) in tracks.iter().enumerate() {
         let inter: Vec<f32> = x.iter().flat_map(|v| [*v, *v]).collect();

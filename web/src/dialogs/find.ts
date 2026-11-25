@@ -165,7 +165,7 @@ const find: DialogSpec = {
  * panel with its matches.
  */
 const newSearchBin: DialogSpec = {
-  id: 'file.newSearchBin',
+  id: 'bin.addSearch',
   family: 'find',
   title: 'Create Search Bin',
   prefix: 'searchBin',

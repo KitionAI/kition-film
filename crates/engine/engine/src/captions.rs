@@ -150,7 +150,7 @@ pub fn import(s: &mut Session, path: &str, bytes: &[u8], format: Format, name: O
 /// Delete captions (Clear / Ripple Delete with captions selected).
 pub fn delete(s: &mut Session, ids: &[ClipId], ripple: bool) -> Result<Value> {
     if ids.is_empty() {
-        return Err(bad("captions.delete", "no captions"));
+        return Err(bad("caption.delete", "no captions"));
     }
     let ids = ids.to_vec();
     let n = s.edit_sequence(if ripple { "Ripple Delete Captions" } else { "Delete Captions" }, |q, _, st| {
@@ -200,12 +200,12 @@ fn track_json(s: &Session, t: &CaptionTrack, index: usize) -> Value {
 }
 
 fn export(s: &mut Session, p: &Value) -> Result<Value> {
-    let path = str_p(p, "path").ok_or_else(|| bad("captions.export", "need `path`"))?.to_string();
+    let path = str_p(p, "path").ok_or_else(|| bad("caption.export", "need `path`"))?.to_string();
     let ext = std::path::Path::new(&path).extension().and_then(|e| e.to_str()).unwrap_or("");
     let format = str_p(p, "format").and_then(Format::from_name).or_else(|| Format::from_name(ext)).unwrap_or(Format::Srt);
-    let tid = track_param(s, p).ok_or_else(|| bad("captions.export", "no caption track"))?;
+    let tid = track_param(s, p).ok_or_else(|| bad("caption.export", "no caption track"))?;
     let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;
-    let track = seq.caption_track(tid).ok_or_else(|| bad("captions.export", "no such caption track"))?;
+    let track = seq.caption_track(tid).ok_or_else(|| bad("caption.export", "no such caption track"))?;
     let doc: Document = kition_film_captions::document_from_track(track, Tick::ZERO);
     let df = bool_p(p, "dropFrame").unwrap_or(true);
     let bytes = kition_film_captions::write(&doc, format, WriteOptions { drop_frame: df, rate: Some(seq.settings.frame_rate) });
@@ -233,11 +233,11 @@ fn escape(t: &str) -> String {
     t.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;")
 }
 
-/// `captions.add` `words`: the caption text with a WebVTT timestamp before each word (and one at
+/// `caption.add` `words`: the caption text with a WebVTT timestamp before each word (and one at
 /// each word's end when a pause follows), and the span of the words. Words in Chinese, Japanese
 /// and Korean join without a space, others with one.
 fn karaoke_words(p: &Value) -> Result<Option<(String, Tick, Tick)>> {
-    const CMD: &str = "captions.add";
+    const CMD: &str = "caption.add";
     let Some(list) = p.get("words") else { return Ok(None) };
     let list = list.as_array().ok_or_else(|| bad(CMD, "`words` is a list of {text, start, end} (seconds)"))?;
     if list.is_empty() {
@@ -284,7 +284,7 @@ fn karaoke_words(p: &Value) -> Result<Option<(String, Tick, Tick)>> {
 pub fn commands() -> Vec<CommandSpec> {
     vec![
         spec(
-            "captions.newTrack",
+            "caption.newTrack",
             "Add New Caption Track…",
             &["Sequence", "Captions"],
             Some("Cmd+Alt+A"),
@@ -310,8 +310,8 @@ pub fn commands() -> Vec<CommandSpec> {
                 Ok(json!({"track": id.0, "label": format!("C{index}")}))
             },
         ),
-        spec("captions.deleteTrack", "Delete Caption Track", &[], None, r#"{"track":id|"C1"}"#, has_caption_track, |s, p| {
-            let tid = track_param(s, p).ok_or_else(|| bad("captions.deleteTrack", "no such caption track"))?;
+        spec("caption.deleteTrack", "Delete Caption Track", &[], None, r#"{"track":id|"C1"}"#, has_caption_track, |s, p| {
+            let tid = track_param(s, p).ok_or_else(|| bad("caption.deleteTrack", "no such caption track"))?;
             s.edit_sequence("Delete Caption Track", |q, _, st| {
                 q.caption_tracks.retain(|t| t.id != tid);
                 st.caption_selection.retain(|c| q.find_caption(*c).is_some());
@@ -320,14 +320,14 @@ pub fn commands() -> Vec<CommandSpec> {
             Ok(Value::Null)
         }),
         spec(
-            "captions.setTrack",
+            "caption.setTrack",
             "Caption Track Settings",
             &[],
             None,
             r#"{"track":id|"C1","name":str?,"format":str?,"language":str?,"enabled":bool?,"locked":bool?,"syncLock":bool?}"#,
             has_caption_track,
             |s, p| {
-                let tid = track_param(s, p).ok_or_else(|| bad("captions.setTrack", "no such caption track"))?;
+                let tid = track_param(s, p).ok_or_else(|| bad("caption.setTrack", "no such caption track"))?;
                 let p = p.clone();
                 s.edit("Caption Track Settings", |pr, st| {
                     let seq = st.active_sequence.ok_or(EngineError::NoSequence)?;
@@ -336,7 +336,7 @@ pub fn commands() -> Vec<CommandSpec> {
                         t.name = n.to_string();
                     }
                     if let Some(f) = str_p(&p, "format") {
-                        t.format = CaptionFormat::from_name(f).ok_or_else(|| bad("captions.setTrack", "unknown format"))?;
+                        t.format = CaptionFormat::from_name(f).ok_or_else(|| bad("caption.setTrack", "unknown format"))?;
                     }
                     if let Some(l) = str_p(&p, "language") {
                         t.language = l.to_string();
@@ -356,14 +356,14 @@ pub fn commands() -> Vec<CommandSpec> {
             },
         ),
         spec(
-            "captions.setStyle",
+            "caption.setStyle",
             "Caption Track Style",
             &[],
             None,
             r##"{"track":id|"C1","font":str?,"size":f32?,"color":"#rrggbb[aa]"?,"background":bool?,"backgroundColor":"#rrggbbaa"?,"align":"left|center|right"?,"anchor":"top|middle|bottom"?,"margin":0..0.45 (fraction of frame height)?,"lineSpacing":f32?,"outline":f32?,"outlineColor":str?,"highlightColor":"#rrggbb[aa]" (karaoke word)?,"highlightScale":0.25..4 (karaoke word size)?,"reset":bool?}"##,
             has_caption_track,
             |s, p| {
-                let tid = track_param(s, p).ok_or_else(|| bad("captions.setStyle", "no such caption track"))?;
+                let tid = track_param(s, p).ok_or_else(|| bad("caption.setStyle", "no such caption track"))?;
                 let p = p.clone();
                 s.edit("Caption Style", |pr, st| {
                     let seq = st.active_sequence.ok_or(EngineError::NoSequence)?;
@@ -409,14 +409,14 @@ pub fn commands() -> Vec<CommandSpec> {
                         Some("left") => y.align = CaptionAlign::Left,
                         Some("right") => y.align = CaptionAlign::Right,
                         Some("center") => y.align = CaptionAlign::Center,
-                        Some(o) => return Err(bad("captions.setStyle", format!("unknown align `{o}`"))),
+                        Some(o) => return Err(bad("caption.setStyle", format!("unknown align `{o}`"))),
                         None => {}
                     }
                     match str_p(&p, "anchor") {
                         Some("top") => y.anchor = CaptionAnchor::Top,
                         Some("middle") => y.anchor = CaptionAnchor::Middle,
                         Some("bottom") => y.anchor = CaptionAnchor::Bottom,
-                        Some(o) => return Err(bad("captions.setStyle", format!("unknown anchor `{o}`"))),
+                        Some(o) => return Err(bad("caption.setStyle", format!("unknown anchor `{o}`"))),
                         None => {}
                     }
                     Ok(())
@@ -425,7 +425,7 @@ pub fn commands() -> Vec<CommandSpec> {
             },
         ),
         spec(
-            "captions.add",
+            "caption.add",
             "Add Caption at Playhead",
             &["Sequence", "Captions"],
             Some("Cmd+Alt+C"),
@@ -440,7 +440,7 @@ pub fn commands() -> Vec<CommandSpec> {
                 };
                 let create_track = s.active_sequence().is_some_and(|q| q.caption_tracks.is_empty()) && first_track;
                 if tid.is_none() && !create_track {
-                    return Err(bad("captions.add", "no such caption track"));
+                    return Err(bad("caption.add", "no such caption track"));
                 }
                 let words = karaoke_words(p)?;
                 let rate = s.sequence_rate();
@@ -481,7 +481,7 @@ pub fn commands() -> Vec<CommandSpec> {
                 Ok(json!({"caption": id.0}))
             },
         ),
-        spec("captions.split", "Split Caption", &[], None, r#"{"caption":id?,"time":ticks?}"#, has_captions, |s, p| {
+        spec("caption.split", "Split Caption", &[], None, r#"{"caption":id?,"time":ticks?}"#, has_captions, |s, p| {
             let t = time_p(s, p, "").unwrap_or(s.playhead());
             let explicit = u64_p(p, "caption").map(ClipId);
             let ids = s.edit_sequence("Split Caption", |q, ctx, st| {
@@ -497,7 +497,7 @@ pub fn commands() -> Vec<CommandSpec> {
             })?;
             Ok(json!({"captions": ids.iter().map(|c| c.0).collect::<Vec<_>>()}))
         }),
-        spec("captions.merge", "Merge Captions", &[], None, r#"{"captions":[id]?}"#, has_captions, |s, p| {
+        spec("caption.merge", "Merge Captions", &[], None, r#"{"captions":[id]?}"#, has_captions, |s, p| {
             let ids = caption_ids(s, p);
             let id = s.edit_sequence("Merge Captions", |q, _, st| {
                 let id = edit::captions::merge_captions(q, &ids)?;
@@ -506,8 +506,8 @@ pub fn commands() -> Vec<CommandSpec> {
             })?;
             Ok(json!({"caption": id.0}))
         }),
-        spec("captions.setText", "Edit Caption Text", &[], None, r#"{"caption":id?,"text":str?,"speaker":str|null?}"#, has_captions, |s, p| {
-            let id = one_caption(s, p, "captions.setText")?;
+        spec("caption.setText", "Edit Caption Text", &[], None, r#"{"caption":id?,"text":str?,"speaker":str|null?}"#, has_captions, |s, p| {
+            let id = one_caption(s, p, "caption.setText")?;
             let text = str_p(p, "text").map(str::to_string);
             let speaker: Option<Option<String>> = match p.get("speaker") {
                 None => None,
@@ -515,20 +515,20 @@ pub fn commands() -> Vec<CommandSpec> {
                 Some(v) => Some(v.as_str().map(str::to_string)),
             };
             if text.is_none() && speaker.is_none() {
-                return Err(bad("captions.setText", "need `text` or `speaker`"));
+                return Err(bad("caption.setText", "need `text` or `speaker`"));
             }
             s.edit_sequence("Edit Caption", |q, _, _| Ok(edit::captions::set_caption(q, id, text.as_deref(), speaker.as_ref().map(|o| o.as_deref()))?))?;
             Ok(Value::Null)
         }),
         spec(
-            "captions.setTimes",
+            "caption.setTimes",
             "Set Caption In/Out",
             &[],
             None,
             r#"{"caption":id?,"startTime":ticks?,"startFrame":i64?,"startSeconds":f64?,"startTimecode":str?,"endTime":ticks?,"endFrame":i64?,"endSeconds":f64?,"endTimecode":str?}"#,
             has_captions,
             |s, p| {
-                let id = one_caption(s, p, "captions.setTimes")?;
+                let id = one_caption(s, p, "caption.setTimes")?;
                 let cur = s
                     .active_sequence()
                     .and_then(|q| q.find_caption(id))
@@ -541,24 +541,24 @@ pub fn commands() -> Vec<CommandSpec> {
                 Ok(json!({"start": start.0, "end": end.0}))
             },
         ),
-        spec("captions.trim", "Trim Caption", &[], None, r#"{"caption":id,"edge":"in|out","delta":ticks|"deltaFrames":i64}"#, has_captions, |s, p| {
-            let id = one_caption(s, p, "captions.trim")?;
+        spec("caption.trim", "Trim Caption", &[], None, r#"{"caption":id,"edge":"in|out","delta":ticks|"deltaFrames":i64}"#, has_captions, |s, p| {
+            let id = one_caption(s, p, "caption.trim")?;
             let edge = if str_p(p, "edge") == Some("in") { Edge::In } else { Edge::Out };
-            let d = delta_p(s, p).ok_or_else(|| bad("captions.trim", "need `delta` or `deltaFrames`"))?;
+            let d = delta_p(s, p).ok_or_else(|| bad("caption.trim", "need `delta` or `deltaFrames`"))?;
             let applied = s.edit_sequence("Trim Caption", |q, ctx, _| Ok(edit::captions::trim_caption(q, id, edge, d, ctx)?))?;
             Ok(json!({"applied": applied.0}))
         }),
-        spec("captions.move", "Move Captions", &[], None, r#"{"captions":[id]?,"delta":ticks|"deltaFrames":i64}"#, has_captions, |s, p| {
+        spec("caption.move", "Move Captions", &[], None, r#"{"captions":[id]?,"delta":ticks|"deltaFrames":i64}"#, has_captions, |s, p| {
             let ids = caption_ids(s, p);
-            let d = delta_p(s, p).ok_or_else(|| bad("captions.move", "need `delta` or `deltaFrames`"))?;
+            let d = delta_p(s, p).ok_or_else(|| bad("caption.move", "need `delta` or `deltaFrames`"))?;
             let applied = s.edit_sequence("Move Captions", |q, _, _| Ok(edit::captions::move_captions(q, &ids, d)?))?;
             Ok(json!({"applied": applied.0}))
         }),
-        spec("captions.delete", "Delete Captions", &[], None, r#"{"captions":[id]?,"ripple":bool=false}"#, has_captions, |s, p| {
+        spec("caption.delete", "Delete Captions", &[], None, r#"{"captions":[id]?,"ripple":bool=false}"#, has_captions, |s, p| {
             let ids = caption_ids(s, p);
             delete(s, &ids, bool_p(p, "ripple").unwrap_or(false))
         }),
-        spec("captions.select", "Select Captions", &[], None, r#"{"captions":[id],"add":bool?}"#, has_seq, |s, p| {
+        spec("caption.select", "Select Captions", &[], None, r#"{"captions":[id],"add":bool?}"#, has_seq, |s, p| {
             let ids: Vec<ClipId> =
                 p.get("captions").and_then(Value::as_array).map(|a| a.iter().filter_map(Value::as_u64).map(ClipId).collect()).unwrap_or_default();
             let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;
@@ -575,27 +575,27 @@ pub fn commands() -> Vec<CommandSpec> {
             }
             Ok(json!({"captions": s.state.caption_selection.iter().map(|c| c.0).collect::<Vec<_>>()}))
         }),
-        spec("captions.goTo", "Go to Caption", &[], None, r#"{"caption":id}"#, has_captions, |s, p| {
-            let id = one_caption(s, p, "captions.goTo")?;
+        spec("caption.goTo", "Go to Caption", &[], None, r#"{"caption":id}"#, has_captions, |s, p| {
+            let id = one_caption(s, p, "caption.goTo")?;
             let start = s.active_sequence().and_then(|q| q.find_caption(id)).map(|(_, c)| c.start).ok_or(EngineError::Edit(edit::EditError::NoItem(id)))?;
             s.set_playhead(start);
             s.state.caption_selection = vec![id];
             s.state.selection.clear();
             Ok(json!({"time": start.0}))
         }),
-        spec("captions.next", "Go to Next Caption Segment", &["Sequence", "Captions"], Some("Cmd+Alt+Down"), "{}", has_captions, |s, _| step(s, true)),
-        spec("captions.previous", "Go to Previous Caption Segment", &["Sequence", "Captions"], Some("Cmd+Alt+Up"), "{}", has_captions, |s, _| step(s, false)),
-        spec("captions.showAll", "Show All Caption Tracks", &["Sequence", "Captions"], None, "{}", has_caption_track, |s, _| show_all(s, true)),
-        spec("captions.hideAll", "Hide All Caption Tracks", &["Sequence", "Captions"], None, "{}", has_caption_track, |s, _| show_all(s, false)),
-        spec("captions.import", "Import Captions…", &[], None, r#"{"path":str,"name":str?}"#, always, |s, p| {
-            let path = str_p(p, "path").ok_or_else(|| bad("captions.import", "need `path`"))?.to_string();
+        spec("caption.next", "Go to Next Caption Segment", &["Sequence", "Captions"], Some("Cmd+Alt+Down"), "{}", has_captions, |s, _| step(s, true)),
+        spec("caption.previous", "Go to Previous Caption Segment", &["Sequence", "Captions"], Some("Cmd+Alt+Up"), "{}", has_captions, |s, _| step(s, false)),
+        spec("caption.showAll", "Show All Caption Tracks", &["Sequence", "Captions"], None, "{}", has_caption_track, |s, _| show_all(s, true)),
+        spec("caption.hideAll", "Hide All Caption Tracks", &["Sequence", "Captions"], None, "{}", has_caption_track, |s, _| show_all(s, false)),
+        spec("caption.import", "Import Captions…", &[], None, r#"{"path":str,"name":str?}"#, always, |s, p| {
+            let path = str_p(p, "path").ok_or_else(|| bad("caption.import", "need `path`"))?.to_string();
             let bytes = s.services.read_file(&path).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
             let ext = std::path::Path::new(&path).extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase);
             let format = kition_film_captions::detect(&bytes, ext.as_deref()).ok_or_else(|| EngineError::Other(format!("{path}: not a caption file")))?;
             import(s, &path, &bytes, format, str_p(p, "name"))
         }),
         spec(
-            "captions.export",
+            "caption.export",
             "Captions…",
             &["File", "Export"],
             None,
@@ -604,7 +604,7 @@ pub fn commands() -> Vec<CommandSpec> {
             export,
         ),
         CommandSpec {
-            id: "captions.list",
+            id: "caption.list",
             label: "List Captions",
             menu: &[],
             shortcut: None,

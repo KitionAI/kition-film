@@ -12,17 +12,17 @@ pub const PATHS: &[(&str, &str)] = &[
     ("audio.toggleScrubbing", "prefs"),
     ("audio.voiceover.settings", "preferences"),
     ("audioMixing.deletePreset", "preferences by name/type"),
-    ("effects.setDefaultTransition", "editor default"),
+    ("effect.setDefaultTransition", "editor default"),
     ("multicam.gridLayout", "editor"),
-    ("shortcuts.set", "local prefs/editor"),
-    ("shortcuts.clear", "local prefs/editor"),
-    ("shortcuts.undo", "local prefs/editor"),
-    ("shortcuts.redo", "local prefs/editor"),
-    ("shortcuts.loadPreset", "local prefs/editor"),
-    ("shortcuts.savePreset", "local prefs/editor"),
-    ("shortcuts.deletePreset", "local prefs/editor"),
-    ("shortcuts.export", "local prefs/editor"),
-    ("shortcuts.import", "local prefs/editor"),
+    ("shortcut.set", "local prefs/editor"),
+    ("shortcut.clear", "local prefs/editor"),
+    ("shortcut.undo", "local prefs/editor"),
+    ("shortcut.redo", "local prefs/editor"),
+    ("shortcut.loadPreset", "local prefs/editor"),
+    ("shortcut.savePreset", "local prefs/editor"),
+    ("shortcut.deletePreset", "local prefs/editor"),
+    ("shortcut.export", "local prefs/editor"),
+    ("shortcut.import", "local prefs/editor"),
     ("export.queue.start", "session queue"),
     ("export.queue.stop", "session queue"),
     ("export.queue.cancel", "session queue"),
@@ -59,7 +59,7 @@ pub fn more(_: &str) -> Vec<&'static str> {
 #[test]
 fn local_service_paths_compare_all_parameter_families_without_document_holds() {
     let mut doc = FilmDocument::create("Edit.kfilm", 64, 36).unwrap();
-    let item = doc.execute("file.newColorMatte", json!({"seconds":1})).unwrap()["item"].clone();
+    let item = doc.execute("item.newColorMatte", json!({"seconds":1})).unwrap()["item"].clone();
     doc.execute("timeline.place", json!({"item":item,"track":"V1","seconds":0})).unwrap();
     let specs = doc.commands();
     for &(command, path) in PATHS {
@@ -92,10 +92,10 @@ fn service_mode_captures_shortcuts_queue_and_export_favorites() {
     assert!(before["shortcuts"]["revision"].is_u64());
     assert_eq!(before["exportQueue"]["items"], json!([]));
     assert_eq!(before["exportFavorites"], json!([]));
-    doc.execute("shortcuts.set", json!({"command":"timeline.razor","keys":"Cmd+Alt+K"})).unwrap();
+    doc.execute("shortcut.set", json!({"command":"timeline.razor","keys":"Cmd+Alt+K"})).unwrap();
     let changed = doc.editor_state()["mode"].clone();
     assert_ne!(changed["shortcuts"], before["shortcuts"]);
-    doc.execute("shortcuts.undo", json!({})).unwrap();
+    doc.execute("shortcut.undo", json!({})).unwrap();
     assert_ne!(doc.editor_state()["mode"]["shortcuts"]["revision"], before["shortcuts"]["revision"]);
     doc.execute("export.presets.save", json!({"name":"Working","settings":{"width":64,"height":36}})).unwrap();
     doc.execute("export.presets.favorite", json!({"name":"Working","favorite":true})).unwrap();

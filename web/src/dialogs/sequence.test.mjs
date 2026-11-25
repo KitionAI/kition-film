@@ -19,7 +19,7 @@ const info = (keys = current) => ({ current: keys, par: [1, 1], previewCodec: 'P
 const draftOf = (keys, newSequence) => ({ tab: 'general', ...keys, newSequence, video: 3, audio: 3, scaleMotion: true })
 const answers = {
   'sequence.settings': { params: draftOf(current, false), info: info() },
-  'file.newSequence': { params: draftOf({ ...current, name: 'Sequence 02' }, true), info: info({ ...current, name: '' }) },
+  'sequence.new': { params: draftOf({ ...current, name: 'Sequence 02' }, true), info: info({ ...current, name: '' }) },
   'sequence.colorSettings': { params: { workingSpace: 'rec709', wideGamut: false, autoToneMap: true }, info: { workingSpaces: SPACES } },
 }
 const film = { fps: 24000 / 1001, activeSequence: 1, selection: [], tracks: [] }
@@ -92,17 +92,17 @@ test("upstream's labels: the aspect, the pixel aspect ratio, and the rates", () 
   assert.deepEqual(TIMEBASES.map((each) => each.label), ['10', '12', '12.5', '15', '23.976', '24', '25', '29.97', '30', '48', '50', '59.94', '60', '119.88', '120'])
 })
 
-test('New Sequence sends file.newSequence, and its second step only when drop-frame or Maximum Render Quality needs it', async () => {
-  const name = await ok('file.newSequence', [['name', ' Shorts '], ['width', 1080], ['height', 1920], ['tracks.video', 2], ['tracks.audio', 4]])
-  assert.deepEqual(name, [{ command: 'file.newSequence', params: { name: 'Shorts', width: 1080, height: 1920, fps: 24000 / 1001, sampleRate: 48000, mix: 'Stereo', video: 2, audio: 4 } }], 'everything else is the default: one step')
-  const both = await ok('file.newSequence', [['name', ' '], ['timebase', '30000/1001'], ['maxRenderQuality', true]])
+test('New Sequence sends sequence.new, and its second step only when drop-frame or Maximum Render Quality needs it', async () => {
+  const name = await ok('sequence.new', [['name', ' Shorts '], ['width', 1080], ['height', 1920], ['tracks.video', 2], ['tracks.audio', 4]])
+  assert.deepEqual(name, [{ command: 'sequence.new', params: { name: 'Shorts', width: 1080, height: 1920, fps: 24000 / 1001, sampleRate: 48000, mix: 'Stereo', video: 2, audio: 4 } }], 'everything else is the default: one step')
+  const both = await ok('sequence.new', [['name', ' '], ['timebase', '30000/1001'], ['maxRenderQuality', true]])
   assert.equal(both.length, 2)
   assert.equal(both[0].params.name, undefined, 'a blank name lets the command name it')
   assert.deepEqual(both[1], { command: 'sequence.settings', params: { dropFrame: true, maxRenderQuality: true } })
   // Non-drop-frame at 29.97 is the default: no second step.
-  assert.equal((await ok('file.newSequence', [['timebase', '30000/1001'], ['videoDisplay', 'ndf']])).length, 1)
+  assert.equal((await ok('sequence.new', [['timebase', '30000/1001'], ['videoDisplay', 'ndf']])).length, 1)
   // Its name opens as the engine names the next sequence, and it opens on three of each.
-  const opened = await spec('file.newSequence').defaults(context())
+  const opened = await spec('sequence.new').defaults(context())
   assert.deepEqual([opened.name, opened['tracks.video'], opened['tracks.audio'], opened.tab], ['Sequence 02', 3, 3, 'general'])
   // Track counts are upstream's 0 to 256.
   assert.deepEqual(newSequenceSteps({ ...opened, 'tracks.video': 900, 'tracks.audio': -2 })[0].params.video, 256)
@@ -117,7 +117,7 @@ test('Color Management sends the working space, wide gamut, and auto tone map, a
 
 test("each sequence dialog's preview kinds follow the plan's table", () => {
   assert.deepEqual(spec('sequence.settings').preview, ['picture', 'timeline'])
-  assert.deepEqual(spec('file.newSequence').preview, ['project', 'timeline'])
+  assert.deepEqual(spec('sequence.new').preview, ['project', 'timeline'])
   assert.deepEqual(spec('sequence.colorSettings').preview, ['picture'])
   // What changes() compares with is the active sequence; the selections do not move the preview.
   assert.deepEqual(spec('sequence.settings').dependsOn(context()), { sequence: 1 })
@@ -145,8 +145,8 @@ test("every field upstream's sequence dialogs register has a declared id standin
 })
 
 test('the dialogs open with no params and run at once with them, as upstream routes them', () => {
-  for (const id of ['sequence.settings', 'file.newSequence', 'sequence.colorSettings']) assert.equal(routeOf(id, {}, 'timeline'), 'dialog', id)
-  assert.equal(routeOf('file.newSequence', { fromItem: 4 }, 'project'), 'session', 'New Sequence From Clip makes it at once')
+  for (const id of ['sequence.settings', 'sequence.new', 'sequence.colorSettings']) assert.equal(routeOf(id, {}, 'timeline'), 'dialog', id)
+  assert.equal(routeOf('sequence.new', { fromItem: 4 }, 'project'), 'session', 'New Sequence From Clip makes it at once')
   assert.equal(routeOf('sequence.settings', { width: 1280 }, 'timeline'), 'session')
   assert.equal(routeOf('sequence.colorSettings', { workingSpace: 'rec709' }, 'timeline'), 'session')
 })
@@ -191,8 +191,8 @@ test('Sequence Settings and Color Management close when another sequence becomes
     assert.equal(sequenceGone(spec(id), 1, { activeSequence: 2 }), true, id)
     assert.equal(sequenceGone(spec(id), 1, { activeSequence: 1 }), false, id)
   }
-  assert.equal(spec('file.newSequence').rebase, undefined)
-  assert.equal(sequenceGone(spec('file.newSequence'), 1, { activeSequence: 2 }), false)
+  assert.equal(spec('sequence.new').rebase, undefined)
+  assert.equal(sequenceGone(spec('sequence.new'), 1, { activeSequence: 2 }), false)
 })
 
 test("the greyed fields' hints are upstream's rebranded catalog keys, so phrase() translates them", async () => {

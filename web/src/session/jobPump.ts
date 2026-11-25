@@ -4,7 +4,7 @@
 // job's result as its own history step, recorded in the replica). React-free, so `node --test`
 // drives it. Imports carry `.ts` so `node --test` loads this module as it is.
 
-/** The newest unfinished job, as `jobs.list` shows one (upstream's status bar job). */
+/** The newest unfinished job, as `job.list` shows one (upstream's status bar job). */
 export type RunningJob = { id: number; label: string; progress: number; etaSeconds: number | null }
 /** `jobsStep`'s answer. */
 export type JobAnswer = { pending?: boolean; revision?: number | null; job?: RunningJob | null }

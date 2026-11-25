@@ -67,7 +67,7 @@ fn motion_expected(project: &Project, sequence: u64, selection: &[u64]) -> Under
 fn nudges_compare_all_graphic_mixed_and_ordinary_selections() {
     for shared in [false, true] {
         let (mut doc, first, other, ordinary, sequence) = graphics_compare::fixture(shared);
-        let sound = doc.execute("file.newOfflineFile", json!({"name":"Audio","seconds":2,"video":false})).unwrap()["item"].clone();
+        let sound = doc.execute("item.newOfflineFile", json!({"name":"Audio","seconds":2,"video":false})).unwrap()["item"].clone();
         let audio = doc.execute("timeline.place", json!({"item":sound,"track":"A1","time":0})).unwrap()["clips"][0].as_u64().unwrap();
         for selection in [
             vec![],
