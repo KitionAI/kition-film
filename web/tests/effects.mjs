@@ -172,6 +172,7 @@ try {
   await kit.getByTestId('film-workspace-tab-effectControls').click()
   await kit.getByTestId('film-ec-effect-invert').waitFor({ timeout: 10_000 })
   const fixedBefore = (await effectsOf(10)).filter((effect) => !['gaussian_blur', 'invert'].includes(effect))
+  console.error(`PROBE ${which} before-drag: engine ${JSON.stringify(await effectsOf(10))}`)
   // Both folded, so their headers are on screen together.
   for (const effect of ['gaussian_blur', 'invert']) {
     await kit.getByTestId(`film-ec-effect-${effect}-fold`).click()
@@ -189,13 +190,16 @@ try {
   assert.ok(await until(async () => (await standard()).join() === 'invert,gaussian_blur'), `the drag puts Invert first: ${await effectsOf(10)} (${await message()})`)
   assert.deepEqual((await effectsOf(10)).filter((effect) => !['gaussian_blur', 'invert'].includes(effect)), fixedBefore, 'the fixed effects keep their places')
   assert.equal(await undoSteps(), orderSteps + 1, 'the move is one undo step')
+  console.error(`PROBE ${which} after-drag: engine ${JSON.stringify(await effectsOf(10))}`)
   await undo()
   assert.ok(await until(async () => (await standard()).join() === 'gaussian_blur,invert'), 'one undo puts it back')
   await kit.getByTestId('film-ec-effect-gaussian_blur').locator('.film-ec-effect-name').click({ button: 'right' })
   // TEMPORARY PROBE (schema-freeze round 5): the panel's rows and the engine's effects at the menu, and 2 s later.
   const probe = async (when) => {
     const rows = await kit.locator('.film-ec-effect[data-effect-index]').evaluateAll((els) => els.map((el) => `${el.dataset.effectIndex}:${el.getAttribute('data-testid')}:${el.dataset.intrinsic != null ? 'fixed' : 'std'}`))
-    console.error(`PROBE ${which} ${when}: rows ${JSON.stringify(rows)} engine ${JSON.stringify(await effectsOf(10))} upDisabled ${await kit.getByTestId('film-ec-menu-move-up').isDisabled().catch((e) => String(e))}`)
+    const selected = await kit.locator('.film-ec-effect[data-selected]').evaluateAll((els) => els.map((el) => el.getAttribute('data-testid')))
+    const items = await kit.locator('[data-testid^="film-ec-menu-"]').evaluateAll((els) => els.map((el) => `${el.getAttribute('data-testid')}:${el.disabled ? 'off' : 'on'}`))
+    console.error(`PROBE ${which} ${when}: rows ${JSON.stringify(rows)} engine ${JSON.stringify(await effectsOf(10))} selected ${JSON.stringify(selected)} menu ${JSON.stringify(items)}`)
   }
   await probe('at-menu')
   await page.waitForTimeout(2000)
