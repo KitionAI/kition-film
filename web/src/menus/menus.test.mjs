@@ -203,7 +203,7 @@ test("Help ▸ Keyboard Shortcuts and the menus leave out the keys Kition and th
 test('no drawn row opens a panel the editor does not draw, a Preferences page, an interchange export, or a workspace of such panels', () => {
   const commands = drawn.map((row) => row.command.replace(/^kit:/, ''))
   const panels = commands.filter((command) => command.startsWith('window.panel.'))
-  assert.deepEqual(panels, ['Project', 'Info', 'Effects', 'Markers', 'History', 'Source', 'EffectControls', 'Program', 'Timeline', 'Tools', 'AudioMeters', 'Properties'].map((kind) => `window.panel.${kind}`))
+  assert.deepEqual(panels, ['Project', 'Info', 'Effects', 'Markers', 'History', 'Source', 'EffectControls', 'Program', 'Timeline', 'Tools', 'AudioMeters', 'AudioTrackMixer', 'Properties'].map((kind) => `window.panel.${kind}`))
   assert.deepEqual(commands.filter((command) => command.startsWith('app.settings.')), [])
   for (const command of ['file.exportEdl', 'file.exportAle', 'file.exportOtio', 'file.exportFcp7Xml', 'file.exportFcpxml', 'file.exportAaf', 'file.exportOmf', 'mode.export', 'graphics.newFromFile', 'graphics.template.install', 'file.replaceFonts', 'clip.remix.enable', 'view.display.multicam', 'multicam.toggleView', 'help.systemCompatibilityReport', 'edit.editOriginal', 'clip.generateAudioWaveform']) {
     assert.equal(commands.includes(command), false, command)

@@ -111,7 +111,7 @@ test('toggleMaximized: off when on; else maximizes the panel and shows and focus
 test('the offered workspaces leave out the panels the editor does not draw, and the workspaces made of them only', async () => {
   const { WEB_WORKSPACES, WEB_PANEL_IDS } = await import('./presets.ts')
   // The panels the editor draws (App.tsx PARTS and the Timeline): no placeholder is offered.
-  const drawn = ['project', 'info', 'effects', 'markers', 'history', 'source', 'effectControls', 'program', 'timeline', 'tools', 'audioMeters', 'properties']
+  const drawn = ['project', 'info', 'effects', 'markers', 'history', 'source', 'effectControls', 'program', 'timeline', 'tools', 'audioMeters', 'audioTrackMixer', 'properties']
   assert.deepEqual([...WEB_PANEL_IDS].sort(), [...drawn].sort())
   assert.deepEqual(Object.keys(WEB_WORKSPACES), ['Editing', 'Assembly', 'Effects', 'Learning', 'Review', 'All Panels'])
   for (const [name, tree] of Object.entries(WEB_WORKSPACES)) {
