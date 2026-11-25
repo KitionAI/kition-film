@@ -880,9 +880,9 @@ impl Session {
                     if sequence.markers.iter().any(|found| found.id.0 == marker) {
                         // It writes the name, comment and colour given and reads nothing of the
                         // marker (C8-time-policy): a move of the marker in time does not refuse it.
-                        // A new duration is its time: the whole marker is held then.
+                        // A new duration or start is its time: the whole marker is held then.
                         let path = format!("sequence.markers[id={marker}]");
-                        let fields: Vec<String> = if given(params, "durationFrames") || given(params, "durationSeconds") {
+                        let fields: Vec<String> = if ["durationFrames", "durationSeconds", "time"].iter().any(|key| given(params, key)) {
                             vec![path]
                         } else {
                             ["name", "comment", "color"].iter().filter(|key| given(params, key)).map(|key| format!("{path}.{key}")).collect()

@@ -9,7 +9,7 @@
 // - fade handles at a free clip end's top corner: dragged in, a fade (a transition from or to
 //   nothing) of that length, shown as a ramp while dragging; dragged again it changes, dragged back
 //   to the end it is cleared; each one undo step;
-// - the ruler: the In and Out marks dragged, a marker double-clicked opens its dialog;
+// - the ruler: the In and Out marks dragged, a marker dragged along it, a marker double-clicked opens its dialog;
 // - context menus on empty track space and on the ruler, in Chinese, whose rows do what they say;
 // - an Option/Alt-drag of a clip copies it where it is dropped (drawn as a copy while dragging, the
 //   copy cursor), the original stays, one undo step.
@@ -342,6 +342,23 @@ try {
   const marker = (await sequence()).markers[0]
   assert.ok(near(marker.start / frameTicks, frameAt(0.4)), `at the time right-clicked: ${marker.start / frameTicks} for ${frameAt(0.4)}`)
   assert.equal(await undoSteps(), steps + 1, 'one undo step')
+  // Dragged along the ruler, the marker moves later: drawn moving, one markers.edit on release, one undo step.
+  let markerFrom = await box(`film-marker-${marker.id}`)
+  steps = await undoSteps()
+  let markerMoving = false
+  await drag({ x: markerFrom.x + 4, y: markerFrom.y + 5 }, { x: markerFrom.x + 64, y: markerFrom.y + 5 }, async () => {
+    markerMoving = (await box(`film-marker-${marker.id}`)).x > markerFrom.x + 30
+  })
+  assert.ok(markerMoving, 'the marker follows the drag')
+  const movedBy = Math.round((60 / (await box('film-clip-10')).width) * clip10.durationFrames)
+  assert.ok(await until(async () => Math.abs((await sequence()).markers[0].start / frameTicks - (marker.start / frameTicks + movedBy)) <= 1), `the marker moves by the drag: ${(await sequence()).markers[0].start / frameTicks} for ${marker.start / frameTicks + movedBy} (${await message()})`)
+  assert.equal((await sequence()).markers.length, 1, 'still one marker')
+  assert.equal((await sequence()).markers[0].id, marker.id, 'the same marker')
+  assert.equal(await undoSteps(), steps + 1, 'one undo step')
+  await undo()
+  assert.ok(await until(async () => (await sequence()).markers[0].start === marker.start), 'one undo puts it back')
+  assert.ok(await until(async () => Math.abs((await box(`film-marker-${marker.id}`)).x - markerFrom.x) < 1), 'and it is drawn back there')
+  await shot('timeline-7-marker-drag')
   const markerBox = await box(`film-marker-${marker.id}`)
   await page.mouse.dblclick(markerBox.x + 4, markerBox.y + 5)
   await kit.getByTestId('film-dialog').waitFor({ timeout: 5000 })

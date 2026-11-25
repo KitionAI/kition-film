@@ -301,6 +301,14 @@ pub(crate) fn marker_duration_p(s: &Session, p: &Value, cmd: &str) -> Result<Opt
     Ok(None)
 }
 
+/// `markers.edit`'s new place for a sequence marker: `time` (ticks), at or after zero.
+pub(crate) fn marker_move_p(p: &Value, cmd: &str) -> Result<Option<Tick>> {
+    match p.get("time").filter(|v| !v.is_null()) {
+        None => Ok(None),
+        Some(t) => t.as_i64().filter(|t| *t >= 0).map(|t| Some(Tick(t))).ok_or_else(|| bad(cmd, "`time` is whole ticks, at least 0")),
+    }
+}
+
 /// The core clip-id resolver, shared with the binding's dependency guard.
 pub fn clip_p(p: &Value, k: &str) -> Option<ClipId> {
     u64_p(p, k).map(ClipId)
@@ -2134,18 +2142,28 @@ fn build() -> Vec<CommandSpec> {
             "Edit Marker…",
             [],
             None,
-            r#"{"target":"program|source","marker":id,"name":str?,"comment":str?,"color":label?,"durationFrames":i64?,"durationSeconds":f64?}"#,
+            r#"{"target":"program|source","marker":id,"time":ticks?,"name":str?,"comment":str?,"color":label?,"durationFrames":i64?,"durationSeconds":f64?}"#,
             always,
             |s, p| {
-                if let Some(v) = crate::source_monitor::route(s, "markers.edit", p)? {
+                const CMD: &str = "markers.edit";
+                // a new time moves a sequence marker (dragged along the ruler); a Source marker
+                // keeps its place in its clip
+                let time = marker_move_p(p, CMD)?;
+                if time.is_some() && str_p(p, "target") == Some("source") {
+                    return Err(bad(CMD, "`time` moves a sequence marker; a Source marker keeps its time"));
+                }
+                if let Some(v) = crate::source_monitor::route(s, CMD, p)? {
                     return Ok(v);
                 }
-                let id = u64_p(p, "marker").map(MarkerId).ok_or_else(|| bad("markers.edit", "need `marker`"))?;
-                let color = marker_color_p(p, "markers.edit")?;
-                let duration = marker_duration_p(s, p, "markers.edit")?;
+                let id = u64_p(p, "marker").map(MarkerId).ok_or_else(|| bad(CMD, "need `marker`"))?;
+                let color = marker_color_p(p, CMD)?;
+                let duration = marker_duration_p(s, p, CMD)?;
                 let p = p.clone();
                 s.edit_sequence("Edit Marker", |q, _, _| {
-                    let m = q.markers.iter_mut().find(|m| m.id == id).ok_or_else(|| bad("markers.edit", "no such marker"))?;
+                    let m = q.markers.iter_mut().find(|m| m.id == id).ok_or_else(|| bad(CMD, "no such marker"))?;
+                    if let Some(t) = time {
+                        m.start = t;
+                    }
                     if let Some(n) = str_p(&p, "name") {
                         m.name = n.into();
                     }
@@ -2157,6 +2175,12 @@ fn build() -> Vec<CommandSpec> {
                     }
                     if let Some(d) = duration {
                         m.duration = d;
+                    }
+                    if time.is_some() {
+                        if m.start.0.checked_add(m.duration.0).is_none() {
+                            return Err(bad(CMD, "the marker would end past the supported time range"));
+                        }
+                        q.markers.sort_by_key(|m| m.start);
                     }
                     Ok(())
                 })?;

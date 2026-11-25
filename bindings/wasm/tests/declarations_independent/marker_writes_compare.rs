@@ -1,5 +1,9 @@
 //! commands.rs:1945-2136; sequence_tools.rs:902-930;
 //! source_monitor.rs:115-217; clip_ops.rs:473-514.
+//! Re-read for markers.edit's `time` (a sequence marker moved along the ruler): the
+//! marker's new start is checked against its duration (its end must stay in range) and
+//! the markers are kept in time order, so the whole marker is held, as for a new
+//! duration; the Source route refuses `time` before reading anything.
 use super::sync_compare::normalized;
 use kition_film_engine::project::{ItemId, ItemKind};
 use kition_film_kit::FilmDocument;
@@ -56,7 +60,7 @@ pub fn more(command: &str, path: &str) -> Vec<&'static str> {
     } else if command == "markers.markClip" {
         out.push("unconsumed-program-material");
     } else if command == "markers.edit" {
-        out.push("whole-duration-marker");
+        out.extend(["whole-duration-marker", "whole-moved-marker"]);
     }
     out
 }
@@ -183,7 +187,8 @@ fn program_marker_writes_compare_times_ranges_presence_and_assignment_inputs() {
                         "markers.clearAll" => want.premises.push(leaf(sequence, ["sequence.markers"])),
                         "markers.edit" => {
                             let prefix = format!("sequence.markers[id={marker}]");
-                            let mut fields: Vec<_> = if duration {
+                            let moved = p.get("time").is_some();
+                            let mut fields: Vec<_> = if duration || moved {
                                 vec![prefix.clone()]
                             } else {
                                 ["name", "comment", "color"].iter().filter(|key| p.get(**key).is_some()).map(|key| format!("{prefix}.{key}")).collect()

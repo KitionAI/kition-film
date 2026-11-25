@@ -1162,3 +1162,39 @@ fn move_copy_leaves_the_originals_in_one_undo_step() {
     .unwrap();
     assert!(s.execute("timeline.move", json!({"moves": [{"clip": first.id.0, "track": "V2", "time": end.0}], "copy": true})).is_err());
 }
+
+/// `markers.edit` moves a sequence marker with `time` (ticks; a drag along the ruler), one undo
+/// step, the markers kept in time order; hostile times are refused.
+#[test]
+fn markers_edit_moves_a_marker_in_time() {
+    let mut s = demo();
+    let rate = s.sequence_rate();
+    let a = s.execute("markers.add", json!({"frame": 10, "name": "A"})).unwrap()["marker"].as_u64().unwrap();
+    let b = s.execute("markers.add", json!({"frame": 40, "name": "B"})).unwrap()["marker"].as_u64().unwrap();
+    let starts = |s: &Session| s.active_sequence().unwrap().markers.iter().map(|m| (m.id.0, m.start)).collect::<Vec<_>>();
+    let undo = s.history.undo.len();
+    s.execute("markers.edit", json!({"marker": a, "time": rate.tick_of(60).0})).unwrap();
+    assert_eq!(s.history.undo.len(), undo + 1);
+    let now = starts(&s);
+    assert_eq!(now.iter().find(|m| m.0 == a).unwrap().1, rate.tick_of(60));
+    let ia = now.iter().position(|m| m.0 == a).unwrap();
+    let ib = now.iter().position(|m| m.0 == b).unwrap();
+    assert!(ib < ia, "kept in time order: {now:?}");
+    s.execute("markers.edit", json!({"marker": a, "time": rate.tick_of(5).0, "name": "A2"})).unwrap();
+    let m = s.active_sequence().unwrap().markers.iter().find(|m| m.id.0 == a).unwrap().clone();
+    assert_eq!((m.start, m.name.as_str()), (rate.tick_of(5), "A2"));
+    s.undo();
+    assert_eq!(s.active_sequence().unwrap().markers.iter().find(|m| m.id.0 == a).unwrap().start, rate.tick_of(60));
+    let before = starts(&s);
+    for bad in [
+        json!({"marker": a, "time": -1}),
+        json!({"marker": a, "time": "soon"}),
+        json!({"marker": a, "time": 1.5}),
+        json!({"marker": a, "time": i64::MAX, "durationFrames": 10}),
+        json!({"marker": u64::MAX, "time": 0}),
+        json!({"marker": a, "time": 0, "target": "source"}),
+    ] {
+        assert!(s.execute("markers.edit", bad.clone()).is_err(), "{bad}");
+        assert_eq!(starts(&s), before, "{bad}");
+    }
+}

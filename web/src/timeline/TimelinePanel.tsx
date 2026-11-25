@@ -663,6 +663,8 @@ export function TimelinePanel(props: TimelinePanelProps) {
   const tpsNow = documentFilm?.ticksPerSecond ?? 0
   const onMark = useCallback((which: 'in' | 'out', seconds: number) => void invoke(which === 'in' ? 'markers.markIn' : 'markers.markOut', { time: rulerTicks(seconds, fps, tpsNow) }), [invoke, fps, tpsNow])
   const onEditMarker = useCallback((marker: number) => void invoke('markers.edit', { marker }), [invoke])
+  // A marker dragged along the ruler: one markers.edit with its new time, one undo step.
+  const onMoveMarker = useCallback((marker: number, seconds: number) => void invoke('markers.edit', { marker, time: rulerTicks(seconds, fps, tpsNow) }), [invoke, fps, tpsNow])
   const [rulerMenu, setRulerMenu] = useState<{ at: { x: number; y: number }; seconds: number; marker: number | null } | null>(null)
   const onRulerMenu = useCallback((at: { x: number; y: number }, seconds: number, marker: number | null) => setRulerMenu({ at, seconds, marker }), [])
   const closeRulerMenu = useCallback(() => setRulerMenu(null), [])
@@ -845,7 +847,7 @@ export function TimelinePanel(props: TimelinePanelProps) {
         ) : null}
       </div>
       <div className="film-tl-ruler-wrap" style={{ left: headerWidth, top: TOP_H - RULER_H, width: contentWidth }}>
-        <Ruler film={film} pps={view.pps} scroll={view.scroll} width={contentWidth} renderBar={renderBar} phrase={phrase} onScrub={scrub} markerMarks={preview?.markers} markerSelected={preview?.selectedMarkers ?? undefined} onMark={preview ? undefined : onMark} onEditMarker={preview ? undefined : onEditMarker} onMenu={preview ? undefined : onRulerMenu} />
+        <Ruler film={film} pps={view.pps} scroll={view.scroll} width={contentWidth} renderBar={renderBar} phrase={phrase} onScrub={scrub} markerMarks={preview?.markers} markerSelected={preview?.selectedMarkers ?? undefined} onMark={preview ? undefined : onMark} onEditMarker={preview ? undefined : onEditMarker} onMoveMarker={preview ? undefined : onMoveMarker} onMenu={preview ? undefined : onRulerMenu} />
       </div>
       <TrackHalf kind="video" tracks={video} rows={rows.video} top={tracksTop} height={videoHeight} {...halfProps} />
       <div

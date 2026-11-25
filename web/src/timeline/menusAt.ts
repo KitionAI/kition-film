@@ -45,3 +45,15 @@ export function draggedMark(which: 'in' | 'out', t: number, fps: number, other: 
   const out = Math.max(0, snapped - frame)
   return other != null ? Math.max(out, other) : out
 }
+
+/** How far a press on a marker moves before it drags the marker (points); less is a press, which puts the playhead on it. */
+export const MARKER_DRAG_PX = 3
+
+/**
+ * Where a marker dragged along the ruler lands (seconds): where it was (`from`) moved by the
+ * pointer's `dx` points at `pps` points a second, on a frame, never before the start.
+ */
+export function draggedMarker(from: number, dx: number, pps: number, fps: number) {
+  if (!(pps > 0) || !(fps > 0) || !Number.isFinite(dx)) return from
+  return Math.max(0, Math.round((from + dx / pps) * fps) / fps)
+}

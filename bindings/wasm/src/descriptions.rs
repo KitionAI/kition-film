@@ -585,7 +585,7 @@ pub fn description(id: &str) -> &'static str {
             "Sets whether copying and pasting clips also carries the sequence markers over them (`on`, toggles when omitted)."
         }
         "markers.edit" => {
-            "Changes a marker by id (`marker`): name, comment, `color` (a marker colour or label name) or `durationFrames`/`durationSeconds` (0 makes it a point marker)."
+            "Changes a marker by id (`marker`): name, comment, `color` (a marker colour or label name), `durationFrames`/`durationSeconds` (0 makes it a point marker), or where a sequence marker starts (`time`, ticks; a Source marker keeps its time)."
         }
         "markers.filterColors" => {
             "Hides or shows marker colors in the Markers panel: `hidden` lists colors to hide, or `color` with `visible`. View filter only."

@@ -139,3 +139,14 @@ test('the ruler: a marker by place, a dragged In or Out mark on a frame and on i
   assert.deepEqual(laneMenuState(track, 1, 0.04), { gap: false, forward: [1, 2] })
   assert.deepEqual(laneMenuState(track, 7, 0.04), { gap: false, forward: [] })
 })
+
+test('a marker dragged along the ruler lands on a frame, never before the start', async () => {
+  const { MARKER_DRAG_PX, draggedMarker } = await import('./menusAt.ts')
+  const fps = 25
+  assert.ok(MARKER_DRAG_PX > 0 && MARKER_DRAG_PX < 6, 'a small move is still a press')
+  assert.ok(Math.abs(draggedMarker(1, 51.3, 100, fps) - 1.52) < 1e-9, 'moved by the pointer, on a frame')
+  assert.ok(Math.abs(draggedMarker(2, -40, 100, fps) - 1.6) < 1e-9)
+  assert.equal(draggedMarker(1, -500, 100, fps), 0, 'not before the start')
+  assert.equal(draggedMarker(1, 30, 0, fps), 1, 'no zoom, no move')
+  assert.equal(draggedMarker(1, Number.NaN, 100, fps), 1)
+})
