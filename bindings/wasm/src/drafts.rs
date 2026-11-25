@@ -71,12 +71,13 @@ impl FilmDocument {
 
     /// An agent's reply (JSON text) with every object id it holds as a value or a key named as
     /// the tool interface names it (its tool id, KitObjectModel OM9); unchanged without a replica.
-    /// Text that merely holds an id stays as it is, and the project keeps its own ids.
+    /// Text that merely holds an id stays as it is, and the project keeps its own ids. The editor
+    /// sends every `ai/inspect` reply through here, so only the objects the reply names are read
+    /// (`ToolIds::show_reply`), never the whole project's tool ids.
     pub fn model_reply(&self, value: &str) -> Result<String, String> {
         let value: Value = serde_json::from_str(value).map_err(|error| format!("the reply is not JSON: {error}"))?;
         let Some(kdm) = self.session.kdm() else { return Ok(value.to_string()) };
-        let ids = ToolIds::of_replica(kdm.replica());
-        Ok(if ids.is_active() { ids.show_json(&value) } else { value }.to_string())
+        Ok(ToolIds::show_reply(kdm.replica(), &value).to_string())
     }
 
     /// `model/describe` as JSON: the object model over the project's change exchange.
