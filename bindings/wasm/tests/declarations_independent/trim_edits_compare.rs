@@ -14,8 +14,8 @@ pub fn compared_path(command: &str, path: &str) -> bool {
     COMMANDS.contains(&command)
         && KINDS.contains(&path)
         && hash(include_str!("../../../../crates/engine/engine/src/trim.rs")) == 0x8a7edb67cf0883c3
-        && hash(include_str!("../../../../crates/engine/engine/src/place.rs")) == 0x37ab576d200c6a94
-        && hash(include_str!("../../../../crates/engine/engine/src/premise.rs")) == 0x3720195fc9a701d6
+        && hash(include_str!("../../../../crates/engine/engine/src/place.rs")) == 0x7e75d27e1db4f639
+        && hash(include_str!("../../../../crates/engine/engine/src/premise.rs")) == 0xd347b1c6140b4e1f
 }
 pub fn more(path: &str) -> Vec<&'static str> {
     let mut out = vec!["coarse-active-state", "coarse-mode-state", "whole-trim-lane-order", "clip-owner-position"];

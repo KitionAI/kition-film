@@ -48,7 +48,7 @@ pub fn more(command: &str, path: &str) -> Vec<&'static str> {
     } else if super::joins_compare::compared_path(command, path) {
         super::joins_compare::more(command)
     } else if super::track_transition_compare::compared_path(command, path) {
-        super::track_transition_compare::more(command)
+        super::track_transition_compare::more(command, path)
     } else if super::project_sources_compare::compared_path(command, path) {
         super::project_sources_compare::more(command)
     } else if super::project_management_compare::compared_path(command, path) {

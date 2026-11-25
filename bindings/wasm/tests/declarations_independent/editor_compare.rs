@@ -56,7 +56,7 @@ pub fn compared_path(command: &str, path: &str) -> bool {
     } else if command.starts_with("markers.") || command == "sequence.showThroughEdits" {
         (include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../crates/engine/engine/src/sequence_tools.rs")), 0x9c4a17d3fd68bdd4)
     } else {
-        (include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../crates/engine/engine/src/commands.rs")), 0x36d3e3e1d0ffadcf)
+        (include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../crates/engine/engine/src/commands.rs")), 0x95526b4360647be4)
     };
     hash(source) == reviewed
 }

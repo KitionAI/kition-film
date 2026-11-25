@@ -1,5 +1,9 @@
 //! commands.rs:3750-3835; edit/lib.rs:930-942. Applying a transition
 //! resolves a cut, converts its duration, checks a lock and replaces overlaps.
+//! Re-reviewed at 451e643e's apply_transition: `align` places it on the cut and
+//! its length is kept inside the clips it joins (the outgoing clip's start to the
+//! incoming clip's end), both read from the clip and neighbour held whole here;
+//! the declaration does not depend on `align`.
 use super::sync_compare::normalized;
 use kition_film_engine::project::{ClipId, ItemId, Project, TrackKind};
 use kition_film_kit::FilmDocument;
@@ -134,13 +138,19 @@ fn transition_creation_compares_explicit_and_implicit_cuts_edges_kinds_locks_and
                         })
                         .unwrap();
                     for explicit in [false, true] {
-                        for edge in [None, Some("in"), Some("out")] {
+                        for (edge, align) in
+                            [None, Some("in"), Some("out")].into_iter().flat_map(|edge| [None, Some("start"), Some("end")].map(|align| (edge, align)))
+                        {
                             let mut p = json!({"frames":6,"effect":if kind==TrackKind::Video{"cross_dissolve"}else{"constant_power"}});
                             if explicit {
                                 p[if command == "effects.apply" { "clips" } else { "clip" }] = if command == "effects.apply" { json!([id]) } else { json!(id) };
                             }
                             if let Some(edge) = edge {
                                 p["edge"] = json!(edge);
+                            }
+                            // effects.apply takes no alignment
+                            if let Some(align) = align.filter(|_| command != "effects.apply") {
+                                p["align"] = json!(align);
                             }
                             assert_eq!(
                                 normalized(doc.under(command, &p).unwrap().unwrap_or_default()),

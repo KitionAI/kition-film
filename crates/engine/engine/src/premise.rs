@@ -546,10 +546,39 @@ impl Session {
                 if !["params", "start", "duration", "frames", "align"].iter().any(|key| given(params, key))
                     && params.get("reset").and_then(Value::as_bool) != Some(true) =>
             {
-                // Only `reverse` is written; the transition's place and its clips are not read (a
-                // new place or length reads the clips it joins: no premise is stated then).
+                // Only `reverse` is written; the transition's place and its clips are not read.
                 if let Some(transition) = whole(params, "transition") {
                     out.push(Premise::content(transition, &["reverse"]));
+                }
+            }
+            "sequence.setTransition" if !given(params, "params") && params.get("reset").and_then(Value::as_bool) != Some(true) => {
+                // A new place or length (`commands::set_transition`, `edit::transitions`): it reads
+                // the transition's span and the clips it joins (their starts and lengths bound it and
+                // give its cut), the track's lock and the sequence's frame rate, and writes its span,
+                // its alignment and `reverse` when given; its effect is written back unchanged.
+                if let (Some(transition), Some(sequence)) = (whole(params, "transition"), sequence)
+                    && let Some((track, found)) =
+                        sequence.all_tracks().find_map(|track| track.transitions.iter().find(|x| x.id.0 == transition).map(|x| (track, x)))
+                {
+                    let mut fields = vec!["start", "duration", "align", "from", "to"];
+                    if given(params, "reverse") {
+                        fields.push("reverse");
+                    }
+                    out.push(Premise::content(transition, &fields));
+                    for clip in [found.from, found.to].into_iter().flatten() {
+                        out.push(Premise { id: clip.0, fields: Some(Vec::new()), positions: Some(vec!["start".to_owned(), "duration".to_owned()]) });
+                    }
+                    out.push(Premise::content(track.id.0, &["props.locked"]));
+                    out.extend(item.map(|item| Premise::content(item, &["sequence.settings.settings.frame_rate"])));
+                }
+            }
+            "sequence.removeTransition" => {
+                // The named transitions go whole (their default); each one's track lock is read.
+                if let (Some(sequence), Some(ids)) = (sequence, params.get("transitions").and_then(Value::as_array)) {
+                    let ids: Vec<u64> = ids.iter().filter_map(Value::as_u64).collect();
+                    for track in sequence.all_tracks().filter(|track| track.transitions.iter().any(|x| ids.contains(&x.id.0))) {
+                        out.push(Premise::content(track.id.0, &["props.locked"]));
+                    }
                 }
             }
             "markers.addChapter" | "markers.addFlashCue" if program && !given(params, "name") => {
@@ -733,6 +762,16 @@ impl Session {
                 }
             }
             "effects.toggleEnabled" => out.extend(whole(params, "clip").map(|clip| Premise::content(clip, &["effects"]))),
+            "effects.move" => {
+                // It reorders the clip's effects (reading which are standard ones) and is refused on
+                // a locked track.
+                if let Some(clip) = whole(params, "clip") {
+                    out.push(Premise::content(clip, &["effects"]));
+                    if let Some((track, _)) = sequence.and_then(|sequence| sequence.find_item(ClipId(clip))) {
+                        out.push(Premise::content(track.0, &["props.locked"]));
+                    }
+                }
+            }
             "clip.enable" => {
                 let clips: Vec<ClipId> = named(params, "clips", "clip").into_iter().map(ClipId).collect();
                 if !clips.is_empty() {

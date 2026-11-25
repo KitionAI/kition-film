@@ -139,7 +139,10 @@ fn kind(id: &str) -> Kind {
         | "trim.cancelDynamic"
         | "multicam.page"
         | "multicam.nextPage"
-        | "multicam.prevPage" => Kind::Nothing,
+        | "multicam.prevPage"
+        // a transition named by its id: it acts on that transition, not at the playhead
+        | "sequence.setTransition"
+        | "sequence.removeTransition" => Kind::Nothing,
         "timeline.selectClipAtPlayhead" | "timeline.selectNextClip" | "timeline.selectPrevClip" => Kind::Clips(Tracks::Targeted),
         "timeline.razor" | "sequence.addEditAllTracks" => Kind::Clips(Tracks::NamedOrUnlocked),
         "sequence.addEdit" => Kind::Clips(Tracks::SelectedOrTargeted),
