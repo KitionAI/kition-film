@@ -2,7 +2,7 @@ import type { PreviewGate } from './previewGate.ts'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { RESERVED_SHORTCUTS, isMac, oneInFlight, type KitEngine, type KitEngineInfo, type KitRunOptions, type RasterRect } from '@kition/sdk/editor'
 import upstream from '../../parity/film-upstream.json' with { type: 'json' }
-import { externalCommands, keyTable, reservedKeys, type KeyTable, type ShortcutRow } from './keys.ts'
+import { defaultEngineShortcuts, externalCommands, keyTable, reservedKeys, type KeyTable, type ShortcutRow } from './keys.ts'
 import { parseEvents, type EngineEvent } from './events.ts'
 import { createPrefsCheck, createRefreshFrame, rereadsAfter, skipsStateRead } from './reads.ts'
 import { sourceCommandsOf, targetedRun } from './target.ts'
@@ -176,6 +176,8 @@ export function useFilmSession<S extends Session>(session: S, hostShortcuts: rea
   const reservedNow = useRef(reserved)
   reservedNow.current = reserved
   const [keys, setKeys] = useState<KeyTable>(() => keyTable([], upstream, isMac(), reserved))
+  // The engine's default bindings, for the keys pressed before its key table is read (`createKeyHold`).
+  const earlyKeys = useMemo(() => keyTable(defaultEngineShortcuts(upstream), upstream, isMac(), reserved), [reserved])
   // The engine's live shortcut set (`shortcuts.list`), which the menus show; null until read.
   const [shortcuts, setShortcuts] = useState<ShortcutRow[] | null>(null)
   // Moves when the Project panel's view may have changed with no revision (its preferences: a
@@ -373,5 +375,5 @@ export function useFilmSession<S extends Session>(session: S, hostShortcuts: rea
   // The editor sees the session once its preferences are in (the same object while they load is
   // a session with no document yet).
   const targeted = (doc ? { ...session, run } : { ...session, doc: null, info: null, state: null, run }) as S
-  return { session: targeted, focused, setFocused, focusedNow, filmState, labels, keys, shortcuts, isReserved, job, cancelJob, projectView, checkPrefs }
+  return { session: targeted, focused, setFocused, focusedNow, filmState, labels, keys, earlyKeys, shortcuts, isReserved, job, cancelJob, projectView, checkPrefs }
 }

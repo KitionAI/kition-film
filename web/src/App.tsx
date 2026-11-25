@@ -763,7 +763,7 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
   const prefsError = useRef<(message: string) => void>(() => undefined)
   const viewState = useMemo(() => createFilmViewState(host), [host])
   const options = useMemo(() => sessionOptions(viewState), [viewState])
-  const { session, focused, setFocused, focusedNow, filmState, labels, keys, shortcuts, isReserved, job, cancelJob, projectView, checkPrefs } = useFilmSession(useKitSession(host, manifest, describe, options), host.init.shortcuts, onEngineEvents, previewGate, prefsError, viewState)
+  const { session, focused, setFocused, focusedNow, filmState, labels, keys, earlyKeys, shortcuts, isReserved, job, cancelJob, projectView, checkPrefs } = useFilmSession(useKitSession(host, manifest, describe, options), host.init.shortcuts, onEngineEvents, previewGate, prefsError, viewState)
   // The status bar's message (upstream's `app.ui.status`): why the last command failed, or what
   // an export did. As upstream, it clears after 8 seconds or when the status bar is clicked;
   // kit-editor's failures (menus, dialogs, panels) come here too. Only the engine's own toasts
@@ -1621,9 +1621,10 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
       void invoke('clip.rename', {})
       return true
     }
-    // Before the engine's key table is read (just after a document opens), a plain key waits for
-    // it and runs then, in turn (`createKeyHold`): Right tapped at once is not lost.
-    if (shortcuts == null && !editableTarget(event.target) && heldKeys.hold(event, focusedNow.current)) return true
+    // Before the engine's key table is read (just after a document opens), a plain key an engine
+    // command binds by default waits for it and runs then, in turn (`createKeyHold`): Right tapped
+    // at once is not lost; any other key (Escape) goes on as before.
+    if (shortcuts == null && !editableTarget(event.target) && resolveKey(event, focusedNow.current, earlyKeys) != null && heldKeys.hold(event, focusedNow.current)) return true
     // A key bound to a command nothing serves yet falls to its next binding (`resolveKey`); a
     // served command runs through `invoke` and keeps the key even when the engine refuses it.
     const id = resolveKey(event, focusedNow.current, keys, (command) => invoke.serves(command))

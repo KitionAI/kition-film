@@ -203,6 +203,14 @@ export function resolveKey(event: KeyPress, focusedNow: string, table: KeyTable,
   return hit.command
 }
 
+/**
+ * The engine's commands' default bindings as the manifest records them (`origin: 'engine'`), as
+ * shortcut rows: what a key pressed before the engine's key table is read may be meant for.
+ */
+export function defaultEngineShortcuts(manifest: KeyManifest): ShortcutRow[] {
+  return manifest.keys.filter((key) => key.origin === 'engine' && key.bindings.length > 0).map((key) => ({ id: key.command, shortcuts: key.bindings }))
+}
+
 /** A key pressed before the editor has read the engine's key table: the press and the panel focused then. */
 export type HeldKey = { press: KeyPress; focused: string }
 
@@ -212,6 +220,8 @@ export type HeldKey = { press: KeyPress; focused: string }
  * binds (Right, Home, I) did nothing and a person tapping Right twelve times at once ended a few
  * frames short. They are kept in order (at most `max`; only plain or Shift keys, never a chord
  * with Cmd, Ctrl or Alt, which may be the browser's or the host's) and run once the table is read.
+ * The editor holds only a key an engine command binds by default (`defaultEngineShortcuts`): any
+ * other key (Escape leaving Focus, Tab) goes on to whoever takes it at once.
  */
 export function createKeyHold(max = 64) {
   let held: HeldKey[] = []

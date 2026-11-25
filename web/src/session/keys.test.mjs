@@ -4,7 +4,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { createKeyHold, externalCommands, keyTable, parseShortcut, resolveKey } from './keys.ts'
+import { createKeyHold, defaultEngineShortcuts, externalCommands, keyTable, parseShortcut, resolveKey } from './keys.ts'
 
 const manifest = JSON.parse(readFileSync(new URL('../../parity/film-upstream.json', import.meta.url), 'utf8'))
 
@@ -325,4 +325,14 @@ test('keys pressed before the engine\'s key table is read are kept in order and 
   assert.equal(small.hold(press('c'), 'timeline'), false)
   small.clear()
   assert.deepEqual(small.take(), [])
+})
+
+test('only a key an engine command binds by default waits for the key table; Escape (leaving Focus) and Tab never do', () => {
+  const early = keyTable(defaultEngineShortcuts(manifest), manifest, true)
+  const press = (key, more = {}) => ({ key, code: '', metaKey: false, ctrlKey: false, shiftKey: false, altKey: false, ...more })
+  assert.equal(resolveKey(press('ArrowRight'), 'timeline', early), 'playhead.stepForward')
+  assert.ok(resolveKey(press('Home'), 'timeline', early) != null)
+  assert.equal(resolveKey(press('Escape'), 'timeline', early), null)
+  assert.equal(resolveKey(press('Tab'), 'timeline', early), null)
+  assert.ok(defaultEngineShortcuts(manifest).every((row) => row.shortcuts.length > 0))
 })
