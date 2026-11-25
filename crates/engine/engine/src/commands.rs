@@ -375,6 +375,8 @@ pub fn item_p(p: &Value, k: &str) -> Option<ItemId> {
 pub(crate) struct MovePlan {
     pub moves: Vec<(ClipId, TrackId, Tick)>,
     pub insert: bool,
+    /// `copy`: the clips are copied there and the originals stay (Option-drag).
+    pub copy: bool,
     pub snapped: Option<Value>,
 }
 
@@ -432,24 +434,35 @@ pub(crate) fn move_plan(s: &Session, p: &Value) -> Result<MovePlan> {
         let start = i64::try_from(start + late).ok().map(Tick).filter(|t| *t <= Tick::MAX).ok_or_else(|| bad(CMD, "`time` is out of range"))?;
         moves.push((clip, track, start));
     }
-    Ok(MovePlan { moves, insert: bool_p(p, "insert").unwrap_or(false), snapped: snap.is_some().then_some(snapped) })
+    let copy = match p.get("copy") {
+        None | Some(Value::Null) => false,
+        Some(v) => v.as_bool().ok_or_else(|| bad(CMD, "`copy` is true or false"))?,
+    };
+    Ok(MovePlan { moves, insert: bool_p(p, "insert").unwrap_or(false), copy, snapped: snap.is_some().then_some(snapped) })
 }
 
 fn move_clips(s: &mut Session, p: &Value) -> Result<Value> {
-    let MovePlan { moves, insert: ins, snapped } = move_plan(s, p)?;
+    let MovePlan { moves, insert: ins, copy, snapped } = move_plan(s, p)?;
     // every clip on the sequence now: id -> (track, start, end, project item)
     let spots = |s: &Session| -> Vec<(u64, TrackId, Tick, Tick, ItemId)> {
         let q = s.active_sequence();
         q.into_iter().flat_map(|q| q.all_tracks()).flat_map(|t| t.items.iter().map(move |i| (i.id.0, t.id, i.start, i.end(), i.item))).collect()
     };
     let before = spots(s);
-    s.edit_sequence(if ins { "Move (Insert)" } else { "Move" }, |q, ctx, _| Ok(edit::move_items(q, &moves, ins, ctx)?))?;
+    // `copy` (Option-drag): copies land where the clips would have and the originals stay, as
+    // upstream's Copy; one undo step either way. The answer names the copies (the editor selects them).
+    let copied = if copy {
+        s.edit_sequence(if ins { "Copy (Insert)" } else { "Copy" }, |q, ctx, _| Ok(edit::copy_items(q, &moves, ins, ctx)?))?
+    } else {
+        s.edit_sequence(if ins { "Move (Insert)" } else { "Move" }, |q, ctx, _| Ok(edit::move_items(q, &moves, ins, ctx)?))?;
+        Vec::new()
+    };
     // An overwrite shortens, splits or removes whatever already sits where a clip lands, and a
     // shortened clip may live on under a new id: name each clip the move changed without being
     // asked to, with what is left of it, so the caller hears about it instead of finding out later.
     let after = spots(s);
-    let moved = |c: u64| moves.iter().any(|m| m.0.0 == c);
-    let new = |c: u64| !before.iter().any(|b| b.0 == c);
+    let moved = |c: u64| !copy && moves.iter().any(|m| m.0.0 == c);
+    let new = |c: u64| !before.iter().any(|b| b.0 == c) && !copied.iter().any(|k| k.0 == c);
     let mut overwritten = Vec::new();
     for &(c, track, start, end, item) in before.iter().filter(|b| !moved(b.0)) {
         let kept = after.iter().find(|a| a.0 == c);
@@ -461,7 +474,11 @@ fn move_clips(s: &mut Session, p: &Value) -> Result<Value> {
         let now: i64 = pieces.iter().map(|a| (a.3 - a.2).0).sum();
         overwritten.push(json!({"clip": c, "was": (end - start).0, "now": now, "pieces": pieces.iter().map(|a| a.0).collect::<Vec<_>>()}));
     }
-    let mut out = json!({"moved": moves.iter().map(|m| m.0.0).collect::<Vec<_>>(), "overwritten": overwritten});
+    let mut out = if copy {
+        json!({"copied": copied.iter().map(|c| c.0).collect::<Vec<_>>(), "overwritten": overwritten})
+    } else {
+        json!({"moved": moves.iter().map(|m| m.0.0).collect::<Vec<_>>(), "overwritten": overwritten})
+    };
     if let Some(snapped) = snapped {
         out["snapped"] = snapped;
     }
@@ -2371,7 +2388,7 @@ fn build() -> Vec<CommandSpec> {
             "Move Clips",
             [],
             None,
-            r#"{"moves":[{"clip":id,"track":id|"V2","time":ticks}],"insert":bool,"linked":bool?,"snap":"markers"|"beats"|["markers","beats"]?,"toleranceFrames":i64=3}"#,
+            r#"{"moves":[{"clip":id,"track":id|"V2","time":ticks}],"insert":bool,"linked":bool?,"copy":bool?,"snap":"markers"|"beats"|["markers","beats"]?,"toleranceFrames":i64=3}"#,
             has_seq,
             move_clips
         ),

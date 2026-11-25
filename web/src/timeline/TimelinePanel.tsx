@@ -380,13 +380,17 @@ function TrackHalf({ kind, tracks, rows, top, height, headerWidth, contentWidth,
                 {/* Under the clips: a moved clip covers its old place where they overlap. */}
                 <PreviewGhosts ghosts={preview?.ghosts.get(track.id)} pps={view.pps} rowHeight={row.height} from={visibleFrom} to={visibleTo} colors={colors} />
                 {[
-                  ...track.clips.map((clip) => ({ clip, shown: previews.get(clip.id) })),
-                  // Clips a move carries here from another track (upstream draws them selected).
+                  // A copying drag leaves each clip where it is and draws its copy where it would land.
+                  ...track.clips.map((clip) => {
+                    const shown = previews.get(clip.id)
+                    return { clip, shown: shown?.copy ? undefined : shown, copy: false }
+                  }),
+                  // Clips a move carries here from another track (upstream draws them selected), and copies landing here.
                   ...[...previews].flatMap(([id, shown]) => {
                     const carried = shown.track === track.id ? clipsById.get(id) : undefined
-                    return carried && !track.clips.includes(carried) ? [{ clip: carried, shown }] : []
+                    return carried && (shown.copy || !track.clips.includes(carried)) ? [{ clip: carried, shown, copy: Boolean(shown.copy) }] : []
                   }),
-                ].map(({ clip, shown }) => {
+                ].map(({ clip, shown, copy }) => {
                   if (shown?.track != null && shown.track !== track.id) return null
                   const start = shown ? shown.start / tps : clip.start
                   const duration = shown ? shown.duration / tps : clip.duration
@@ -401,8 +405,9 @@ function TrackHalf({ kind, tracks, rows, top, height, headerWidth, contentWidth,
                   const to = Math.ceil((contentWidth - clipX) / WAVE_STEP) * WAVE_STEP + WAVE_STEP
                   return (
                     <ClipView
-                      key={clip.id}
+                      key={copy ? `copy-${clip.id}` : clip.id}
                       clip={clip}
+                      copy={copy}
                       kind={kind}
                       track={track.id}
                       pps={view.pps}
@@ -424,7 +429,7 @@ function TrackHalf({ kind, tracks, rows, top, height, headerWidth, contentWidth,
                       dpr={dpr}
                       start={start}
                       duration={duration}
-                      carried={shown?.track === track.id && !track.clips.includes(clip)}
+                      carried={copy || (shown?.track === track.id && !track.clips.includes(clip))}
                       media={media}
                       preview={preview?.clips.get(clip.id) as 'added' | 'changed' | undefined}
                       previewSelected={preview?.selected?.has(clip.id)}

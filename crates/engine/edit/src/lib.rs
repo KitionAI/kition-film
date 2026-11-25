@@ -498,6 +498,55 @@ pub fn move_items(seq: &mut Sequence, moves: &[(ClipId, TrackId, Tick)], insert_
     Ok(())
 }
 
+/// Copy items to (track, time) with overwrite or insert semantics, leaving the originals where
+/// they are (Option-drag). `moves`: (item, destination track, start of the copy); a source may be
+/// listed more than once, each entry making its own copy. The copies get new ids; copies of linked
+/// clips are linked to each other, never to the originals (a copy whose partner is not copied is
+/// not linked), and copies of grouped clips form groups of their own. Transitions stay with the
+/// originals, as a move leaves them behind. Returns the copies' ids in the order of `moves`.
+pub fn copy_items(seq: &mut Sequence, moves: &[(ClipId, TrackId, Tick)], insert_mode: bool, ctx: &mut EditCtx) -> Result<Vec<ClipId>> {
+    let mut work = seq.clone();
+    let mut placed = Vec::new();
+    for (c, dest, start) in moves {
+        let (_, it) = work.find_item(*c).ok_or(EditError::NoItem(*c))?;
+        let mut it = it.clone();
+        if work.track(*dest).ok_or(EditError::NoTrack(*dest))?.locked {
+            return Err(EditError::Locked);
+        }
+        it.start = (*start).max(Tick::ZERO);
+        placed.push((*dest, it));
+    }
+    let mut links: HashMap<u64, u64> = HashMap::new();
+    let mut groups: HashMap<u64, u64> = HashMap::new();
+    let mut ids = Vec::with_capacity(placed.len());
+    for (_, it) in &mut placed {
+        it.id = ClipId(ctx.alloc());
+        ids.push(it.id);
+        if let Some(l) = it.link {
+            it.link = Some(*links.entry(l).or_insert_with(|| ctx.alloc()));
+        }
+        if let Some(g) = it.group {
+            it.group = Some(*groups.entry(g).or_insert_with(|| ctx.alloc()));
+        }
+    }
+    let mut counts: HashMap<u64, usize> = HashMap::new();
+    for l in placed.iter().filter_map(|(_, it)| it.link) {
+        *counts.entry(l).or_default() += 1;
+    }
+    for (_, it) in &mut placed {
+        if it.link.is_some_and(|l| counts.get(&l).copied().unwrap_or(0) < 2) {
+            it.link = None;
+        }
+    }
+    if insert_mode {
+        insert(&mut work, placed, ctx)?;
+    } else {
+        overwrite(&mut work, placed, ctx)?;
+    }
+    *seq = work;
+    Ok(ids)
+}
+
 fn media_len(ctx: &EditCtx, item: &TrackItem) -> Option<Tick> {
     if item.frame_hold.is_some() {
         return None;

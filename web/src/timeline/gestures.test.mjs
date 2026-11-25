@@ -178,6 +178,32 @@ test('a Selection drag on a clip selects it with its link, then moves both in on
   assert.equal(gesture({ tool: 'Selection', x0: 200, x1: 20 }).commands.at(-1).params.moves[0].time, 0)
 })
 
+test('Option held at the press or at the drop copies the clips there and leaves them (upstream `copy: mods.alt` or Alt at the release)', () => {
+  // Alt-press on an unselected clip takes that side of its link only, and the drop copies it.
+  const pressed = gesture({ tool: 'Selection', x0: 200, x1: 250, mods: ALT })
+  assert.deepEqual(pressed.commands, [
+    { id: 'timeline.select', params: { clips: [1], linked: false } },
+    { id: 'timeline.move', params: { moves: [{ clip: 1, track: 1, time: at(1.5) }], insert: false, linked: false, copy: true } },
+  ])
+  // Alt held only at the drop: the selection (with its link) is copied.
+  const dropped = gesture({ tool: 'Selection', x0: 200, x1: 250, releaseMods: ALT }).commands.at(-1)
+  assert.deepEqual(dropped, { id: 'timeline.move', params: { moves: [{ clip: 1, track: 1, time: at(1.5) }, { clip: 11, track: 3, time: at(1.5) }], insert: false, linked: false, copy: true } })
+  // With Cmd as well the copy inserts.
+  assert.equal(gesture({ tool: 'Selection', x0: 200, x1: 250, releaseMods: { ...ALT, command: true } }).commands.at(-1).params.insert, true)
+  // No Option at either end: a move.
+  assert.equal(gesture({ tool: 'Selection', x0: 200, x1: 250 }).commands.at(-1).params.copy, undefined)
+  // The preview draws a copy while Option is held (pressed then, or now), else the clip moving.
+  const s = scene()
+  const l = layout()
+  const started = begin(s, l, { x: 200, y: V1, grab: hitTest(s, l, 200, V1, 'Selection', NONE) }, 'Selection', NONE, false)
+  const moving = moveDrag(s, l, started.drag, 250, V1, NONE).drag
+  assert.equal(preview(s, moving).get(1).copy, undefined)
+  const copying = moveDrag(s, l, moving, 250, V1, ALT).drag
+  assert.deepEqual(preview(s, copying).get(1), { start: at(1.5), duration: at(2), track: 1, copy: true })
+  // Let go of Option before the drop: back to a move (it was not held at the press).
+  assert.equal(moveDrag(s, l, copying, 250, V1, NONE).drag.copying, false)
+})
+
 test('Cmd held through a move still snaps (upstream `snap_to` reads Snap only), and its release inserts', () => {
   // The playhead 6 px from where the moved clip would start (1.5 s) pulls it there.
   const near = scene({ playhead: at(1.56) })

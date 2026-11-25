@@ -468,6 +468,58 @@ fn move_with_insert_and_overwrite() {
     assert_eq!(fx.spans(v2), vec![(0, 5), (5, 10), (15, 15)]);
 }
 
+#[test]
+fn copy_leaves_the_originals_and_links_copies_to_each_other() {
+    let mut fx = Fx::new();
+    let (v1, v2, a1) = (fx.v(0), fx.v(1), fx.a(0));
+    let v = fx.put(v1, 0, 10, 0);
+    let a = fx.put(a1, 0, 10, 0);
+    let lone = fx.put(v2, 40, 5, 0);
+    for (track, id) in [(v1, v), (a1, a)] {
+        let clip = fx.seq.track_mut(track).unwrap().items.iter_mut().find(|i| i.id == id).unwrap();
+        clip.link = Some(7);
+        clip.group = Some(9);
+    }
+    // the fixture's `next` is the last id it gave out
+    let mut n = fx.next + 1;
+    let ids = copy_items(&mut fx.seq, &[(v, v1, f(20)), (a, a1, f(20)), (lone, v2, f(0)), (lone, v2, f(10))], false, &mut Fx::ctx(&mut n)).unwrap();
+    assert_eq!(ids.len(), 4);
+    assert!(ids.iter().all(|id| ![v, a, lone].contains(id)), "copies have new ids");
+    // the originals stay; each entry made a copy, even of the same source
+    assert_eq!(fx.spans(v1), vec![(0, 10), (20, 10)]);
+    assert_eq!(fx.spans(a1), vec![(0, 10), (20, 10)]);
+    assert_eq!(fx.spans(v2), vec![(0, 5), (10, 5), (40, 5)]);
+    let found = |id: ClipId| fx.seq.find_item(id).unwrap().1.clone();
+    let (cv, ca) = (found(ids[0]), found(ids[1]));
+    assert_eq!(cv.link, ca.link, "the two copies are linked to each other");
+    assert!(cv.link.is_some() && cv.link != Some(7), "not to the originals");
+    assert!(cv.group.is_some() && cv.group == ca.group && cv.group != Some(9));
+    assert_eq!(found(v).link, Some(7));
+    // a copy of one side of a link alone is not linked
+    let mut n = (fx.next + 1).max(n);
+    let one = copy_items(&mut fx.seq, &[(v, v2, f(60))], false, &mut Fx::ctx(&mut n)).unwrap();
+    assert_eq!(fx.seq.find_item(one[0]).unwrap().1.link, None);
+}
+
+#[test]
+fn copy_refuses_locked_or_missing_destinations_and_unknown_clips() {
+    let mut fx = Fx::new();
+    let (v1, v2) = (fx.v(0), fx.v(1));
+    let c = fx.put(v1, 0, 10, 0);
+    fx.seq.track_mut(v2).unwrap().locked = true;
+    let before = fx.seq.clone();
+    let mut n = fx.next + 1;
+    assert!(matches!(copy_items(&mut fx.seq, &[(c, v2, f(0))], false, &mut Fx::ctx(&mut n)), Err(EditError::Locked)));
+    assert!(copy_items(&mut fx.seq, &[(c, TrackId(999_999), f(0))], false, &mut Fx::ctx(&mut n)).is_err());
+    assert!(copy_items(&mut fx.seq, &[(ClipId(999_999), v1, f(0))], false, &mut Fx::ctx(&mut n)).is_err());
+    assert!(copy_items(&mut fx.seq, &[], true, &mut Fx::ctx(&mut n)).is_err());
+    assert_eq!(fx.seq, before, "a refused copy changes nothing");
+    // a copy before zero lands at zero; an insert copy pushes what is there
+    let ids = copy_items(&mut fx.seq, &[(c, v1, Tick(-5))], true, &mut Fx::ctx(&mut n)).unwrap();
+    assert_eq!(fx.seq.find_item(ids[0]).unwrap().1.start, Tick::ZERO);
+    assert_eq!(fx.spans(v1), vec![(0, 10), (10, 10)]);
+}
+
 #[derive(Debug, Clone)]
 enum Op {
     Over(usize, i64, i64),

@@ -3742,6 +3742,21 @@ button.film-project-tab {
   border-style: dashed;
 }
 
+/* The copy an Option-drag would drop: a dashed outline over it, a little see-through, taking no press. */
+.film-clip[data-copy] {
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.film-clip[data-copy]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border: 2px dashed var(--kit-text);
+  pointer-events: none;
+}
+
 .film-clip[data-preview-selected] {
   outline: 2px dashed var(--kit-text);
   outline-offset: -2px;

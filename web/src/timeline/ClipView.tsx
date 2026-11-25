@@ -266,6 +266,8 @@ export type ClipViewProps = {
   duration: number
   /** Drawn as selected while a drag carries it to another track. */
   carried?: boolean
+  /** The copy an Option-drag would drop here (the clip itself stays where it is): drawn with a dashed outline. */
+  copy?: boolean
   media: TimelineMedia
   /** A dialog's preview: the clip is new (a dashed accent outline) or changed (an accent outline, at its new place). */
   preview?: 'added' | 'changed'
@@ -296,7 +298,7 @@ export type ClipViewProps = {
  * place on the track's layer, which scrolls by a transform: scrolling does not redraw it.
  */
 export const ClipView = memo(function ClipView(props: ClipViewProps) {
-  const { clip, kind, track, pps, fps, rowHeight, color, inRange, noHead, noTail, thumbnail, thumbnailWidth, waveform, dynamicWaveform, revision, stamp, from, to, animating, dpr, start, duration, carried, media, preview, previewSelected, pictures, noPeaks, volume = null, selectedKey = null, fadeIn = null, fadeOut = null, fadeActive = null, fadeLabels } = props
+  const { clip, kind, track, pps, fps, rowHeight, color, inRange, noHead, noTail, thumbnail, thumbnailWidth, waveform, dynamicWaveform, revision, stamp, from, to, animating, dpr, start, duration, carried, copy = false, media, preview, previewSelected, pictures, noPeaks, volume = null, selectedKey = null, fadeIn = null, fadeOut = null, fadeActive = null, fadeLabels } = props
   const left = start * pps
   const width = Math.max(1, duration * pps)
   const selected = clip.selected || Boolean(carried)
@@ -316,9 +318,10 @@ export const ClipView = memo(function ClipView(props: ClipViewProps) {
       data-disabled={!clip.enabled || undefined}
       data-preview={preview}
       data-preview-selected={previewSelected || undefined}
+      data-copy={copy || undefined}
       style={{ transform: `translateX(${left}px)`, width, height, background: fill }}
       title={clip.name}
-      data-testid={`film-clip-${clip.id}`}
+      data-testid={copy ? `film-clip-copy-${clip.id}` : `film-clip-${clip.id}`}
       data-kit-ui-id="control:timeline.clip"
     >
       {thumbnail && height > 28 && width > 20 && clip.enabled ? (

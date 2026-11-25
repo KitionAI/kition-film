@@ -1100,3 +1100,65 @@ fn set_param_merge_key_joins_parameters() {
     s.execute("effects.setParam", json!({"clip": c, "param": "rotation", "value": 5.0, "merge": true})).unwrap();
     assert_eq!(s.history.undo.len(), undo + 4);
 }
+
+/// `timeline.move` with `copy` (the Timeline's Option-drag) copies the clips where the move would
+/// have put them and leaves the originals: one undo step, the copies selected and named in the
+/// answer; refused moves change nothing.
+#[test]
+fn move_copy_leaves_the_originals_in_one_undo_step() {
+    let mut s = demo_unlocked();
+    let q = s.active_sequence().unwrap().clone();
+    let first = q.video_tracks[0].items[0].clone();
+    let end = q.duration();
+    let before = s.active_sequence().unwrap().all_tracks().map(|t| t.items.len()).sum::<usize>();
+    let undo = s.history.undo.len();
+    let r = s.execute("timeline.move", json!({"moves": [{"clip": first.id.0, "track": "V2", "time": end.0}], "linked": false, "copy": true})).unwrap();
+    let copied: Vec<u64> = r["copied"].as_array().unwrap().iter().map(|v| v.as_u64().unwrap()).collect();
+    assert_eq!(copied.len(), 1, "{r}");
+    assert!(r.get("moved").is_none(), "a copy moves nothing: {r}");
+    assert_eq!(s.history.undo.len(), undo + 1, "one undo step");
+    let q2 = s.active_sequence().unwrap();
+    assert_eq!(q2.find_item(first.id).unwrap().1.start, first.start, "the original stays");
+    let (track, copy) = q2.find_item(kition_film_project::ClipId(copied[0])).unwrap();
+    assert_eq!((track, copy.start, copy.duration, copy.item, copy.source_in), (q2.video_tracks[1].id, end, first.duration, first.item, first.source_in));
+    assert_eq!(q2.all_tracks().map(|t| t.items.len()).sum::<usize>(), before + 1);
+    s.undo();
+    assert_eq!(s.active_sequence().unwrap().all_tracks().map(|t| t.items.len()).sum::<usize>(), before, "undo takes the copy away");
+    // with its linked partner, the two copies are linked to each other
+    let link = q.all_tracks().flat_map(|t| &t.items).find(|i| i.link.is_some()).cloned();
+    if let Some(linked) = link {
+        let r = s
+            .execute(
+                "timeline.move",
+                json!({"moves": [{"clip": linked.id.0, "track": q.find_item(linked.id).unwrap().0.0, "time": end.0}], "linked": true, "copy": true}),
+            )
+            .unwrap();
+        let ids: Vec<_> = r["copied"].as_array().unwrap().iter().map(|v| kition_film_project::ClipId(v.as_u64().unwrap())).collect();
+        assert!(ids.len() >= 2, "the partner is copied too: {r}");
+        let q3 = s.active_sequence().unwrap();
+        let links: Vec<_> = ids.iter().map(|id| q3.find_item(*id).unwrap().1.link).collect();
+        assert!(links.iter().all(|l| l.is_some() && *l == links[0] && *l != linked.link), "{links:?}");
+        assert_eq!(q3.find_item(linked.id).unwrap().1.link, linked.link);
+        s.undo();
+    }
+    let before = s.active_sequence().unwrap().clone();
+    for bad in [
+        json!({"moves": [{"clip": first.id.0, "track": "V1", "time": 0}], "copy": "yes"}),
+        json!({"moves": [{"clip": first.id.0, "track": "V1", "time": 0}], "copy": 1}),
+        json!({"moves": [{"clip": u64::MAX, "track": "V1", "time": 0}], "copy": true}),
+        json!({"moves": [{"clip": first.id.0, "track": "V99", "time": 0}], "copy": true}),
+        json!({"moves": [{"clip": first.id.0, "track": "A1", "time": 0}], "copy": true}),
+        json!({"moves": [{"clip": first.id.0, "track": "V1", "time": i64::MAX}], "copy": true}),
+        json!({"moves": [], "copy": true}),
+    ] {
+        assert!(s.execute("timeline.move", bad.clone()).is_err(), "{bad}");
+        assert_eq!(s.active_sequence().unwrap(), &before, "{bad}");
+    }
+    // a locked destination refuses
+    s.edit_sequence("lock", |q, _, _| {
+        q.video_tracks[1].locked = true;
+        Ok(())
+    })
+    .unwrap();
+    assert!(s.execute("timeline.move", json!({"moves": [{"clip": first.id.0, "track": "V2", "time": end.0}], "copy": true})).is_err());
+}

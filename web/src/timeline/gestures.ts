@@ -180,7 +180,8 @@ export function hitTest(scene: Scene, layout: Layout, x: number, y: number, tool
 
 /** A gesture in progress (upstream `Drag`): nothing of it reaches the engine until the release. */
 export type Drag =
-  | { kind: 'move'; clips: number[]; grabTick: number; startTrack: number; offset: number; trackDelta: number }
+  /** `copy`: Alt/Option was held at the press (upstream `Drag::Move`'s `copy`); `copying`: it was then or is now, so the drop copies. */
+  | { kind: 'move'; clips: number[]; grabTick: number; startTrack: number; offset: number; trackDelta: number; copy: boolean; copying: boolean }
   | { kind: 'trim'; clip: number; edge: Edge; mode: 'regular' | 'ripple'; delta: number; from: number }
   | { kind: 'roll'; left: number; right: number; delta: number; from: number }
   | { kind: 'stretch'; clip: number; edge: Edge; delta: number; from: number }
@@ -267,7 +268,7 @@ export function begin(scene: Scene, layout: Layout, pressed: Pressed, tool: stri
         selection = withLinks(scene, [grab.clip])
       }
     }
-    return started({ kind: 'move', clips: selection, grabTick: t, startTrack: grab.track, offset: 0, trackDelta: 0 })
+    return started({ kind: 'move', clips: selection, grabTick: t, startTrack: grab.track, offset: 0, trackDelta: 0, copy: mods.alt, copying: mods.alt })
   }
   if (grab.kind === 'empty') {
     if (clicked) commands.push({ id: 'timeline.select', params: { clips: [] } })
@@ -289,7 +290,7 @@ function shiftTrack(scene: Scene, track: number, delta: number) {
 export type Moved = { drag: Drag; snapX: number | null; pan?: { dx: number; dy: number } }
 
 /** `interact`'s drag arm: where the drag stands with the pointer at `x`, `y` (snapped as upstream snaps each kind). */
-export function moveDrag(scene: Scene, layout: Layout, drag: Drag, x: number, y: number, _mods: Mods): Moved {
+export function moveDrag(scene: Scene, layout: Layout, drag: Drag, x: number, y: number, mods: Mods): Moved {
   const here = tickAt(scene, layout, x)
   let snapX: number | null = null
   const snap = (t: number, exclude: readonly number[]) => {
@@ -312,7 +313,7 @@ export function moveDrag(scene: Scene, layout: Layout, drag: Drag, x: number, y:
       const current = rowAt(layout, y)
       const start = layout.rows.find((row) => row.track === drag.startTrack)
       const trackDelta = current && start && current.kind === start.kind ? current.index - start.index : 0
-      return { drag: { ...drag, offset, trackDelta }, snapX }
+      return { drag: { ...drag, offset, trackDelta, copying: drag.copy || mods.alt }, snapX }
     }
     case 'trim':
     case 'stretch': {
@@ -350,6 +351,8 @@ export function release(scene: Scene, layout: Layout, drag: Drag, x: number, y: 
         const found = findClip(scene, id)
         return found ? [{ clip: id, track: shiftTrack(scene, found.track.id, drag.trackDelta), time: Math.max(0, found.clip.start + drag.offset) }] : []
       })
+      // Option held at the press or the drop copies the clips there and leaves them (Premiere's Option-drag)
+      if (drag.copy || mods.alt) return { id: 'timeline.move', params: { moves, insert: mods.command, linked: false, copy: true } }
       return { id: 'timeline.move', params: { moves, insert: mods.command, linked: false } }
     }
     case 'trim':
@@ -382,8 +385,11 @@ export function release(scene: Scene, layout: Layout, drag: Drag, x: number, y: 
   }
 }
 
-/** A clip as a drag shows it: its start and duration (ticks), and the track it is drawn on when it moves to another. */
-export type Previewed = { start: number; duration: number; track: number | null }
+/**
+ * A clip as a drag shows it: its start and duration (ticks), and the track it is drawn on when it
+ * moves to another; `copy`: the drag copies it, so it stays where it is and its copy is drawn there.
+ */
+export type Previewed = { start: number; duration: number; track: number | null; copy?: boolean }
 
 /** `preview_drag`: the clips a drag moves or resizes, as drawn while it lasts. A Slip moves nothing on the timeline. */
 export function preview(scene: Scene, drag: Drag | null): Map<number, Previewed> {
@@ -394,7 +400,7 @@ export function preview(scene: Scene, drag: Drag | null): Map<number, Previewed>
     case 'move':
       for (const id of drag.clips) {
         const found = at(id)
-        if (found) out.set(id, { start: Math.max(0, found.clip.start + drag.offset), duration: found.clip.duration, track: shiftTrack(scene, found.track.id, drag.trackDelta) })
+        if (found) out.set(id, { start: Math.max(0, found.clip.start + drag.offset), duration: found.clip.duration, track: shiftTrack(scene, found.track.id, drag.trackDelta), ...(drag.copying ? { copy: true } : {}) })
       }
       break
     case 'remix': {

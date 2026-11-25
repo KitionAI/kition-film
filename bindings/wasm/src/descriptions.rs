@@ -1018,7 +1018,7 @@ pub fn description(id: &str) -> &'static str {
             "Reads the editor state: active sequence, playhead, selections (clips, captions, project items, edit points), targeting, In/Out and toggles like snapping and linked selection."
         }
         "timeline.move" => {
-            "Moves clips to new tracks and times in one step: `moves` lists {clip, track, time ticks}. `insert: true` pushes clips at the destination right; otherwise it overwrites. Linked partners follow unless `linked: false`. `snap` (\"markers\", \"beats\" or both) lands the earliest clip on the nearest sequence marker or music beat within `toleranceFrames` (3) and moves the rest by as much; the answer's `snapped` says {from, to}."
+            "Moves clips to new tracks and times in one step: `moves` lists {clip, track, time ticks}. `insert: true` pushes clips at the destination right; otherwise it overwrites. Linked partners follow unless `linked: false`. `copy: true` copies the clips there instead and leaves them where they are (the answer's `copied` names the copies). `snap` (\"markers\", \"beats\" or both) lands the earliest clip on the nearest sequence marker or music beat within `toleranceFrames` (3) and moves the rest by as much; the answer's `snapped` says {from, to}."
         }
         "timeline.moveAudioTargetsDown" => "Moves every audio track target down by one track.",
         "timeline.moveAudioTargetsUp" => "Moves every audio track target up by one track.",

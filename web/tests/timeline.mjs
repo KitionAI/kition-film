@@ -10,7 +10,9 @@
 //   nothing) of that length, shown as a ramp while dragging; dragged again it changes, dragged back
 //   to the end it is cleared; each one undo step;
 // - the ruler: the In and Out marks dragged, a marker double-clicked opens its dialog;
-// - context menus on empty track space and on the ruler, in Chinese, whose rows do what they say.
+// - context menus on empty track space and on the ruler, in Chinese, whose rows do what they say;
+// - an Option/Alt-drag of a clip copies it where it is dropped (drawn as a copy while dragging, the
+//   copy cursor), the original stays, one undo step.
 // Each step asserts the engine's state and what is on screen.
 import assert from 'node:assert/strict'
 import { chromium, webkit } from 'playwright'
@@ -415,6 +417,55 @@ try {
   assert.ok(near((await v1()).items[0].start / frameTicks, frameAt(0.1)), `at the time right-clicked: ${(await v1()).items[0].start / frameTicks} for ${frameAt(0.1)}`)
   assert.equal(await undoSteps(), steps + 1, 'one undo step')
   await shot('timeline-9-pasted')
+
+  // ---- An Option/Alt-drag copies a clip: V1's last clip dropped on V2 further on.
+  await frame.evaluate(() => window.filmPreview.run('timeline.select', { clips: [] }))
+  assert.ok(await until(async () => ((await sequence()).selection?.length ?? 0) === 0), 'nothing selected')
+  const source = (await v1()).items.at(-1)
+  const sourceBox = await box(`film-clip-${source.clip}`)
+  const lane2Box = await box('film-track-Video 2')
+  const v1Count = (await v1()).items.length
+  const audioCount = (await sequence()).audio.reduce((sum, track) => sum + track.items.length, 0)
+  steps = await undoSteps()
+  const grabAt = { x: sourceBox.x + Math.min(40, sourceBox.width / 2), y: sourceBox.y + sourceBox.height / 2 }
+  const dropAt = { x: grabAt.x + 80, y: lane2Box.y + lane2Box.height / 2 }
+  let copyShown = false
+  let copyBox = null
+  let copyCursor = ''
+  let originalStays = false
+  await page.keyboard.down('Alt')
+  await drag(grabAt, dropAt, async () => {
+    copyShown = (await kit.getByTestId(`film-clip-copy-${source.clip}`).count()) === 1
+    copyBox = copyShown ? await box(`film-clip-copy-${source.clip}`) : null
+    copyCursor = await cursor()
+    originalStays = Math.abs((await box(`film-clip-${source.clip}`)).x - sourceBox.x) < 1
+    await shot('timeline-10-copy-drag')
+  })
+  await page.keyboard.up('Alt')
+  assert.ok(copyShown, 'the copy is drawn where it would land while dragging')
+  assert.ok(copyBox.y >= lane2Box.y && copyBox.y + copyBox.height <= lane2Box.y + lane2Box.height + 0.5, 'on V2')
+  assert.equal(copyCursor, 'copy', 'the pointer shows a copy')
+  assert.ok(originalStays, 'the clip itself stays where it is while dragging')
+  const v2 = async () => (await sequence()).video[1]
+  assert.ok(await until(async () => (await v2()).items.length === 1), `the drop puts a copy on V2 (${await message()})`)
+  const copy = (await v2()).items[0]
+  assert.notEqual(copy.clip, source.clip, 'a new clip')
+  assert.equal(copy.item, source.item, 'of the same media')
+  assert.equal(copy.duration, source.duration, 'as long')
+  // Where it was drawn when dropped (snapped as a move is).
+  const drawnFrames = source.start / frameTicks + ((copyBox.x - sourceBox.x) / sourceBox.width) * (source.duration / frameTicks)
+  assert.ok(Math.abs(copy.start / frameTicks - drawnFrames) <= 1, `where it was drawn when dropped: ${copy.start / frameTicks} for ${drawnFrames}`)
+  assert.ok(copy.start > source.start, 'later than the original')
+  const stayed = (await v1()).items.find((item) => item.clip === source.clip)
+  assert.ok(stayed && stayed.start === source.start && stayed.duration === source.duration, 'the original stays where it was')
+  assert.equal((await v1()).items.length, v1Count, 'nothing else on V1 changed')
+  assert.equal((await sequence()).audio.reduce((sum, track) => sum + track.items.length, 0), audioCount, 'its sound was not copied (Alt-press takes one side)')
+  assert.deepEqual((await sequence()).selection, [copy.clip], 'the copy is selected')
+  assert.equal(await undoSteps(), steps + 1, 'one undo step')
+  assert.ok(await until(async () => (await cursor()) !== 'copy'), 'the copy cursor goes with the drag')
+  await undo()
+  assert.ok(await until(async () => (await v2()).items.length === 0), 'one undo takes the copy away')
+  assert.ok((await v1()).items.some((item) => item.clip === source.clip && item.start === source.start), 'and leaves the original')
 
   assert.deepEqual(errors, [], 'no page errors')
   console.log(`timeline ${which}: ok`)

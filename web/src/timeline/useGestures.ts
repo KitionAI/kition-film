@@ -184,6 +184,24 @@ export function useGestures({ film, session, store, tool, invoke, scrub, rollRip
     }
   }, [])
 
+  /** An Option-drag's copy (`timeline.move` with `copy`), in turn with the rest; the copies it answers are then selected, as upstream's Copy leaves them. */
+  const sendCopy = useCallback((command: Command) => {
+    const generation = epoch.current
+    queue.current = queue.current.catch(() => undefined).then(async () => {
+      if (epoch.current !== generation) return
+      const raw = await latest.current.invoke(command.id, command.params)
+      // The engine's answer, as the session hands it on (its JSON text) or read already.
+      let answer: { copied?: unknown } | null = null
+      try {
+        answer = (typeof raw === 'string' ? JSON.parse(raw) : raw) as { copied?: unknown } | null
+      } catch {
+        answer = null
+      }
+      const copied = Array.isArray(answer?.copied) ? answer.copied.filter((id): id is number => typeof id === 'number') : []
+      if (copied.length && epoch.current === generation) await latest.current.invoke('timeline.select', { clips: copied, linked: false })
+    })
+  }, [])
+
   // A live drag's levels: the latest waits while one is on its way, older ones are dropped.
   const live = useRef<{ busy: boolean; next: { token: LiveToken; commands: Command[] } | null }>({ busy: false, next: null })
   const sendLive = useCallback((token: LiveToken, commands: Command[]) => {
@@ -298,9 +316,11 @@ export function useGestures({ film, session, store, tool, invoke, scrub, rollRip
   const show = useCallback(
     (scene: Scene, drag: Drag, snapX: number | null) => {
       const marquee = drag.kind === 'marquee' ? { left: Math.min(drag.x0, drag.x1), top: Math.min(drag.y0, drag.y1), width: Math.abs(drag.x1 - drag.x0), height: Math.abs(drag.y1 - drag.y0) } : null
+      // An Option-drag copies: the pointer says so (Premiere's copy cursor).
+      if (drag.kind === 'move' && root.current) root.current.style.cursor = drag.copying ? 'copy' : ''
       dragView.set({ previews: preview(scene, drag), snapX, marquee, razor: null, brackets: [] })
     },
-    [dragView],
+    [dragView, root],
   )
 
   /** The drag with the pointer where it is now; a Hand drag pans the view. */
@@ -340,6 +360,8 @@ export function useGestures({ film, session, store, tool, invoke, scrub, rollRip
     if (current?.frame) cancelAnimationFrame(current.frame)
     if (current?.timer) clearTimeout(current.timer)
     if (current && root.current?.hasPointerCapture(current.pointer)) root.current.releasePointerCapture(current.pointer)
+    // A copying drag's cursor goes with it.
+    if (current?.drag?.kind === 'move' && root.current) root.current.style.cursor = ''
     // A drag of the playhead's line ends its scrub where the pointer is, however it ends.
     if (current?.playhead) {
       root.current?.querySelector('.film-tl-playhead')?.removeAttribute('data-dragging')
@@ -353,7 +375,10 @@ export function useGestures({ film, session, store, tool, invoke, scrub, rollRip
   // pointer move acts with the keys held then (upstream reads them on the frame the drag starts).
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (gesture.current) gesture.current.mods = modsOf(event)
+      if (!gesture.current) return
+      gesture.current.mods = modsOf(event)
+      // Option pressed or let go during a move: the drag shows whether it copies.
+      if (gesture.current.drag?.kind === 'move' && event.key === 'Alt') update()
     }
     window.addEventListener('keydown', onKey, true)
     window.addEventListener('keyup', onKey, true)
@@ -361,7 +386,7 @@ export function useGestures({ film, session, store, tool, invoke, scrub, rollRip
       window.removeEventListener('keydown', onKey, true)
       window.removeEventListener('keyup', onKey, true)
     }
-  }, [])
+  }, [update])
 
   /** The end of transition `id` a press at `x` takes (upstream `Hit::Transition`'s `edge`), or null in its middle. */
   const transitionGrabAt = useCallback(
@@ -806,11 +831,12 @@ export function useGestures({ film, session, store, tool, invoke, scrub, rollRip
         if (clicked.zoom) store.set((view) => ({ ...view, ...zoomAt(view, clicked.zoom!.factor, clicked.zoom!.time, clicked.zoom!.x) }))
       } else if (scene && current.drag) {
         const last = release(scene, layoutNow(), current.drag, x, y, modsOf(event))
-        if (last) send([last])
+        if (last?.id === 'timeline.move' && last.params.copy) sendCopy(last)
+        else if (last) send([last])
       }
       finish()
     },
-    [bodyOf, commitTransition, finish, layoutNow, placeOf, selectTransition, send, store, timeOfX],
+    [bodyOf, commitTransition, finish, layoutNow, placeOf, selectTransition, send, sendCopy, store, timeOfX],
   )
 
   // The clip menu (upstream's `context_menu` on the tracks): a right-click selects an unselected clip first.

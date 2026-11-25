@@ -1,5 +1,10 @@
 //! commands.rs:379-473; edit/lib.rs:477-522. Named moves expand unlocked
 //! linked partners, align negative starts and replace destination material.
+//! `copy` (Option-drag; edit/lib.rs copy_items) runs the same plan and lands its
+//! copies where the move would have put the clips: it reads the listed clips and
+//! their partners whole (each is cloned) and the same destination windows, and
+//! leaves the originals and their transitions alone. The declaration is the move's,
+//! so the transitions at the originals' edges are held without being read (MORE).
 use super::sync_compare::normalized;
 use kition_film_engine::project::{ClipId, ItemId, Project};
 use kition_film_kit::FilmDocument;
@@ -10,7 +15,7 @@ pub fn compared_path(command: &str, path: &str) -> bool {
     PATHS.contains(&(command, path))
 }
 pub fn more(_: &str) -> Vec<&'static str> {
-    vec!["coarse-mode-state", "whole-move-target", "whole-move-insert-neighbourhood"]
+    vec!["coarse-mode-state", "whole-move-target", "whole-move-insert-neighbourhood", "uncopied-source-transitions"]
 }
 fn leaf(id: u64, fields: &[&str]) -> Premise {
     Premise::on(json!(id)).fields(fields.iter().copied()).positions(Vec::<String>::new())
@@ -132,11 +137,14 @@ fn direct_moves_compare_ordinal_destinations_links_negative_alignment_and_insert
     for linked in [false, true] {
         doc.execute("sequence.linkedSelection", json!({"on":linked})).unwrap();
         for insert in [false, true] {
-            for explicit in [false, true] {
+            for (explicit, copy) in [(false, None), (true, None), (false, Some(true)), (true, Some(true)), (false, Some(false))] {
                 for time in [-254_016_000_000i64, 0, 1_016_064_000_000] {
                     let mut p = json!({"moves":[{"clip":clip,"track":"V2","time":time}],"insert":insert});
                     if explicit {
                         p["linked"] = json!(!linked);
+                    }
+                    if let Some(copy) = copy {
+                        p["copy"] = json!(copy);
                     }
                     assert_eq!(normalized(doc.under("timeline.move", &p).unwrap().unwrap()), normalized(expected(&project, seq, &p, linked)), "{p}/{linked}");
                 }
