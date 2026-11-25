@@ -1552,6 +1552,7 @@ dependencies = [
  "kition-film-text",
  "kition-film-time",
  "kition-kit",
+ "serde",
  "serde_json",
 ]
 

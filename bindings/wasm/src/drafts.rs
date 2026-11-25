@@ -6,9 +6,11 @@
 //! one undo step, as a command's edit (`Session::merge_draft`, `Session::restore_version`): the
 //! project, the person's state and the history follow the replica, and one Undo takes it back.
 
+use std::collections::BTreeSet;
+
 use kition_film_engine::{Damage, Origin, Version};
 use kition_kit::kdm::diff::diff_states;
-use kition_kit::kdm::tool_ids::ToolIds;
+use kition_kit::kdm::{ObjectId, Replica};
 use kition_kit::session::model::Exchange;
 use serde_json::{Value, json};
 
@@ -71,13 +73,29 @@ impl FilmDocument {
 
     /// An agent's reply (JSON text) with every object id it holds as a value or a key named as
     /// the tool interface names it (its tool id, KitObjectModel OM9); unchanged without a replica.
-    /// Text that merely holds an id stays as it is, and the project keeps its own ids. The editor
-    /// sends every `ai/inspect` reply through here, so only the objects the reply names are read
-    /// (`ToolIds::show_reply`), never the whole project's tool ids.
+    /// Text that merely holds an id stays as it is, and the project keeps its own ids.
+    ///
+    /// The editor sends every `ai/inspect` reply through here, and film's replies name bins, items,
+    /// tracks, clips and transitions by the engine's own ids, which are their tool ids: what is left
+    /// to name is an object id the replica made (a hyphenated UUID). A reply holding none comes back
+    /// as it is, only checked to be JSON; otherwise only the objects it names are read
+    /// (`Replica::tool_ids_of`). The project's and other fixed objects' ids (`project`) are words
+    /// a reply also uses as keys, so they are never taken for objects.
     pub fn model_reply(&self, value: &str) -> Result<String, String> {
-        let value: Value = serde_json::from_str(value).map_err(|error| format!("the reply is not JSON: {error}"))?;
-        let Some(kdm) = self.session.kdm() else { return Ok(value.to_string()) };
-        Ok(ToolIds::show_reply(kdm.replica(), &value).to_string())
+        let not_json = |error: serde_json::Error| format!("the reply is not JSON: {error}");
+        let kdm = self.session.kdm();
+        if kdm.is_none() || !holds_object_id(value) {
+            serde_json::from_str::<serde::de::IgnoredAny>(value).map_err(not_json)?;
+            return Ok(value.to_owned());
+        }
+        let parsed: Value = serde_json::from_str(value).map_err(not_json)?;
+        let Some(replica) = kdm.map(|kdm| kdm.replica()) else { return Ok(value.to_owned()) };
+        let mut named = BTreeSet::new();
+        named_objects(&parsed, replica, &mut named);
+        if named.is_empty() {
+            return Ok(value.to_owned());
+        }
+        Ok(replica.tool_ids_of(&named).show_json(&parsed).to_string())
     }
 
     /// `model/describe` as JSON: the object model over the project's change exchange.
@@ -91,6 +109,45 @@ impl FilmDocument {
         let answer = Exchange::new().batch(self, request, false).map_err(|failure| failure.to_json());
         self.settle();
         answer
+    }
+}
+
+/// Whether `text` is an object id the replica made: a hyphenated, lower-case UUID.
+fn is_object_id(text: &str) -> bool {
+    let bytes = text.as_bytes();
+    bytes.len() == 36
+        && bytes.iter().enumerate().all(|(at, byte)| if matches!(at, 8 | 13 | 18 | 23) { *byte == b'-' } else { matches!(*byte, b'0'..=b'9' | b'a'..=b'f') })
+}
+
+/// Whether `text` holds an object id the replica made anywhere.
+fn holds_object_id(text: &str) -> bool {
+    text.as_bytes().windows(36).any(|window| std::str::from_utf8(window).is_ok_and(is_object_id))
+}
+
+/// The objects of `replica` that `value` names: a string, a key, or a `:`-separated part of a key
+/// that is an object id the replica made and holds.
+fn named_objects(value: &Value, replica: &Replica, out: &mut BTreeSet<ObjectId>) {
+    let mut name = |text: &str| {
+        if is_object_id(text) {
+            let id = ObjectId::from_string(text);
+            if replica.exists(&id) {
+                out.insert(id);
+            }
+        }
+    };
+    let mut stack = vec![value];
+    while let Some(value) = stack.pop() {
+        match value {
+            Value::String(text) => name(text),
+            Value::Array(items) => stack.extend(items),
+            Value::Object(members) => {
+                for (key, member) in members {
+                    key.split(':').for_each(&mut name);
+                    stack.push(member);
+                }
+            }
+            _ => {}
+        }
     }
 }
 
@@ -219,6 +276,13 @@ mod tests {
             serde_json::from_str(&doc.model_reply(&json!({ "target": object, "note": format!("about {object}") }).to_string()).unwrap()).unwrap();
         assert_eq!(shown["target"], json!(item.to_string()), "{shown}");
         assert_eq!(shown["note"], json!(format!("about {object}")), "text that holds an id stays");
+        let keys: Value = serde_json::from_str(&doc.model_reply(&json!({ "project": { "root": object } }).to_string()).unwrap()).unwrap();
+        assert_eq!(keys["project"]["root"], json!(item.to_string()), "the words a reply uses as keys stay: {keys}");
+        assert_eq!(
+            doc.model_reply(r#"{"project":{"name":"Edit"}}"#).unwrap(),
+            r#"{"project":{"name":"Edit"}}"#,
+            "a reply naming no object comes back as it is"
+        );
         assert!(doc.model_reply("not json").is_err());
     }
 
