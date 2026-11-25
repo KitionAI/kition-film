@@ -1,0 +1,27 @@
+format: 1
+id: film.collab.drafts/engine-members
+feature: film.collab.drafts
+intent: >-
+  The engine has every contract 2 member the kit editor calls (platform rule K3a), with real
+  behaviour: a draft's changes merge in as one undo step of the person (its comparison beforehand
+  names what the merge does and changes nothing, an edit made meanwhile stays, a refused merge
+  changes nothing), a checkpoint's state is restored by object id as one undo step, a receipt
+  names what changed since a version or why it cannot, an agent's reply names objects by their
+  tool ids, and the object model describes, reads and runs a command as one undo step. An
+  unchanged project saves the bytes it opened from and reopens with its stored replica under the
+  same object ids, writing nothing.
+layer: gate
+source:
+  kind: synthetic
+  from: bindings/wasm/src/drafts.rs
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-kit
+      filter: "drafts::tests::"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-25"

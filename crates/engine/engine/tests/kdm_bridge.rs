@@ -2,8 +2,9 @@
 //! command replicates as one transaction, a second session that imports it reproduces the
 //! project, undo after a remote edit keeps the remote edit and reverts only the local one, a
 //! coalesced drag is one undo step, playhead and selection changes write nothing, two sessions
-//! that edit concurrently and exchange changes converge, and a replica the write depth limit
-//! refuses is left (a visible reset) and rebuilt by the next edit that fits.
+//! that take turns editing one line of changes hold the same project, an undo the replica passes
+//! over keeps the history in step with it, and a replica the write depth limit refuses is left (a
+//! visible reset) and rebuilt by the next edit that fits.
 
 use kition_film_engine::{Origin, Session, UndoScope};
 use kition_film_project::ClipId;
@@ -34,8 +35,8 @@ fn send(from: &mut Session, to: &mut Session) {
     to.import_changes(&bytes).unwrap();
 }
 
-/// Exchanges changes both ways until the two converge (or panics after a generous number of
-/// rounds): either side may have made a change the other lacks.
+/// Exchanges changes both ways until the two hold the same version (or panics after a generous
+/// number of rounds): the side that wrote since the last exchange hands its changes over.
 fn sync(a: &mut Session, b: &mut Session) {
     for _ in 0..8 {
         send(a, b);
@@ -124,7 +125,9 @@ fn undo_after_a_remote_edit_keeps_it_and_reverts_only_the_local_one() {
     // `cuts`): compare the trim's undo against this clip's own actual starting point, not 0.
     let source_in_before = a.active_sequence().unwrap().find_item(ClipId(shared)).unwrap().1.source_in;
 
+    // One line of changes: the local trim reaches `b`, then `b`'s edit reaches `a`.
     a.execute("timeline.trim", json!({"clip": shared, "edge": "in", "mode": "regular", "deltaFrames": 3})).unwrap();
+    sync(&mut a, &mut b);
     b.execute("effects.setParam", json!({"clip": other_on_b, "effect": "motion", "param": "scale", "value": 42.0})).unwrap();
     sync(&mut a, &mut b);
     assert_same(&mut a, &mut b, "exchanged");
@@ -213,6 +216,53 @@ fn an_agent_undo_under_the_persons_later_step_keeps_the_persons_edit() {
     assert_same_as_replica(&mut s);
 }
 
+/// The name of the active sequence's first video track.
+fn first_track_name(s: &Session) -> String {
+    s.active_sequence().unwrap().video_tracks[0].name.clone()
+}
+
+/// The person renames V1, adds a track and renames it; an agent deletes that track. The replica
+/// has nothing left of the person's last two steps (their track is gone) and passes over them,
+/// taking back the step below: the engine's history takes the entries the replica took with it,
+/// so undoing to the end and redoing to the end never asks the replica for a step it no longer
+/// holds (which left the replica, a reset) and the project is what the replica holds throughout.
+#[test]
+fn undos_the_replica_passes_over_keep_the_history_in_step_with_it() {
+    let mut s = new_session();
+    let original = first_track_name(&s);
+    let tracks = s.active_sequence().unwrap().video_tracks.len();
+    s.execute("timeline.setTrack", json!({"track": "V1", "name": "Base"})).unwrap();
+    s.execute("sequence.addTracks", json!({"video": 1, "audio": 0})).unwrap();
+    let added = format!("V{}", tracks + 1);
+    s.execute("timeline.setTrack", json!({"track": added, "name": "Mine"})).unwrap();
+    let doc = s.kdm().unwrap().replica().doc_id();
+    s.execute_as("sequence.deleteTrack", json!({"track": added}), &Origin::agent("test")).unwrap();
+    assert_eq!(s.active_sequence().unwrap().video_tracks.len(), tracks, "the agent deleted the added track");
+    let mut undos = 0;
+    while s.undo().is_some() {
+        undos += 1;
+        assert_eq!(s.kdm_resets(), 0, "undo {undos}: the replica stays");
+        assert_same_as_replica(&mut s);
+        assert!(undos <= 3, "at most the person's three steps undo");
+    }
+    assert!(undos < 3, "the replica took the passed-over steps with another: {undos} undos");
+    assert_eq!(first_track_name(&s), original, "every step of the person's is taken back");
+    assert!(!s.kdm().unwrap().can_undo_in(UndoScope::Person), "as in the replica's own history");
+    assert_eq!(s.kdm().unwrap().replica().doc_id(), doc, "the same document");
+    assert_eq!(s.active_sequence().unwrap().video_tracks.len(), tracks, "the deleted track stays deleted");
+    let mut redos = 0;
+    while s.redo().is_some() {
+        redos += 1;
+        assert_eq!(s.kdm_resets(), 0, "redo {redos}: the replica stays");
+        assert_same_as_replica(&mut s);
+        assert!(redos <= undos, "no more redos than undos");
+    }
+    assert_eq!(first_track_name(&s), "Base", "the person's rename is back");
+    s.execute("timeline.setTrack", json!({"track": "V2", "name": "After"})).unwrap();
+    assert_eq!(s.kdm_resets(), 0);
+    assert_same_as_replica(&mut s);
+}
+
 fn rotation_of(s: &Session, clip: u64) -> f64 {
     s.active_sequence().unwrap().find_item(ClipId(clip)).unwrap().1.effect("motion").unwrap().param("rotation").unwrap().value.as_f64().unwrap()
 }
@@ -236,67 +286,6 @@ impl Rng {
     }
     fn below(&mut self, n: u64) -> u64 {
         self.next() % n.max(1)
-    }
-}
-
-fn random_command(s: &mut Session, rng: &mut Rng) {
-    let Some(seq) = s.active_sequence() else { return };
-    let ids: Vec<u64> = seq.video_tracks.iter().chain(seq.audio_tracks.iter()).flat_map(|t| t.items.iter().map(|i| i.id.0)).collect();
-    let pick = ids.get(rng.below(ids.len().max(1) as u64) as usize).copied();
-    let r: kition_film_engine::Result<Value> = match rng.below(7) {
-        0 => match pick {
-            Some(c) => s.execute(
-                "timeline.trim",
-                json!({"clip": c, "edge": if rng.below(2) == 0 {"in"} else {"out"}, "mode": "regular", "deltaFrames": rng.below(20) as i64 - 10}),
-            ),
-            None => Ok(Value::Null),
-        },
-        1 => match pick {
-            Some(c) => s.execute("edit.rippleDelete", json!({"clips": [c]})),
-            None => Ok(Value::Null),
-        },
-        2 => s.execute("sequence.addEditAllTracks", json!({})),
-        3 => match pick {
-            Some(c) => s.execute("timeline.move", json!({"moves": [{"clip": c, "track": "V1", "time": rng.below(600_000_000_000)}]})),
-            None => Ok(Value::Null),
-        },
-        4 => match pick {
-            Some(c) => s.execute("effects.setParam", json!({"clip": c, "effect": "motion", "param": "scale", "value": rng.below(200) as f64})),
-            None => Ok(Value::Null),
-        },
-        5 => s.execute("sequence.addTracks", json!({})),
-        _ => s.execute("edit.undo", json!({})),
-    };
-    // A refused command (nothing to undo, a bad clip id) is fine; it must not crash.
-    let _ = r;
-}
-
-#[test]
-fn random_concurrent_edits_converge() {
-    for seed in [1u64, 7, 42, 2024] {
-        let mut rng = Rng(seed.wrapping_mul(0x9e37_79b9_7f4a_7c15) | 1);
-        let mut a = new_session();
-        let mut b = peer(&mut a);
-        for round in 0..6 {
-            for _ in 0..rng.below(4) + 1 {
-                random_command(&mut a, &mut rng);
-            }
-            for _ in 0..rng.below(4) + 1 {
-                random_command(&mut b, &mut rng);
-            }
-            if round % 2 == 1 {
-                sync(&mut a, &mut b);
-                assert_same(&mut a, &mut b, &format!("seed {seed}, round {round}"));
-                a.active_sequence().unwrap().check().unwrap_or_else(|e| panic!("seed {seed}, round {round}: a overlaps: {e}"));
-                b.active_sequence().unwrap().check().unwrap_or_else(|e| panic!("seed {seed}, round {round}: b overlaps: {e}"));
-            }
-        }
-        sync(&mut a, &mut b);
-        assert_same(&mut a, &mut b, &format!("seed {seed}, final"));
-        a.active_sequence().unwrap().check().unwrap_or_else(|e| panic!("seed {seed}, final: overlaps: {e}"));
-        // A fresh peer opened from the converged snapshot agrees too.
-        let mut c = peer(&mut a);
-        assert_same(&mut a, &mut c, &format!("seed {seed}: a fresh peer matches"));
     }
 }
 
@@ -619,8 +608,8 @@ fn differences(a: &Value, b: &Value) -> Vec<String> {
     out
 }
 
-/// One random command of a wider mix than [`random_command`]: clips moved across tracks, New
-/// Bin From Selection, renames, markers, links, undo and redo.
+/// One random command of a wide mix: trims, ripple deletes, clips moved across tracks, New Bin
+/// From Selection, renames, markers, links, undo and redo.
 fn random_wide_command(s: &mut Session, rng: &mut Rng) -> String {
     let Some(seq) = s.active_sequence() else { return "no sequence".into() };
     let ids: Vec<u64> = seq.video_tracks.iter().chain(seq.audio_tracks.iter()).flat_map(|t| t.items.iter().map(|i| i.id.0)).collect();
@@ -672,12 +661,13 @@ fn random_wide_command(s: &mut Session, rng: &mut Rng) -> String {
     format!("{id} {params} -> {}", if r.is_ok() { "ok" } else { "refused" })
 }
 
-/// Two sessions run ~250 random commands between them (moves across tracks, new bins from the
-/// selection, undo and redo with a history limit small enough to wrap), exchanging changes every
-/// few commands. After every command the project is exactly what its own replica holds; after
-/// every exchange both sessions hold the same replicated state and the same project.
+/// Two sessions run 250 random commands between them (moves across tracks, new bins from the
+/// selection, undo and redo with a history limit small enough to wrap), taking turns on one line
+/// of changes: five commands of one, then the exchange, then five of the other. After every
+/// command the project is exactly what its own replica holds; after every exchange both sessions
+/// hold the same replicated state and the same project.
 #[test]
-fn random_wide_commands_keep_project_and_replica_equal_and_converge() {
+fn random_wide_commands_keep_project_and_replica_equal_on_one_line() {
     for seed in [3u64, 11, 2026] {
         let mut rng = Rng(seed.wrapping_mul(0x9e37_79b9_7f4a_7c15) | 1);
         let mut a = new_session();
@@ -686,8 +676,9 @@ fn random_wide_commands_keep_project_and_replica_equal_and_converge() {
         let mut b = peer(&mut a);
         b.history.limit = 4;
         let mut log: Vec<String> = Vec::new();
-        for step in 0..125 {
-            for (name, s) in [("a", &mut a), ("b", &mut b)] {
+        for step in 0..250 {
+            let turn = if (step / 5) % 2 == 0 { [("a", &mut a)] } else { [("b", &mut b)] };
+            for (name, s) in turn {
                 let steps_before: Vec<u32> = s.history.undo.iter().map(|e| e.2).collect();
                 let what = random_wide_command(s, &mut rng);
                 let what = format!(

@@ -3,8 +3,8 @@ id: film.agent.ids/tool-ids-in-replicas
 feature: film.agent.ids
 intent: >-
   Each object's tool id field holds the engine's id, a replica reads every object with it, and the
-  post-merge repair numbers an object a batch or a collaborator created without one, or two that
-  share one, the same on every replica.
+  repair after an import numbers an object a batch or a collaborator created without one, or two
+  that share one, the same on every replica of the one line of changes.
 layer: gate
 source:
   kind: synthetic

@@ -436,8 +436,15 @@ impl Session {
     /// step the replica holds nothing of to undo (one that changed nothing the replica keeps, or
     /// one from before a reset): the project is the replica's current view, not the snapshot —
     /// which predates any collaborator's edits imported since, and would silently drop them from
-    /// this project while the replica keeps them. A replica that runs out or refuses mid-way
-    /// resets it.
+    /// this project while the replica keeps them. A replica that refuses mid-way resets it.
+    ///
+    /// The engine's history stays in step with the replica's by what each replica call took off
+    /// its stack ([`kdm_model::kition_kit::kdm::UndoOutcome`]): a replica step with nothing left
+    /// to change (its objects deleted since, by an agent or an import) is passed over, and the
+    /// call goes on to the step below it, which belongs to the history entry below this one. Such
+    /// entries leave the history with this one ([`take_steps_below`]): the replica brings them
+    /// back together, as the one step this entry now counts on the other stack. A replica stack
+    /// that holds fewer steps than the entry counts keeps the replica as it is.
     ///
     /// `floor` is the project's `next_id` before the step: the replica's own reconstruction never
     /// lowers it (see [`view_of`]).
@@ -453,16 +460,83 @@ impl Session {
             self.synced = self.project.clone();
             return;
         };
-        for _ in 0..steps {
-            let scope = self.history_scope;
-            let ok = matches!(if undo { kdm.undo_in(scope) } else { kdm.redo_in(scope) }, Ok((true, _)));
-            if !ok {
-                self.detach_kdm();
-                return;
+        let scope = self.history_scope;
+        let mut owed = usize::try_from(steps).unwrap_or(usize::MAX);
+        let mut made = 0u32;
+        let mut beyond = 0usize;
+        while owed > 0 {
+            let outcome = match if undo { kdm.undo_in(scope) } else { kdm.redo_in(scope) } {
+                Ok((outcome, _)) => outcome,
+                Err(_) => {
+                    self.detach_kdm();
+                    return;
+                }
+            };
+            let took = outcome.steps();
+            if took == 0 {
+                break;
             }
+            made = made.saturating_add(u32::from(outcome.is_done()));
+            beyond = took.saturating_sub(owed);
+            owed = owed.saturating_sub(took);
         }
+        let (moved, below) = if undo { (&mut self.history.redo, &mut self.history.undo) } else { (&mut self.history.undo, &mut self.history.redo) };
+        if let Some(entry) = moved.last_mut() {
+            entry.2 = made;
+        }
+        take_steps_below(below, beyond);
         self.project = view_of(kdm, floor);
         self.synced = self.project.clone();
+    }
+
+    /// Takes a draft's changes (made on a replica forked from this one, `mergeChanges`) into the
+    /// project as one undo step of the person (unless `origin` is a `system` or `import` one, as
+    /// the replica counts it), as a command's edit is: changes not written yet are written first,
+    /// the project and the person's state follow the replica, and one undo takes the whole draft
+    /// back. Add the draft's blobs first ([`Session::add_blobs`]). A refused merge changes nothing.
+    pub fn merge_draft(&mut self, bytes: &[u8], origin: &Origin) -> Result<Damage> {
+        let scope = UndoScope::of(origin.kind).map(|_| UndoScope::Person);
+        self.take_in(scope, "Merge Draft", |kdm| kdm.merge_changes(bytes, origin))
+    }
+
+    /// Writes the state a snapshot holds (a checkpoint of this project, `replica/restore`) over
+    /// the project by object id, as one undo step of `origin`'s scope, taken in as a merged draft
+    /// is ([`Session::merge_draft`]). Nothing changes when the states are equal; another
+    /// document's snapshot is refused. Add the blobs it references first.
+    pub fn restore_version(&mut self, snapshot: &[u8], origin: &Origin) -> Result<Damage> {
+        let scope = UndoScope::of(origin.kind);
+        self.take_in(scope, "Restore Version", |kdm| kdm.restore_state(snapshot, origin))
+    }
+
+    /// One transaction `write` makes on the replica, taken into the project as a command's step:
+    /// the project follows the replica, and the history of `scope` (none for a `system` or
+    /// `import` origin) gets an entry worth the one replica undo step. A write that failed after
+    /// its transaction landed (its repair refused) still follows the replica when the view loaded
+    /// from it, as an import does; otherwise the project leaves the replica.
+    fn take_in(
+        &mut self,
+        scope: Option<UndoScope>,
+        label: &str,
+        write: impl FnOnce(&mut FilmSession) -> kdm_model::kition_kit::session::Result<Damage>,
+    ) -> Result<Damage> {
+        let kdm = self.ensure_kdm().ok_or_else(no_replica)?;
+        kdm.end_undo_group();
+        let before = kdm.version();
+        let result = write(&mut *kdm);
+        let changed = kdm.version() != before;
+        let loaded = changed && (result.is_ok() || kdm.view_loaded());
+        if loaded {
+            let previous = self.project.clone();
+            self.follow_kdm();
+            if let Some(scope) = scope {
+                let history = if scope == self.history_scope { &mut self.history } else { &mut self.other_history };
+                history.push((label.to_owned(), previous, 1));
+                history.redo.clear();
+            }
+        } else if changed {
+            self.detach_kdm();
+        }
+        result.map_err(kdm_error)
     }
 
     /// After an import: the project follows the replica, and per-person state that named
@@ -488,6 +562,29 @@ fn view_of(kdm: &FilmSession, floor: u64) -> Arc<Project> {
     let mut project = kdm.project().clone();
     project.next_id = project.next_id.max(floor);
     Arc::new(project)
+}
+
+/// Takes `beyond` replica steps off the history entries on top of `stack` (the ones below the
+/// entry just undone or redone): the replica took them with that entry, passed over or taken back
+/// together with it. An entry left with none leaves the history; one the replica took only some
+/// steps of keeps the rest. An entry that holds no replica step stays where it is.
+fn take_steps_below(stack: &mut Vec<(String, Arc<Project>, u32)>, mut beyond: usize) {
+    let mut at = stack.len();
+    while beyond > 0 && at > 0 {
+        at -= 1;
+        let Some(entry) = stack.get_mut(at) else { break };
+        let held = usize::try_from(entry.2).unwrap_or(usize::MAX);
+        if held == 0 {
+            continue;
+        }
+        if held <= beyond {
+            beyond -= held;
+            stack.remove(at);
+        } else {
+            entry.2 = u32::try_from(held - beyond).unwrap_or(u32::MAX);
+            beyond = 0;
+        }
+    }
 }
 
 /// The undo scope `origin`'s steps join (KitModel 1.1 M12a): the agents' for an agent, else the

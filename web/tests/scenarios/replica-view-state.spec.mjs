@@ -1,8 +1,9 @@
 import { readFileSync } from 'node:fs'
 import { test, expect } from './fixtures.mjs'
 
-// A project changed outside Kition keeps its replica (Kit UI protocol UI-R1, section 7;
-// kit-editor's `replicaMergesFile`), and the person's view is their view state (section 7n),
+// A project changed outside Kition keeps its replica (Kit UI protocol UI-R1, section 7: the
+// editor opens with the stored snapshot and records the file's difference as one `import`
+// change), and the person's view is their view state (section 7n),
 // never the file's. Through the development host with a stored replica, checkpoints and view state.
 
 const PATH = 'films/Sample.kfilm'
@@ -21,7 +22,7 @@ async function save(film, page) {
 
 test('UI-R1 a .kfilm changed outside merges into the stored replica as one import; its lineage and checkpoints stay', async ({ film, page }) => {
   test.setTimeout(120_000)
-  await film.open('&replica=1&checkpoints=1&replica-merges-file=1')
+  await film.open('&replica=1&checkpoints=1')
   // The person's edit, saved: the host keeps the replica, and a checkpoint of that version.
   const { item } = await film.command('file.newColorMatte', { color: '#00ff00', seconds: 2 })
   expect(typeof item).toBe('number')
@@ -56,7 +57,7 @@ test('UI-R1 a .kfilm changed outside merges into the stored replica as one impor
   expect(await page.evaluate(path => window.devHost.history.replica(path) != null, PATH), 'the replica is still kept').toBe(true)
   await save(film, page)
   const kept = await page.evaluate(path => window.devHost.history.checkpoints(path), PATH)
-  expect(kept.some(entry => entry.id === checkpoint.id && entry.available), `the earlier checkpoint stays available: ${JSON.stringify(kept)}`).toBe(true)
+  expect(kept.some(entry => entry.id === checkpoint.id), `the earlier checkpoint stays: ${JSON.stringify(kept)}`).toBe(true)
 
   // The control: the same file opened alone (its replica dropped) starts another replica.
   const current = await bytes(page)

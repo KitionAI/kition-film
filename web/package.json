@@ -29,13 +29,13 @@
     "test:scenarios:2": "playwright test --shard=2/4",
     "test:scenarios:3": "playwright test --shard=3/4",
     "test:scenarios:4": "playwright test --shard=4/4",
+    "test:contract": "node ../../kition-sdk/tools/check-manifest.mjs ../kit.json --module public/engine",
     "test:ci": "node scripts/test-ci.mjs",
     "test:ci:full": "node scripts/test-ci.mjs --full"
   },
   "dependencies": {
-    "@kition/sdk": "npm:@kitionstage/sdk@0.5.2-stage.19",
+    "@kition/sdk": "npm:@kitionstage/sdk@0.5.2-stage.26",
     "@kition/tessera": "npm:@kitionstage/tessera@0.1.1-stage.2",
-    "loro-crdt": "1.16.4",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
   },

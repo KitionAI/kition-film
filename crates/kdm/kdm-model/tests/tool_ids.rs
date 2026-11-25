@@ -1,7 +1,7 @@
 //! Tool ids (KitObjectModel OM9, task card C8-film): every bin, item, track, clip and transition
 //! holds the id the engine gave it (the `.kfilm` file's id) in a read-only field, a replica reads
-//! each object with that id, and the post-merge repair numbers an object that has none (one a
-//! batch or a collaborator created) or shares one with another, the same on every replica.
+//! each object with that id, and the repair after an import numbers an object that has none (one
+//! a batch or a collaborator created) or shares one with another, the same on every replica.
 
 mod common;
 
@@ -98,17 +98,19 @@ fn a_clip_created_without_an_id_is_numbered_past_every_other() {
     assert!(clip_ids(&b.model().project).contains(&stored), "{:?}", clip_ids(&b.model().project));
 }
 
-/// Two replicas that each gave a new clip the same id: after they exchange, the first clip in
-/// object-id order keeps it and the other gets a new one, the same on both, so every id names one
-/// object.
+/// Two replicas, taking turns on one line of changes, each give a new clip the same id (the
+/// second writes it without reading the first's): once the second's change reaches the first, the
+/// first clip in object-id order keeps it and the other gets a new one, the same on both, so every
+/// id names one object.
 #[test]
-fn two_clips_given_one_id_are_told_apart_after_a_merge() {
+fn two_clips_given_one_id_are_told_apart_after_an_exchange() {
     let (mut project, media, sequence) = demo_project();
     let rate = project.sequence(sequence).unwrap_or_else(|| panic!("sequence")).settings.frame_rate;
     add_clip(&mut project, sequence, media, Tick::ZERO, rate.tick_of(10));
     let mut a = first(&project);
     let mut b = peer(&a, 2);
-    for (session, start) in [(&mut a, 20), (&mut b, 40)] {
+    for (a_writes, start) in [(true, 20), (false, 40)] {
+        let (session, other) = if a_writes { (&mut a, &mut b) } else { (&mut b, &mut a) };
         let mut after = session.model().project.clone();
         let sequence = sequence_id(&after);
         let media = after
@@ -121,8 +123,8 @@ fn two_clips_given_one_id_are_told_apart_after_a_merge() {
         let made = after.sequence_mut(sequence).unwrap_or_else(|| panic!("sequence")).video_tracks[0].items.last_mut().unwrap_or_else(|| panic!("clip"));
         made.id = kition_film_project::ClipId(9_000);
         record(session, &person("x"), &after);
+        sync(session, other);
     }
-    sync(&mut a, &mut b);
     let mut ids = clip_ids(&a.model().project);
     ids.sort_unstable();
     let mut unique = ids.clone();

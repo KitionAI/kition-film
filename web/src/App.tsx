@@ -122,12 +122,12 @@ function StatsReadout({ stats, openMs, playing, t }: { stats: StatsStore; openMs
 /**
  * The session's options. The Film engine paints nothing that neither its revision nor `inspect()`
  * shows (a playhead is in `inspect()`), so an agent step that moves neither (`project.select`) need
- * not repaint the Program. A stored replica opens whatever the file's stamp (`replicaMergesFile`,
- * Kit UI protocol UI-R1): the engine records a file changed outside Kition onto the replica as one
+ * not repaint the Program. The editor opens with the stored replica whatever the file's stamp (Kit
+ * UI protocol UI-R1): the engine records a file changed outside Kition onto the replica as one
  * `import` change (`openWithReplica`), so the project keeps its identity and history. The person's
  * view is kept by the host after each save (`viewState`, see `session/viewState.ts`).
  */
-const sessionOptions = (view: FilmViewStateKeeper) => ({ agentSkipsUnchangedPaint: true, replicaMergesFile: true, viewState: view.option }) as const
+const sessionOptions = (view: FilmViewStateKeeper) => ({ agentSkipsUnchangedPaint: true, viewState: view.option }) as const
 
 /** How long a status message shows; the flow test shortens it in development builds (`window.filmStatusMs`). */
 /** The `file` group's queries a dialog may read through `ask` (Properties'): they read media and write nothing. */

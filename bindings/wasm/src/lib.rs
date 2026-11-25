@@ -13,6 +13,7 @@ pub mod check;
 mod collab;
 pub mod descriptions;
 mod dialogs;
+mod drafts;
 mod facts;
 pub mod files;
 mod panels;
@@ -1170,6 +1171,11 @@ pub mod web {
         JsError::new(&message)
     }
 
+    /// An origin in the KDM's commit form, the JSON array `[kind, principal, label]`.
+    fn origin_of(origin: &str) -> Result<kition_film_engine::Origin, JsError> {
+        kition_film_engine::Origin::decode(origin).ok_or_else(|| error(format!("origin is not [kind, principal, label]: {origin}")))
+    }
+
     /// An item, clip, or export id from the page; NaN, negative, and fractional numbers are errors
     /// rather than another id (see [`crate::panels::js_id`]).
     fn id(value: f64, what: &str) -> Result<u64, JsError> {
@@ -1504,6 +1510,57 @@ pub mod web {
 
         pub fn redo(&mut self) -> Result<String, JsError> {
             self.0.redo().map(|(done, damage)| json!({ "done": done, "damage": damage }).to_string()).map_err(error)
+        }
+
+        /// `model/describe` as JSON text.
+        #[wasm_bindgen(js_name = modelDescribe)]
+        pub fn model_describe(&mut self) -> Result<String, JsError> {
+            self.0.model_describe().map(|answer| answer.to_string()).map_err(|failure| error(failure.to_string()))
+        }
+
+        /// `model/batch`: the request and the answer as JSON text, one undo step; a failure's
+        /// message is the error's JSON (`{"code", "index", "message"}`).
+        #[wasm_bindgen(js_name = modelBatch)]
+        pub fn model_batch(&mut self, request: &str) -> Result<String, JsError> {
+            let request: serde_json::Value = serde_json::from_str(request)
+                .map_err(|failure| error(json!({ "code": "invalid-op", "index": null, "message": format!("the batch is not JSON: {failure}") }).to_string()))?;
+            self.0.model_batch(&request).map(|answer| answer.to_string()).map_err(|failure| error(failure.to_string()))
+        }
+
+        /// A draft's changes taken in as one undo step of the person, recorded with `origin`
+        /// (`[kind, principal, label]`): `{"damage", "summary"}`. A refusal fails with the KDM's
+        /// message.
+        #[wasm_bindgen(js_name = mergeChanges)]
+        pub fn merge_changes(&mut self, changes: &[u8], origin: &str) -> Result<String, JsError> {
+            let origin = origin_of(origin)?;
+            self.0.merge_changes(changes, &origin).map(|answer| answer.to_string()).map_err(error)
+        }
+
+        /// What merging a draft's changes would change now, as `StateDiff` JSON; changes nothing.
+        #[wasm_bindgen(js_name = compareChanges)]
+        pub fn compare_changes(&self, changes: &[u8]) -> Result<String, JsError> {
+            self.0.compare_changes(changes).map(|answer| answer.to_string()).map_err(error)
+        }
+
+        /// Writes the state a snapshot holds over the project as one change of `origin`; answers
+        /// the damage JSON.
+        #[wasm_bindgen(js_name = restoreState)]
+        pub fn restore_state(&mut self, snapshot: &[u8], origin: &str) -> Result<String, JsError> {
+            let origin = origin_of(origin)?;
+            self.0.restore_state(snapshot, &origin).map(|damage| serde_json::to_string(&damage).unwrap_or_else(|_| "null".to_owned())).map_err(error)
+        }
+
+        /// An agent's reply (JSON text) with its object ids named as the tool interface names them.
+        #[wasm_bindgen(js_name = modelReply)]
+        pub fn model_reply(&self, value: &str) -> Result<String, JsError> {
+            self.0.model_reply(value).map_err(error)
+        }
+
+        /// What changed since the version `since` (a receipt): `{"changes": StateDiff}`, or
+        /// `{"changes": null, "unavailable"}` when the replica's log does not hold it.
+        #[wasm_bindgen(js_name = changesSince)]
+        pub fn changes_since(&self, since: &[u8]) -> String {
+            self.0.changes_since(since).to_string()
         }
 
         #[wasm_bindgen(js_name = canUndo)]

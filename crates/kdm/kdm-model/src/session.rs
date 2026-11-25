@@ -19,7 +19,7 @@
 use std::sync::Arc;
 
 use kition_film_project::{BinEntry, ItemKind, Marker, Project};
-use kition_kit::kdm::{ActorId, DocId, Origin, Replica, UndoScope, Version};
+use kition_kit::kdm::{ActorId, DocId, Origin, Replica, UndoOutcome, UndoScope, Version};
 use kition_kit::session::{BlobSink, Damage, KitError, KitModel, KitSession, MemoryBlobs};
 
 use crate::{FilmModel, Ids, Nodes, Result, normalize, objects, read_document, replace_document, write_changes, write_document};
@@ -311,21 +311,44 @@ impl FilmSession {
 
     /// Undoes this replica's last undo step in `scope` (never imports or repairs, and never the
     /// other scope's steps, Kition platform KitModel 1.1 M12a), repairs the result and patches the
-    /// view. Answers whether there was one, and the damage.
-    pub fn undo_in(&mut self, scope: UndoScope) -> Result<(bool, Damage)> {
+    /// view. Answers which steps the undo took off the stack ([`UndoOutcome`]: a step with nothing
+    /// left to change, its objects gone since, is passed over and the one below it taken back),
+    /// and the damage. An empty stack answers an empty outcome.
+    pub fn undo_in(&mut self, scope: UndoScope) -> Result<(UndoOutcome, Damage)> {
         self.group = None;
         if !self.inner.can_undo_in(scope) {
-            return Ok((false, Damage::None));
+            return Ok((UndoOutcome::default(), Damage::None));
         }
-        self.inner.undo_in(scope)
+        self.inner.undo_in_outcome(scope)
     }
 
-    pub fn redo_in(&mut self, scope: UndoScope) -> Result<(bool, Damage)> {
+    /// Redoes this replica's last undone step in `scope`, answering as [`FilmSession::undo_in`].
+    pub fn redo_in(&mut self, scope: UndoScope) -> Result<(UndoOutcome, Damage)> {
         self.group = None;
         if !self.inner.can_redo_in(scope) {
-            return Ok((false, Damage::None));
+            return Ok((UndoOutcome::default(), Damage::None));
         }
-        self.inner.redo_in(scope)
+        self.inner.redo_in_outcome(scope)
+    }
+
+    /// Takes a draft's changes (made on a replica forked from this one) in as one transaction of
+    /// `origin` (`Replica::merge_changes`): one undo step of the person unless `origin` is a
+    /// `system` or `import` one, even when an agent made the draft. Repairs the result and patches
+    /// the view as an import does; add the draft's blobs first ([`FilmSession::add_blobs`]). A
+    /// refused merge changes nothing.
+    pub fn merge_changes(&mut self, bytes: &[u8], origin: &Origin) -> Result<Damage> {
+        self.end_undo_group();
+        self.inner.merge_changes(bytes, origin)
+    }
+
+    /// Writes the state `snapshot` holds (a snapshot or content of this document, as a host's
+    /// checkpoint keeps it) over the replica as one transaction of `origin`, keyed by object id,
+    /// so every object the two share keeps its id: one undo step of `origin`'s scope unless it is a
+    /// `system` or `import` one. Nothing changes when the states are equal; another document's
+    /// snapshot is refused. Add the blobs it references first.
+    pub fn restore_state(&mut self, snapshot: &[u8], origin: &Origin) -> Result<Damage> {
+        self.end_undo_group();
+        self.inner.restore_state(snapshot, origin)
     }
 
     pub fn can_undo_in(&self, scope: UndoScope) -> bool {

@@ -1,0 +1,28 @@
+format: 1
+id: regressions/issue-undo-passed-over-history
+feature: film.agent.draft
+intent: >-
+  The person renames V1, adds a track and renames it; an agent deletes that track. The replica has
+  nothing left of the person's last two steps and passes over them (the plain document model's
+  UndoOutcome), taking back the step below in the same undo. The engine's own history takes the
+  entries the replica took with it, so undoing to the end and redoing to the end keep the replica
+  (no reset, the same document) and the project is what the replica holds after every step.
+  Before, the engine still counted the entries the replica had taken along: their undos asked
+  the replica for steps it no longer held, its empty stack was taken for a refusal and the project
+  left its replica, so the next edit started a new document.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/engine/tests/kdm_bridge.rs
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-engine
+      test: kdm_bridge
+      filter: undos_the_replica_passes_over_keep_the_history_in_step_with_it
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-25"

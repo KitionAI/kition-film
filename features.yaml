@@ -34,7 +34,7 @@ features:
     priority: P1
     status: has
     requirements: [AX13]
-    cases: [film.agent.draft/red-matte, regressions/issue-undo-two-histories]
+    cases: [film.agent.draft/red-matte, regressions/issue-undo-two-histories, regressions/issue-undo-passed-over-history]
     since: "2026-11-17"
   - id: film.agent.preview
     title: An agent previews a sequence at a time, or a contact sheet over a range, whatever the editor shows
@@ -99,6 +99,16 @@ features:
     paths: [kit.json, agent/guide.md, bindings/wasm/src/collab.rs, bindings/headless/src/main.rs, crates/kdm/kdm-model/model/schema.json]
     cases: [film.platform.engine-contract-2/replica-room, regressions/issue-c8-film-read-schema-version]
     since: "2026-11-17"
+  - id: film.collab.drafts
+    title: "Drafts merge in and earlier versions restore as one undo step; receipts, replies in tool ids and the object model come from the engine"
+    dimension: [collab, ai, data-safety]
+    priority: P1
+    status: partial
+    paths: [bindings/wasm/src/drafts.rs, bindings/wasm/src/lib.rs, crates/engine/engine/src/kdm_bridge.rs, crates/kdm/kdm-model/src/session.rs, web/package.json]
+    target: "Kit UI protocol section 7 (replica/restore); engine contract members mergeChanges, compareChanges, restoreState, changesSince, modelReply, modelBatch, modelDescribe"
+    gap: Engine tests merge a draft, compare it first, restore a version, answer receipts and replies and run the object model; no browser case drives a draft or a restore in the editor yet.
+    cases: [film.collab.drafts/engine-members]
+    since: "2026-11-25"
   - id: film.platform.document-text
     title: "document.text: titles and captions as plain text for a host's search, cut at a limit"
     dimension: [platform]

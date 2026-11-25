@@ -1,4 +1,4 @@
-//! Shared test helpers: a small project to edit, and a two-replica harness over
+//! Shared test helpers: a small project to edit, and a harness over
 //! `KitSession<FilmModel>`. Included by several `tests/*.rs` binaries, each of which uses only
 //! some of these; a function unused by one binary is still used by another.
 #![allow(dead_code)]
@@ -85,7 +85,8 @@ pub fn peer(of: &Session, value: u64) -> Session {
     KitSession::open_snapshot(&snapshot, Box::new(MemoryBlobs::default()), actor(value)).unwrap_or_else(|error| panic!("open_snapshot: {error}"))
 }
 
-/// Exchanges changes until both replicas converge (or panics after a generous number of rounds).
+/// Exchanges changes both ways until both replicas are at one version (or panics after a generous
+/// number of rounds): the replica that wrote since the last exchange hands its changes over.
 pub fn sync(a: &mut Session, b: &mut Session) {
     for _ in 0..8 {
         a.import_changes(&b.export_changes(&a.version()).unwrap_or_else(|error| panic!("export: {error}"))).unwrap_or_else(|error| panic!("import: {error}"));
@@ -94,7 +95,7 @@ pub fn sync(a: &mut Session, b: &mut Session) {
             return;
         }
     }
-    panic!("the replicas did not converge");
+    panic!("the replicas did not reach one version");
 }
 
 /// Asserts `a` and `b` hold the same content once ids are normalized (`kdm_model::normalize`),

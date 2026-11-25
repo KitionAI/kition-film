@@ -34,13 +34,15 @@ fn dynamic_replay_and_cancel_preserve_outside_project_edits() {
     for command in ["trim.tick", "trim.cancelDynamic", "trim.shuttleStop"] {
         let mut s = demo();
         select_first_cut(&mut s, "roll");
+        s.execute("trim.shuttle", json!({"clock":0})).unwrap();
+        s.execute("trim.tick", json!({"clock":0.25})).unwrap();
+        // The outside edit arrives mid-gesture, on one line of changes: it follows the version the
+        // project's replica is at once the gesture so far is written (as an import writes it).
         let mut peer = Session::default();
         peer.open_snapshot(&s.snapshot().unwrap()).unwrap();
         let version = s.version().unwrap();
         Arc::make_mut(&mut peer.project).name = "Outside edit".into();
         let outside = peer.export_changes(&version).unwrap();
-        s.execute("trim.shuttle", json!({"clock":0})).unwrap();
-        s.execute("trim.tick", json!({"clock":0.25})).unwrap();
         s.import_changes(&outside).unwrap();
         s.execute(command, json!({"clock":0.5})).unwrap();
         assert_eq!(s.project.name, "Outside edit", "{command} discarded an outside edit");
