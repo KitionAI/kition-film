@@ -2,8 +2,8 @@
 //!
 //! [`FilmModel`] implements [`KitModel`]: it is the engine's materialised view of a replica, the
 //! same [`Project`] the rest of the engine already knows. Bins, items, tracks, clips, transitions
-//! and effects become KDM objects with their own identity, so concurrent edits to different ones
-//! merge finely; [`write_document`] and [`write::write_changes`] are the engine command bridge's
+//! and effects become KDM objects with their own identity, so a draft's edits and the document's
+//! made meanwhile to different ones merge finely (rules D1 to D9); [`write_document`] and [`write::write_changes`] are the engine command bridge's
 //! entry points (phase 3b Task 2): writing a whole project in one creating transaction, or only
 //! what a command changed.
 //!
@@ -12,14 +12,14 @@
 //! (`model/schema.json`) merges at that field's own grain: the collections a person edits a piece
 //! at a time are objects and containers of their own (markers, caption tracks and captions, an
 //! effect's parameters by id, master effects, transcripts, source graphics, LUTs, search bins —
-//! see [`objects`]), and text a person types (a marker's comment, a caption's text) merges by
-//! character. The rest round-trips through an opaque `json` register next to it (`Item.props`,
+//! see [`objects`]), and text a person types (a marker's comment, a caption's text) is a text
+//! field (a draft that typed in a text the document also changed does not merge, rule D5). The rest round-trips through an opaque `json` register next to it (`Item.props`,
 //! `Clip.props`/`gain`, `Track.props`, `Sequence.settings`/`mixer`, an effect's masks and layer
 //! data) — last-writer-wins as a whole, but nothing is lost. See [`props`] for exactly what lives
 //! where.
 //!
 //! **Tick range.** `Clip.start`/`duration`/`sourceIn` and `Transition.start`/`duration` are the
-//! fields the repair pass (`validate`) and concurrent trims/ripples reason about byte-exactly, so
+//! fields the repair pass (`validate`) and a draft's trims/ripples merged beside the document's reason about byte-exactly, so
 //! they are written as decimal-string registers (`"start": "12345"`), not KDM `integer` registers:
 //! a KDM `integer` (and in fact *any* JSON number anywhere in a replica, including inside a `json`
 //! register — `kition_kdm::schema::unportable`) is rejected once its magnitude passes ±2^53, which
@@ -164,8 +164,8 @@ impl KitModel for FilmModel {
     /// incremental damage if it turns out to matter for interactive performance.
     ///
     /// The id counter never goes down within this actor's slot: an id this replica handed out may
-    /// be gone from the view (deleted by a peer, or undone) yet still live on a peer or in an undo
-    /// step, so minting it again would give two things one id.
+    /// be gone from the view (deleted by a merged draft or an import, or undone) yet still live in an
+    /// undo or redo step, so minting it again would give two things one id.
     fn apply(&mut self, replica: &Replica, _changed: &BTreeSet<ObjectId>, blobs: &dyn BlobSource) -> Result<Damage> {
         let (mut project, ids, nodes) = read::read_document_known(replica, &self.known, blobs).map_err(kit_err)?;
         let slot = slot_base(replica.actor());

@@ -191,11 +191,23 @@ try {
   assert.equal(await undoSteps(), orderSteps + 1, 'the move is one undo step')
   await undo()
   assert.ok(await until(async () => (await standard()).join() === 'gaussian_blur,invert'), 'one undo puts it back')
+  // The panel reads the effects again after the undo and draws them a moment later: the right-click
+  // waits until it is settled (drawn from the engine's revision now) in the engine's order, so it
+  // reaches Gaussian Blur's row however fast the browser draws.
+  const drawnOrder = async () => (await kit.locator('.film-ec-effect[data-effect-index]').evaluateAll((rows) => rows.map((row) => row.getAttribute('data-testid')))).map((id) => id.replace('film-ec-effect-', '')).filter((effect) => ['gaussian_blur', 'invert'].includes(effect))
+  assert.ok(
+    await until(async () => (await kit.getByTestId('film-effect-controls').getAttribute('data-settled')) === 'true' && (await drawnOrder()).join() === 'gaussian_blur,invert'),
+    `Effect Controls draws the undone order: ${await drawnOrder()}`,
+  )
   await kit.getByTestId('film-ec-effect-gaussian_blur').locator('.film-ec-effect-name').click({ button: 'right' })
   assert.equal(await kit.getByTestId('film-ec-menu-move-up').isDisabled(), true, 'the first standard effect cannot move up past the fixed ones')
   assert.equal(await kit.getByTestId('film-ec-menu-move-down').textContent(), zh('Move Effect Down'), 'its menu says Move Effect Down in Chinese')
   await kit.getByTestId('film-ec-menu-move-down').click()
   assert.ok(await until(async () => (await standard()).join() === 'invert,gaussian_blur'), `Move Effect Down: ${await effectsOf(10)}`)
+  assert.ok(
+    await until(async () => (await kit.getByTestId('film-effect-controls').getAttribute('data-settled')) === 'true' && (await drawnOrder()).join() === 'invert,gaussian_blur'),
+    `Effect Controls draws the moved order: ${await drawnOrder()}`,
+  )
   await kit.getByTestId('film-ec-effect-gaussian_blur').locator('.film-ec-effect-name').click({ button: 'right' })
   await kit.getByTestId('film-ec-menu-move-up').click()
   assert.ok(await until(async () => (await standard()).join() === 'gaussian_blur,invert'), `Move Effect Up: ${await effectsOf(10)}`)

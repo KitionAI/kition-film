@@ -9,8 +9,8 @@ import { Placeholder } from './Placeholder'
 import { localSelection, useLocalSelection } from '../session/localSelection'
 import { carriesEffect, effectDrag, endEffectDrag } from '../timeline/effectDrag'
 import { fitsTrack, isTransition } from './effectsTree'
-import { dropIndex, neighbourIndex, type OrderRow } from './effectOrder'
-import { keyframeMoveTarget, laneRuler, numberSpec, paramText, selectedClip, stepOf, timelineTimeOf, useClipEffects, useParamEdit, type ClipEffect, type ClipTimes, type EffectParam, type ParamTarget } from './effects'
+import { dropIndex, effectOrderKey, neighbourIndex, type OrderRow } from './effectOrder'
+import { keyframeMoveTarget, laneRuler, numberSpec, paramText, selectedClip, stepOf, timelineTimeOf, useClipEffectsAt, useParamEdit, type ClipEffect, type ClipTimes, type EffectParam, type ParamTarget } from './effects'
 
 const ChevronDown = TesseraIcons.ChevronDownIcon
 const ChevronRight = TesseraIcons.ChevronRightIcon
@@ -237,6 +237,8 @@ function ParamValue({ param, target, edit, invoke, phrase, testId }: { param: Ef
 }
 
 type MenuTarget = { kind: 'keyframe'; at: ContextMenuPoint; clip: number; effect: number; param: string; time: number } | { kind: 'effect'; at: ContextMenuPoint; clip: number; effect: number; intrinsic: boolean }
+/** An open menu: its target and the order of effects its row was drawn from. */
+type OpenMenu = MenuTarget & { order: string }
 
 /** A standard effect's header dragged to a new place (`effects.move`): where it was pressed, and where it would land. */
 type Reorder = { pointerId: number; clip: number; from: number; y: number; started: boolean; to: number | null; lineY: number | null }
@@ -492,12 +494,24 @@ export function EffectControls({ film, doc, revision, playback, invoke, seekTick
   // Upstream follows the playhead every frame: the clock's while the program plays.
   const playheadSeconds = useProgramTime(playback, film.playhead)
   const playheadTicks = Math.round(playheadSeconds * TICKS_PER_SECOND)
-  const effects = useClipEffects(doc, chosen?.clip.id ?? null, revision, playheadTicks)
+  const { effects, readAt } = useClipEffectsAt(doc, chosen?.clip.id ?? null, revision, playheadTicks)
   const run = useCallback((id: string, params: Record<string, unknown>, options?: InvokeOptions) => invoke(id, params, options), [invoke])
   const edit = useParamEdit(run, chosen?.clip.id ?? null)
   const [, setFolds] = useState(0)
-  const [menu, setMenu] = useState<MenuTarget | null>(null)
-  const onMenu = useCallback((target: MenuTarget) => setMenu(target), [])
+  // A menu acts on an effect by its index, so it belongs to the order of effects its row was
+  // drawn from: when the panel draws another order (an undo, a move, an edit elsewhere that the
+  // panel had not drawn yet when the right-click came), the menu closes rather than act on the
+  // effect now at that index.
+  const [menu, setMenu] = useState<OpenMenu | null>(null)
+  const orderKey = effects ? effectOrderKey(effects.clip, effects.effects) : ''
+  const drawnOrder = useRef(orderKey)
+  useLayoutEffect(() => {
+    drawnOrder.current = orderKey
+  }, [orderKey])
+  const onMenu = useCallback((target: MenuTarget) => setMenu({ ...target, order: drawnOrder.current }), [])
+  useEffect(() => {
+    if (menu && menu.order !== orderKey) setMenu(null)
+  }, [menu, orderKey])
   const selectedEffect = useLocalSelection((selection) => selection.effect)
   const onSelect = useCallback((clip: number, index: number) => localSelection.set({ effect: { clip, index } }), [])
   // A standard effect's header dragged to another place among the standard effects: one effects.move, one undo step.
@@ -622,6 +636,8 @@ export function EffectControls({ film, doc, revision, playback, invoke, seekTick
     <div
       className="film-ec"
       data-testid="film-effect-controls"
+      // Settled: what the panel draws was read at the revision it was given (tests wait for it).
+      data-settled={(effects != null && readAt === revision) || undefined}
       data-drop={dropping || undefined}
       // An effect or preset from the Effects panel dropped here goes on the clip shown (upstream's drop on Effect Controls).
       onDragOver={(event) => {

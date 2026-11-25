@@ -43,8 +43,19 @@ impl std::fmt::Debug for FilmSession {
 /// link or group, a caption or caption track, a `lutN` LUT id, a search bin — anything
 /// `alloc_id` hands out that never becomes its own KDM object, see [`kition_film_project::Project::minimum_next_id`])
 /// without exchanging first never collide: unlike a `Bin`/`Item`/`Track`/`Clip`/`Transition`,
-/// such an id has no object identity of its own for the merge to keep both of, so a plain
-/// last-writer-wins union of two replicas' same id would silently keep only one.
+/// such an id has no object identity of its own for a merge to keep both of. A clip link or group
+/// is only a number shared by clips: a draft and the document that each linked two clips under
+/// one id would leave the four linked once the draft merges, and no repair could tell them apart.
+///
+/// The line of changes has one writer at a time; what mints beside the document is a draft, a
+/// replica forked from it (`@kition/kit-editor` opens the draft's engine exactly as a reopened
+/// document, from the document's bytes and its replica, so neither can tell it is the other).
+/// Each opened replica takes a fresh actor, so the draft mints in another slot than the document
+/// while both edit, and its objects and ids-as-data merge in beside the document's.
+///
+/// The slot is the session's, never the file's: `.kfilm` holds the first id past every id the
+/// content holds (`kition_film_format::encode_file`), so opening a project, with or without its
+/// stored replica, writes nothing of the actor into what it saves.
 ///
 /// `(((actor as u64) % (2^20 − 1)) + 1) << 32`: 2^20 − 1 slots (two actors share one only by a
 /// one-in-a-million chance), each a contiguous 2^32-id range above the ids a file starts with

@@ -16,8 +16,11 @@
 //!   `Auto-Save` folder next to the project, oldest pruned beyond the version limit).
 //! - **Content only.** The file holds the project and nothing of one person's view of it (the open
 //!   sequence tabs, the Timeline's zoom and scroll): that is the person's view state, which the
-//!   host keeps apart from the file (Kit UI protocol 7n). Two sessions that open the same file and
-//!   save it without an edit write the same bytes.
+//!   host keeps apart from the file (Kit UI protocol 7n). Nor does it hold a session's own id
+//!   counter: a document is saved with [`encode_file`], whose `next_id` is the first id past every
+//!   id the project holds, so it depends on the content alone. Two sessions that open the same
+//!   file and save it without an edit write the same bytes, also when one of them opened it with
+//!   its stored replica.
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
@@ -98,6 +101,27 @@ pub fn encode(project: &Project, pretty: bool) -> Vec<u8> {
     let r = if pretty { serde_json::to_vec_pretty(&env) } else { serde_json::to_vec(&env) };
     // Serializing plain data (string keys, finite numbers or null) cannot fail.
     r.unwrap_or_default()
+}
+
+/// Serialize a project as its file holds it: [`encode`], with `next_id` written as the first id
+/// past every id the project holds, ids kept as data included ([`Project::minimum_next_id`]),
+/// instead of the session's own counter. That counter is the session's: it never goes back within
+/// the session (an id a step made that was undone since is never handed out again), and once the
+/// project has a replica it runs in that replica's own range of ids (`kdm_model::slot_base`), so
+/// a draft, a replica forked from the document, never mints an id the document mints. Neither is
+/// content: written this way, a project saves the same bytes whoever saves the same content, and a
+/// project reopened (with or without its stored replica) and saved unchanged saves the bytes it
+/// was opened from. Reading the file back gives a counter no smaller than every id it holds, so a
+/// new session never reuses an id the content holds.
+pub fn encode_file(project: &Project, pretty: bool) -> Vec<u8> {
+    match project.minimum_next_id(true) {
+        Some(counter) if counter != project.next_id => {
+            let mut content = project.clone();
+            content.next_id = counter;
+            encode(&content, pretty)
+        }
+        _ => encode(project, pretty),
+    }
 }
 
 /// The format version of a parsed document.

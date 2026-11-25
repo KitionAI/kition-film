@@ -958,8 +958,9 @@ impl KitDocument for FilmDocument {
     }
 
     fn save(&self, _name: Option<&str>) -> Result<Vec<u8>, String> {
-        // The project only: the person's view is their view state (`view_state.rs`).
-        Ok(kition_film_format::encode(&self.session.project, false))
+        // The project only: the person's view is their view state (`view_state.rs`), and the
+        // session's own id counter is not written either (`encode_file`).
+        Ok(kition_film_format::encode_file(&self.session.project, false))
     }
 
     fn mark_saved(&mut self) {

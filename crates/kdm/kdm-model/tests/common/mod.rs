@@ -122,3 +122,29 @@ pub fn record(session: &mut Session, origin: &Origin, after: &Project) {
         .unwrap_or_else(|error| panic!("record: {error}"));
     *session.model_mut() = kdm_model::FilmModel::from_parts(after.clone(), ids, nodes);
 }
+
+/// A draft of `doc`: a replica forked from it now, under actor `value` (so it mints ids in its own
+/// range, as a draft's engine does), and the version it forked at.
+pub fn draft(doc: &Session, value: u64) -> (Session, kition_kit::kdm::Version) {
+    (peer(doc, value), doc.version())
+}
+
+/// Takes `draft`'s changes since `base` into `doc` as the person accepting them
+/// (`merge_changes`, rules D1 to D9): one undo step of the person; refused as a whole on a
+/// collision.
+pub fn try_merge(doc: &mut Session, draft: &Session, base: &kition_kit::kdm::Version) -> Result<kition_kit::session::Damage, kition_kit::session::KitError> {
+    let changes = draft.export_changes(base).unwrap_or_else(|error| panic!("export: {error}"));
+    doc.merge_changes(&changes, &person("doc"))
+}
+
+/// [`try_merge`], which must apply; the document's view is then exactly what its replica holds.
+pub fn merge(doc: &mut Session, draft: &Session, base: &kition_kit::kdm::Version) {
+    try_merge(doc, draft, base).unwrap_or_else(|error| panic!("merge: {error}"));
+    assert_view_is_replica(doc);
+}
+
+/// Asserts the session's view is what a fresh read of its replica gives.
+pub fn assert_view_is_replica(session: &Session) {
+    let (read, _, _) = kdm_model::read_document(session.replica(), &MemoryBlobs::default()).unwrap_or_else(|error| panic!("read: {error}"));
+    assert_same_content(&session.model().project, &read);
+}

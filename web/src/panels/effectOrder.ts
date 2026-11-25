@@ -30,3 +30,12 @@ export function dropIndex(rows: readonly OrderRow[], from: number, y: number): {
   const to = before ? (before.index > from ? before.index - 1 : before.index) : last.index
   return { to: to === from ? null : to, lineY }
 }
+
+/**
+ * The order of a clip's effects as a menu acts on them (by index): which effect is at each index.
+ * An effect menu opened on one order closes once the panel draws another (`EffectControls`), so it
+ * never acts on the effect that has come to its index since the right-click.
+ */
+export function effectOrderKey(clip: number, effects: readonly { index: number; id: string }[]): string {
+  return `${clip}|${effects.map((effect) => `${effect.index}:${effect.id}`).join(',')}`
+}

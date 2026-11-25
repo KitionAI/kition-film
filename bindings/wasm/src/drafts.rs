@@ -153,6 +153,7 @@ fn named_objects(value: &Value, replica: &Replica, out: &mut BTreeSet<ObjectId>)
 
 #[cfg(test)]
 mod tests {
+    use kition_film_engine::UndoScope;
     use kition_kit::KitDocument;
     use kition_kit::kdm::{ActorId, Replica};
     use serde_json::json;
@@ -320,5 +321,151 @@ mod tests {
         assert_eq!(again.version().unwrap(), version, "reopening writes nothing");
         assert_eq!(object_ids(&mut again), ids, "the same object ids");
         assert!(!again.dirty());
+        assert_eq!(again.save(None).unwrap(), bytes, "and saves the same bytes again: the new actor's id range is not written");
+    }
+
+    /// A file holds no session's state: two sessions that open one file, with its stored replica
+    /// or plainly, save the bytes it holds; and making the same edit, one that mints no id, they
+    /// save the same bytes again.
+    #[test]
+    fn two_sessions_that_open_one_file_save_the_same_bytes() {
+        let mut doc = FilmDocument::open("Edit.kfilm", &fixture()).unwrap();
+        doc.execute("item.newColorMatte", json!({ "color": "#00ff00", "seconds": 1.0 })).unwrap();
+        let bytes = doc.save(None).unwrap();
+        let (snapshot, blobs) = (doc.snapshot().unwrap(), doc.blobs().unwrap());
+        let mut one = FilmDocument::open_with_replica("Edit.kfilm", &bytes, &snapshot, &blobs).unwrap();
+        let mut two = FilmDocument::open_with_replica("Edit.kfilm", &bytes, &snapshot, &blobs).unwrap();
+        let mut plain = FilmDocument::open("Edit.kfilm", &bytes).unwrap();
+        assert_ne!(one.session.kdm().unwrap().replica().actor(), two.session.kdm().unwrap().replica().actor(), "each session is its own actor");
+        for (name, session) in [("one", &mut one), ("two", &mut two), ("plain", &mut plain)] {
+            assert_eq!(session.save(None).unwrap(), bytes, "{name} saves the bytes it opened");
+        }
+        for session in [&mut one, &mut two] {
+            session.execute("timeline.setTrack", json!({ "track": "V1", "name": "Same" })).unwrap();
+        }
+        let edited = one.save(None).unwrap();
+        assert_ne!(edited, bytes);
+        assert_eq!(two.save(None).unwrap(), edited, "the same edit saves the same bytes");
+        let reopened = FilmDocument::open("Edit.kfilm", &edited).unwrap().save(None).unwrap();
+        assert_eq!(reopened, edited);
+    }
+
+    /// The project as the engine holds it, with ids normalized and the bins before the items in
+    /// each bin (the replica's tree keeps bins apart from items): what the engine's view and a read
+    /// of the replica agree on. The session's id counter is left out: it never goes back within a
+    /// session, so an undo does not lower it (an id handed out stays used).
+    fn view(doc: &FilmDocument) -> Value {
+        fn reorder(bin: &mut kition_film_engine::project::Bin) {
+            let (mut bins, items): (Vec<_>, Vec<_>) =
+                std::mem::take(&mut bin.children).into_iter().partition(|entry| matches!(entry, kition_film_engine::project::BinEntry::Bin(_)));
+            for entry in &mut bins {
+                if let kition_film_engine::project::BinEntry::Bin(child) = entry {
+                    reorder(child);
+                }
+            }
+            bin.children = bins.into_iter().chain(items).collect();
+        }
+        let mut project = (*doc.session.project).clone();
+        reorder(&mut project.root);
+        serde_json::to_value(kdm_model::normalize(&project)).unwrap()
+    }
+
+    /// The whole state: the replica's (its hash) and the engine's view of it.
+    fn whole(doc: &mut FilmDocument) -> (String, Value) {
+        (doc.session.state_hash().unwrap(), view(doc))
+    }
+
+    /// The clips of the active sequence's V1, by start.
+    fn v1_starts(doc: &FilmDocument) -> Vec<i64> {
+        doc.session.active_sequence().unwrap().video_tracks[0].items.iter().map(|clip| clip.start.0).collect()
+    }
+
+    /// A colour matte placed on V1 at `seconds`, run as `origin`.
+    fn place_matte(doc: &mut FilmDocument, seconds: f64, origin: &Origin) {
+        let matte = doc.execute_as("item.newColorMatte", json!({ "color": "#00ff00", "seconds": 1.0 }), origin).unwrap();
+        doc.execute_as("timeline.place", json!({ "item": matte["item"], "track": "V1", "seconds": seconds }), origin).unwrap();
+    }
+
+    /// KitModel M12a: an agent's draft, merged with the agent's origin as the editor merges it
+    /// (`draft/merge` records `{kind: "agent"}`), is one step of the person's Undo. The document
+    /// added a clip to V1 meanwhile and the draft another: both are there. The agent's Undo does
+    /// not take the merge back, the person's does, to the exact state before (the replica's and
+    /// the engine's), and Redo brings the exact merged state back; the replica's histories say the
+    /// same as the engine's.
+    #[test]
+    fn an_agents_draft_is_one_step_of_the_persons_undo_and_undoes_exactly() {
+        let agent = Origin::agent("agent:test");
+        let mut doc = FilmDocument::open("Edit.kfilm", &fixture()).unwrap();
+        let base = doc.version().unwrap();
+        let mut draft = FilmDocument::open_with_replica("Edit.kfilm", &[], &doc.snapshot().unwrap(), &doc.blobs().unwrap()).unwrap();
+        place_matte(&mut draft, 8.0, &agent);
+        let changes = draft.export_changes(&base).unwrap();
+        place_matte(&mut doc, 4.0, &person());
+        let before = whole(&mut doc);
+        let starts = v1_starts(&doc);
+        assert_eq!(starts.len(), 2, "the fixture's clip and the one placed meanwhile");
+        let history = doc.session.history.undo.len();
+
+        doc.merge_changes(&changes, &agent).unwrap();
+        let merged = whole(&mut doc);
+        assert_eq!(v1_starts(&doc).len(), 3, "both clips added to V1 are there: {:?}", v1_starts(&doc));
+        assert!(starts.iter().all(|start| v1_starts(&doc).contains(start)), "the document's clips stay");
+        assert_eq!(doc.session.history.undo.len(), history + 1, "one step of the person's history");
+        assert_eq!(doc.session.history.undo.last().map(|entry| entry.0.as_str()), Some("Merge Draft"));
+        let kdm = doc.session.kdm().unwrap();
+        assert!(kdm.can_undo_in(UndoScope::Person), "the replica records it in the person's history");
+        assert!(!kdm.can_undo_in(UndoScope::Agent), "and nothing in the agents'");
+
+        assert!(doc.session.undo_in(Some(UndoScope::Agent)).is_none(), "the agent's Undo has nothing to take back");
+        assert_eq!(whole(&mut doc), merged, "the merge stays");
+        assert!(doc.undo().unwrap().0);
+        assert_eq!(whole(&mut doc), before, "one Undo of the person: exactly the state before the merge");
+        assert_eq!(v1_starts(&doc), starts);
+        assert!(doc.redo().unwrap().0);
+        assert_eq!(whole(&mut doc), merged, "one Redo: exactly the merged state");
+        assert_eq!(doc.session.kdm_resets(), 0);
+    }
+
+    /// A restored version undoes to the exact state before it and redoes to the exact restored
+    /// state, the replica's and the engine's.
+    #[test]
+    fn a_restore_undoes_and_redoes_exactly() {
+        let mut doc = FilmDocument::open("Edit.kfilm", &fixture()).unwrap();
+        doc.version().unwrap();
+        let checkpoint = doc.snapshot().unwrap();
+        place_matte(&mut doc, 4.0, &person());
+        doc.execute("timeline.setTrack", json!({ "track": "V1", "name": "Since" })).unwrap();
+        let before = whole(&mut doc);
+        doc.restore_state(&checkpoint, &person()).unwrap();
+        let restored = whole(&mut doc);
+        assert_ne!(restored, before);
+        assert_eq!(v1_starts(&doc).len(), 1, "the checkpoint's one clip");
+        assert!(doc.undo().unwrap().0);
+        assert_eq!(whole(&mut doc), before, "one Undo: exactly the state before the restore");
+        assert!(doc.redo().unwrap().0);
+        assert_eq!(whole(&mut doc), restored, "one Redo: exactly the restored state");
+        assert_eq!(doc.session.kdm_resets(), 0);
+    }
+
+    /// `modelReply` reads only the objects a reply names: in a project of many objects, a reply
+    /// naming one object shows it under the tool id a read of the whole project gives it, for
+    /// every object; a reply naming none comes back byte for byte.
+    #[test]
+    fn a_reply_shows_the_ids_the_full_read_gives_and_one_naming_none_is_unchanged() {
+        let mut doc = FilmDocument::open("Edit.kfilm", &fixture()).unwrap();
+        for _ in 0..30 {
+            doc.execute("item.newColorMatte", json!({ "color": "#00ff00", "seconds": 1.0 })).unwrap();
+        }
+        let state = doc.replicated_state().unwrap();
+        let objects: Vec<String> = state["objects"].as_object().unwrap().keys().filter(|id| is_object_id(id)).cloned().collect();
+        assert!(objects.len() > 60, "many objects: {}", objects.len());
+        let full = doc.session.kdm().unwrap().replica().tool_ids();
+        for object in &objects {
+            let reply = json!({ "target": object, "list": [object], "note": "one object" });
+            let shown: Value = serde_json::from_str(&doc.model_reply(&reply.to_string()).unwrap()).unwrap();
+            assert_eq!(shown, full.show_json(&reply), "{object}");
+        }
+        let none = "{ \"project\" : { \"name\": \"Edit\" },\n  \"clips\": [10, 11] }";
+        assert_eq!(doc.model_reply(none).unwrap(), none, "a reply naming no object comes back as it is");
     }
 }

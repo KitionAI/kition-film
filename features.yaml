@@ -104,10 +104,10 @@ features:
     dimension: [collab, ai, data-safety]
     priority: P1
     status: partial
-    paths: [bindings/wasm/src/drafts.rs, bindings/wasm/src/lib.rs, crates/engine/engine/src/kdm_bridge.rs, crates/kdm/kdm-model/src/session.rs, web/package.json]
+    paths: [bindings/wasm/src/drafts.rs, bindings/wasm/src/lib.rs, crates/engine/engine/src/kdm_bridge.rs, crates/kdm/kdm-model/src/session.rs, crates/kdm/kdm-model/src/validate.rs, crates/kdm/kdm-model/tests/drafts.rs, crates/formats/format/src/lib.rs, web/package.json]
     target: "Kit UI protocol section 7 (replica/restore); engine contract members mergeChanges, compareChanges, restoreState, changesSince, modelReply, modelBatch, modelDescribe"
     gap: Engine tests merge a draft, compare it first, restore a version, answer receipts and replies and run the object model; no browser case drives a draft or a restore in the editor yet.
-    cases: [film.collab.drafts/engine-members]
+    cases: [film.collab.drafts/engine-members, film.collab.drafts/merge-repairs-and-ids]
     since: "2026-11-25"
   - id: film.platform.document-text
     title: "document.text: titles and captions as plain text for a host's search, cut at a limit"
@@ -192,7 +192,7 @@ features:
     commands: [effect.apply, effect.setParam, effect.addKeyframe, mask.add]
     paths: [bindings/wasm/tests/round_trip.rs]
     target: "Premiere Pro 2026 (26.5)"
-    cases: [film.effects.basics/save-reopen, regressions/issue-5, regressions/issue-1]
+    cases: [film.effects.basics/save-reopen, regressions/issue-5, regressions/issue-1, regressions/issue-effect-menu-stale-order]
     since: "2026-11-17"
   - id: film.audio.basics
     title: "Clip gain, clip volume keyframes, track volume and pan, and the mix level survive saving and reopening"

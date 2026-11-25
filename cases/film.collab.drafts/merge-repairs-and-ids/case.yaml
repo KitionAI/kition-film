@@ -1,0 +1,28 @@
+format: 1
+id: film.collab.drafts/merge-repairs-and-ids
+feature: film.collab.drafts
+intent: >-
+  A draft forked from the document and the document edited meanwhile merge as data model rules
+  D1 to D9 say, and the model repairs what the merge leaves: both sides' trims, parameters,
+  effects, captions, markers, master effects, transcripts, search bins, LUTs and source graphics
+  are kept; clips both sides put in one place no longer overlap, and one undo of the person takes
+  the draft back exactly; one clip moved to two tracks is kept on one; a clip whose media item the
+  other side deleted, and a transition whose neighbour it deleted, are removed; a caption added to
+  a caption track the other side deleted is not left over. The draft mints ids in its own range,
+  so markers and links made on both sides keep their own ids and two links stay two. Typing in one
+  text on both sides, and changing a clip the other side deleted, are refused and change nothing.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/kdm/kdm-model/tests/drafts.rs
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test:
+      package: kdm-model
+      test: drafts
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-25"

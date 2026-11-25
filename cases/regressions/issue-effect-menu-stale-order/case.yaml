@@ -1,0 +1,19 @@
+format: 1
+id: regressions/issue-effect-menu-stale-order
+feature: film.effects.basics
+intent: >-
+  An effect's menu in Effect Controls acts on the effect by its index, so it belongs to the order
+  of effects its row was drawn from. A right-click on a row the panel drew before an undo reordered
+  the effects (WebKit, test:effects, kit CI run 45643332949) opened Invert's menu at the index that
+  now held Gaussian Blur, whose Move Effect Down would have moved Gaussian Blur. The menu keeps the
+  order it was opened on and closes when the panel draws another; the panel says when it is
+  settled (data-settled), and test:effects waits for it before a right-click.
+layer: gate
+dimension: function
+source: { kind: synthetic, from: web/src/panels/effectOrder.test.mjs, license: owned }
+input: []
+steps:
+  - exec: { cmd: [node, --test, web/src/panels/effectOrder.test.mjs] }
+expected:
+  - { actual: out:exit, compare: exit, value: 0 }
+since: "2026-11-25"

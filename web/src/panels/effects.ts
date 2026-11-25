@@ -343,7 +343,7 @@ export function readClipEffects(doc: EffectsDoc, clip: number, stamp: string): P
 }
 
 /** What a panel wants read: the document, the clip, and the stamp (revision and playhead) it is read at. */
-export type EffectsWant = { doc: EffectsDoc; clip: number; stamp: string }
+export type EffectsWant = { doc: EffectsDoc; clip: number; stamp: string; revision?: number | null }
 
 /**
  * Reads `clipEffects` for what is asked (`reader(want)`) at most once per frame, the latest, with
@@ -361,7 +361,16 @@ export function createEffectsReader(read: (want: EffectsWant) => Promise<ClipEff
  * nothing (rule 8). Null without a clip, or until the first answer for this document and clip.
  */
 export function useClipEffects(doc: EffectsDoc | null, clip: number | null, revision: number | null, playhead: number): ClipEffects | null {
+  return useClipEffectsAt(doc, clip, revision, playhead).effects
+}
+
+/**
+ * `useClipEffects`, and the engine revision what it shows was read at (`null` before the first
+ * answer): the panel is settled, drawn from the engine's state now, when that is `revision`.
+ */
+export function useClipEffectsAt(doc: EffectsDoc | null, clip: number | null, revision: number | null, playhead: number): { effects: ClipEffects | null; readAt: number | null } {
   const [shown, setShown] = useState<{ doc: EffectsDoc; answer: ClipEffects } | null>(null)
+  const [readAt, setReadAt] = useState<number | null>(null)
   const wanted = useRef<{ doc: EffectsDoc | null; clip: number | null }>({ doc, clip })
   wanted.current = { doc, clip }
   const reader = useMemo(
@@ -372,6 +381,7 @@ export function useClipEffects(doc: EffectsDoc | null, clip: number | null, revi
           const now = wanted.current
           if (!answer || now.doc !== want.doc || now.clip !== want.clip) return
           setShown((before) => (before && before.doc === want.doc && JSON.stringify(before.answer) === JSON.stringify(answer) ? before : { doc: want.doc, answer }))
+          setReadAt(want.revision ?? null)
         },
         (callback) => {
           const id = requestAnimationFrame(callback)
@@ -384,17 +394,20 @@ export function useClipEffects(doc: EffectsDoc | null, clip: number | null, revi
   const stamp = `${revision}:${playhead}`
   const stampNow = useRef(stamp)
   stampNow.current = stamp
+  const revisionNow = useRef(revision)
+  revisionNow.current = revision
   useEffect(() => {
-    if (doc && clip != null) reader({ doc, clip, stamp: `${stamp}:${dragTicks.get()}` })
-  }, [reader, doc, clip, stamp])
+    if (doc && clip != null) reader({ doc, clip, stamp: `${stamp}:${dragTicks.get()}`, revision })
+  }, [reader, doc, clip, stamp, revision])
   // A drag's repainted value: read again, without drawing the panel for the tick itself.
   useEffect(
     () =>
       dragTicks.subscribe(() => {
         const { doc: open, clip: shownClip } = wanted.current
-        if (open && shownClip != null) reader({ doc: open, clip: shownClip, stamp: `${stampNow.current}:${dragTicks.get()}` })
+        if (open && shownClip != null) reader({ doc: open, clip: shownClip, stamp: `${stampNow.current}:${dragTicks.get()}`, revision: revisionNow.current })
       }),
     [reader],
   )
-  return doc && shown && shown.doc === doc && shown.answer.clip === clip ? shown.answer : null
+  const effects = doc && shown && shown.doc === doc && shown.answer.clip === clip ? shown.answer : null
+  return { effects, readAt: effects ? readAt : null }
 }

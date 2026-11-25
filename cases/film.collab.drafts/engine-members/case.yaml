@@ -9,7 +9,11 @@ intent: >-
   names what changed since a version or why it cannot, an agent's reply names objects by their
   tool ids, and the object model describes, reads and runs a command as one undo step. An
   unchanged project saves the bytes it opened from and reopens with its stored replica under the
-  same object ids, writing nothing.
+  same object ids, writing nothing, and saves those bytes again; two sessions that open one file
+  save the same bytes. An agent's draft merged with the agent's origin is one step of the person's
+  Undo, not the agent's; one Undo of a merge (the document added a clip to V1 meanwhile, the draft
+  another) or of a restore gives the exact state before, one Redo the exact state after. A reply
+  naming one object of many shows the tool id a full read gives it.
 layer: gate
 source:
   kind: synthetic

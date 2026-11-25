@@ -1,7 +1,10 @@
-//! Deterministic repair after a merge, an undo/redo, or an import ([`KitModel::validate`]):
-//! dropping dangling list entries, clips/transitions left invalid by a concurrent edit, and
-//! orphaned subclips, then de-overlapping each track. Every replica runs the exact same steps
-//! over the same merged state, so they all write the same repair.
+//! Deterministic repair after a draft's merge, an undo/redo, or an import
+//! ([`KitModel::validate`]): dropping dangling list entries, clips/transitions left invalid by an
+//! edit the draft and the document made apart (one deleted a clip's media item or a transition's
+//! neighbour while the other placed the clip or the transition; both put clips in one place), and
+//! orphaned subclips, then de-overlapping each track. The repair depends on the state alone, so
+//! every replica that holds the state writes the same repair. `tests/drafts.rs` builds each
+//! state through a draft's merge.
 
 use std::collections::BTreeSet;
 
@@ -120,8 +123,9 @@ fn order_at_start(tx: &mut Tx<'_>, track: &ObjectId, field: &str) -> KdmResult<b
     Ok(wrote)
 }
 
-/// A clip (or transition) moves between tracks as the same object, so two peers that moved one
-/// clip to two different tracks at once leave it listed on both after the merge. Keeps the first
+/// A clip (or transition) moves between tracks as the same object, so a draft and the document
+/// that moved one clip to two different tracks leave it listed on both after the merge (each
+/// track's list was changed by one side only, rule D6). Keeps the first
 /// listing in track-object-id order (the same on every replica) and drops the others, so the clip
 /// is never read twice.
 fn keep_one_listing(tx: &mut Tx<'_>, field: &str) -> KdmResult<bool> {
@@ -183,8 +187,8 @@ fn remove_clips_with_gone_item(tx: &mut Tx<'_>, track: &ObjectId) -> KdmResult<b
 
 /// Orders a track's clips by `(start, objectId)` and, where a clip would start before the
 /// previous one ends, moves it to start exactly there — pushing every later clip in the same
-/// left-to-right sweep, so one pass is enough regardless of how many clips a concurrent ripple
-/// insert overlapped.
+/// left-to-right sweep, so one pass is enough regardless of how many clips a draft's insert
+/// overlapped with the document's.
 fn repair_overlaps(tx: &mut Tx<'_>, track: &ObjectId) -> KdmResult<bool> {
     let clips = tx.list_items(track, "clips")?;
     let mut info = Vec::with_capacity(clips.len());
@@ -255,8 +259,7 @@ fn remove_bad_transitions(tx: &mut Tx<'_>, track: &ObjectId) -> KdmResult<bool> 
 /// The objects that keep an engine id as data in their `id` field.
 const DATA_TYPES: [&str; 4] = ["Marker", "CaptionTrack", "Caption", "SearchBin"];
 
-/// Gives every marker, caption track, caption and search bin without an id (one a batch or a
-/// collaborator made) one past every id the replica holds, in object-id order, so every replica
+/// Gives every marker, caption track, caption and search bin without an id (one a batch made) one past every id the replica holds, in object-id order, so every replica
 /// writes the same ids. Ids two objects share are left as they are, as the engine leaves them.
 fn number_data(tx: &mut Tx<'_>) -> KdmResult<bool> {
     let mut next = 0u64;
@@ -280,8 +283,8 @@ fn number_data(tx: &mut Tx<'_>) -> KdmResult<bool> {
 }
 
 /// Gives every bin, item, track, clip and transition an id in its tool id field (KitObjectModel
-/// OM9) when it has none (an object a batch or a collaborator created) or shares one with another
-/// object (two replicas that each made an object with the same id): past every id the replica
+/// OM9) when it has none (an object a batch created) or shares one with another
+/// object (a batch or an outside replica gave one an id in use): past every id the replica
 /// holds, in object-id order, so every replica writes the same ids. The first object holding an
 /// id, in that order, keeps it.
 fn number_objects(tx: &mut Tx<'_>) -> KdmResult<bool> {
