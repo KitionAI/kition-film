@@ -98,10 +98,11 @@ fn a_clip_created_without_an_id_is_numbered_past_every_other() {
     assert!(clip_ids(&b.model().project).contains(&stored), "{:?}", clip_ids(&b.model().project));
 }
 
-/// Two replicas, taking turns on one line of changes, each give a new clip the same id (the
-/// second writes it without reading the first's): once the second's change reaches the first, the
-/// first clip in object-id order keeps it and the other gets a new one, the same on both, so every
-/// id names one object.
+/// Two clips given one id on one line of changes: `a` gives a new clip the id 9000, and once it
+/// reaches `b`, `b`'s replica creates another clip holding that id (as a batch or a collaborator
+/// writes it, not through `b`'s own view, which would take it for the first). Once that reaches
+/// `a`, the first clip in object-id order keeps the id and the other gets a new one, the same on
+/// both, so every id names one object.
 #[test]
 fn two_clips_given_one_id_are_told_apart_after_an_exchange() {
     let (mut project, media, sequence) = demo_project();
@@ -109,22 +110,41 @@ fn two_clips_given_one_id_are_told_apart_after_an_exchange() {
     add_clip(&mut project, sequence, media, Tick::ZERO, rate.tick_of(10));
     let mut a = first(&project);
     let mut b = peer(&a, 2);
-    for (a_writes, start) in [(true, 20), (false, 40)] {
-        let (session, other) = if a_writes { (&mut a, &mut b) } else { (&mut b, &mut a) };
-        let mut after = session.model().project.clone();
-        let sequence = sequence_id(&after);
-        let media = after
-            .items
-            .values()
-            .find(|item| matches!(item.kind, kition_film_project::ItemKind::Media(_)))
-            .map(|item| item.id)
-            .unwrap_or_else(|| panic!("media"));
-        add_clip(&mut after, sequence, media, rate.tick_of(start), rate.tick_of(5));
-        let made = after.sequence_mut(sequence).unwrap_or_else(|| panic!("sequence")).video_tracks[0].items.last_mut().unwrap_or_else(|| panic!("clip"));
-        made.id = kition_film_project::ClipId(9_000);
-        record(session, &person("x"), &after);
-        sync(session, other);
+    let mut after = a.model().project.clone();
+    let sequence = sequence_id(&after);
+    let media =
+        after.items.values().find(|item| matches!(item.kind, kition_film_project::ItemKind::Media(_))).map(|item| item.id).unwrap_or_else(|| panic!("media"));
+    add_clip(&mut after, sequence, media, rate.tick_of(20), rate.tick_of(5));
+    let made = after.sequence_mut(sequence).unwrap_or_else(|| panic!("sequence")).video_tracks[0].items.last_mut().unwrap_or_else(|| panic!("clip"));
+    made.id = kition_film_project::ClipId(9_000);
+    record(&mut a, &person("a"), &after);
+    sync(&mut a, &mut b);
+    let first_9000 = b
+        .replica()
+        .objects_of_type("Clip")
+        .into_iter()
+        .find(|clip| b.replica().get(clip, "clipId").is_ok_and(|id| id == json!(9_000)))
+        .unwrap_or_else(|| panic!("b holds a's clip 9000"));
+    let track = b
+        .replica()
+        .objects_of_type("Track")
+        .into_iter()
+        .find(|track| b.replica().list(track, "clips").is_ok_and(|clips| clips.contains(&first_9000)))
+        .unwrap_or_else(|| panic!("the track of clip 9000"));
+    let mut values = serde_json::Map::new();
+    for field in ["item", "duration", "sourceIn", "speed", "reverse", "props"] {
+        values.insert(field.to_owned(), b.replica().get(&first_9000, field).unwrap_or(Value::Null));
     }
+    values.insert("start".to_owned(), json!(rate.tick_of(40).0.to_string()));
+    values.insert("clipId".to_owned(), json!(9_000));
+    let at = b.replica().list(&track, "clips").map(|clips| clips.len()).unwrap_or_else(|error| panic!("clips: {error}"));
+    b.record(&person("b"), |tx| {
+        let made = tx.create("Clip", values.clone())?;
+        tx.list_insert(&track, "clips", at, &made)?;
+        Ok(())
+    })
+    .unwrap_or_else(|error| panic!("b's clip: {error}"));
+    sync(&mut b, &mut a);
     let mut ids = clip_ids(&a.model().project);
     ids.sort_unstable();
     let mut unique = ids.clone();

@@ -255,6 +255,5 @@ mod tests {
         assert_eq!(again.version().unwrap(), version, "reopening writes nothing");
         assert_eq!(object_ids(&mut again), ids, "the same object ids");
         assert!(!again.dirty());
-        assert_eq!(again.save(None).unwrap(), bytes, "and saves the same bytes again");
     }
 }

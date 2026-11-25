@@ -436,15 +436,17 @@ impl Session {
     /// step the replica holds nothing of to undo (one that changed nothing the replica keeps, or
     /// one from before a reset): the project is the replica's current view, not the snapshot —
     /// which predates any collaborator's edits imported since, and would silently drop them from
-    /// this project while the replica keeps them. A replica that refuses mid-way resets it.
+    /// this project while the replica keeps them. A replica that refuses mid-way, or runs out, resets
+    /// it.
     ///
     /// The engine's history stays in step with the replica's by what each replica call took off
     /// its stack ([`kdm_model::kition_kit::kdm::UndoOutcome`]): a replica step with nothing left
     /// to change (its objects deleted since, by an agent or an import) is passed over, and the
     /// call goes on to the step below it, which belongs to the history entry below this one. Such
     /// entries leave the history with this one ([`take_steps_below`]): the replica brings them
-    /// back together, as the one step this entry now counts on the other stack. A replica stack
-    /// that holds fewer steps than the entry counts keeps the replica as it is.
+    /// back together, as the one step this entry now counts on the other stack. A replica whose
+    /// history no longer holds the entry's steps (it keeps fewer steps than the engine) is left,
+    /// as before: the project is the entry's own snapshot.
     ///
     /// `floor` is the project's `next_id` before the step: the replica's own reconstruction never
     /// lowers it (see [`view_of`]).
@@ -474,7 +476,11 @@ impl Session {
             };
             let took = outcome.steps();
             if took == 0 {
-                break;
+                // The replica's history no longer reaches the entry's steps (it keeps fewer steps
+                // than the engine's): the project is the entry's own snapshot, and it leaves the
+                // replica, as a refused step does.
+                self.detach_kdm();
+                return;
             }
             made = made.saturating_add(u32::from(outcome.is_done()));
             beyond = took.saturating_sub(owed);
