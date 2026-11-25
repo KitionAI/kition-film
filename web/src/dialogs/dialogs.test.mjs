@@ -168,6 +168,30 @@ test('a draft change calls previewBegin again, at most once per animation frame,
   assert.equal(preview.get().open, false)
 })
 
+test('an ended preview is closed for the panels at once, before the engine answers its previewEnd', async () => {
+  const engine = fakeEngine()
+  let answer = () => undefined
+  const slow = { ...engine, invoke: (name, ...args) => (name === 'previewEnd' ? (engine.calls.push([name, ...args]), new Promise((resolve) => (answer = () => resolve(null)))) : engine.invoke(name, ...args)) }
+  const preview = createPreview({ engine: () => slow, schedule: frames().schedule })
+  const handle = preview.handle()
+  await handle.begin(request())
+  assert.equal(preview.get().open, true)
+  let heard = 0
+  const stop = preview.subscribe(() => (heard += 1))
+  const ending = handle.end()
+  // The engine is busy (rendering a frame): the panels see the preview closed already.
+  assert.equal(preview.get().open, false)
+  assert.ok(heard > 0, 'and are told so')
+  assert.equal(engine.named('previewEnd').length, 1, 'the engine is told')
+  answer()
+  await ending
+  assert.equal(preview.get().open, false)
+  // A new dialog's preview after it opens as usual.
+  await preview.handle().begin(request())
+  assert.equal(preview.get().open, true)
+  stop?.()
+})
+
 test("a peer's revision reruns begin from the document", async () => {
   // The dialog puts the revision in its draft: PreviewDialog calls update, which begins again.
   const engine = fakeEngine()

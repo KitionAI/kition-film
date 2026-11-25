@@ -316,9 +316,12 @@ export function createPreview({ engine, schedule }: { engine: () => PreviewEngin
         if (owner !== self) return
         owner = null
         generation += 1
-        await endOnEngine()
+        // Closed for the panels at once, as the dialog goes: they draw the document and take its
+        // gestures again (the ruler's menu among them) while the engine is still told, which may
+        // wait behind a frame it is rendering. A begin after this is a newer generation.
         inspected = null
         publish({ ...CLOSED })
+        await endOnEngine()
       },
       owns: () => owner === self,
       queued: () => queued,
@@ -748,7 +751,8 @@ export function stripShows(kinds: readonly PreviewKind[], diff: PreviewDiff | nu
 
 /**
  * Resolves once the preview shown as serial `serial` (a dialog's own, read as it closes) has
- * ended (the engine's `previewEnd` answered) or been overtaken by a newer one (another dialog's
+ * ended (its end published: `previewEnd` is already on its way to the engine, so what the caller
+ * sends next reaches the engine after it) or been overtaken by a newer one (another dialog's
  * preview began), and stops listening; at once when it is no longer open. It never waits on
  * another dialog's preview.
  */
