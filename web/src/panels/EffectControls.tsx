@@ -240,7 +240,7 @@ type MenuTarget = { kind: 'keyframe'; at: ContextMenuPoint; clip: number; effect
 /** An open menu: its target and the order of effects its row was drawn from. */
 type OpenMenu = MenuTarget & { order: string }
 
-/** A standard effect's header dragged to a new place (`effects.move`): where it was pressed, and where it would land. */
+/** A standard effect's header dragged to a new place (`effect.move`): where it was pressed, and where it would land. */
 type Reorder = { pointerId: number; clip: number; from: number; y: number; started: boolean; to: number | null; lineY: number | null }
 
 type RowProps = {
@@ -514,7 +514,7 @@ export function EffectControls({ film, doc, revision, playback, invoke, seekTick
   }, [menu, orderKey])
   const selectedEffect = useLocalSelection((selection) => selection.effect)
   const onSelect = useCallback((clip: number, index: number) => localSelection.set({ effect: { clip, index } }), [])
-  // A standard effect's header dragged to another place among the standard effects: one effects.move, one undo step.
+  // A standard effect's header dragged to another place among the standard effects: one effect.move, one undo step.
   const [reorder, setReorder] = useState<Reorder | null>(null)
   const list = useRef<HTMLDivElement>(null)
   const orderRows = useCallback((): OrderRow[] => {
@@ -528,7 +528,7 @@ export function EffectControls({ film, doc, revision, playback, invoke, seekTick
   }, [])
   const moveEffect = useCallback(
     async (clip: number, from: number, to: number) => {
-      await invoke('effects.move', { clip, index: from, to })
+      await invoke('effect.move', { clip, index: from, to })
       localSelection.set({ effect: { clip, index: to } })
     },
     [invoke],

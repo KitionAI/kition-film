@@ -37,7 +37,7 @@ pub fn under(session: &Session, command: &str, params: &Value) -> Option<Under> 
         }
         return Some(answer);
     }
-    if command == "source.setPlayhead" || command.starts_with("markers.goTo") || matches!(command, "marker.goNext" | "marker.goPrev") {
+    if command == "source.setPlayhead" || command.starts_with("marker.goTo") || matches!(command, "marker.goNext" | "marker.goPrev") {
         return marker_destination(session, command, params);
     }
     if command == "project.selectAll" {
@@ -238,7 +238,7 @@ pub(super) fn selection_at(session: &Session, time: Option<i64>) -> Under {
 
 fn marker_destination(session: &Session, command: &str, params: &Value) -> Option<Under> {
     let source = command == "source.setPlayhead" || params.get("target").and_then(Value::as_str) == Some("source");
-    let split = command.strip_prefix("markers.goToSplit");
+    let split = command.strip_prefix("marker.goToSplit");
     if source && split.is_none() {
         // Source next/previous already have a historical marker-list profile.
         if matches!(command, "marker.goNext" | "marker.goPrev") {

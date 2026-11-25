@@ -21,7 +21,7 @@ pub fn compared_path(command: &str, path: &str) -> bool {
     let hash = |s: &str| s.bytes().fold(0xcbf29ce484222325u64, |h, b| (h ^ u64::from(b)).wrapping_mul(0x100000001b3));
     PATHS.contains(&(command, path))
         && hash(include_str!("../../../../crates/engine/engine/src/graphic_templates.rs")) == 0xc21099df4545af4a
-        && hash(include_str!("../../../../crates/engine/engine/src/graphics.rs")) == 0xaf7908925300a7a2
+        && hash(include_str!("../../../../crates/engine/engine/src/graphics.rs")) == 0x08e0bd802b9ffc00
 }
 pub fn more(path: &str) -> Vec<&'static str> {
     let mut out = vec!["coarse-selection-state", "coarse-source-profile", "whole-graphic-target", "graphic-layer-profile"];

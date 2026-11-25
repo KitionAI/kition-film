@@ -653,13 +653,13 @@ pub const ROWS: &[Row] = &[
         blind: true,
     },
     Row {
-        command: "effects.move",
+        command: "effect.move",
         path: "effect-order",
         resolves: "clip id; index and to 0-based effect slots",
         reads: "clip effects identity (intrinsic, graphic layer) between index and to; owner.locked",
         editor: "part",
         writes: "clip.effects order",
-        proof: "crates/engine/engine/src/commands.rs effects.move, move_effect_order",
+        proof: "crates/engine/engine/src/commands.rs effect.move, move_effect_order",
         blind: true,
     },
     Row {

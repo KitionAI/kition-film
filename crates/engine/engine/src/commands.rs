@@ -2782,8 +2782,8 @@ fn build() -> Vec<CommandSpec> {
             })?;
             Ok(Value::Null)
         }),
-        cmd!("effects.move", "Move Effect", [], None, r#"{"clip":id,"index":n,"to":n}"#, has_seq, |s, p| {
-            const CMD: &str = "effects.move";
+        cmd!("effect.move", "Move Effect", [], None, r#"{"clip":id,"index":n,"to":n}"#, has_seq, |s, p| {
+            const CMD: &str = "effect.move";
             let c = clip_p(p, "clip").ok_or_else(|| bad(CMD, "need `clip`"))?;
             let from = u64_p(p, "index").ok_or_else(|| bad(CMD, "need `index`"))?;
             let to = u64_p(p, "to").ok_or_else(|| bad(CMD, "need `to`"))?;
@@ -3812,7 +3812,7 @@ pub(crate) fn set_transition_params(e: &mut kition_film_project::EffectInstance,
     Ok(())
 }
 
-/// `effects.move`: where the effect at `from` goes for it to end up at `to`, when both name
+/// `effect.move`: where the effect at `from` goes for it to end up at `to`, when both name
 /// standard effects (not a fixed one: Motion, Opacity, Volume…; not a graphic's layer) and no fixed
 /// effect or layer lies between them, so only standard effects change places. `None` otherwise
 /// (also `from == to`, which would change nothing).

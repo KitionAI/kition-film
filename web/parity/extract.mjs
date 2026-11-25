@@ -12,6 +12,7 @@ import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import path from 'node:path'
 import { fileWave, panelWave, ruleWaves, slug } from './waves.mjs'
+import { kitCommand, upstreamCommand } from './renames.ts'
 
 const upstreamRoot = process.env.KITION_UPSTREAM_UI
 if (!upstreamRoot) {
@@ -165,7 +166,13 @@ const lowerCamel = (s) =>
 
 // ---------------------------------------------------------------------------------- engine
 
-/** The built web engine's commands, in its registry's order, and `shortcuts.list` by id. */
+/**
+ * The built web engine's commands, in its registry's order, and `shortcut.list` by id. Every id is
+ * given as the manifest has it (`renames.ts` `upstreamCommand`): upstream's own source names the
+ * engine's commands by the ids they had before the command naming standard of 2026-11-25, and the
+ * status file's keys are built from those, so the manifest keeps one set of ids. The editor reads
+ * it through `kitCommand`.
+ */
 async function engine() {
   const dir = fileURLToPath(new URL('../public/engine/', import.meta.url))
   const wasm = path.join(dir, 'kition_film_kit_bg.wasm')
@@ -176,8 +183,8 @@ async function engine() {
   const sdk = await import(pathToFileURL(path.join(dir, 'kition_film_kit.js')).href)
   sdk.initSync({ module: readFileSync(wasm) })
   const doc = sdk.FilmDocument.create('Untitled', 1920, 1080)
-  const commands = JSON.parse(doc.commands())
-  const shortcuts = new Map(JSON.parse(doc.execute('shortcuts.list', '{}')).map((entry) => [entry.id, entry]))
+  const commands = JSON.parse(doc.commands()).map((command) => ({ ...command, id: upstreamCommand(command.id) }))
+  const shortcuts = new Map(JSON.parse(doc.execute('shortcut.list', '{}')).map((entry) => [upstreamCommand(entry.id), { ...entry, id: upstreamCommand(entry.id) }]))
   return { commands, shortcuts }
 }
 
@@ -193,7 +200,8 @@ let restoredEllipses = 0
  * spec (its id, then within a few lines its label) has one.
  */
 function specLabel(command) {
-  const id = `"${command.id}"`
+  // The engine's source has the engine's id.
+  const id = `"${kitCommand(command.id)}"`
   for (let at = engineSource.indexOf(id); at >= 0; at = engineSource.indexOf(id, at + 1)) {
     const near = engineSource.slice(at + id.length, at + id.length + 300)
     // `spec("id", "Label", …)` or `CommandSpec { id: "id", label: "Label", … }`.
@@ -298,7 +306,7 @@ function buildMenus(commands, shortcuts, uiCommands, panels) {
   for (const command of commands) {
     if (!command.menu?.length) continue
     const listed = shortcuts.get(command.id)
-    // The binding trims a trailing `…` from titles; `shortcuts.list` keeps the label as written,
+    // The binding trims a trailing `…` from titles; `shortcut.list` keeps the label as written,
     // and for the commands it does not list, the engine's own source does.
     const label = listed?.label ?? specLabel(command)
     const primary = listed ? (listed.shortcuts.find((s) => s.panel == null)?.keys ?? null) : (command.shortcut ?? null)
@@ -885,7 +893,7 @@ function keyframeMenuCommand(row) {
 
 /**
  * Upstream's key router runs every binding of the engine's shortcut set (`menus.rs` `bindings`),
- * not only the `uic!` rows: the shortcut-only UI commands, then every `shortcuts.list` command
+ * not only the `uic!` rows: the shortcut-only UI commands, then every `shortcut.list` command
  * with a binding and no menu row, with its bindings and their panel scope.
  */
 function buildKeys(uiCommands, shortcuts, menus) {
@@ -1002,7 +1010,7 @@ const outPath = fileURLToPath(new URL('./film-upstream.json', import.meta.url))
 writeFileSync(outPath, `${JSON.stringify(manifest, null, 2)}\n`)
 
 const count = (list, field) => JSON.stringify(list.reduce((counts, item) => ({ ...counts, [item[field]]: (counts[item[field]] ?? 0) + 1 }), {}))
-console.log(`menus: ${menus.length} rows (${count(menus, 'origin')}; ${restoredEllipses} trailing "…" restored from the engine's source for commands shortcuts.list lacks)`)
+console.log(`menus: ${menus.length} rows (${count(menus, 'origin')}; ${restoredEllipses} trailing "…" restored from the engine's source for commands shortcut.list lacks)`)
 console.log(`keys: ${keys.length} (${count(keys, 'origin')})`)
 console.log(`tools: ${tools.length} in ${groupCount} groups`)
 console.log(`panels: ${panels.length}`)

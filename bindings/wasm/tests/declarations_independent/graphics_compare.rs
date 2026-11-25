@@ -69,7 +69,7 @@ pub fn compared_path(command: &str, path: &str) -> bool {
     let graphics = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../crates/engine/engine/src/graphics.rs"));
     let templates = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../crates/engine/engine/src/graphic_templates.rs"));
     let hash = |source: &str| source.bytes().fold(0xcbf29ce484222325u64, |hash, byte| (hash ^ u64::from(byte)).wrapping_mul(0x100000001b3));
-    hash(graphics) == 0xaf7908925300a7a2 && hash(templates) == 0xc21099df4545af4a
+    hash(graphics) == 0x08e0bd802b9ffc00 && hash(templates) == 0xc21099df4545af4a
 }
 
 pub fn more(command: &str, path: &str) -> Vec<&'static str> {

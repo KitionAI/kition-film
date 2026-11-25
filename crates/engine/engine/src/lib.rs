@@ -418,7 +418,7 @@ pub struct Session {
     pub voiceover: voiceover::VoiceOver,
     /// Dynamic (J/K/L) trimming and trim-mode loop playback in progress.
     pub trim_play: trim::TrimPlayback,
-    /// Keyboard shortcuts (active bindings, presets; `shortcuts.*` commands).
+    /// Keyboard shortcuts (active bindings, presets; `shortcut.*` commands).
     pub shortcuts: shortcuts::Shortcuts,
     /// Missing / offline media found by the last scan (Link Media dialog).
     pub offline: relink::OfflineState,

@@ -42,7 +42,7 @@ pub fn compared_path(command: &str, path: &str) -> bool {
     let commands = include_str!("../../../../crates/engine/engine/src/commands.rs");
     let sequence = include_str!("../../../../crates/engine/engine/src/sequence_tools.rs");
     let hash = |source: &str| source.bytes().fold(0xcbf29ce484222325u64, |hash, byte| (hash ^ u64::from(byte)).wrapping_mul(0x100000001b3));
-    hash(commands) == 0x95526b4360647be4 && hash(sequence) == 0x9c4a17d3fd68bdd4
+    hash(commands) == 0x422d17df7f6d60c9 && hash(sequence) == 0x848ed5aa3b9d96b3
 }
 
 pub fn more(command: &str, path: &str) -> Vec<&'static str> {
@@ -53,7 +53,7 @@ pub fn more(command: &str, path: &str) -> Vec<&'static str> {
     if path == "program" && !command.contains("Split") {
         more.push("unconsumed-program-material");
     }
-    if !command.starts_with("markers.clear") && command != "project.setMarks" {
+    if !command.starts_with("marker.clear") && command != "project.setMarks" {
         more.push("coarse-time-state");
     }
     more
@@ -137,7 +137,7 @@ fn mark_paths_compare_all_source_kinds_time_spellings_and_assigned_sides() {
             assert!(compared_path(command, path), "source review expired: {command}/{path}");
             let spec = specs.iter().find(|spec| spec.id == command).unwrap();
             assert!(spec.enabled && spec.mutates);
-            let timed = !command.starts_with("markers.clear") && command != "project.setMarks";
+            let timed = !command.starts_with("marker.clear") && command != "project.setMarks";
             assert_eq!(
                 spec.reads,
                 if command == "project.setMarks" {

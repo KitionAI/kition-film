@@ -25,7 +25,7 @@ for (const [keys, clear, shortcut] of [
       const post = Worker.prototype.postMessage
       window.markOrder = []
       Worker.prototype.postMessage = function(message, ...rest) {
-        if (message?.request?.method === 'execute' && message.request.command.startsWith('markers.')) window.markOrder.push(message.request.command)
+        if (message?.request?.method === 'execute' && message.request.command.startsWith('marker.')) window.markOrder.push(message.request.command)
         return post.call(this, message, ...rest)
       }
     })

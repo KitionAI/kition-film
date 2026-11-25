@@ -1,5 +1,5 @@
 //! Keyboard shortcuts as data: the active key bindings, presets, conflict detection and the
-//! `shortcuts.*` commands (Edit ▸ Keyboard Shortcuts…, and the same operations for agents over MCP).
+//! `shortcut.*` commands (Edit ▸ Keyboard Shortcuts…, and the same operations for agents over MCP).
 //!
 //! A [`Binding`] maps a key chord to a command id, either application-wide or for one panel
 //! (panel shortcuts apply while that panel has focus and override application shortcuts).
@@ -425,8 +425,21 @@ fn category_of(id: &str, menu: &[&str]) -> String {
         "window" => "Window".into(),
         "view" => "View".into(),
         "app" | "help" | "mode" => "Application".into(),
-        "captions" => "Captions".into(),
+        "caption" => "Captions".into(),
         _ => menu.first().map(|s| s.to_string()).unwrap_or_else(|| {
+            // A category is a heading, in the plural, where the command namespace is singular.
+            let prefix = match prefix {
+                "marker" => "markers",
+                "effect" => "effects",
+                "mask" => "masks",
+                "preset" => "presets",
+                "shortcut" => "shortcuts",
+                "job" => "jobs",
+                "event" => "events",
+                "font" => "fonts",
+                "scope" => "scopes",
+                other => other,
+            };
             let mut c = prefix.chars();
             c.next().map(|f| f.to_uppercase().collect::<String>() + c.as_str()).unwrap_or_default()
         }),
@@ -435,7 +448,7 @@ fn category_of(id: &str, menu: &[&str]) -> String {
 
 /// Engine commands worth binding: undoable actions that need no required parameters.
 fn bindable(c: &CommandSpec) -> bool {
-    if !c.journal || c.id.starts_with("shortcuts.") || c.id.starts_with("prefs.") || c.id == "trim.tick" {
+    if !c.journal || c.id.starts_with("shortcut.") || c.id.starts_with("prefs.") || c.id == "trim.tick" {
         return false;
     }
     if c.shortcut.is_some() {

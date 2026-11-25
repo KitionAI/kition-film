@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ContextMenu, MenuItem, MenuSeparator, SubMenu, type ContextMenuPoint, type Phrases } from '@kition/sdk/editor'
 import { FILM_MENUS } from '../menus/catalog'
+import { upstreamCommand } from '../../parity/renames.ts'
 import type { FilmLabels } from '../session/useFilmSession'
 import { FONT_SIZES, type ProjectRow, type ProjectUi, type ProjectView } from './projectModel'
 import { LAYOUT_WIDTH, type FreeformCard } from './freeform'
@@ -25,12 +26,12 @@ export const NEW_ITEMS: ReadonlyArray<{ label: string; command: string; later?: 
   { label: 'Demo Footage', command: 'file.importDemoFootage', later: true },
 ]
 
-/** The New Item rows: each runs its command through `invoke`. */
+/** The New Item rows: each runs its command through `invoke`. A row's interface id is upstream's element id (`project.newItem.file.newBarsAndTone`), which keeps the id the manifest has. */
 export function NewItemRows({ invoke, phrase }: { invoke: Invoke; phrase: Phrases }) {
   return (
     <>
       {NEW_ITEMS.map((row) => (
-        <MenuItem key={row.command} label={phrase(row.label)} disabled={row.later} uiId={`control:project.newItem.${row.command}`} testId={`film-project-new-${row.command}`} onSelect={() => void invoke(row.command, {})} />
+        <MenuItem key={row.command} label={phrase(row.label)} disabled={row.later} uiId={`control:project.newItem.${upstreamCommand(row.command)}`} testId={`film-project-new-${row.command}`} onSelect={() => void invoke(row.command, {})} />
       ))}
     </>
   )

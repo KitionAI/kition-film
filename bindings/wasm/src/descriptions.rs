@@ -280,7 +280,7 @@ pub fn description(id: &str) -> &'static str {
         }
         "effect.remove" => "Removes the effect at `index` (0-based, as sequence.inspect lists a clip's effects; fixed effects can't be removed) from `clip`.",
         "effect.reset" => "Resets every parameter of the effect at `index` of `clip` to its defaults.",
-        "effects.move" => {
+        "effect.move" => {
             "Moves the standard effect at `index` of `clip` to index `to` (0-based, as sequence.inspect lists a clip's effects), changing the order it renders in; fixed effects (Motion, Opacity, Volume…) and graphic layers keep their places."
         }
         "effect.setDefaultTransition" => {

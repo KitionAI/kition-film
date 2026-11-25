@@ -5,8 +5,10 @@ import { existsSync, readFileSync } from 'node:fs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createKeyHold, defaultEngineShortcuts, externalCommands, keyTable, parseShortcut, resolveKey } from './keys.ts'
+import { kitCommand, kitManifest } from '../../parity/renames.ts'
 
-const manifest = JSON.parse(readFileSync(new URL('../../parity/film-upstream.json', import.meta.url), 'utf8'))
+// The manifest with its commands under the engine's ids, and a status key's id the same way (`parity/renames.ts`).
+const manifest = kitManifest(JSON.parse(readFileSync(new URL('../../parity/film-upstream.json', import.meta.url), 'utf8')))
 
 /** A fake engine's `shortcut.list` (its rows carry the panel's title, as the engine does). */
 const SHORTCUTS = [
@@ -223,7 +225,7 @@ test("every wave-1 key the status file does not hide runs its command in its pan
   const wrong = []
   for (const [key, value] of Object.entries(status)) {
     if (!key.startsWith('key:') || value.wave !== 1 || value.status === 'hidden') continue
-    const command = key.slice(4)
+    const command = kitCommand(key.slice(4))
     // "Served" is the router's word: `routeOf` gives the command to a part of the editor (the
     // engine session or a UI route), not `unavailable`. That the engine then runs it is the next test.
     if (routeOf(command, {}, 'timeline') === 'unavailable') wrong.push(`${command}: no part of the editor serves it`)
@@ -259,7 +261,7 @@ test('every engine-routed wave-1 key command runs in a fixture project: it chang
   let ran = 0
   for (const [key, value] of Object.entries(status)) {
     if (!key.startsWith('key:') || value.wave !== 1 || value.status === 'hidden') continue
-    const command = key.slice(4)
+    const command = kitCommand(key.slice(4))
     if (routeOf(command, {}, 'timeline') !== 'session') continue
     ran += 1
     const outcomes = [0, 1].map((selected) => {

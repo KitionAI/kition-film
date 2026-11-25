@@ -70,8 +70,8 @@ pub fn adjust_range(bounds: TimeRange, range: TimeRange, rate: FrameRate, edge: 
 }
 
 pub fn source_command(id: &str) -> bool {
-    id.starts_with("markers.markSplit")
-        || id.starts_with("markers.goToSplit")
+    id.starts_with("marker.markSplit")
+        || id.starts_with("marker.goToSplit")
         || matches!(
             id,
             "marker.markIn"

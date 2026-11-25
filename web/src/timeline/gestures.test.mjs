@@ -343,7 +343,9 @@ test("the clip menu is upstream's CLIP_MENU, the manifest's rows in order", asyn
   const manifest = upstream.elements.filter((element) => /^timeline\.clipMenu\.[a-z]+\.[A-Za-z]+$/.test(element.id) && !/multicam(Enable|Flatten)$/.test(element.id))
   // Multi-Camera is drawn by its own function (`multicam_menu`), so the manifest lists it first.
   const rows = (list) => list.filter(([, command]) => command !== 'clip.multicam')
-  assert.deepEqual(rows(CLIP_MENU.flat().map(([label, command]) => [label, command])), rows(manifest.map((element) => [element.label, element.command])))
+  // The manifest's commands under the engine's ids (Clear is `edit.delete`).
+  const { kitCommand } = await import('../../parity/renames.ts')
+  assert.deepEqual(rows(CLIP_MENU.flat().map(([label, command]) => [label, command])), rows(manifest.map((element) => [element.label, kitCommand(element.command)])))
   assert.ok(manifest.some((element) => element.command === 'clip.multicam'))
   assert.deepEqual(CLIP_MENU.flat().filter(([label]) => opensDialog(label)).map(([, command]) => command), ['edit.pasteAttributes', 'edit.removeAttributes', 'clip.synchronize', 'clip.mergeClips', 'clip.nest', 'clip.speedDuration', 'clip.frameHoldOptions', 'clip.fieldOptions'])
   assert.deepEqual(clipMenuState([{ enabled: true, link: null }, { enabled: true, link: 4 }]), { any: true, allEnabled: true, linked: true })

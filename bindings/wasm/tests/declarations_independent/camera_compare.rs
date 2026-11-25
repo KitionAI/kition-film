@@ -49,7 +49,7 @@ fn recording_command(command: &str) -> bool {
 pub fn compared_path(command: &str, path: &str) -> bool {
     let hash = |s: &str| s.bytes().fold(0xcbf29ce484222325u64, |h, b| (h ^ u64::from(b)).wrapping_mul(0x100000001b3));
     (SWITCHES.contains(&command) && path == "stopped switch/cut" || EXTRA.contains(&(command, path)) || path == "recording" && recording_command(command))
-        && hash(include_str!("../../../../crates/engine/engine/src/multicam.rs")) == 0x52a6ff09ef04c8dd
+        && hash(include_str!("../../../../crates/engine/engine/src/multicam.rs")) == 0xca49dbd431e8f30e
         && hash(include_str!("../../../../crates/engine/project/src/multicam.rs")) == 0x4f7b7179149ec391
 }
 

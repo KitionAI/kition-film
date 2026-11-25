@@ -26,12 +26,12 @@ pub const PATHS: &[(&str, &str)] = &[
 pub fn compared_path(command: &str, path: &str) -> bool {
     let hash = |s: &str| s.bytes().fold(0xcbf29ce484222325u64, |h, b| (h ^ u64::from(b)).wrapping_mul(0x100000001b3));
     PATHS.contains(&(command, path))
-        && hash(include_str!("../../../../crates/engine/engine/src/commands.rs")) == 0x95526b4360647be4
-        && hash(include_str!("../../../../crates/engine/engine/src/sequence_tools.rs")) == 0x9c4a17d3fd68bdd4
+        && hash(include_str!("../../../../crates/engine/engine/src/commands.rs")) == 0x422d17df7f6d60c9
+        && hash(include_str!("../../../../crates/engine/engine/src/sequence_tools.rs")) == 0x848ed5aa3b9d96b3
         && hash(include_str!("../../../../crates/engine/engine/src/source_monitor.rs")) == SOURCE_HASH
 }
 
-const SOURCE_HASH: u64 = 0x6614750c7a2b14fe;
+const SOURCE_HASH: u64 = 0xd5a06c7204ca3dda;
 
 pub fn more(command: &str, path: &str) -> Vec<&'static str> {
     let mut out = vec!["coarse-active-state"];
@@ -90,7 +90,7 @@ fn marker_destinations_compare_program_source_split_and_missing_mark_fallbacks()
                     }
                     expected.premises.push(leaf(source, fields));
                 } else if command.contains("Split") {
-                    let side = command.strip_prefix("markers.goToSplit").unwrap();
+                    let side = command.strip_prefix("marker.goToSplit").unwrap();
                     let channel = if side.starts_with("Video") { "video" } else { "audio" };
                     let edge = if side.ends_with("In") { "In" } else { "Out" };
                     let mut fields = Vec::<String>::new();

@@ -8,6 +8,7 @@ import { checkUiIds } from '@kition/sdk/dev-host/check-ui-ids'
 import { CATALOGS } from '../src/strings.ts'
 import { WEB_PANEL_IDS, WEB_WORKSPACES } from '../src/workspace/presets.ts'
 import { readCatalog } from '../parity/i18n.mjs'
+import { kitManifest } from '../parity/renames.ts'
 
 const which = process.argv[2] ?? 'chromium'
 // The flow's page runs in Chinese (`dev.html?locale=zh-CN`); a second page or a fresh one opens in
@@ -38,7 +39,8 @@ const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
  */
 const pattern = (template, holes = {}, { start = false, end = false } = {}) =>
   new RegExp(`${start ? '^' : ''}${Object.entries(holes).reduce((text, [name, hole]) => text.replaceAll(escapeRegExp(`{${name}}`), () => hole), escapeRegExp(template))}${end ? '$' : ''}`)
-const manifest = JSON.parse(readFileSync(new URL('../parity/film-upstream.json', import.meta.url), 'utf8'))
+// The manifest with its commands under the engine's ids (`parity/renames.ts`).
+const manifest = kitManifest(JSON.parse(readFileSync(new URL('../parity/film-upstream.json', import.meta.url), 'utf8')))
 // Vite's root and config come from this file's place, so the flow runs from any directory.
 const web = fileURLToPath(new URL('..', import.meta.url))
 // No HMR and no file watching: another session's edit of web/src or a linked kit-editor file would

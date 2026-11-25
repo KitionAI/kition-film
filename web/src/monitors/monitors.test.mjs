@@ -3,6 +3,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import { upstreamCommand } from '../../parity/renames.ts'
 import { DEFAULT_VIEWS, ZOOMS, effectiveRes, monitorViewCommand, servesMonitorView } from './monitorView.ts'
 import {
   PROGRAM_TRANSPORT,
@@ -35,7 +36,8 @@ const T = 254016000000
 test("the transport rows are upstream's, in order, with its tooltips", () => {
   for (const [which, rows] of [['program', PROGRAM_TRANSPORT], ['source', SOURCE_TRANSPORT]]) {
     const upstream = manifest.elements.filter((element) => element.id.startsWith(`${which}.transport.`) && element.id !== `${which}.transport.buttonEditor`)
-    assert.deepEqual(rows.map((row) => `${which}.transport.${row.key}`), upstream.map((element) => element.id))
+    // A row's key is its command where it runs one: upstream's element id has the id the manifest keeps.
+    assert.deepEqual(rows.map((row) => `${which}.transport.${upstreamCommand(row.key)}`), upstream.map((element) => element.id))
     assert.deepEqual(rows.map((row) => row.label), upstream.map((element) => element.label))
   }
 })

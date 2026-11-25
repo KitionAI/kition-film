@@ -1,4 +1,4 @@
-//! Effect masks: `masks.*` commands (add / remove / edit / select / list).
+//! Effect masks: `mask.*` commands (add / remove / edit / select / list).
 //!
 //! A mask lives on an effect instance of a video clip (`effect`: index or id; Opacity masks cut
 //! out the clip itself). Commands address it with `clip` (default: the selected mask's clip, else

@@ -761,7 +761,7 @@ impl Session {
                 }
             }
             "effect.toggleEnabled" => out.extend(whole(params, "clip").map(|clip| Premise::content(clip, &["effects"]))),
-            "effects.move" => {
+            "effect.move" => {
                 // It reorders the clip's effects (reading which are standard ones) and is refused on
                 // a locked track.
                 if let Some(clip) = whole(params, "clip") {
@@ -836,7 +836,7 @@ impl Session {
                     out.push(Premise { id: item, fields: Some(fields), positions: Some(Vec::new()) });
                 }
             }
-            _ if command.starts_with("captions.") => {
+            _ if command.starts_with("caption.") => {
                 if let (Some(item), Some(sequence)) = (item, sequence) {
                     let given = named(params, "captions", "caption");
                     let ids: Vec<u64> = if given.is_empty() { crate::captions::caption_ids(self, params).iter().map(|id| id.0).collect() } else { given };

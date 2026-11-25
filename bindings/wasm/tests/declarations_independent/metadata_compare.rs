@@ -21,7 +21,7 @@ pub fn compared_path(command: &str, path: &str) -> bool {
     };
     PATHS.contains(&(command, path))
         && source.bytes().fold(0xcbf29ce484222325u64, |hash, byte| (hash ^ u64::from(byte)).wrapping_mul(0x100000001b3))
-            == if command == "metadata.set" { 0x177d40d4071011d4 } else { 0x05feb2b3bbb4f4b0 }
+            == if command == "metadata.set" { 0x22fe7782eed3ce6c } else { 0x05feb2b3bbb4f4b0 }
 }
 
 pub fn more(command: &str) -> Vec<&'static str> {

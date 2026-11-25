@@ -423,7 +423,7 @@ features:
     dimension: [function]
     priority: P1
     status: partial
-    commands: [effect.remove, effects.move, effect.toggleAnimation, effect.toggleEnabled, effect.reset, effect.deleteKeyframe, effect.moveKeyframe, effect.setInterpolation, effect.setKeyframe, effect.list, effect.setDefaultTransition, mask.remove, mask.set, mask.moveVertex, mask.translate, mask.addVertex, mask.removeVertex, mask.track, mask.toggleVertexSmooth, mask.select, mask.list]
+    commands: [effect.remove, effect.move, effect.toggleAnimation, effect.toggleEnabled, effect.reset, effect.deleteKeyframe, effect.moveKeyframe, effect.setInterpolation, effect.setKeyframe, effect.list, effect.setDefaultTransition, mask.remove, mask.set, mask.moveVertex, mask.translate, mask.addVertex, mask.removeVertex, mask.track, mask.toggleVertexSmooth, mask.select, mask.list]
     paths: [crates/engine/engine/src/masks.rs, bindings/wasm/src/panels.rs, bindings/wasm/src/files.rs, bindings/wasm/src/sound.rs]
     target: "Premiere Pro 2026 (26.5)"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
@@ -518,7 +518,7 @@ features:
     cases: [regressions/issue-shift-delete-ripple, regressions/issue-dead-ends]
     since: "2026-11-24"
   - id: film.editor.effects-panel
-    title: "The Effects panel: effects, transitions and presets as a searchable folder tree; double-click applies to the selected clips, a drag to a clip in the Timeline or to the clip Effect Controls shows; an applied effect's parameters change in Effect Controls, where its selected header and Delete remove it, and a drag of its header or its menu's Move Effect Up / Down reorders the standard effects (effects.move, one undo step)"
+    title: "The Effects panel: effects, transitions and presets as a searchable folder tree; double-click applies to the selected clips, a drag to a clip in the Timeline or to the clip Effect Controls shows; an applied effect's parameters change in Effect Controls, where its selected header and Delete remove it, and a drag of its header or its menu's Move Effect Up / Down reorders the standard effects (effect.move, one undo step)"
     dimension: [function]
     priority: P0
     status: partial

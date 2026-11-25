@@ -12,8 +12,8 @@ pub const PATHS: &[(&str, &str)] =
 pub fn compared_path(command: &str, path: &str) -> bool {
     let hash = |s: &str| s.bytes().fold(0xcbf29ce484222325u64, |h, b| (h ^ u64::from(b)).wrapping_mul(0x100000001b3));
     PATHS.contains(&(command, path))
-        && hash(include_str!("../../../../crates/engine/engine/src/sequence_tools.rs")) == 0x9c4a17d3fd68bdd4
-        && hash(include_str!("../../../../crates/engine/engine/src/sequence_extras.rs")) == 0x6ad34e92a4fc2428
+        && hash(include_str!("../../../../crates/engine/engine/src/sequence_tools.rs")) == 0x848ed5aa3b9d96b3
+        && hash(include_str!("../../../../crates/engine/engine/src/sequence_extras.rs")) == 0xdc0de290f29296a5
 }
 pub fn more(command: &str) -> Vec<&'static str> {
     if command == "sequence.simplify" {

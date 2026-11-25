@@ -216,7 +216,7 @@ fn cut_inputs(session: &Session, command: &str, params: &Value, under: Option<Un
 
 fn marker_timebase(session: &Session, command: &str, params: &Value, under: Option<Under>) -> Option<Under> {
     let add = matches!(command, "marker.add" | "marker.addRange" | "marker.addChapter" | "marker.addFlashCue");
-    let mark = matches!(command, "marker.markIn" | "marker.markOut") || command.starts_with("markers.markSplit");
+    let mark = matches!(command, "marker.markIn" | "marker.markOut") || command.starts_with("marker.markSplit");
     if !add && !mark && command != "marker.edit" {
         return under;
     }

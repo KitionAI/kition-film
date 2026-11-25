@@ -1,6 +1,6 @@
 //! Caption commands: caption tracks, caption editing, caption file import/export.
 //!
-//! Ids (`captions.*`) follow Premiere's Sequence ▸ Captions menu and the Text panel's Captions tab.
+//! Ids (`caption.*`) follow Premiere's Sequence ▸ Captions menu and the Text panel's Captions tab.
 //! Captions are addressed by id (`caption`, `captions`); without one, commands use the caption
 //! selection (`EditorState::caption_selection`) or the caption under the playhead. Caption tracks
 //! are addressed by id or `"C1"`, `"C2"`… (top first); the default is the first caption track.

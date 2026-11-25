@@ -19,6 +19,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { needsPhrase } from '../src/i18n/phrases.ts'
+import { kitCommand } from './renames.ts'
 import { parsePhrases } from '@kition/sdk/editor'
 
 /** Whether a label has words to translate (not a symbol, a number, or an id): the editor's own rule. */
@@ -184,7 +185,7 @@ export function dialogLabels(specs) {
 /**
  * Every label Film draws through phrase() that the rule above can read without a browser, with
  * where it comes from. `engineCommands` (the built engine's `commands()`) and `engineEffects`
- * (the labels the Effects panel draws from its `effects.list` and `presets.list`) are optional.
+ * (the labels the Effects panel draws from its `effect.list` and `preset.list`) are optional.
  */
 export async function drawnLabels({ engineCommands = null, engineEffects = null } = {}) {
   const web = fileURLToPath(new URL('..', import.meta.url))
@@ -215,7 +216,8 @@ export async function drawnLabels({ engineCommands = null, engineEffects = null 
   if (tables.lost.length) throw new Error(`label tables not found (update LABEL_TABLES): ${tables.lost.join(', ')}`)
   for (const label of tables.labels) add(label, 'label table')
   for (const row of manifest.menus) {
-    if (isHiddenOnWeb(row)) continue
+    // The manifest's id of the row's command, as the engine has it (renames.ts).
+    if (isHiddenOnWeb({ ...row, command: kitCommand(row.command) })) continue
     add(row.label, 'menu row')
     for (const name of row.path) add(name, 'menu name')
   }

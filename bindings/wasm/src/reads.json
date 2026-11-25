@@ -127,7 +127,7 @@
   "effect.addKeyframe": ["part", "time"],
   "effect.apply": ["part", "selection", "time", "active", "mode"],
   "effect.deleteKeyframe": ["part", "time"],
-  "effects.move": ["part"],
+  "effect.move": ["part"],
   "effect.moveKeyframe": ["part", "time"],
   "effect.remove": ["part"],
   "effect.reset": ["part"],

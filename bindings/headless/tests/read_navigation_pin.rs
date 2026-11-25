@@ -188,7 +188,7 @@ async fn source_marker_routes_retain_bounds_and_destination_timebases() {
         let source = seen["id"].clone();
         let marker = f.colleague(&[("marker.add", json!({"time":SECOND}))])[0]["marker"].clone();
         let (_, basis) = f.inspect().await;
-        if command.starts_with("markers.go") {
+        if command.starts_with("marker.go") {
             f.colleague(&[("sequence.settings", json!({"fps":30}))]);
         } else {
             rewrite(&f.file(), |project| {

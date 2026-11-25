@@ -8,6 +8,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { ruleWaves } from './waves.mjs'
+import { kitCommand } from './renames.ts'
 
 const manifest = JSON.parse(readFileSync(new URL('./film-upstream.json', import.meta.url), 'utf8'))
 const status = JSON.parse(readFileSync(new URL('./film-status.json', import.meta.url), 'utf8'))
@@ -21,6 +22,8 @@ const hidden = await optional('../src/menus/hidden.ts')
 const catalog = await optional('../src/menus/catalog.ts')
 const kitMenus = await optional('../src/menus/kitMenus.ts')
 
+// The manifest and the status file keep the ids of before the command naming standard (2026-11-25);
+// where a test meets the engine or the editor's own commands, the id goes through `kitCommand` (renames.ts).
 const menuKey = (row) => `menu:${row.path.join('/')}/${row.command}`
 /** Every key the manifest implies, with the wave the plan's rules give it (waves.mjs). */
 const rules = ruleWaves(manifest)
@@ -105,7 +108,7 @@ test('at the checkpoint, no follow-up is left for a task of its own wave', { ski
 })
 
 test('web-hidden menu rows, and only they, are hidden in the status file', { skip: hidden ? false : 'web/src/menus/hidden.ts does not exist yet (Task 9)' }, () => {
-  const wrong = manifest.menus.filter((row) => (status[menuKey(row)]?.status === 'hidden') !== hidden.isHiddenOnWeb(row)).map((row) => row.command)
+  const wrong = manifest.menus.filter((row) => (status[menuKey(row)]?.status === 'hidden') !== hidden.isHiddenOnWeb({ ...row, command: kitCommand(row.command) })).map((row) => row.command)
   assert.deepEqual(wrong, [], `status disagrees with isHiddenOnWeb: ${wrong.join(', ')}`)
 })
 
@@ -117,16 +120,16 @@ const engine = existsSync(new URL('kition_film_kit_bg.wasm', engineDir))
       const doc = sdk.FilmDocument.create('Untitled', 1920, 1080)
       const commands = new Map(JSON.parse(doc.commands()).map((command) => [command.id, command]))
       // The Effects panel draws the engine's effect, folder, and preset names through phrase(), and
-      // Effect Controls draws their parameter names and choice options (`effects.list` with `detail`).
+      // Effect Controls draws their parameter names and choice options (`effect.list` with `detail`).
       const { effectDefsOf, effectLabels, paramLabels, presetsOf } = await import(new URL('../src/panels/effectsTree.ts', import.meta.url).href)
-      const listed = effectLabels(effectDefsOf(JSON.parse(doc.execute('effects.list', '{}'))), presetsOf(JSON.parse(doc.execute('presets.list', '{}'))))
-      commands.effectLabels = new Set([...listed, ...paramLabels(JSON.parse(doc.execute('effects.list', JSON.stringify({ detail: true }))))])
+      const listed = effectLabels(effectDefsOf(JSON.parse(doc.execute('effect.list', '{}'))), presetsOf(JSON.parse(doc.execute('preset.list', '{}'))))
+      commands.effectLabels = new Set([...listed, ...paramLabels(JSON.parse(doc.execute('effect.list', JSON.stringify({ detail: true }))))])
       return commands
     })()
   : null
 
 test("engine rows sit under the engine's menu path", { skip: engine ? false : 'the web engine is not built' }, () => {
-  const rows = [...manifest.menus.filter((row) => row.origin === 'engine'), ...(catalog ? catalog.FILM_MENUS.filter((row) => engine.has(row.command)) : [])]
+  const rows = [...manifest.menus.filter((row) => row.origin === 'engine').map((row) => ({ ...row, command: kitCommand(row.command) })), ...(catalog ? catalog.FILM_MENUS.filter((row) => engine.has(row.command)) : [])]
   const differ = rows.filter((row) => engine.get(row.command)?.menu?.join('/') !== row.path.join('/')).map((row) => `${row.command}: ${row.path.join('/')} vs ${engine.get(row.command)?.menu?.join('/')}`)
   assert.deepEqual(differ, [], 'rows whose path differs from the engine (rerun parity/extract.mjs)')
 })
@@ -142,7 +145,7 @@ test('done menu rows are engine commands or Kition kit: rows', { skip: !engine ?
   const takeovers = kitMenus?.KIT_TAKEOVERS ?? {}
   const wrong = Object.entries(status)
     .filter(([key, value]) => key.startsWith('menu:') && value.status === 'done')
-    .map(([key]) => key.split('/').pop())
+    .map(([key]) => kitCommand(key.split('/').pop()))
     .filter((command) => !engine.has(command) && !kitRows.has(command) && !takeovers[command])
   assert.deepEqual(wrong, [], `done rows that are neither engine commands nor kit: rows: ${wrong.join(', ')}`)
 })

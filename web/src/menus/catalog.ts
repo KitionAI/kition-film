@@ -1,6 +1,7 @@
 // Imports carry `.ts` and the JSON its import attribute so `node --test` loads these modules as they are.
 import type { MenuRow } from '@kition/sdk/editor'
 import upstream from '../../parity/film-upstream.json' with { type: 'json' }
+import { kitCommand } from '../../parity/renames.ts'
 import { monitorViewChecked, type MonitorViews } from '../monitors/monitorView.ts'
 import { HELP_ROWS, KIT_TAKEOVERS } from './kitMenus.ts'
 
@@ -18,13 +19,14 @@ type ManifestRow = MenuRow & { origin?: string }
 export const workspaceSlug = (name: string) => name.toLowerCase().replaceAll(' ', '')
 
 /**
- * A row's command in the menus: an engine row runs its engine command (or Kition's takeover), and
+ * A row's command in the menus: an engine row runs its engine command (the manifest's id through
+ * `parity/renames.ts`; or Kition's takeover), and
  * one of upstream's own UI rows becomes `kit:<id>`, which runs through `invoke`. Its parity key
  * keeps the upstream id.
  */
 function menuCommand(row: ManifestRow) {
   if (KIT_TAKEOVERS[row.command]) return KIT_TAKEOVERS[row.command]
-  return row.origin === 'engine' ? row.command : `${KIT}${row.command}`
+  return row.origin === 'engine' ? kitCommand(row.command) : `${KIT}${row.command}`
 }
 
 const isWorkspaceRow = (row: MenuRow) => row.path.length === 2 && row.path[0] === 'Window' && row.path[1] === 'Workspaces'

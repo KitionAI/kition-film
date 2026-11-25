@@ -10,8 +10,8 @@ pub const PATHS: &[(&str, &str)] = &[("clip.interpretFootage", "project or timel
 pub fn compared_path(command: &str, path: &str) -> bool {
     let hash = |s: &str| s.bytes().fold(0xcbf29ce484222325u64, |h, b| (h ^ u64::from(b)).wrapping_mul(0x100000001b3));
     PATHS.contains(&(command, path))
-        && hash(include_str!("../../../../crates/engine/engine/src/clip_ops.rs")) == 0x973a242360050d16
-        && hash(include_str!("../../../../crates/engine/engine/src/color.rs")) == 0x338493baffff87a7
+        && hash(include_str!("../../../../crates/engine/engine/src/clip_ops.rs")) == 0xd8532e3f9a552dfc
+        && hash(include_str!("../../../../crates/engine/engine/src/color.rs")) == 0xcce2d68d5a4c3d4f
 }
 pub fn more(command: &str) -> Vec<&'static str> {
     if command == "clip.breakoutToMono" { vec!["coarse-selection-state", "whole-cloned-media", "item-sibling-index"] } else { vec!["coarse-selection-state"] }

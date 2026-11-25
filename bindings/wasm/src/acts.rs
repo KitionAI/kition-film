@@ -115,7 +115,7 @@ pub fn targets(id: &str, schema: Option<&Value>) -> Option<&'static str> {
 pub fn moves_the_editor(id: &str) -> bool {
     id.starts_with("playhead.")
         || id.starts_with("timeline.toggleTarget")
-        || id.starts_with("markers.go")
+        || id.starts_with("marker.go")
         || id.starts_with("trim.select")
         || id.starts_with("graphics.select")
         || matches!(
@@ -204,7 +204,7 @@ fn object_type(id: &str, name: &str) -> Option<&'static str> {
         "bin" if matches!(id, "project.searchBinItems" | "project.editSearchBin" | "project.deleteSearchBin") => return None,
         "bin" => "Bin",
         "parent" if id == "bin.add" => "Bin",
-        "track" if !id.starts_with("captions.") && !id.starts_with("graphics.") => "Track",
+        "track" if !id.starts_with("caption.") && !id.starts_with("graphics.") => "Track",
         "strip" if id.starts_with("mixer.") => "Track",
         "target" if matches!(id, "mixer.addSend" | "mixer.setSend") => "Track",
         "output" if id == "mixer.setStrip" => "Track",

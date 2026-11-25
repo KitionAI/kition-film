@@ -3,7 +3,9 @@ import { createServer } from 'vite'
 import { fileURLToPath } from 'node:url'
 import { readFileSync } from 'node:fs'
 
-const menuRows = JSON.parse(readFileSync(new URL('../../parity/film-upstream.json', import.meta.url), 'utf8')).menus
+// The manifest's menu rows with their commands under the engine's ids (`parity/renames.json`: the manifest's id -> the engine's).
+const renames = JSON.parse(readFileSync(new URL('../../parity/renames.json', import.meta.url), 'utf8'))
+const menuRows = JSON.parse(readFileSync(new URL('../../parity/film-upstream.json', import.meta.url), 'utf8')).menus.map(row => ({ ...row, command: renames[row.command] ?? row.command }))
 
 export { expect }
 export const TICKS = 254_016_000_000

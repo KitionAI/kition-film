@@ -1689,7 +1689,7 @@
 	Open a Source clip first	请先在源监视器中打开一个剪辑
 	In to Out duration	入点到出点的时长
 # The Effects panel (the plan "Film usable by hand", phase 3): its folders, the engine's effects, transitions and presets
-# (effects.list, presets.list), and the transition controls on the Timeline. Effect names follow the
+# (effect.list, preset.list), and the transition controls on the Timeline. Effect names follow the
 # Simplified Chinese names video editors use (过渡 for transitions, 溶解, 擦除, 划像, 键…).
 	Search effects	搜索效果
 	Set Transition Duration…	设置过渡持续时间…
@@ -2031,7 +2031,7 @@
 	Slide (Legacy)	滑动（旧版）
 	Split (Legacy)	拆分（旧版）
 	Whip (Legacy)	急摇（旧版）
-# Effect Controls: the engine's effect parameter names and choice options (effects.list with detail),
+# Effect Controls: the engine's effect parameter names and choice options (effect.list with detail),
 # which an applied effect shows (phase 3). Units, abbreviations and font names stay as they are.
 	Bypass	旁路
 	Brightness	亮度

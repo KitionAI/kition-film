@@ -256,7 +256,7 @@ impl Session {
         }
         let Kind::Clips(tracks) = kind(command) else { return Ok(Some(Under::default())) };
         // A source marker names no place in the sequence.
-        if command.starts_with("markers.") && params.get("target").and_then(Value::as_str) == Some("source") {
+        if command.starts_with("marker.") && params.get("target").and_then(Value::as_str) == Some("source") {
             return Ok(Some(Under::default()));
         }
         let Some(sequence) = self.active_sequence() else { return Ok(None) };

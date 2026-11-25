@@ -6,6 +6,7 @@ import { mkdirSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { chromium, webkit } from 'playwright'
 import { createServer } from 'vite'
+import { kitManifest } from '../parity/renames.ts'
 
 const which = process.argv[2] ?? 'webkit'
 const SIZES = [
@@ -165,7 +166,7 @@ async function clipDialogSetup(page, { copy }) {
 const run = (page, steps) => page.evaluate(async (list) => window.devHost.connection().ai.run(list, false), steps)
 
 /** Upstream's menu rows (the parity manifest), to open a command's dialog or window the way a person does. */
-const MENUS = JSON.parse(readFileSync(new URL('../parity/film-upstream.json', import.meta.url), 'utf8')).menus
+const MENUS = kitManifest(JSON.parse(readFileSync(new URL('../parity/film-upstream.json', import.meta.url), 'utf8'))).menus
 
 /**
  * Runs `command` from its menu row: opens its top menu, hovers each submenu on its path, and

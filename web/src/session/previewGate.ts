@@ -29,7 +29,7 @@ const VIEW_IDS = new Set([
   'project.columns.resize',
 ])
 
-const VIEW_PREFIXES = ['source.playback.', 'markers.go']
+const VIEW_PREFIXES = ['source.playback.', 'marker.go']
 
 /** A command that selects (`timeline.select`, `project.select`, `edit.selectAll`, `edit.deselectAll`, `trim.selectEditPoint`). */
 const selects = (id: string) => /^(select|deselect)/.test(id.split('.').at(-1) ?? '')

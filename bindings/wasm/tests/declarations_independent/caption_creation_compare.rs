@@ -9,7 +9,7 @@ use serde_json::{Value, json};
 pub const PATHS: &[(&str, &str)] = &[("caption.newTrack", "append"), ("caption.add", "automatic C1")];
 pub fn compared_path(command: &str, path: &str) -> bool {
     let hash = |s: &str| s.bytes().fold(0xcbf29ce484222325u64, |h, b| (h ^ u64::from(b)).wrapping_mul(0x100000001b3));
-    PATHS.contains(&(command, path)) && hash(include_str!("../../../../crates/engine/engine/src/captions.rs")) == 0xd8332e1b444fc431
+    PATHS.contains(&(command, path)) && hash(include_str!("../../../../crates/engine/engine/src/captions.rs")) == 0x57c045636b31d654
 }
 pub fn more(command: &str) -> Vec<&'static str> {
     if command == "caption.add" { vec!["unconsumed-program-material", "unused-caption-playhead"] } else { vec![] }

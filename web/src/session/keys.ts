@@ -1,4 +1,5 @@
 import { isHiddenCommand } from '../menus/hidden.ts'
+import { kitCommand } from '../../parity/renames.ts'
 import { focusedPanel } from '../panels/projectModel.ts'
 
 /**
@@ -205,10 +206,11 @@ export function resolveKey(event: KeyPress, focusedNow: string, table: KeyTable,
 
 /**
  * The engine's commands' default bindings as the manifest records them (`origin: 'engine'`), as
- * shortcut rows: what a key pressed before the engine's key table is read may be meant for.
+ * shortcut rows: what a key pressed before the engine's key table is read may be meant for. The
+ * rows carry the engine's ids (the manifest's through `parity/renames.ts`).
  */
 export function defaultEngineShortcuts(manifest: KeyManifest): ShortcutRow[] {
-  return manifest.keys.filter((key) => key.origin === 'engine' && key.bindings.length > 0).map((key) => ({ id: key.command, shortcuts: key.bindings }))
+  return manifest.keys.filter((key) => key.origin === 'engine' && key.bindings.length > 0).map((key) => ({ id: kitCommand(key.command), shortcuts: key.bindings }))
 }
 
 /** A key pressed before the editor has read the engine's key table: the press and the panel focused then. */

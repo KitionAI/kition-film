@@ -10,8 +10,8 @@ pub const PATHS: &[(&str, &str)] = &[("file.closeProject", "force/default"), ("f
 pub fn compared_path(command: &str, path: &str) -> bool {
     let hash = |source: &str| source.bytes().fold(0xcbf29ce484222325u64, |hash, byte| (hash ^ u64::from(byte)).wrapping_mul(0x100000001b3));
     PATHS.contains(&(command, path))
-        && hash(include_str!("../../../../crates/engine/engine/src/clip_ops.rs")) == 0x973a242360050d16
-        && hash(include_str!("../../../../crates/engine/engine/src/project_tools.rs")) == 0xf8d2f12928fa34b4
+        && hash(include_str!("../../../../crates/engine/engine/src/clip_ops.rs")) == 0xd8532e3f9a552dfc
+        && hash(include_str!("../../../../crates/engine/engine/src/project_tools.rs")) == 0x6ec565cfb937b0c8
 }
 
 #[test]

@@ -15,7 +15,7 @@ pub fn compared_path(command: &str, path: &str) -> bool {
     let hash = |source: &str| source.bytes().fold(0xcbf29ce484222325u64, |hash, byte| (hash ^ u64::from(byte)).wrapping_mul(0x100000001b3));
     COMMANDS.contains(&command)
         && METHODS.contains(&path)
-        && hash(include_str!("../../../../crates/engine/engine/src/multicam.rs")) == 0x52a6ff09ef04c8dd
+        && hash(include_str!("../../../../crates/engine/engine/src/multicam.rs")) == 0xca49dbd431e8f30e
         && hash(include_str!("../../../../crates/engine/engine/src/sync.rs")) == 0xc45d8d00e63a38e3
 }
 

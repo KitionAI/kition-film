@@ -20,8 +20,8 @@ pub const PATHS: &[(&str, &str)] = &[
 pub fn compared_path(command: &str, path: &str) -> bool {
     let hash = |s: &str| s.bytes().fold(0xcbf29ce484222325u64, |h, b| (h ^ u64::from(b)).wrapping_mul(0x100000001b3));
     PATHS.contains(&(command, path))
-        && hash(include_str!("../../../../crates/engine/engine/src/clip_ops.rs")) == 0x973a242360050d16
-        && hash(include_str!("../../../../crates/engine/engine/src/project_tools.rs")) == 0xf8d2f12928fa34b4
+        && hash(include_str!("../../../../crates/engine/engine/src/clip_ops.rs")) == 0xd8532e3f9a552dfc
+        && hash(include_str!("../../../../crates/engine/engine/src/project_tools.rs")) == 0x6ec565cfb937b0c8
 }
 pub fn more(command: &str) -> Vec<&'static str> {
     let mut out = vec!["whole-query-container"];

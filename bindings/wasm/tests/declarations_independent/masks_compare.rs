@@ -24,7 +24,7 @@ pub fn compared_path(command: &str, path: &str) -> bool {
             include_str!("../../../../crates/engine/engine/src/masks.rs"),
             "fn target_clip(",
             "// ---------------------------------------------------------------- tracking",
-            0x0265fd7f66c69cf2,
+            0xc1bdb017a55385dc,
         )
 }
 

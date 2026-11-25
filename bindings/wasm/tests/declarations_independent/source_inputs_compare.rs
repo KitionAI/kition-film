@@ -46,14 +46,14 @@ pub fn compared_path(command: &str, path: &str) -> bool {
     let hash = |s: &str| s.bytes().fold(0xcbf29ce484222325u64, |h, b| (h ^ u64::from(b)).wrapping_mul(0x100000001b3));
     PATHS.contains(&(command, path))
         && hash(include_str!("../../../../crates/engine/engine/src/keyboard.rs")) == 0xc4c1cfffb8e70cd9
-        && hash(include_str!("../../../../crates/engine/engine/src/clip_ops.rs")) == 0x973a242360050d16
-        && hash(include_str!("../../../../crates/engine/engine/src/presets.rs")) == 0x3c8b435bcfc471ab
+        && hash(include_str!("../../../../crates/engine/engine/src/clip_ops.rs")) == 0xd8532e3f9a552dfc
+        && hash(include_str!("../../../../crates/engine/engine/src/presets.rs")) == 0x4700c45c2128afe3
         && hash(include_str!("../../../../crates/engine/project/src/lib.rs")) == 0x784d4865cb75caf9
 }
 
 pub fn more(command: &str) -> Vec<&'static str> {
     let mut out = vec!["coarse-selection-state", "unconsumed-selection"];
-    if command.starts_with("presets.") {
+    if command.starts_with("preset.") {
         out.extend(["coarse-mode-state", "whole-effect-profile", "clip-owner-position", "coarse-preset-source-mapping"]);
     } else if command.ends_with("Frame") {
         out.push("coarse-active-state");
@@ -134,7 +134,7 @@ fn fit_fill_and_presets_compare_selection_precedence_source_routes_geometry_and_
         for &(command, path) in &PATHS[..5] {
             assert!(compared_path(command, path));
             let save = command == "preset.save";
-            let preset = command.starts_with("presets.");
+            let preset = command.starts_with("preset.");
             let spec = doc.commands().into_iter().find(|spec| spec.id == command).unwrap();
             assert!(spec.mutates);
             assert_eq!(spec.enabled, preset || !selected.is_empty());

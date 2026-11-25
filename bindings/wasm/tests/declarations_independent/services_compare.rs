@@ -41,13 +41,13 @@ pub fn compared_path(command: &str, path: &str) -> bool {
         return false;
     }
     let (source, reviewed) = match command {
-        id if id.starts_with("shortcuts.") => (include_str!("../../../../crates/engine/engine/src/shortcuts.rs"), 0x227197a1b5fd1e60),
-        id if id.starts_with("export.") => (include_str!("../../../../crates/engine/engine/src/export_tools.rs"), 0x3b51f4e83d3cdeb3),
+        id if id.starts_with("shortcut.") => (include_str!("../../../../crates/engine/engine/src/shortcuts.rs"), 0x6070fbac4e74808a),
+        id if id.starts_with("export.") => (include_str!("../../../../crates/engine/engine/src/export_tools.rs"), 0xadba9f2d4562ee64),
         "audio.toggleScrubbing" => (include_str!("../../../../crates/engine/engine/src/keyboard.rs"), 0xc4c1cfffb8e70cd9),
         "audio.voiceover.settings" => (include_str!("../../../../crates/engine/engine/src/voiceover.rs"), 0x91aaae0773822eca),
         "audioMixing.deletePreset" => (include_str!("../../../../crates/engine/engine/src/audio_mixing.rs"), 0x62e5a74e1bc8c02c),
-        "multicam.gridLayout" => (include_str!("../../../../crates/engine/engine/src/multicam.rs"), 0x52a6ff09ef04c8dd),
-        _ => (include_str!("../../../../crates/engine/engine/src/commands.rs"), 0x95526b4360647be4),
+        "multicam.gridLayout" => (include_str!("../../../../crates/engine/engine/src/multicam.rs"), 0xca49dbd431e8f30e),
+        _ => (include_str!("../../../../crates/engine/engine/src/commands.rs"), 0x422d17df7f6d60c9),
     };
     source.bytes().fold(0xcbf29ce484222325u64, |hash, byte| (hash ^ u64::from(byte)).wrapping_mul(0x100000001b3)) == reviewed
 }

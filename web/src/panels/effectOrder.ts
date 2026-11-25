@@ -1,5 +1,5 @@
 /**
- * Reordering a clip's standard effects in Effect Controls (`effects.move`): the fixed effects
+ * Reordering a clip's standard effects in Effect Controls (`effect.move`): the fixed effects
  * (Motion, Opacity, Volume…) keep their places, so an effect moves only among the standard ones
  * next to it. Pure, so `node --test` runs it.
  */
@@ -18,7 +18,7 @@ export function neighbourIndex(rows: readonly OrderRow[], index: number, step: -
 /**
  * Where the effect at `from` lands when it is dragged to `y` (upstream's drop between rows): the
  * standard effects' rows in order, the drop before the first whose middle is below `y`, as the
- * index `effects.move` takes (`to`); null where it would not move, and the y of the line drawn.
+ * index `effect.move` takes (`to`); null where it would not move, and the y of the line drawn.
  */
 export function dropIndex(rows: readonly OrderRow[], from: number, y: number): { to: number | null; lineY: number } | null {
   const movable = rows.filter((row) => !row.intrinsic && row.top != null && row.height != null).sort((a, b) => a.index - b.index)

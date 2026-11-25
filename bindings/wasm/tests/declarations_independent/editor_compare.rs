@@ -49,14 +49,14 @@ pub fn compared_path(command: &str, path: &str) -> bool {
         (include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../crates/engine/engine/src/project_panel.rs")), 0x05feb2b3bbb4f4b0)
     } else if command.starts_with("mediaBrowser.") {
         (include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../crates/engine/engine/src/media_browser.rs")), 0xa657cfe622ed6565)
-    } else if command.starts_with("presets.") {
-        (include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../crates/engine/engine/src/presets.rs")), 0x3c8b435bcfc471ab)
+    } else if command.starts_with("preset.") {
+        (include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../crates/engine/engine/src/presets.rs")), 0x4700c45c2128afe3)
     } else if command.starts_with("multicam.") {
-        (include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../crates/engine/engine/src/multicam.rs")), 0x52a6ff09ef04c8dd)
-    } else if command.starts_with("markers.") || command == "sequence.showThroughEdits" {
-        (include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../crates/engine/engine/src/sequence_tools.rs")), 0x9c4a17d3fd68bdd4)
+        (include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../crates/engine/engine/src/multicam.rs")), 0xca49dbd431e8f30e)
+    } else if command.starts_with("marker.") || command == "sequence.showThroughEdits" {
+        (include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../crates/engine/engine/src/sequence_tools.rs")), 0x848ed5aa3b9d96b3)
     } else {
-        (include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../crates/engine/engine/src/commands.rs")), 0x95526b4360647be4)
+        (include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../crates/engine/engine/src/commands.rs")), 0x422d17df7f6d60c9)
     };
     hash(source) == reviewed
 }

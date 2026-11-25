@@ -4,6 +4,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import upstream from '../../parity/film-upstream.json' with { type: 'json' }
 import status from '../../parity/film-status.json' with { type: 'json' }
+import { kitCommand, upstreamCommand } from '../../parity/renames.ts'
 import { DIALOGS, DIRECT_ROWS, OTHER_PATHS, createRegistry, dialogDeclarations, dialogSteps, runDialog, specProblems } from './registry.ts'
 import { createPreview, createPreviewFrames, describeDiff, previewNames } from './preview.ts'
 import { speedDurationReadout } from './clip.ts'
@@ -361,8 +362,9 @@ test("the dialogs' ids stand for upstream's, OK and Cancel for every dialog's", 
 })
 
 test('every "…" row of waves 1 and 2 opens an upstream dialog, runs at once as upstream, or takes another upstream path: none needs the parameters fallback', () => {
-  const dialogs = new Set(upstream.dialogs)
-  const waveOf = (row) => status[`menu:${row.path.join('/')}/${row.command.replace(/^kit:/, '')}`]?.wave ?? null
+  // The manifest's dialogs under the engine's ids; a status key has the manifest's id.
+  const dialogs = new Set(upstream.dialogs.map(kitCommand))
+  const waveOf = (row) => status[`menu:${row.path.join('/')}/${upstreamCommand(row.command.replace(/^kit:/, ''))}`]?.wave ?? null
   const rows = FILM_MENUS.filter((row) => row.label.endsWith('…') && !isHiddenOnWeb(row) && waveOf(row) !== 3)
   const fallback = rows.map((row) => row.command.replace(/^kit:/, '')).filter((id) => !dialogs.has(id) && !DIRECT_ROWS.has(id) && !Object.hasOwn(OTHER_PATHS, id) && !DIALOGS.has(id))
   console.log(`"…" rows: ${rows.length}; with upstream's own dialog ${rows.filter((row) => dialogs.has(row.command)).length}; registered so far ${rows.filter((row) => DIALOGS.has(row.command.replace(/^kit:/, ''))).length}`)

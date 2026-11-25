@@ -16,7 +16,7 @@ pub fn compared_path(command: &str, path: &str) -> bool {
             && include_str!("../../../../crates/engine/engine/src/color.rs")
                 .bytes()
                 .fold(0xcbf29ce484222325u64, |hash, byte| (hash ^ u64::from(byte)).wrapping_mul(0x100000001b3))
-                == 0x338493baffff87a7;
+                == 0xcce2d68d5a4c3d4f;
     }
     PATHS.contains(&(command, path))
         && super::patches_compare::matches_source(

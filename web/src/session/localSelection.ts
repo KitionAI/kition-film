@@ -3,7 +3,7 @@ import { useSyncExternalStore } from 'react'
 /**
  * What the editor selects that the engine's state does not hold: the transition chosen on the
  * Timeline (upstream's `transition_selection`), and the effect chosen in Effect Controls (upstream's
- * `selected_effect`, `effects.select`). Delete reads them (`App.tsx`'s run). One store per page.
+ * `selected_effect`, `effect.select`). Delete reads them (`App.tsx`'s run). One store per page.
  */
 export type LocalSelection = {
   transition: number | null

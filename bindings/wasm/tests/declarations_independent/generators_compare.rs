@@ -25,10 +25,10 @@ pub fn compared_path(command: &str, path: &str) -> bool {
     let commands = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../crates/engine/engine/src/commands.rs"));
     let clips = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../crates/engine/engine/src/clip_ops.rs"));
     if command == "item.newOfflineFile" {
-        matches_source(clips, "fn offline_file(", "fn close_project(", 0x5e73a308878e49b5)
+        matches_source(clips, "fn offline_file(", "fn close_project(", 0xfa3a68219f01e36d)
     } else {
         matches_source(commands, "fn new_generator(", "/// `project.matteColor`", 0x8c81d5d34344703d)
-            && matches_source(commands, "        cmd!(\"item.newAdjustmentLayer\",", "            \"file.importDemoFootage\",", 0xeeff5d54801eb862)
+            && matches_source(commands, "        cmd!(\"item.newAdjustmentLayer\",", "            \"file.importDemoFootage\",", 0x66817ea60db1f00f)
     }
 }
 

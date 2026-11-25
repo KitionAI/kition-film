@@ -270,7 +270,7 @@ fn an_effect_moved_among_the_standard_ones_undoes_to_its_place() {
     let at = |name: &str| before.iter().position(|effect| effect == name).unwrap();
     let (blur, invert) = (at("gaussian_blur"), at("invert"));
     assert!(blur < invert, "{before:?}");
-    s.execute("effects.move", json!({"clip": c, "index": invert, "to": blur})).unwrap();
+    s.execute("effect.move", json!({"clip": c, "index": invert, "to": blur})).unwrap();
     let moved = effect_order(&s, c);
     assert_eq!(moved.iter().position(|effect| effect == "invert"), Some(blur), "{moved:?}");
     assert_same_as_replica(&mut s);

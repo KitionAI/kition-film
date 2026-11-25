@@ -11,7 +11,7 @@ pub const PATHS: &[(&str, &str)] = &[("sequence.addTracks", "insertion gaps"), (
 
 pub fn compared_path(command: &str, path: &str) -> bool {
     let source = include_str!("../../../../crates/engine/engine/src/sequence_tools.rs");
-    PATHS.contains(&(command, path)) && source.bytes().fold(0xcbf29ce484222325u64, |h, b| (h ^ u64::from(b)).wrapping_mul(0x100000001b3)) == 0x9c4a17d3fd68bdd4
+    PATHS.contains(&(command, path)) && source.bytes().fold(0xcbf29ce484222325u64, |h, b| (h ^ u64::from(b)).wrapping_mul(0x100000001b3)) == 0x848ed5aa3b9d96b3
 }
 
 pub fn more() -> Vec<&'static str> {

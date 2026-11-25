@@ -1,6 +1,8 @@
 // The plan's wave rules (Film UI parity, wave 1, Task 1 step 2), shared by extract.mjs, which
 // writes the first status of every item with them, and check.test.mjs, which checks that every
 // `todo` entry without a reason or a note still carries the wave they give. Node, no dependencies.
+// The rules name commands by the manifest's ids (`captions.`, `masks.`, `clip.createMulticam`), which
+// are the ids of before the command naming standard of 2026-11-25 (`renames.ts`), as wave2.mjs does.
 
 /** `dock.rs` `slug`: `Captions and Graphics` → `captionsandgraphics`. */
 export const slug = (name) => name.toLowerCase().replaceAll(' ', '')

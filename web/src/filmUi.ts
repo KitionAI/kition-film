@@ -207,7 +207,7 @@ const EFFECTS_UNREGISTERED: readonly KitUiItem[] = [
   { id: 'control:effects.enabled', label: 'Toggle Effect' },
   { id: 'control:effect.reset', label: 'Reset Effect' },
   { id: 'control:effects.value', label: 'Value' },
-  // An effect's menu: move it up or down among the standard effects (effects.move; upstream has no such row).
+  // An effect's menu: move it up or down among the standard effects (effect.move; upstream has no such row).
   { id: 'control:effects.effect.moveUp', label: 'Move Effect Up' },
   { id: 'control:effects.effect.moveDown', label: 'Move Effect Down' },
   { id: 'control:properties.section', label: 'Section' },

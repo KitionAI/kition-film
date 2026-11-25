@@ -67,7 +67,7 @@ export function rereadsAfter(command: string, before: number | null, after: numb
     // A new revision reads the state through the revision itself.
     state: !skipsStateRead(command) && before === after,
     labels: command.startsWith('prefs.') && !QUERIES.has(command),
-    keys: command.startsWith('shortcuts.') && !QUERIES.has(command),
+    keys: command.startsWith('shortcut.') && !QUERIES.has(command),
     projectView: changesProjectView(command, params),
   }
 }

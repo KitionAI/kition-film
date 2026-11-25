@@ -1045,7 +1045,7 @@ fn transitions_align_move_resize_and_clear() {
     assert!(s.execute("sequence.setTransition", json!({"transition": id, "frames": 4})).is_err());
 }
 
-/// `effects.move` reorders a clip's standard effects (Effect Controls' drag), one undo step;
+/// `effect.move` reorders a clip's standard effects (Effect Controls' drag), one undo step;
 /// fixed effects keep their places.
 #[test]
 fn effects_move_reorders_standard_effects() {
@@ -1059,7 +1059,7 @@ fn effects_move_reorders_standard_effects() {
     let before = names(&s);
     assert_eq!(&before[..2], ["gaussian_blur", "invert"]);
     let undo = s.history.undo.len();
-    s.execute("effects.move", json!({"clip": c, "index": 1, "to": 0})).unwrap();
+    s.execute("effect.move", json!({"clip": c, "index": 1, "to": 0})).unwrap();
     assert_eq!(&names(&s)[..2], ["invert", "gaussian_blur"]);
     assert_eq!(names(&s)[2..], before[2..], "the fixed effects stay");
     assert_eq!(s.history.undo.len(), undo + 1);
@@ -1075,7 +1075,7 @@ fn effects_move_reorders_standard_effects() {
         json!({"clip": c, "index": 0}),
         json!({"clip": u64::MAX, "index": 0, "to": 1}),
     ] {
-        assert!(s.execute("effects.move", bad.clone()).is_err(), "{bad}");
+        assert!(s.execute("effect.move", bad.clone()).is_err(), "{bad}");
         assert_eq!(names(&s), before, "{bad}");
     }
 }

@@ -12,7 +12,7 @@ function setup() {
       calls.push({ id, params, options })
       if (id === 'edit.undo' && undo.length) { redo.push(value); value = undo.pop() }
       else if (id === 'edit.redo' && redo.length) { undo.push(value); value = redo.pop() }
-      else if (id.startsWith('markers.')) {
+      else if (id.startsWith('marker.')) {
         if (failed) throw new Error('mark refused')
         undo.push(value); redo.length = 0; value = params.time ?? 0
       }

@@ -1,5 +1,5 @@
 //! commands.rs:1817-1824 (deleteTrack), set_transition, sequence.removeTransition and
-//! effects.move (re-read at 451e643e and the commands that follow it). Deleting a lane
+//! effect.move (re-read at 451e643e and the commands that follow it). Deleting a lane
 //! resolves its id; the program window it holds is incidental (MORE), as is the whole
 //! deleted track default. A transition named by its id is no place: setTransition and
 //! removeTransition hold no program window. `reverse` alone writes only `reverse`.
@@ -24,7 +24,7 @@ pub const PATHS: &[(&str, &str)] = &[
     ("sequence.setTransition", "params/reset"),
     ("sequence.setTransition", "span"),
     ("sequence.removeTransition", "transitions"),
-    ("effects.move", "effect-order"),
+    ("effect.move", "effect-order"),
 ];
 pub fn compared_path(command: &str, path: &str) -> bool {
     PATHS.contains(&(command, path))
@@ -33,7 +33,7 @@ pub fn more(command: &str, path: &str) -> Vec<&'static str> {
     match (command, path) {
         ("sequence.deleteTrack", _) => vec!["unconsumed-program-material", "whole-deleted-track-default"],
         ("sequence.setTransition", "params/reset") => vec!["whole-transition-default"],
-        ("effects.move", _) => vec!["whole-effect-profile"],
+        ("effect.move", _) => vec!["whole-effect-profile"],
         _ => vec![],
     }
 }
@@ -163,7 +163,7 @@ fn transition_spans_clears_and_effect_order_hold_what_they_read() {
             }
             // reordering a clip's effects: its effects and its track's lock
             for p in [json!({"clip":first,"index":1,"to":0}), json!({"clip":first,"index":0,"to":1}), json!({"clip":u64::MAX,"index":0,"to":1})] {
-                let spec = doc.commands().into_iter().find(|spec| spec.id == "effects.move").unwrap();
+                let spec = doc.commands().into_iter().find(|spec| spec.id == "effect.move").unwrap();
                 assert!(spec.mutates && spec.targets == Some("clip"));
                 let mut want = Under::default();
                 if p["clip"] == first {
@@ -172,7 +172,7 @@ fn transition_spans_clears_and_effect_order_hold_what_they_read() {
                 } else {
                     want.premises.push(leaf(u64::MAX, &["effects"]));
                 }
-                assert_eq!(normalized(doc.under("effects.move", &p).unwrap().unwrap_or_default()), normalized(want), "{p}/{at}/{locked}");
+                assert_eq!(normalized(doc.under("effect.move", &p).unwrap().unwrap_or_default()), normalized(want), "{p}/{at}/{locked}");
             }
         }
     }

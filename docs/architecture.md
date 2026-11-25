@@ -171,9 +171,10 @@ pub struct CommandSpec {
 ```
 
 - All commands are in `crates/engine/engine/src/commands.rs` (`cmd!` for actions, `query!` for read-only
-  queries such as `file.inspect`, `sequence.inspect`, `effect.list`, `job.list`). Ids follow
-  the menu structure: `file.*`, `edit.*`, `clip.*`, `sequence.*`, `markers.*`, `timeline.*`,
-  `effects.*`…
+  queries such as `file.inspect`, `sequence.inspect`, `effect.list`, `job.list`). An id names
+  the object the command acts on, in the singular, then the action: `file.*`, `edit.*`, `clip.*`,
+  `sequence.*`, `marker.*`, `timeline.*`, `effect.*`… Where the menus show a command is its
+  spec's menu path, not its id (`sequence.new` is File ▸ New ▸ Sequence…).
 - `Session::execute(id, params)` finds the spec, checks `enabled`, runs it and appends it to the
   journal.
 - **Undo.** Edits go through `Session::edit(label, |project, state| …)` or
@@ -423,7 +424,7 @@ with different vertex counts hold). Feather, Opacity and Expansion are ordinary 
 - **Semantics.** A masked effect is `lerp(original, effected, coverage)` per premultiplied channel
   (the effect only applies inside); Opacity masks scale the clip's layer before Motion, so they
   follow the clip's transform. Adjustment-layer masks are in sequence pixels.
-- **Editing.** `masks.*` commands (add / remove / set / moveVertex / translate / addVertex /
+- **Editing.** `mask.*` commands (add / remove / set / moveVertex / translate / addVertex /
   removeVertex / toggleVertexSmooth / select / list); keyframe commands take `"mask": n`. The
   Program monitor overlay drags vertices, Bézier handles, the whole mask and the feather /
   expansion handles; drags merge into one undo step.
