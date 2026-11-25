@@ -19,12 +19,19 @@ test('the engine places a transition centred on a cut, from a free In, or up to 
   assert.equal(cutOf({ from: 2, to: null, start: 130, duration: 30 }, clips), 160)
 })
 
-test('a new length is the same transition applied again on its edge, with its settings', () => {
+test('a new length is the same transition set again by its id: sequence.setTransition with its frames (its settings stay)', () => {
   const info = { id: 9, effect: 'dip_to_color', start: 85, duration: 30, from: 1, to: 2, params: { color: '#ff0000' }, reverse: true }
-  assert.deepEqual(durationCommand(info, 'video', 12), { id: 'sequence.applyVideoTransition', params: { clip: 2, edge: 'in', effect: 'dip_to_color', frames: 12, reverse: true, params: { color: '#ff0000' } } })
-  assert.equal(durationCommand({ ...info, from: 2, to: null, params: {} }, 'audio', 3).id, 'sequence.applyAudioTransition')
-  assert.deepEqual(durationCommand({ ...info, from: 2, to: null, params: {} }, 'audio', 3).params.edge, 'out')
+  // Between two clips: its length, and the alignment chosen with it.
+  assert.deepEqual(durationCommand(info, 'video', 12), { id: 'sequence.setTransition', params: { transition: 9, frames: 12 } })
+  assert.deepEqual(durationCommand(info, 'video', 12, 'start'), { id: 'sequence.setTransition', params: { transition: 9, frames: 12, align: 'start' } })
+  assert.deepEqual(durationCommand(info, 'video', 12.4), { id: 'sequence.setTransition', params: { transition: 9, frames: 12 } }, 'whole frames')
+  // A fade to or from nothing (audio here, at a clip's Out): its length only, it stays on its clip's edge.
+  assert.deepEqual(durationCommand({ ...info, from: 2, to: null, params: {} }, 'audio', 3), { id: 'sequence.setTransition', params: { transition: 9, frames: 3 } })
+  assert.deepEqual(durationCommand({ ...info, from: 2, to: null, params: {} }, 'audio', 3, 'start'), { id: 'sequence.setTransition', params: { transition: 9, frames: 3 } })
+  assert.deepEqual(durationCommand({ ...info, from: null, to: 2 }, 'video', 5), { id: 'sequence.setTransition', params: { transition: 9, frames: 5 } })
+  // No clips to sit on, or no length: nothing to send.
   assert.equal(durationCommand({ ...info, from: null, to: null }, 'video', 3), null)
+  assert.equal(durationCommand(info, 'video', 0), null)
 })
 
 test('dragging an end resizes in whole frames, both sides of a centred one, kept within the clips', () => {
