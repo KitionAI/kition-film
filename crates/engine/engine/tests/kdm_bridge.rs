@@ -216,6 +216,73 @@ fn an_agent_undo_under_the_persons_later_step_keeps_the_persons_edit() {
     assert_same_as_replica(&mut s);
 }
 
+/// The Motion parameters of `clip`, as JSON (an automatic point is `null`).
+fn motion_params(s: &Session, clip: u64) -> Value {
+    serde_json::to_value(&s.active_sequence().unwrap().find_item(ClipId(clip)).unwrap().1.effect("motion").unwrap().params).unwrap()
+}
+
+/// A drag that changes two Motion parameters (the anchor point, automatic until then, and the
+/// position, merged by the drag's key as the Program monitor sends them) is one undo step: one
+/// undo puts both back, on the project and on its replica, and one redo brings the drag's end back.
+#[test]
+fn a_merged_drag_of_two_parameters_undoes_as_one_step() {
+    let mut s = new_session();
+    let c = first_video_clip(&s).0;
+    s.execute("timeline.setTrack", json!({"track": "V3", "name": "Before"})).unwrap();
+    let before = motion_params(&s, c);
+    let past = s.history.undo.len();
+    for (i, step) in [1.0, 2.0, 3.0, 4.0].into_iter().enumerate() {
+        for (k, param) in ["anchor", "position"].into_iter().enumerate() {
+            let value = json!([100.0 + step, 50.0 + step]);
+            s.execute("effects.setParam", json!({"clip": c, "effect": "motion", "param": param, "value": value, "merge": "drag", "begin": i == 0 && k == 0}))
+                .unwrap();
+        }
+    }
+    let after = motion_params(&s, c);
+    assert_ne!(after, before);
+    assert_eq!(s.history.undo.len(), past + 1, "one history step");
+    assert_eq!(s.history.undo.last().unwrap().2, 1, "one replica undo step");
+    assert_same_as_replica(&mut s);
+    assert!(s.undo().is_some());
+    assert_eq!(motion_params(&s, c), before, "one undo puts both parameters back");
+    assert_same_as_replica(&mut s);
+    assert!(s.redo().is_some());
+    assert_eq!(motion_params(&s, c), after, "one redo brings the drag's end back");
+    assert_same_as_replica(&mut s);
+    assert_eq!(s.kdm_resets(), 0);
+}
+
+/// The effects of `clip`, in order.
+fn effect_order(s: &Session, clip: u64) -> Vec<String> {
+    s.active_sequence().unwrap().find_item(ClipId(clip)).unwrap().1.effects.iter().map(|effect| effect.effect.clone()).collect()
+}
+
+/// A standard effect moved before another (Effect Controls' drag) undoes to its place among the
+/// fixed effects, on the project and on its replica.
+#[test]
+fn an_effect_moved_among_the_standard_ones_undoes_to_its_place() {
+    let mut s = new_session();
+    let c = first_video_clip(&s).0;
+    for effect in ["gaussian_blur", "invert"] {
+        s.execute("effects.apply", json!({"clips": [c], "effect": effect})).unwrap();
+    }
+    let before = effect_order(&s, c);
+    let at = |name: &str| before.iter().position(|effect| effect == name).unwrap();
+    let (blur, invert) = (at("gaussian_blur"), at("invert"));
+    assert!(blur < invert, "{before:?}");
+    s.execute("effects.move", json!({"clip": c, "index": invert, "to": blur})).unwrap();
+    let moved = effect_order(&s, c);
+    assert_eq!(moved.iter().position(|effect| effect == "invert"), Some(blur), "{moved:?}");
+    assert_same_as_replica(&mut s);
+    assert!(s.undo().is_some());
+    assert_eq!(effect_order(&s, c), before, "one undo puts the effect back where it was");
+    assert_same_as_replica(&mut s);
+    assert!(s.redo().is_some());
+    assert_eq!(effect_order(&s, c), moved);
+    assert_same_as_replica(&mut s);
+    assert_eq!(s.kdm_resets(), 0);
+}
+
 /// The name of the active sequence's first video track.
 fn first_track_name(s: &Session) -> String {
     s.active_sequence().unwrap().video_tracks[0].name.clone()
