@@ -202,3 +202,35 @@ export function resolveKey(event: KeyPress, focusedNow: string, table: KeyTable,
   if (focused === 'project' && (hit.command === 'edit.selectAll' || hit.command === 'edit.deselectAll')) return hit.command.replace('edit.', 'project.')
   return hit.command
 }
+
+/** A key pressed before the editor has read the engine's key table: the press and the panel focused then. */
+export type HeldKey = { press: KeyPress; focused: string }
+
+/**
+ * Keys pressed in the moment after a document opens, before the engine's key table
+ * (`shortcuts.list`) is read: until then only the editor's own keys resolve, so a key the engine
+ * binds (Right, Home, I) did nothing and a person tapping Right twelve times at once ended a few
+ * frames short. They are kept in order (at most `max`; only plain or Shift keys, never a chord
+ * with Cmd, Ctrl or Alt, which may be the browser's or the host's) and run once the table is read.
+ */
+export function createKeyHold(max = 64) {
+  let held: HeldKey[] = []
+  return {
+    /** Keeps `press` (focused on `focused`); false when it is not one to keep (a chord) or the hold is full. */
+    hold(press: KeyPress, focused: string) {
+      if (press.metaKey || press.ctrlKey || press.altKey || !pressedKey(press) || held.length >= max) return false
+      held.push({ press: { key: press.key, code: press.code, metaKey: false, ctrlKey: false, shiftKey: press.shiftKey, altKey: false }, focused })
+      return true
+    },
+    /** The keys kept, in the order they were pressed; the hold is empty after. */
+    take() {
+      const out = held
+      held = []
+      return out
+    },
+    /** Forgets the keys kept (another document opened). */
+    clear() {
+      held = []
+    },
+  }
+}

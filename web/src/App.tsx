@@ -61,7 +61,7 @@ import { importMessage, importReport, type ImportFailure, type ImportReport } fr
 import { closeGapTrack } from './timeline/closeGap'
 import { createPreviewGate, type PreviewGate } from './session/previewGate'
 import { applyEvents, type EngineEvent } from './session/events'
-import { resolveKey } from './session/keys'
+import { createKeyHold, resolveKey } from './session/keys'
 import { STATUS_MS, nextStatus, statusLeft, type StatusMessage } from './session/status'
 import { useFilmSession, type FilmLabels, type FilmSessionState } from './session/useFilmSession'
 import { createFilmViewState, type FilmViewStateKeeper } from './session/viewState'
@@ -1601,6 +1601,18 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
    * on. A key whose command no part of the editor serves yet is, so the browser's or the system's
    * own key (Cmd+M minimizes) still works. Keys that compose text (an input method) are left alone.
    */
+  /** A text field, where a key is typing, not a command. */
+  const editableTarget = (target: EventTarget | null) => target instanceof HTMLElement && (target.isContentEditable || target.closest('input, textarea, select') != null)
+  // Keys pressed before the engine's key table is read run once it is, in the order pressed.
+  const heldKeys = useMemo(() => createKeyHold(), [])
+  useEffect(() => heldKeys.clear(), [session.doc, heldKeys])
+  useEffect(() => {
+    if (shortcuts == null) return
+    for (const { press, focused: at } of heldKeys.take()) {
+      const id = resolveKey(press, at, keys, (command) => invoke.serves(command))
+      if (id && invoke.serves(id)) void invoke(id, {})
+    }
+  }, [shortcuts, keys, invoke, heldKeys])
   const keyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (!state || event.nativeEvent.isComposing || event.keyCode === 229) return false
     if (programKeys.current?.(event)) return true
@@ -1609,6 +1621,9 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
       void invoke('clip.rename', {})
       return true
     }
+    // Before the engine's key table is read (just after a document opens), a plain key waits for
+    // it and runs then, in turn (`createKeyHold`): Right tapped at once is not lost.
+    if (shortcuts == null && !editableTarget(event.target) && heldKeys.hold(event, focusedNow.current)) return true
     // A key bound to a command nothing serves yet falls to its next binding (`resolveKey`); a
     // served command runs through `invoke` and keeps the key even when the engine refuses it.
     const id = resolveKey(event, focusedNow.current, keys, (command) => invoke.serves(command))

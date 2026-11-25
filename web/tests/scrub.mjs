@@ -11,7 +11,9 @@
 // land on the Program monitor (before, every render was dropped by the next seek's refresh and
 // the picture froze until the pointer stopped); after the release the picture becomes exact, the
 // same as the picture a plain seek to that frame renders; a click on the ruler moves the timecode
-// at once and a picture follows.
+// at once and a picture follows. First, as soon as the editor shows: Home and Right tapped twelve
+// times without waiting between presses end twelve frames on (keys pressed before the editor had
+// read the engine's key table were lost).
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { mkdtempSync, readFileSync } from 'node:fs'
@@ -52,6 +54,17 @@ try {
   const frame = page.frames().find((candidate) => candidate.url().includes('index.html'))
   await frame.waitForFunction(() => typeof window.filmPreview?.run === 'function', null, { timeout: 30_000 })
   const person = (command, params = {}) => frame.evaluate(([c, p]) => window.filmPreview.run(c, p), [command, params])
+
+  // Right tapped twelve times at once, as soon as the editor shows: twelve frames on.
+  const inspected = async () => (await page.evaluate(() => window.devHost.connection().ai.inspect())).details.sequence
+  await kit.locator('.kui-app').waitFor({ timeout: 30_000 })
+  await kit.locator('.kui-app').focus()
+  await page.keyboard.press('Home')
+  for (let i = 0; i < 12; i += 1) await page.keyboard.press('ArrowRight')
+  const rate = (await inspected()).settings.frame_rate
+  const stepTicks = (254_016_000_000 * rate.den) / rate.num
+  const frameNow = async () => Math.round((await inspected()).playhead / stepTicks)
+  assert.ok(await until(async () => (await frameNow()) === 12), `twelve taps of Right are twelve frames: frame ${await frameNow()}`)
 
   // Lend the fixture as the scenario tests' `lendMedia` does: the engine reads it in ranges.
   const path = 'clips/scrub-long-gop.mp4'

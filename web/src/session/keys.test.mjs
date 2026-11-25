@@ -4,7 +4,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { externalCommands, keyTable, parseShortcut, resolveKey } from './keys.ts'
+import { createKeyHold, externalCommands, keyTable, parseShortcut, resolveKey } from './keys.ts'
 
 const manifest = JSON.parse(readFileSync(new URL('../../parity/film-upstream.json', import.meta.url), 'utf8'))
 
@@ -296,4 +296,33 @@ test('Shift+Delete and Shift+Backspace ripple-delete in the Timeline; Delete and
     // A chord the set binds on Backspace keeps it: Backspace in the Project panel deletes items.
     assert.equal(resolveKey(press('Backspace', {}, 'Backspace'), 'project', table), 'project.delete')
   }
+})
+
+test('keys pressed before the engine\'s key table is read are kept in order and resolved once it is: twelve Rights are twelve steps', () => {
+  const press = (key, more = {}) => ({ key, code: '', metaKey: false, ctrlKey: false, shiftKey: false, altKey: false, ...more })
+  const hold = createKeyHold()
+  // Before the engine's table is read, the editor's own table does not bind Right.
+  const early = keyTable([], manifest, true)
+  assert.equal(resolveKey(press('ArrowRight'), 'timeline', early), null)
+  assert.equal(hold.hold(press('Home'), 'timeline'), true)
+  for (let i = 0; i < 12; i += 1) assert.equal(hold.hold(press('ArrowRight'), 'timeline'), true)
+  assert.equal(hold.hold(press('I', { shiftKey: true }), 'timeline'), true)
+  // Never a chord the browser or the host may own.
+  assert.equal(hold.hold(press('r', { metaKey: true }), 'timeline'), false)
+  assert.equal(hold.hold(press('z', { ctrlKey: true }), 'timeline'), false)
+  assert.equal(hold.hold(press('ArrowRight', { altKey: true }), 'timeline'), false)
+  assert.equal(hold.hold(press('Shift'), 'timeline'), false, 'a modifier alone is no key')
+  // Once read, each runs in turn, as pressed.
+  const table = keyTable([{ id: 'playhead.start', shortcuts: [{ keys: 'Home' }] }, { id: 'playhead.stepForward', shortcuts: [{ keys: 'Right' }] }], manifest, true)
+  const ran = hold.take().map(({ press, focused }) => resolveKey(press, focused, table))
+  assert.deepEqual(ran.slice(0, 13), ['playhead.start', ...Array(12).fill('playhead.stepForward')])
+  assert.equal(ran.length, 14)
+  assert.deepEqual(hold.take(), [], 'taken once')
+  // Bounded, and forgotten for another document.
+  const small = createKeyHold(2)
+  assert.equal(small.hold(press('a'), 'timeline'), true)
+  assert.equal(small.hold(press('b'), 'timeline'), true)
+  assert.equal(small.hold(press('c'), 'timeline'), false)
+  small.clear()
+  assert.deepEqual(small.take(), [])
 })
