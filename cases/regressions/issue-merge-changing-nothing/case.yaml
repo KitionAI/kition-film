@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-merge-changing-nothing
+feature: film.collab.drafts
+intent: >-
+  A draft whose merge the model's repair takes back entirely records nothing. The agent's draft
+  moves a colour matte into a bin while the person clears the matte; the merge leaves the bin
+  naming an item that is gone, the repair removes that entry, and the project is as it was. The
+  merge answers no scope; the state (the replica's hash and the engine's view), the version, the
+  replica's undo depth, the history with its labels and the person's selection are unchanged (before:
+  a "Merge Draft" entry over a step that changed nothing); the person's next Undo is their Clear and
+  gives back the exact state before it.
+layer: gate
+dimension: data-safety
+source: { kind: synthetic, from: bindings/wasm/src/drafts.rs, license: owned }
+input: []
+steps:
+  - cargo-test:
+      package: kition-film-kit
+      filter: a_merge_the_repair_takes_back_records_nothing
+expected:
+  - { actual: out:cargo-test, compare: exit, value: 0 }
+since: "2026-11-26"

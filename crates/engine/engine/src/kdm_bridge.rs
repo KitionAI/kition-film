@@ -501,24 +501,39 @@ impl Session {
     /// edit is: changes not written yet are written first, the project and the person's state
     /// follow the replica, and one undo takes the whole draft back. Answers that scope and the
     /// damage. Add the draft's blobs first ([`Session::add_blobs`]). A refused merge changes
-    /// nothing.
+    /// nothing, and so does a merge the model's repair takes back entirely (a draft that only
+    /// moves an item into a bin while the person deleted the item): the replica records no step,
+    /// answers no scope, and the history gets no entry, so the person's next Undo is their own
+    /// last step.
+    ///
+    /// Nothing the engine writes follows a merge: the model's repair (lengths, numbering, dangling
+    /// entries) runs inside the merge's step, the id counter is the session's and never replicated,
+    /// and the person's state ([`Session::fix_state`]) is not replicated either.
     pub fn merge_draft(&mut self, bytes: &[u8], origin: &Origin) -> Result<(Option<UndoScope>, Damage)> {
         self.take_in("Merge Draft", |kdm| kdm.merge_changes(bytes, origin))
     }
 
     /// Writes the state a snapshot holds (a checkpoint of this project, `replica/restore`) over
     /// the project by object id, as one undo step of `origin`'s scope, taken in as a merged draft
-    /// is ([`Session::merge_draft`]). Nothing changes when the states are equal; another
-    /// document's snapshot is refused. Add the blobs it references first.
+    /// is ([`Session::merge_draft`]). Nothing changes when the states are equal, nor when the
+    /// model's repair takes back all the restore wrote: the replica then answers no damage and
+    /// records no step, and the history gets no entry. Another document's snapshot is refused.
+    /// Add the blobs it references first.
     pub fn restore_version(&mut self, snapshot: &[u8], origin: &Origin) -> Result<Damage> {
-        let scope = UndoScope::of(origin.kind);
-        self.take_in("Restore Version", |kdm| kdm.restore_state(snapshot, origin).map(|damage| (scope, damage))).map(|(_, damage)| damage)
+        self.take_in("Restore Version", |kdm| {
+            // The restore answers only its damage: `Damage::None` is a restore that wrote nothing
+            // (no change, no step); any other is one step of `origin`'s scope (none for a `system`
+            // or `import` origin).
+            kdm.restore_state(snapshot, origin).map(|damage| (if damage == Damage::None { None } else { UndoScope::of(origin.kind) }, damage))
+        })
+        .map(|(_, damage)| damage)
     }
 
     /// One transaction `write` makes on the replica, taken into the project as a command's step:
     /// the project follows the replica, and the history of the scope `write` answers (none for a
-    /// `system` or `import` origin) gets an entry worth the one replica undo step. A refused write
-    /// changes nothing; one that failed after its transaction landed leaves the replica.
+    /// `system` or `import` origin, none for a write that changed nothing) gets an entry worth the
+    /// one replica undo step. A refused write changes nothing; one that failed after its
+    /// transaction landed leaves the replica.
     fn take_in(
         &mut self,
         label: &str,
@@ -530,7 +545,10 @@ impl Session {
         let result = write(&mut *kdm);
         let changed = kdm.version() != before;
         match &result {
-            Ok((scope, _)) if changed => {
+            // A step the replica recorded (the scope it answers) is one entry of that scope's
+            // history; a write it recorded no step for (a `system` origin) still moves the
+            // project, and one that changed nothing does neither.
+            Ok((scope, _)) if changed || scope.is_some() => {
                 let previous = self.project.clone();
                 self.follow_kdm();
                 if let Some(scope) = *scope {

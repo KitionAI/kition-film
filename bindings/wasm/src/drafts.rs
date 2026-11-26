@@ -438,6 +438,55 @@ mod tests {
         assert_eq!(doc.session.kdm_resets(), 0);
     }
 
+    /// A draft whose merge the model's repair takes back entirely records nothing
+    /// (regressions/issue-merge-changing-nothing): the agent's draft moves a colour matte into a
+    /// bin while the person deletes the matte (Clear); the merge leaves the bin naming an item
+    /// that is gone, which the repair removes, so the document is as it was. The state (the
+    /// replica's hash and the engine's view), the version, the replica's undo depth, the history
+    /// and its labels and the person's selection are unchanged, the answer names no scope, and
+    /// the person's next Undo is their Clear, back to the exact state before it.
+    #[test]
+    fn a_merge_the_repair_takes_back_records_nothing() {
+        let agent = Origin::agent("agent:test");
+        let mut doc = FilmDocument::open("Edit.kfilm", &fixture()).unwrap();
+        let matte = doc.execute("item.newColorMatte", json!({ "color": "#00ff00", "seconds": 1.0 })).unwrap()["item"].clone();
+        let bin = doc.execute("bin.add", json!({ "name": "Drafts" })).unwrap()["bin"].clone();
+        let base = doc.version().unwrap();
+        let mut draft = FilmDocument::open_with_replica("Edit.kfilm", &[], &doc.snapshot().unwrap(), &doc.blobs().unwrap()).unwrap();
+        draft.execute_as("project.moveToBin", json!({ "items": [matte], "bin": bin }), &agent).unwrap();
+        let changes = draft.export_changes(&base).unwrap();
+
+        let before_clear = whole(&mut doc);
+        let id = kition_film_engine::project::ItemId(matte.as_u64().unwrap());
+        doc.session.state.project_selection = vec![id];
+        doc.execute("project.delete", json!({ "items": [matte] })).unwrap();
+        assert!(doc.session.project.item(id).is_none(), "the person cleared the matte");
+        let before = whole(&mut doc);
+        let version = doc.version().unwrap();
+        let depth = doc.session.kdm().unwrap().replica().undo_depth(UndoScope::Person);
+        let labels: Vec<String> = doc.session.history.undo.iter().map(|entry| entry.0.clone()).collect();
+        let redo = doc.session.history.redo.len();
+        let selection = doc.session.state.project_selection.clone();
+        assert_eq!(labels.last().map(String::as_str), Some("Clear"));
+
+        let preview = doc.compare_changes(&changes).unwrap();
+        let answer = doc.merge_changes(&changes, &agent).unwrap();
+        assert_eq!(answer["scope"], Value::Null, "no step was recorded: {answer}");
+        assert_eq!(answer["summary"], preview, "the preview named what the merge did: {answer}");
+        assert_eq!(whole(&mut doc), before, "the document is as it was");
+        assert_eq!(doc.version().unwrap(), version, "the version stays");
+        assert_eq!(doc.session.kdm().unwrap().replica().undo_depth(UndoScope::Person), depth, "the replica records no step");
+        let after: Vec<String> = doc.session.history.undo.iter().map(|entry| entry.0.clone()).collect();
+        assert_eq!(after, labels, "the history gets no entry");
+        assert_eq!(doc.session.history.redo.len(), redo);
+        assert_eq!(doc.session.state.project_selection, selection, "the selection stays");
+
+        assert!(doc.undo().unwrap().0);
+        assert_eq!(whole(&mut doc), before_clear, "the next Undo takes back the person's Clear, exactly");
+        assert!(doc.session.project.item(id).is_some(), "the matte is back");
+        assert_eq!(doc.session.kdm_resets(), 0);
+    }
+
     /// A restored version undoes to the exact state before it and redoes to the exact restored
     /// state, the replica's and the engine's.
     #[test]
