@@ -11,9 +11,10 @@
 // land on the Program monitor (before, every render was dropped by the next seek's refresh and
 // the picture froze until the pointer stopped); after the release the picture becomes exact, the
 // same as the picture a plain seek to that frame renders; a click on the ruler moves the timecode
-// at once and a picture follows. First, as soon as the editor shows: Home and Right tapped twelve
-// times without waiting between presses end twelve frames on (keys pressed before the editor had
-// read the engine's key table were lost).
+// at once and a picture follows. First, as soon as the editor shows (five page loads): Home and
+// Right tapped twelve times without waiting between presses end twelve frames on (keys pressed
+// before the editor had its document's state or the engine's key table were lost or ran out of
+// turn); then ten rounds of the same once it has settled, all while the host polls `ai.inspect()`.
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { mkdtempSync, readFileSync } from 'node:fs'
@@ -48,23 +49,48 @@ const until = async (check, ms = 10_000) => {
   return false
 }
 try {
-  await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/dev.html?locale=zh-CN`)
-  await page.waitForFunction(() => document.getElementById('status')?.textContent?.includes(' open in '), null, { timeout: 90_000 })
-  const kit = page.frameLocator('#kit')
-  const frame = page.frames().find((candidate) => candidate.url().includes('index.html'))
-  await frame.waitForFunction(() => typeof window.filmPreview?.run === 'function', null, { timeout: 30_000 })
-  const person = (command, params = {}) => frame.evaluate(([c, p]) => window.filmPreview.run(c, p), [command, params])
-
-  // Right tapped twelve times at once, as soon as the editor shows: twelve frames on.
+  const address = `http://127.0.0.1:${server.httpServer.address().port}/dev.html?locale=zh-CN`
   const inspected = async () => (await page.evaluate(() => window.devHost.connection().ai.inspect())).details.sequence
-  await kit.locator('.kui-app').waitFor({ timeout: 30_000 })
-  await kit.locator('.kui-app').focus()
-  await page.keyboard.press('Home')
-  for (let i = 0; i < 12; i += 1) await page.keyboard.press('ArrowRight')
-  const rate = (await inspected()).settings.frame_rate
-  const stepTicks = (254_016_000_000 * rate.den) / rate.num
-  const frameNow = async () => Math.round((await inspected()).playhead / stepTicks)
-  assert.ok(await until(async () => (await frameNow()) === 12), `twelve taps of Right are twelve frames: frame ${await frameNow()}`)
+  /**
+   * Home and Right tapped `taps` times without waiting between presses, while the host polls
+   * `ai.inspect()` as fast as it answers (as an agent's reads do): the engine's playhead ends
+   * `taps` frames on. `fresh`: as soon as the editor shows, before it has read its preferences
+   * and the engine's key table.
+   */
+  const tapRights = async (taps, label) => {
+    await kit.locator('.kui-app').focus()
+    let polling = true
+    const poll = (async () => {
+      while (polling) await inspected().catch(() => null)
+    })()
+    await page.keyboard.press('Home')
+    for (let i = 0; i < taps; i += 1) await page.keyboard.press('ArrowRight')
+    polling = false
+    await poll
+    const rate = (await inspected()).settings.frame_rate
+    const stepTicks = (254_016_000_000 * rate.den) / rate.num
+    const frameNow = async () => Math.round((await inspected()).playhead / stepTicks)
+    assert.ok(await until(async () => (await frameNow()) === taps), `${label}: ${taps} taps of Right are ${taps} frames: frame ${await frameNow()}`)
+  }
+  const kit = page.frameLocator('#kit')
+  let frame = null
+  // regressions/issue-keys-before-state: Right tapped twelve times at once, as soon as the editor
+  // shows, five times over (the page loaded again each time): twelve frames on each time. A key
+  // pressed before the editor had its document's state (its preferences still loading) was
+  // dropped, and one pressed between the render that read the engine's key table and the effect
+  // that ran the held keys ran ahead of them; WebKit ended on frame 11 once.
+  for (let load = 0; load < 5; load += 1) {
+    if (load === 0) await page.goto(address)
+    else await page.reload()
+    await page.waitForFunction(() => document.getElementById('status')?.textContent?.includes(' open in '), null, { timeout: 90_000 })
+    frame = page.frames().find((candidate) => candidate.url().includes('index.html'))
+    await frame.waitForFunction(() => typeof window.filmPreview?.run === 'function', null, { timeout: 30_000 })
+    await kit.locator('.kui-app').waitFor({ timeout: 30_000 })
+    await tapRights(12, `load ${load}`)
+  }
+  const person = (command, params = {}) => frame.evaluate(([c, p]) => window.filmPreview.run(c, p), [command, params])
+  // Then, the editor settled, ten rounds of twelve taps while the host polls: none is lost.
+  for (let round = 0; round < 10; round += 1) await tapRights(12, `round ${round}`)
 
   // Lend the fixture as the scenario tests' `lendMedia` does: the engine reads it in ranges.
   const path = 'clips/scrub-long-gop.mp4'

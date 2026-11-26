@@ -31,6 +31,8 @@ type Props = {
   proxies: boolean
   phrase: Phrases
   invoke: (id: string, params?: Record<string, unknown>, options?: { refresh?: 'all' | 'repaint' | 'none' }) => unknown
+  /** Keeps Undo and Redo behind a released drag until it has sent its whole step. */
+  gesture?: (closed: Promise<unknown>) => void
   /** Moves the program playhead (`playhead.set`, ticks) and refreshes the editor. */
   /** Scrubs the program playhead (the scrub bar), as the timeline's ruler does. */
   scrub: Scrub
@@ -215,7 +217,7 @@ export function ProgramMonitor(props: Props) {
   const snapView = useCallback(() => latest.current.monitor, [])
 
   // ---- the graphics tools and the Hand on the picture (upstream `graphics.rs` `monitor_overlay`, `monitor_view.rs` `pan_input`)
-  const graphics = useProgramGraphics({ doc, revision: props.revision, playhead: film.playhead, width: film.width, height: film.height, tool: props.tool, selection: film.selection, graphicLayers: props.graphicLayers, clock, phrase, invoke, textNotShown: props.textNotShown, snapping: snapView, editRefusal: props.editRefusal, status: props.status, errorStatus: props.errorStatus, layerChanged: props.layerChanged })
+  const graphics = useProgramGraphics({ doc, revision: props.revision, playhead: film.playhead, width: film.width, height: film.height, tool: props.tool, selection: film.selection, graphicLayers: props.graphicLayers, clock, phrase, invoke, gesture: props.gesture, textNotShown: props.textNotShown, snapping: snapView, editRefusal: props.editRefusal, status: props.status, errorStatus: props.errorStatus, layerChanged: props.layerChanged })
   const { graphicsKeys } = props
   useEffect(() => {
     graphicsKeys.current = graphics.keyDown

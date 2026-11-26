@@ -242,6 +242,21 @@ try {
   assert.ok(await until(async () => (await undoSteps()) === steps4 + 1), `the anchor point's drag is one undo step: ${await undoSteps()} after ${steps4}`)
   await undo()
   assert.ok(await until(async () => JSON.stringify((await motion(10)).anchor) === JSON.stringify(before.anchor) && JSON.stringify((await motion(10)).position) === JSON.stringify(before.position)), 'one undo puts the anchor point and the position back')
+  // regressions/issue-undo-during-drag-release: Undo pressed the moment the anchor point's drag is
+  // released, while the release still sends Anchor Point and then Position, takes back the whole
+  // drag (an Undo between the two took back the Anchor Point only, and the Position sent after it
+  // made a step of its own). Ten times, the Undo at once after the release.
+  for (let round = 0; round < 10; round += 1) {
+    box = await settledBox()
+    const stepsBefore = await undoSteps()
+    await kit.locator('.kui-app').focus()
+    await drag(box.anchor, { x: box.anchor.x + 25 + round, y: box.anchor.y + 12 })
+    await page.keyboard.press(`${mod}+z`)
+    assert.ok(
+      await until(async () => JSON.stringify((await motion(10)).anchor) === JSON.stringify(before.anchor) && JSON.stringify((await motion(10)).position) === JSON.stringify(before.position) && (await undoSteps()) === stepsBefore),
+      `round ${round}: an Undo at the release puts the anchor point and the position back, no step left: ${JSON.stringify(await motion(10))}, ${await undoSteps()} steps after ${stepsBefore}`,
+    )
+  }
   const scaleWidth = async () => {
     const effects = await frame.evaluate(() => window.filmPreview.run('sequence.inspect', {}))
     const sequenceNow = typeof effects === 'string' ? JSON.parse(effects) : effects

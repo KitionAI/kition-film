@@ -338,3 +338,41 @@ test("a session command's refresh option reaches the session's run (a drag's val
     ['effect.setParam', null],
   ])
 })
+
+test('Undo pressed while a released drag still sends its step runs after the whole step, and history keeps its order', async () => {
+  // regressions/issue-undo-during-drag-release: a Motion box drag's release sends Anchor Point,
+  // then Position, one after the other; an Undo between the two took back the Anchor Point only,
+  // and the Position sent after it made a new step (picture.mjs failed once in WebKit).
+  const { invoke, ran } = harness()
+  let release = () => undefined
+  const finishing = (async () => {
+    await new Promise((done) => {
+      release = done
+    })
+    await invoke('effect.setParam', { param: 'anchor' })
+    await invoke('effect.setParam', { param: 'position' })
+  })()
+  invoke.gesture(finishing)
+  const undo = invoke('edit.undo', {})
+  const redo = invoke('edit.redo', {})
+  // Other commands do not wait for the gesture.
+  await invoke('playhead.stepForward', {})
+  assert.deepEqual(ran.map((each) => each.id), ['playhead.stepForward'], 'history waits for the drag')
+  release()
+  await Promise.all([undo, redo])
+  assert.deepEqual(
+    ran.map((each) => [each.id, each.params.param ?? null]),
+    [
+      ['playhead.stepForward', null],
+      ['effect.setParam', 'anchor'],
+      ['effect.setParam', 'position'],
+      ['edit.undo', null],
+      ['edit.redo', null],
+    ],
+  )
+  // Once the gesture is done (failed or not), history runs at once again.
+  invoke.gesture(Promise.reject(new Error('the drag failed')))
+  await new Promise((done) => setTimeout(done, 0))
+  await invoke('edit.undo', {})
+  assert.equal(ran.at(-1).id, 'edit.undo')
+})

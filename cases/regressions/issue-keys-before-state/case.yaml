@@ -1,0 +1,31 @@
+format: 1
+id: regressions/issue-keys-before-state
+feature: film.monitor.scrub
+intent: >-
+  Home and Right tapped twelve times at once, as soon as the editor shows, end twelve frames on,
+  in WebKit too, while the host polls `ai.inspect()`. Two windows lost or reordered a key: before
+  the editor had its document's state (the document's preferences still loading) the editor's
+  key handler returned at once, so the key was dropped or left to kit-editor's own shortcut
+  fallback, which runs it after an enabled read and out of turn; and a key pressed after the
+  render that had read the engine's key table but before the effect that ran the held keys ran
+  ahead of them (Right before Home). Kit CI run 45754177604 ended on frame 11 once. Keys an engine
+  command binds by default are now held in both windows, and the held keys run before any key
+  pressed after them. The browser test loads the page five times and taps at once each time, then
+  taps ten more rounds once the editor has settled.
+layer: gate
+source:
+  kind: issue
+  from: web/tests/scrub.mjs failed once in WebKit in kit CI run 45754177604 (frame 11)
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/scrub.mjs, webkit]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [webkit]
+timeout_s: 300
+since: "2026-11-25"

@@ -184,6 +184,19 @@ export function createInvoke(handlers: InvokeHandlers) {
   let sourceStepsContext: unknown
   let sourceMarks: Promise<unknown> | null = null
   let sourceMarksContext: unknown
+  // Gestures released but still sending their step (a Motion box drag's last Anchor Point and
+  // Position), and the Undo or Redo waiting for them: history pressed then takes back the whole
+  // step, never a part of it with the rest sent after.
+  const gestures = new Set<Promise<unknown>>()
+  let history: Promise<unknown> | null = null
+  /** Keeps history (Undo, Redo) asked for from now until `closed` settles behind the gesture's step. */
+  function gesture(closed: Promise<unknown>) {
+    gestures.add(closed)
+    const done = () => {
+      gestures.delete(closed)
+    }
+    closed.then(done, done)
+  }
   async function invoke(id: string, params: Params = {}, options?: InvokeOptions): Promise<unknown> {
     try {
       const routed = routeOf(id, params, handlers.focused())
@@ -259,6 +272,21 @@ export function createInvoke(handlers: InvokeHandlers) {
             void mark.then(settled, settled)
             return await mark
           }
+          // History behind a released gesture still sending its step waits for it (in turn with
+          // any history already waiting), so one Undo takes back the whole gesture.
+          if ((id === 'edit.undo' || id === 'edit.redo') && (gestures.size > 0 || history !== null)) {
+            const open = [...gestures]
+            const turn = (history ?? Promise.resolve())
+              .catch(() => undefined)
+              .then(() => Promise.allSettled(open))
+              .then(() => (options?.refresh ? handlers.run(id, params, { refresh: options.refresh }) : handlers.run(id, params)))
+            history = turn
+            const settled = () => {
+              if (history === turn) history = null
+            }
+            void turn.then(settled, settled)
+            return await turn
+          }
           return await (options?.refresh ? handlers.run(id, params, { refresh: options.refresh }) : handlers.run(id, params))
         }
         default:
@@ -278,7 +306,7 @@ export function createInvoke(handlers: InvokeHandlers) {
     const handler = handlers[route as keyof InvokeHandlers] as RouteHandler | undefined
     return handler != null && handler.serves?.(id) !== false
   }
-  return Object.assign(invoke, { serves })
+  return Object.assign(invoke, { serves, gesture })
 }
 
 export type Invoke = ReturnType<typeof createInvoke>

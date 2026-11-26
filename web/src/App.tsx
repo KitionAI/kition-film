@@ -207,6 +207,8 @@ type Live = {
   stats: StatsStore
   countFrame: () => void
   invoke: (id: string, params?: Record<string, unknown>, options?: InvokeOptions) => Promise<unknown>
+  /** Keeps Undo and Redo behind a released gesture until it has sent its whole step (`invoke.gesture`). */
+  gesture: (closed: Promise<unknown>) => void
   query: (id: string, params?: Record<string, unknown>) => Promise<unknown>
   /** Scrubs the program playhead (the ruler, the timecode, the Program monitor's scrub bar). */
   scrub: Scrub
@@ -272,6 +274,7 @@ function ProgramPanel() {
       proxies={proxies}
       phrase={live.phrase}
       invoke={live.invoke}
+      gesture={live.gesture}
       scrub={live.scrub}
       scrubbing={live.scrubbing}
       repaint={live.repaint}
@@ -1603,18 +1606,42 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
    */
   /** A text field, where a key is typing, not a command. */
   const editableTarget = (target: EventTarget | null) => target instanceof HTMLElement && (target.isContentEditable || target.closest('input, textarea, select') != null)
-  // Keys pressed before the engine's key table is read run once it is, in the order pressed.
+  // Keys pressed before the editor is ready for them (its document's state shown and the engine's
+  // key table read) run once it is, in the order pressed, before any key pressed after.
   const heldKeys = useMemo(() => createKeyHold(), [])
-  useEffect(() => heldKeys.clear(), [session.doc, heldKeys])
+  const keysReady = state != null && shortcuts != null
+  // Another document forgets them: cleared when the editor leaves a document, not when the next
+  // one's preferences come in (keys pressed while they load are that document's).
+  const heldFor = useRef(session.doc)
   useEffect(() => {
-    if (shortcuts == null) return
+    if (heldFor.current != null && heldFor.current !== session.doc) heldKeys.clear()
+    heldFor.current = session.doc
+  }, [session.doc, heldKeys])
+  const runHeld = () => {
     for (const { press, focused: at } of heldKeys.take()) {
       const id = resolveKey(press, at, keys, (command) => invoke.serves(command))
       if (id && invoke.serves(id)) void invoke(id, {})
     }
-  }, [shortcuts, keys, invoke, heldKeys])
+  }
+  const runHeldNow = useRef(runHeld)
+  runHeldNow.current = runHeld
+  useEffect(() => {
+    if (keysReady) runHeldNow.current()
+  }, [keysReady, keys, invoke])
+  /**
+   * Holds a plain key an engine command binds by default (`createKeyHold`, `earlyKeys`) while the
+   * editor is not ready for it; any other key (Escape) goes on as before.
+   */
+  const holdEarly = (event: KeyboardEvent<HTMLDivElement>) => !editableTarget(event.target) && resolveKey(event, focusedNow.current, earlyKeys) != null && heldKeys.hold(event, focusedNow.current)
   const keyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (!state || event.nativeEvent.isComposing || event.keyCode === 229) return false
+    if (event.nativeEvent.isComposing || event.keyCode === 229) return false
+    // Keys held until the editor was ready go first: a key pressed between the render that made it
+    // ready and the effect that runs them is not run ahead of them (Right before Home).
+    if (keysReady) runHeld()
+    // Before the document's state is shown (its preferences still loading) a key was dropped, or
+    // left to kit-editor's own shortcut fallback, which may run it after a read and out of turn. It
+    // waits now, like a key pressed before the engine's key table is read.
+    if (!state) return holdEarly(event)
     if (programKeys.current?.(event)) return true
     // F2 in the Project panel renames the selected item in place (Clip ▸ Rename…'s inline rename).
     if (event.key === 'F2' && !event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey && focusedPanel(focusedNow.current) === 'project') {
@@ -1622,9 +1649,8 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
       return true
     }
     // Before the engine's key table is read (just after a document opens), a plain key an engine
-    // command binds by default waits for it and runs then, in turn (`createKeyHold`): Right tapped
-    // at once is not lost; any other key (Escape) goes on as before.
-    if (shortcuts == null && !editableTarget(event.target) && resolveKey(event, focusedNow.current, earlyKeys) != null && heldKeys.hold(event, focusedNow.current)) return true
+    // command binds by default waits for it and runs then, in turn: Right tapped at once is not lost.
+    if (shortcuts == null && holdEarly(event)) return true
     // A key bound to a command nothing serves yet falls to its next binding (`resolveKey`); a
     // served command runs through `invoke` and keeps the key even when the engine refuses it.
     const id = resolveKey(event, focusedNow.current, keys, (command) => invoke.serves(command))
@@ -1684,6 +1710,7 @@ export function App({ host, phrase, quietPhrase = phrase }: { host: HostConnecti
     stats,
     countFrame,
     invoke,
+    gesture: invoke.gesture,
     query,
     scrub,
     scrubbing,

@@ -84,6 +84,12 @@ type Options = {
   clock: { subscribe: (listener: () => void) => () => void }
   phrase: Phrases
   invoke: (id: string, params?: Record<string, unknown>, options?: { refresh?: 'all' | 'repaint' | 'none' }) => unknown
+  /**
+   * Keeps Undo and Redo asked for from now until `closed` settles: a released drag is still
+   * sending its step (a Motion box's last Anchor Point and Position, a layer's `graphics.set`), and
+   * an Undo pressed meanwhile would take back a part of it, or the step before it.
+   */
+  gesture?: (closed: Promise<unknown>) => void
   /** An engine-style refusal for the status bar in the person's words (`errorStatus`): a Motion box drag on a locked track. */
   errorStatus?: (text: string) => void
   /** What Begin Text Editing says when the text layer is not in the picture. */
@@ -1211,7 +1217,7 @@ export function useProgramGraphics(options: Options) {
           const edit = editingNow.current
           const inEdit = edit != null && edit.clip != null && layers.current.layers.some((each) => each.clip === edit.clip && each.layer === edit.layer && layerAt([each], end, zoom()))
           if (isClick && !inEdit && (current === 'Type' || current === 'VerticalType')) openPending(end, current === 'VerticalType')
-          void ready.then(() => {
+          const finishing = ready.then(() => {
             if (cancelled || !pressCurrent()) return
             if (isClick) {
               click(current, end, endCanvas)
@@ -1220,14 +1226,8 @@ export function useProgramGraphics(options: Options) {
             if (!wasDragging || !kind) decideDrag()
             preview.current = null
             draw()
-            if (layer) {
-              void finishLayer(layer, endCanvas, pointer.meta)
-              return
-            }
-            if (box) {
-              void finishBox(box, endCanvas, pointer.meta)
-              return
-            }
+            if (layer) return finishLayer(layer, endCanvas, pointer.meta)
+            if (box) return finishBox(box, endCanvas, pointer.meta)
             if (!moved) return
             const target = layers.current.target
             const corner = snapped(end, pointer.meta).point
@@ -1237,6 +1237,9 @@ export function useProgramGraphics(options: Options) {
               void newText('graphics.newText', newTextParams(latest.current.height, target, first, corner), first, false)
             } else if (kind === 'shape') void run('graphics.newShape', shapeParams(current, target, first, corner))
           })
+          // A released layer or Motion box drag is still sending its step: Undo and Redo pressed
+          // meanwhile wait for it (`invoke.gesture`), so one Undo takes back the whole drag.
+          if (!isClick) latest.current.gesture?.(finishing)
         },
         cancel: () => {
           released = true

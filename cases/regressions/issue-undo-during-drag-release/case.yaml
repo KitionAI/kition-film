@@ -1,0 +1,29 @@
+format: 1
+id: regressions/issue-undo-during-drag-release
+feature: film.monitor.picture-by-hand
+intent: >-
+  An Undo pressed the moment a Motion box drag of the anchor point is released takes back the
+  whole drag. The release sends its last values one command after another (Anchor Point, then
+  Position, merged into the drag's step by its key); an Undo that reached the engine between the
+  two took back the step, and the Position sent after it made a step of its own, so the clip
+  stayed moved. Undo and Redo pressed while a released drag (a Motion box or a graphic layer) is
+  still sending its step now wait for it, in turn. The unit test in web/src/session/invoke.test.mjs
+  holds a drag's release open and checks the order; this browser test releases the anchor point's drag and presses Undo at once,
+  ten times.
+layer: gate
+source:
+  kind: issue
+  from: web/tests/picture.mjs failed once in WebKit in kit CI run 45754177604 (one undo puts the anchor point and the position back)
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/picture.mjs, webkit]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [webkit]
+timeout_s: 300
+since: "2026-11-25"
