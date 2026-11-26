@@ -22,6 +22,7 @@
     "test:picture": "node tests/picture.mjs chromium && node tests/picture.mjs webkit",
     "test:scrub": "node tests/scrub.mjs chromium && node tests/scrub.mjs webkit",
     "test:timeline": "node tests/timeline.mjs chromium && node tests/timeline.mjs webkit",
+    "test:drafts": "node tests/drafts.mjs chromium && node tests/drafts.mjs webkit",
     "test:media": "node tests/media.mjs chromium && node tests/media.mjs webkit",
     "test:mixer": "node tests/mixer.mjs chromium && node tests/mixer.mjs webkit",
     "test:scenarios": "pnpm test:scenarios:1 && pnpm test:scenarios:2 && pnpm test:scenarios:3 && pnpm test:scenarios:4",

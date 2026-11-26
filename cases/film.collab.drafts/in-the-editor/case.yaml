@@ -1,0 +1,28 @@
+format: 1
+id: film.collab.drafts/in-the-editor
+feature: film.collab.drafts
+intent: >-
+  Through the real editor under the development host (replica and checkpoints kept): the person
+  adds a marker with Markers > Add Marker; an agent's draft adds a marker of its own, its comparison
+  lists it and the document does not show it; the person adds another marker meanwhile; the draft
+  accepted, the inspect answer and the Markers panel show all three. One press of the editor's Undo
+  takes back the draft's marker only, Redo brings it back. A checkpoint of the saved film, a marker
+  added after it, the checkpoint restored through the host: the markers are the checkpoint's, and
+  one Undo brings the later marker back. In Chromium and WebKit (`pnpm test:drafts`).
+layer: gate
+source:
+  kind: probe
+  from: web/tests/drafts.mjs chromium
+  license: Apache-2.0
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/drafts.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 240
+since: "2026-11-26"
