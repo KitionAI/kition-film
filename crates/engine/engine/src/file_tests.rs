@@ -37,7 +37,7 @@ fn saved_file_is_versioned_and_save_copy_keeps_state() {
     // The copy holds the whole project and its id counter as the file states it, the first id
     // past every id the project holds (`encode_file`); the session's own counter (which may run
     // ahead, or in its replica's id range) is the session's and not saved.
-    let content = crate::as_saved(&s.project);
+    let content = crate::file_tests::as_saved(&s.project);
     assert!(s.project.next_id >= content.next_id, "the session never hands out an id the copy holds");
     assert_eq!(*t.project, content);
     // Revert discards the edit.
@@ -96,4 +96,16 @@ fn project_is_named_after_its_file() {
     s.execute("file.open", json!({"path": c})).unwrap();
     assert_eq!(s.project.name, "Apollo 11 - Tranquility");
     let _ = std::fs::remove_dir_all(&d);
+}
+
+/// `project` as its file holds it (`kition_film_format::encode_file`): its id counter is the first
+/// id past every id it holds, not the session's own (which may run ahead, or in its replica's id
+/// range). What a project saved and opened again equals. (Here, not in `lib.rs`, whose source the
+/// declarations' comparisons pin.)
+pub(crate) fn as_saved(project: &kition_film_project::Project) -> kition_film_project::Project {
+    let mut content = project.clone();
+    if let Some(counter) = content.minimum_next_id(true) {
+        content.next_id = counter;
+    }
+    content
 }

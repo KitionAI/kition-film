@@ -8,7 +8,7 @@
 
 use std::collections::BTreeSet;
 
-use kition_film_engine::{Damage, Origin, Version};
+use kition_film_engine::{Damage, Origin, UndoScope, Version};
 use kition_kit::kdm::diff::diff_states;
 use kition_kit::kdm::{ObjectId, Replica};
 use kition_kit::session::model::Exchange;
@@ -26,16 +26,18 @@ impl FilmDocument {
 
     /// Takes a draft's changes (from a replica forked from this one) in as one undo step of the
     /// person (`mergeChanges`): the engine's project follows, and Undo takes the whole draft back.
-    /// Add the draft's blobs first. Answers `{"damage", "summary"}`, `summary` the `StateDiff` of
-    /// the replicated state before and after. A refused merge changes nothing and fails with the
-    /// KDM's message.
+    /// Add the draft's blobs first. Answers `{"damage", "summary", "scope"}`, `summary` the
+    /// `StateDiff` of the replicated state before and after, `scope` the undo scope the step went
+    /// to (`person`; `null` for an empty draft or a `system` or `import` origin). A refused merge
+    /// changes nothing and fails with the KDM's message.
     pub fn merge_changes(&mut self, bytes: &[u8], origin: &Origin) -> Result<Value, String> {
         let before = self.replicated_state()?;
         let merged = self.session.merge_draft(bytes, origin);
         self.settle();
-        let damage = merged.map_err(|error| error.to_string())?;
+        let (scope, damage) = merged.map_err(|error| error.to_string())?;
         let after = self.replicated_state()?;
-        Ok(json!({ "damage": damage, "summary": diff_states(&before, &after).to_json() }))
+        let scope = scope.map(|scope| if scope == UndoScope::Person { "person" } else { "agent" });
+        Ok(json!({ "damage": damage, "summary": diff_states(&before, &after).to_json(), "scope": scope }))
     }
 
     /// What merging a draft's changes would change in the project now, as `StateDiff` JSON;
@@ -43,7 +45,7 @@ impl FilmDocument {
     pub fn compare_changes(&self, bytes: &[u8]) -> Result<Value, String> {
         let kdm = self.session.kdm().ok_or("the project has no replica, so no draft of it")?;
         let before = kdm.replica().state_json().map_err(|error| error.to_string())?;
-        let after = kdm.replica().merged_state(bytes).map_err(|error| error.to_string())?;
+        let after = kdm.merged_state(bytes).map_err(|error| error.to_string())?;
         Ok(diff_states(&before, &after).to_json())
     }
 
@@ -153,7 +155,6 @@ fn named_objects(value: &Value, replica: &Replica, out: &mut BTreeSet<ObjectId>)
 
 #[cfg(test)]
 mod tests {
-    use kition_film_engine::UndoScope;
     use kition_kit::KitDocument;
     use kition_kit::kdm::{ActorId, Replica};
     use serde_json::json;
@@ -406,9 +407,17 @@ mod tests {
         assert_eq!(starts.len(), 2, "the fixture's clip and the one placed meanwhile");
         let history = doc.session.history.undo.len();
 
-        doc.merge_changes(&changes, &agent).unwrap();
+        let answer = doc.merge_changes(&changes, &agent).unwrap();
+        assert_eq!(answer["scope"], json!("person"), "{answer}");
         let merged = whole(&mut doc);
         assert_eq!(v1_starts(&doc).len(), 3, "both clips added to V1 are there: {:?}", v1_starts(&doc));
+        // Both sides lengthened the sequence: the length follows the merged clips.
+        let length = doc.session.active_sequence().unwrap().duration();
+        assert_eq!(length.0, 9 * 254_016_000_000, "the draft's clip ends at 9 s");
+        let state = doc.replicated_state().unwrap();
+        let lengths: Vec<&Value> =
+            state["objects"].as_object().unwrap().values().filter(|object| object["$type"] == "Sequence").map(|object| &object["duration"]).collect();
+        assert!(lengths.contains(&&json!(length.0.to_string())), "the replica holds the merged length: {lengths:?}");
         assert!(starts.iter().all(|start| v1_starts(&doc).contains(start)), "the document's clips stay");
         assert_eq!(doc.session.history.undo.len(), history + 1, "one step of the person's history");
         assert_eq!(doc.session.history.undo.last().map(|entry| entry.0.as_str()), Some("Merge Draft"));
@@ -453,12 +462,12 @@ mod tests {
     #[test]
     fn a_reply_shows_the_ids_the_full_read_gives_and_one_naming_none_is_unchanged() {
         let mut doc = FilmDocument::open("Edit.kfilm", &fixture()).unwrap();
-        for _ in 0..30 {
+        for _ in 0..100 {
             doc.execute("item.newColorMatte", json!({ "color": "#00ff00", "seconds": 1.0 })).unwrap();
         }
         let state = doc.replicated_state().unwrap();
         let objects: Vec<String> = state["objects"].as_object().unwrap().keys().filter(|id| is_object_id(id)).cloned().collect();
-        assert!(objects.len() > 60, "many objects: {}", objects.len());
+        assert!(objects.len() > 100, "many objects: {}", objects.len());
         let full = doc.session.kdm().unwrap().replica().tool_ids();
         for object in &objects {
             let reply = json!({ "target": object, "list": [object], "note": "one object" });

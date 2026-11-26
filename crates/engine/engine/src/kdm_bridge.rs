@@ -496,13 +496,14 @@ impl Session {
     }
 
     /// Takes a draft's changes (made on a replica forked from this one, `mergeChanges`) into the
-    /// project as one undo step of the person (unless `origin` is a `system` or `import` one, as
-    /// the replica counts it), as a command's edit is: changes not written yet are written first,
-    /// the project and the person's state follow the replica, and one undo takes the whole draft
-    /// back. Add the draft's blobs first ([`Session::add_blobs`]). A refused merge changes nothing.
-    pub fn merge_draft(&mut self, bytes: &[u8], origin: &Origin) -> Result<Damage> {
-        let scope = UndoScope::of(origin.kind).map(|_| UndoScope::Person);
-        self.take_in(scope, "Merge Draft", |kdm| kdm.merge_changes(bytes, origin))
+    /// project as one undo step in the scope the replica recorded it in (the person's, also for
+    /// an agent's draft; none for a `system` or `import` origin, KitModel M12a), as a command's
+    /// edit is: changes not written yet are written first, the project and the person's state
+    /// follow the replica, and one undo takes the whole draft back. Answers that scope and the
+    /// damage. Add the draft's blobs first ([`Session::add_blobs`]). A refused merge changes
+    /// nothing.
+    pub fn merge_draft(&mut self, bytes: &[u8], origin: &Origin) -> Result<(Option<UndoScope>, Damage)> {
+        self.take_in("Merge Draft", |kdm| kdm.merge_changes(bytes, origin))
     }
 
     /// Writes the state a snapshot holds (a checkpoint of this project, `replica/restore`) over
@@ -511,36 +512,41 @@ impl Session {
     /// document's snapshot is refused. Add the blobs it references first.
     pub fn restore_version(&mut self, snapshot: &[u8], origin: &Origin) -> Result<Damage> {
         let scope = UndoScope::of(origin.kind);
-        self.take_in(scope, "Restore Version", |kdm| kdm.restore_state(snapshot, origin))
+        self.take_in("Restore Version", |kdm| kdm.restore_state(snapshot, origin).map(|damage| (scope, damage))).map(|(_, damage)| damage)
     }
 
     /// One transaction `write` makes on the replica, taken into the project as a command's step:
-    /// the project follows the replica, and the history of `scope` (none for a `system` or
-    /// `import` origin) gets an entry worth the one replica undo step. A write that failed after
-    /// its transaction landed (its repair refused) still follows the replica when the view loaded
-    /// from it, as an import does; otherwise the project leaves the replica.
+    /// the project follows the replica, and the history of the scope `write` answers (none for a
+    /// `system` or `import` origin) gets an entry worth the one replica undo step. A refused write
+    /// changes nothing; one that failed after its transaction landed leaves the replica.
     fn take_in(
         &mut self,
-        scope: Option<UndoScope>,
         label: &str,
-        write: impl FnOnce(&mut FilmSession) -> kdm_model::kition_kit::session::Result<Damage>,
-    ) -> Result<Damage> {
+        write: impl FnOnce(&mut FilmSession) -> kdm_model::kition_kit::session::Result<(Option<UndoScope>, Damage)>,
+    ) -> Result<(Option<UndoScope>, Damage)> {
         let kdm = self.ensure_kdm().ok_or_else(no_replica)?;
         kdm.end_undo_group();
         let before = kdm.version();
         let result = write(&mut *kdm);
         let changed = kdm.version() != before;
-        let loaded = changed && (result.is_ok() || kdm.view_loaded());
-        if loaded {
-            let previous = self.project.clone();
-            self.follow_kdm();
-            if let Some(scope) = scope {
-                let history = if scope == self.history_scope { &mut self.history } else { &mut self.other_history };
-                history.push((label.to_owned(), previous, 1));
-                history.redo.clear();
+        match &result {
+            Ok((scope, _)) if changed => {
+                let previous = self.project.clone();
+                self.follow_kdm();
+                if let Some(scope) = *scope {
+                    let history = if scope == self.history_scope { &mut self.history } else { &mut self.other_history };
+                    history.push((label.to_owned(), previous, 1));
+                    history.redo.clear();
+                }
             }
-        } else if changed {
-            self.detach_kdm();
+            Err(_) if changed => {
+                if kdm.view_loaded() {
+                    self.follow_kdm();
+                } else {
+                    self.detach_kdm();
+                }
+            }
+            _ => {}
         }
         result.map_err(kdm_error)
     }

@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-draft-sequence-length
+feature: film.collab.drafts
+intent: >-
+  A sequence's length (Sequence.duration) follows from its clips. A draft that adds a clip at the
+  end and the person who adds another clip at the end both lengthen the sequence; the merge was
+  refused as a collision on the length (data model rule D3) although the clips merge. The draft's
+  write of the length is left out of the merge and the repair inside the merge step sets it from
+  the merged clips: both clips are there and the length is the later clip's end, on the replica as
+  on the view.
+layer: gate
+dimension: data-safety
+source: { kind: synthetic, from: crates/kdm/kdm-model/tests/drafts.rs, license: owned }
+input: []
+steps:
+  - cargo-test:
+      package: kdm-model
+      test: drafts
+      filter: clips_added_at_the_end_on_both_sides_merge_and_the_length_follows
+expected:
+  - { actual: out:cargo-test, compare: exit, value: 0 }
+since: "2026-11-26"

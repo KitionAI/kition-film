@@ -1378,18 +1378,6 @@ pub(crate) fn ignoring_next_id(mut a: Project, b: &Project) -> Project {
     a
 }
 
-/// `project` as its file holds it (`kition_film_format::encode_file`): its id counter is the first
-/// id past every id it holds, not the session's own (which may run ahead, or in its replica's id
-/// range). What a project saved and opened again equals.
-#[cfg(test)]
-pub(crate) fn as_saved(project: &Project) -> Project {
-    let mut content = project.clone();
-    if let Some(counter) = content.minimum_next_id(true) {
-        content.next_id = counter;
-    }
-    content
-}
-
 #[cfg(test)]
 mod aaf_omf_tests;
 #[cfg(test)]

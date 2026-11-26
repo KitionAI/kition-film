@@ -107,7 +107,7 @@ features:
     paths: [bindings/wasm/src/drafts.rs, bindings/wasm/src/lib.rs, crates/engine/engine/src/kdm_bridge.rs, crates/kdm/kdm-model/src/session.rs, crates/kdm/kdm-model/src/validate.rs, crates/kdm/kdm-model/tests/drafts.rs, crates/formats/format/src/lib.rs, web/package.json]
     target: "Kit UI protocol section 7 (replica/restore); engine contract members mergeChanges, compareChanges, restoreState, changesSince, modelReply, modelBatch, modelDescribe"
     gap: Engine tests merge a draft, compare it first, restore a version, answer receipts and replies and run the object model; no browser case drives a draft or a restore in the editor yet.
-    cases: [film.collab.drafts/engine-members, film.collab.drafts/merge-repairs-and-ids]
+    cases: [film.collab.drafts/engine-members, film.collab.drafts/merge-repairs-and-ids, regressions/issue-draft-sequence-length]
     since: "2026-11-25"
   - id: film.platform.document-text
     title: "document.text: titles and captions as plain text for a host's search, cut at a limit"

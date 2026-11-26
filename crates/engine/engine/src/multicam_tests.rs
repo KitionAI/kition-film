@@ -555,7 +555,7 @@ fn edit_cameras_and_save_load() {
     assert_eq!(doc["schema_version"], kition_film_format::SCHEMA_VERSION);
     let mut t = Session::default();
     t.execute("file.open", json!({"path": path})).unwrap();
-    assert_eq!(*t.project, crate::as_saved(&s.project), "multi-camera data survives save/load");
+    assert_eq!(*t.project, crate::file_tests::as_saved(&s.project), "multi-camera data survives save/load");
     assert_eq!(t.project.sequence(src).unwrap().multicam.as_ref().unwrap().cameras[1].name, "Wide");
 }
 

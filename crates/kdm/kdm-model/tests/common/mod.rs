@@ -129,12 +129,16 @@ pub fn draft(doc: &Session, value: u64) -> (Session, kition_kit::kdm::Version) {
     (peer(doc, value), doc.version())
 }
 
-/// Takes `draft`'s changes since `base` into `doc` as the person accepting them
-/// (`merge_changes`, rules D1 to D9): one undo step of the person; refused as a whole on a
-/// collision.
+/// Takes `draft`'s changes since `base` into `doc` as the person accepting them, as
+/// `FilmSession::merge_changes` does (`kdm_model::draft_changes`, then `merge_changes`, rules D1
+/// to D9, the model's repair inside the step): one undo step of the person; refused as a whole on
+/// a collision.
 pub fn try_merge(doc: &mut Session, draft: &Session, base: &kition_kit::kdm::Version) -> Result<kition_kit::session::Damage, kition_kit::session::KitError> {
     let changes = draft.export_changes(base).unwrap_or_else(|error| panic!("export: {error}"));
-    doc.merge_changes(&changes, &person("doc"))
+    let changes = kdm_model::draft_changes(doc.replica(), &changes)?;
+    let (scope, damage) = doc.merge_changes(&changes, &person("doc"))?;
+    assert_eq!(scope, Some(kition_kit::kdm::UndoScope::Person), "a merged draft is a step of the person");
+    Ok(damage)
 }
 
 /// [`try_merge`], which must apply; the document's view is then exactly what its replica holds.

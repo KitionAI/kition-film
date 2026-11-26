@@ -123,6 +123,35 @@ fn clips_put_in_one_place_are_repaired_without_overlap_and_the_merge_undoes() {
     assert_view_is_replica(&doc);
 }
 
+/// The length of a sequence (`Sequence.duration`) follows from its clips: a draft that adds a
+/// clip at the end and the document that adds another at the end both lengthen the sequence, and
+/// they merge (the draft's write of the length is left out, the repair inside the merge step sets
+/// it from the merged clips), the length the later clip's end, on the replica as on the view.
+#[test]
+fn clips_added_at_the_end_on_both_sides_merge_and_the_length_follows() {
+    let (mut project, media, sequence) = demo_project();
+    let rate = project.sequence(sequence).unwrap().settings.frame_rate;
+    add_clip(&mut project, sequence, media, Tick::ZERO, rate.tick_of(10));
+    let mut doc = first(&project);
+    let (mut agent, base) = draft(&doc, 2);
+    edit(&mut agent, "agent", |p, s| {
+        let media = media_id(p);
+        add_clip(p, s, media, rate.tick_of(30), rate.tick_of(10));
+    });
+    edit(&mut doc, "doc", |p, s| {
+        let media = media_id(p);
+        add_clip(p, s, media, rate.tick_of(10), rate.tick_of(5));
+    });
+    merge(&mut doc, &agent, &base);
+    let starts: Vec<Tick> = v1(&doc).iter().map(|clip| clip.start).collect();
+    assert_eq!(starts, [Tick::ZERO, rate.tick_of(10), rate.tick_of(30)], "both clips are there");
+    let project = &doc.model().project;
+    assert_eq!(project.sequence(sequence_id(project)).unwrap().duration(), rate.tick_of(40));
+    let replica = doc.replica();
+    let lengths: Vec<serde_json::Value> = replica.objects_of_type("Sequence").iter().map(|object| replica.get(object, "duration").unwrap()).collect();
+    assert_eq!(lengths, [serde_json::json!(rate.tick_of(40).0.to_string())], "the replica holds the merged length");
+}
+
 #[test]
 fn param_edits_of_different_effects_on_one_clip_are_both_kept() {
     let (mut project, media, sequence) = demo_project();
@@ -565,7 +594,8 @@ fn luts_from_both_sides_are_both_kept_with_their_text() {
     after.luts.push(lut(&format!("lut{id}"), "LUT_3D_SIZE 2\n# a"));
     doc.record(&person("a"), &after).unwrap();
     doc.add_blobs(&agent.blobs());
-    doc.merge_changes(&agent.export_changes(&base).unwrap(), &person("a")).unwrap();
+    let (scope, _) = doc.merge_changes(&agent.export_changes(&base).unwrap(), &person("a")).unwrap();
+    assert_eq!(scope, Some(UndoScope::Person));
     let mut texts: Vec<&str> = doc.project().luts.iter().map(|lut| &*lut.text).collect();
     texts.sort_unstable();
     assert_eq!(texts, ["LUT_3D_SIZE 2\n# a", "LUT_3D_SIZE 2\n# b"]);

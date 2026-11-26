@@ -13,6 +13,12 @@ for (const interruption of ['new project', 'new sequence', 'permissions']) {
     } else {
       if (interruption === 'new project') await film.command('file.newProject', { name: 'Replacement' })
       await film.command('sequence.new', { name: 'Replacement sequence', width: 64, height: 36, fps: 24 })
+      // The Program monitor fits the new sequence and repaints it at its new render scale, a
+      // `playhead.set` where the playhead rests (the sequence's playhead goes from none to 0):
+      // the editor's own reaction to the new sequence, not the dialog's. Wait for it first.
+      await expect
+        .poll(() => film.kit.getByTestId('film-program').evaluate((picture) => picture.getAttribute('data-view-of') === '64x36' && !picture.hasAttribute('data-repainting')))
+        .toBe(true)
     }
     const before = await film.details()
     const history = await film.history()

@@ -160,7 +160,7 @@ fn auto_save_ring_rotates_and_can_save_the_project() {
     assert_eq!(files, vec![written[2].clone(), written[1].clone()], "newest first, oldest pruned");
     let mut t = Session::default();
     t.execute("file.open", json!({"path": written[2]})).unwrap();
-    assert_eq!(*t.project, crate::as_saved(&s.project), "an auto-save holds the content, its id counter the first id past every id it holds");
+    assert_eq!(*t.project, crate::file_tests::as_saved(&s.project), "an auto-save holds the content, its id counter the first id past every id it holds");
     assert!(s.is_dirty(), "auto-save does not save the project itself by default");
     s.execute("prefs.set", json!({"key": "autoSave.saveCurrentProject", "value": true})).unwrap();
     s.execute("sequence.addEdit", json!({"seconds": 5.0})).unwrap();
@@ -171,7 +171,7 @@ fn auto_save_ring_rotates_and_can_save_the_project() {
     });
     let mut t = Session::default();
     t.execute("file.open", json!({"path": proj})).unwrap();
-    assert_eq!(*t.project, crate::as_saved(&s.project));
+    assert_eq!(*t.project, crate::file_tests::as_saved(&s.project));
     s.shutdown();
     let _ = std::fs::remove_dir_all(&d);
 }

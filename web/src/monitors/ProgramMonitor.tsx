@@ -125,6 +125,8 @@ export function ProgramMonitor(props: Props) {
   // ---- the render scale: the effective resolution, no more than the picture needs on screen
   const canvasView = useRef<KitCanvasView | null>(null)
   const applied = useRef<number | null>(null)
+  /** Scale changes not yet repainted. */
+  const repainting = useRef(0)
   const [shownScale, setShownScale] = useState<number | null>(null)
   const applyScale = useCallback(() => {
     const { doc: engine, monitor: view, playing: now, scrubbing } = latest.current
@@ -135,6 +137,10 @@ export function ProgramMonitor(props: Props) {
     if (scale === applied.current) return
     applied.current = scale
     const movesAtStart = latest.current.playheadMoves()
+    // While a new scale is applied and the picture repainted at it (a `playhead.set` where the
+    // playhead rests), the picture says so (`data-repainting`): the browser tests wait for it.
+    repainting.current += 1
+    picture.current?.setAttribute('data-repainting', '')
     void engine
       .invoke('setRenderScale', scale)
       .then(() => {
@@ -151,6 +157,10 @@ export function ProgramMonitor(props: Props) {
       })
       .catch(() => {
         applied.current = null
+      })
+      .finally(() => {
+        repainting.current -= 1
+        if (repainting.current === 0) picture.current?.removeAttribute('data-repainting')
       })
   }, [clock])
   useEffect(() => {
@@ -546,6 +556,8 @@ export function ProgramMonitor(props: Props) {
                 if (zoomed && channelNow.current) askChannelNow.current()
                 graphics.onView(view)
                 placeGuidesSoon()
+                // The document the view was last placed for (the browser tests wait for a new sequence's).
+                picture.current?.setAttribute('data-view-of', `${latest.current.film.width}x${latest.current.film.height}`)
                 props.onView(view, stats)
               }}
             >

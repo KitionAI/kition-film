@@ -74,6 +74,7 @@ pub(crate) fn validate(tx: &mut Tx<'_>, _changed: &BTreeSet<ObjectId>) -> KdmRes
 
     wrote |= number_objects(tx)?;
     wrote |= number_data(tx)?;
+    wrote |= sequence_lengths(tx)?;
 
     // Tree nodes naming a deleted bin need no write here: `Replica::tree` (and this crate's own
     // `read::read_bin_tree`) already skip a node whose object no longer exists, together with its
@@ -309,6 +310,54 @@ fn number_objects(tx: &mut Tx<'_>) -> KdmResult<bool> {
         seen.insert(next);
         tx.set(&object, field, json!(next))?;
         wrote = true;
+    }
+    Ok(wrote)
+}
+
+/// A sequence's length follows from its content (`Sequence::duration`): the latest end of a clip
+/// on its video and audio tracks or of a caption on one of its caption tracks, zero when it has
+/// none. A draft's merge leaves the draft's writes of it out (`crate::draft_changes`), so this
+/// sets it from the merged clips; for any other state it already holds that value.
+fn sequence_lengths(tx: &mut Tx<'_>) -> KdmResult<bool> {
+    let mut wrote = false;
+    for sequence in tx.objects_of_type("Sequence") {
+        let mut end = 0i64;
+        for field in ["videoTracks", "audioTracks"] {
+            for track in tx.list_items(&sequence, field)? {
+                if !tx.exists(&track) {
+                    continue;
+                }
+                for clip in tx.list_items(&track, "clips")? {
+                    if !tx.exists(&clip) {
+                        continue;
+                    }
+                    let start = tick::from_value(&tx.get(&clip, "start")?)?.0;
+                    let duration = tick::from_value(&tx.get(&clip, "duration")?)?.0;
+                    end = end.max(start.saturating_add(duration));
+                }
+            }
+        }
+        let mut caption_tracks = std::collections::HashSet::new();
+        for track in tx.list_items(&sequence, "captionTracks")? {
+            if tx.exists(&track)
+                && let Some(id) = tx.get(&track, "id")?.as_u64()
+            {
+                caption_tracks.insert(id);
+            }
+        }
+        for caption in tx.list_items(&sequence, "captions")? {
+            if !tx.exists(&caption) || !tx.get(&caption, "track")?.as_u64().is_some_and(|track| caption_tracks.contains(&track)) {
+                continue;
+            }
+            let start = tick::from_value(&tx.get(&caption, "start")?)?.0;
+            let duration = tick::from_value(&tx.get(&caption, "duration")?)?.0;
+            end = end.max(start.saturating_add(duration));
+        }
+        let length = json!(tick::to_string(kition_film_time::Tick(end)));
+        if tx.get(&sequence, "duration")? != length {
+            tx.set(&sequence, "duration", length)?;
+            wrote = true;
+        }
     }
     Ok(wrote)
 }

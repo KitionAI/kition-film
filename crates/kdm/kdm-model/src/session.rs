@@ -343,13 +343,23 @@ impl FilmSession {
     }
 
     /// Takes a draft's changes (made on a replica forked from this one) in as one transaction of
-    /// `origin` (`Replica::merge_changes`): one undo step of the person unless `origin` is a
-    /// `system` or `import` one, even when an agent made the draft. Repairs the result and patches
-    /// the view as an import does; add the draft's blobs first ([`FilmSession::add_blobs`]). A
-    /// refused merge changes nothing.
-    pub fn merge_changes(&mut self, bytes: &[u8], origin: &Origin) -> Result<Damage> {
+    /// `origin` (`KitSession::merge_changes`): one undo step of the person unless `origin` is a
+    /// `system` or `import` one, even when an agent made the draft, the model's repair inside the
+    /// same step. Answers the scope the step went to and the damage. The draft's writes of a
+    /// sequence's length are left out ([`crate::draft_changes`]): the length follows from the
+    /// clips, and the repair sets it from the merged ones. Add the draft's blobs first
+    /// ([`FilmSession::add_blobs`]). A refused merge changes nothing.
+    pub fn merge_changes(&mut self, bytes: &[u8], origin: &Origin) -> Result<(Option<UndoScope>, Damage)> {
         self.end_undo_group();
-        self.inner.merge_changes(bytes, origin)
+        let bytes = crate::draft_changes(self.inner.replica(), bytes)?;
+        self.inner.merge_changes(&bytes, origin)
+    }
+
+    /// The state merging a draft's changes would give, nothing changed (`compareChanges`): as
+    /// [`FilmSession::merge_changes`] takes them in, but without the repair.
+    pub fn merged_state(&self, bytes: &[u8]) -> Result<serde_json::Value> {
+        let bytes = crate::draft_changes(self.inner.replica(), bytes)?;
+        Ok(self.inner.replica().merged_state(&bytes)?)
     }
 
     /// Writes the state `snapshot` holds (a snapshot or content of this document, as a host's

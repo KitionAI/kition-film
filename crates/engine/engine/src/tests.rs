@@ -422,7 +422,7 @@ fn save_and_open_roundtrip() {
     assert!(!s.is_dirty());
     let mut t = Session::default();
     t.execute("file.open", json!({"path": path})).unwrap();
-    assert_eq!(*t.project, crate::as_saved(&s.project), "the file holds the content, its id counter the first id past every id it holds");
+    assert_eq!(*t.project, crate::file_tests::as_saved(&s.project), "the file holds the content, its id counter the first id past every id it holds");
     // media re-created from generator refs
     assert!(t.render_program(0.1).is_some());
     std::fs::remove_dir_all(dir).ok();

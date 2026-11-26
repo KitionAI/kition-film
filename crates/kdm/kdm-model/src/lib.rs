@@ -65,6 +65,31 @@ pub use kition_kit;
 
 type Result<T> = kition_kit::session::Result<T>;
 
+/// A draft's changes as the document takes them in (`FilmSession::merge_changes`, and its
+/// comparison): without the draft's writes of a sequence's length (`Sequence.duration`). The
+/// length follows from the clips and captions (`Sequence::duration`); a draft and the document
+/// that both lengthened a sequence would otherwise collide on it (data model rule D3) although
+/// their clips merge, and the merge would be refused. The repair inside the merge step sets the
+/// length from the merged clips (`validate`). Bytes that are not JSON pass as they are, for the
+/// replica to refuse.
+pub fn draft_changes(replica: &Replica, bytes: &[u8]) -> Result<Vec<u8>> {
+    let Ok(mut value) = serde_json::from_slice::<serde_json::Value>(bytes) else { return Ok(bytes.to_vec()) };
+    let sequences: std::collections::HashSet<String> = replica.objects_of_type("Sequence").into_iter().map(|id| id.as_str().to_owned()).collect();
+    let mut dropped = false;
+    if let Some(changes) = value.get_mut("changes").and_then(serde_json::Value::as_array_mut) {
+        for change in changes {
+            let Some(ops) = change.get_mut("ops").and_then(serde_json::Value::as_array_mut) else { continue };
+            let before = ops.len();
+            ops.retain(|op| !(op["op"] == "set" && op["field"] == "duration" && op["id"].as_str().is_some_and(|id| sequences.contains(id))));
+            dropped |= ops.len() != before;
+        }
+    }
+    if !dropped {
+        return Ok(bytes.to_vec());
+    }
+    serde_json::to_vec(&value).map_err(|error| KitError::new(format!("a draft's changes: {error}")))
+}
+
 const SCHEMA: &str = include_str!("../model/schema.json");
 
 /// The `Project` object's id: one per replica, minted by [`write_document`] with
