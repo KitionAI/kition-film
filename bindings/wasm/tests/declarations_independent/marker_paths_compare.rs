@@ -62,7 +62,7 @@ fn marker_destinations_compare_program_source_split_and_missing_mark_fallbacks()
             doc.execute("marker.markIn", json!({"time":254_016_000_000i64})).unwrap();
             doc.execute("marker.markOut", json!({"time":508_032_000_000i64})).unwrap();
             for side in ["VideoIn", "VideoOut", "AudioIn", "AudioOut"] {
-                doc.execute(&format!("markers.markSplit{side}"), json!({"time":254_016_000_000i64})).unwrap();
+                doc.execute(&format!("marker.markSplit{side}"), json!({"time":254_016_000_000i64})).unwrap();
             }
         }
         doc.execute("marker.add", json!({"time":254_016_000_000i64,"name":"Cue"})).unwrap();
