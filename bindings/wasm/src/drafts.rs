@@ -413,7 +413,10 @@ mod tests {
         assert_eq!(v1_starts(&doc).len(), 3, "both clips added to V1 are there: {:?}", v1_starts(&doc));
         // Both sides lengthened the sequence: the length follows the merged clips.
         let length = doc.session.active_sequence().unwrap().duration();
-        assert_eq!(length.0, 9 * 254_016_000_000, "the draft's clip ends at 9 s");
+        let last =
+            doc.session.active_sequence().unwrap().video_tracks[0].items.iter().max_by_key(|clip| clip.start).map(|clip| (clip.start.0, clip.end())).unwrap();
+        assert_eq!(last.0, 8 * 254_016_000_000, "the draft's clip, placed at 8 s, is the last");
+        assert_eq!(length, last.1, "the length is where the draft's clip ends");
         let state = doc.replicated_state().unwrap();
         let lengths: Vec<&Value> =
             state["objects"].as_object().unwrap().values().filter(|object| object["$type"] == "Sequence").map(|object| &object["duration"]).collect();
