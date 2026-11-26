@@ -134,11 +134,22 @@ pub fn draft(doc: &Session, value: u64) -> (Session, kition_kit::kdm::Version) {
 /// to D9, the model's repair inside the step): one undo step of the person; refused as a whole on
 /// a collision.
 pub fn try_merge(doc: &mut Session, draft: &Session, base: &kition_kit::kdm::Version) -> Result<kition_kit::session::Damage, kition_kit::session::KitError> {
-    let changes = draft.export_changes(base).unwrap_or_else(|error| panic!("export: {error}"));
-    let changes = kdm_model::draft_changes(doc.replica(), &changes)?;
-    let (scope, damage) = doc.merge_changes(&changes, &person("doc"))?;
+    let (scope, damage) = merge_scope(doc, draft, base)?;
     assert_eq!(scope, Some(kition_kit::kdm::UndoScope::Person), "a merged draft is a step of the person");
     Ok(damage)
+}
+
+/// Takes `draft`'s changes since `base` into `doc` as [`try_merge`] does, answering the scope the
+/// step went to: `None` when the merge with the model's repair left the document as it was (no
+/// change, no step).
+pub fn merge_scope(
+    doc: &mut Session,
+    draft: &Session,
+    base: &kition_kit::kdm::Version,
+) -> Result<(Option<kition_kit::kdm::UndoScope>, kition_kit::session::Damage), kition_kit::session::KitError> {
+    let changes = draft.export_changes(base).unwrap_or_else(|error| panic!("export: {error}"));
+    let changes = kdm_model::draft_changes(doc.replica(), &changes)?;
+    doc.merge_changes(&changes, &person("doc"))
 }
 
 /// [`try_merge`], which must apply; the document's view is then exactly what its replica holds.

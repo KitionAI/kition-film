@@ -439,35 +439,49 @@ mod tests {
     }
 
     /// A draft whose merge the model's repair takes back entirely records nothing
-    /// (regressions/issue-merge-changing-nothing): the agent's draft moves a colour matte into a
-    /// bin while the person deletes the matte (Clear); the merge leaves the bin naming an item
-    /// that is gone, which the repair removes, so the document is as it was. The state (the
-    /// replica's hash and the engine's view), the version, the replica's undo depth, the history
-    /// and its labels and the person's selection are unchanged, the answer names no scope, and
-    /// the person's next Undo is their Clear, back to the exact state before it.
+    /// (regressions/issue-merge-changing-nothing): the agent's draft moves the clip on V1 to one
+    /// added track while the person moves it to the other; the merge lists the clip on both, and
+    /// the repair keeps one listing (the track first by object id, here the person's), so the
+    /// document is as it was. The state (the replica's hash and the engine's view), the version,
+    /// the replica's undo depth, the history and its labels and the person's selection are
+    /// unchanged, the answer names no scope, and the person's next Undo is their move, back to the
+    /// exact state before it.
     #[test]
     fn a_merge_the_repair_takes_back_records_nothing() {
         let agent = Origin::agent("agent:test");
         let mut doc = FilmDocument::open("Edit.kfilm", &fixture()).unwrap();
-        let matte = doc.execute("item.newColorMatte", json!({ "color": "#00ff00", "seconds": 1.0 })).unwrap()["item"].clone();
-        let bin = doc.execute("bin.add", json!({ "name": "Drafts" })).unwrap()["bin"].clone();
+        doc.execute("sequence.addTracks", json!({ "video": 2, "audio": 0 })).unwrap();
         let base = doc.version().unwrap();
+        // The two added tracks, the one the repair keeps a clip on first (by object id).
+        let state = doc.replicated_state().unwrap();
+        let object_of = |track: u64| -> String {
+            state["objects"]
+                .as_object()
+                .unwrap()
+                .iter()
+                .find(|(_, object)| object["$type"] == "Track" && object["trackId"].as_u64() == Some(track))
+                .map(|(id, _)| id.clone())
+                .unwrap_or_else(|| panic!("track {track} in {state}"))
+        };
+        let tracks = &doc.session.active_sequence().unwrap().video_tracks;
+        assert_eq!(tracks.len(), 3, "V1 and the two added tracks");
+        let mut added = [(object_of(tracks[1].id.0), "V2"), (object_of(tracks[2].id.0), "V3")];
+        added.sort();
+        let (kept, other) = (added[0].1, added[1].1);
+        let clip = doc.session.active_sequence().unwrap().video_tracks[0].items[0].id.0;
         let mut draft = FilmDocument::open_with_replica("Edit.kfilm", &[], &doc.snapshot().unwrap(), &doc.blobs().unwrap()).unwrap();
-        draft.execute_as("project.moveToBin", json!({ "items": [matte], "bin": bin }), &agent).unwrap();
+        draft.execute_as("timeline.move", json!({ "moves": [{ "clip": clip, "track": other, "time": 0 }], "linked": false }), &agent).unwrap();
         let changes = draft.export_changes(&base).unwrap();
 
-        let before_clear = whole(&mut doc);
-        let id = kition_film_engine::project::ItemId(matte.as_u64().unwrap());
-        doc.session.state.project_selection = vec![id];
-        doc.execute("project.delete", json!({ "items": [matte] })).unwrap();
-        assert!(doc.session.project.item(id).is_none(), "the person cleared the matte");
+        let before_move = whole(&mut doc);
+        doc.execute("timeline.move", json!({ "moves": [{ "clip": clip, "track": kept, "time": 0 }], "linked": false })).unwrap();
+        assert!(doc.session.active_sequence().unwrap().video_tracks[0].items.is_empty(), "the person moved the clip off V1");
         let before = whole(&mut doc);
         let version = doc.version().unwrap();
         let depth = doc.session.kdm().unwrap().replica().undo_depth(UndoScope::Person);
         let labels: Vec<String> = doc.session.history.undo.iter().map(|entry| entry.0.clone()).collect();
         let redo = doc.session.history.redo.len();
-        let selection = doc.session.state.project_selection.clone();
-        assert_eq!(labels.last().map(String::as_str), Some("Clear"));
+        let selection = (doc.session.state.selection.clone(), doc.session.state.project_selection.clone());
 
         let preview = doc.compare_changes(&changes).unwrap();
         let answer = doc.merge_changes(&changes, &agent).unwrap();
@@ -479,11 +493,11 @@ mod tests {
         let after: Vec<String> = doc.session.history.undo.iter().map(|entry| entry.0.clone()).collect();
         assert_eq!(after, labels, "the history gets no entry");
         assert_eq!(doc.session.history.redo.len(), redo);
-        assert_eq!(doc.session.state.project_selection, selection, "the selection stays");
+        assert_eq!((doc.session.state.selection.clone(), doc.session.state.project_selection.clone()), selection, "the selection stays");
 
         assert!(doc.undo().unwrap().0);
-        assert_eq!(whole(&mut doc), before_clear, "the next Undo takes back the person's Clear, exactly");
-        assert!(doc.session.project.item(id).is_some(), "the matte is back");
+        assert_eq!(whole(&mut doc), before_move, "the next Undo takes back the person's move, exactly");
+        assert_eq!(doc.session.active_sequence().unwrap().video_tracks[0].items.len(), 1, "the clip is back on V1");
         assert_eq!(doc.session.kdm_resets(), 0);
     }
 

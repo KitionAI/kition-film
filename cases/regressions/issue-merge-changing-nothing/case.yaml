@@ -3,12 +3,12 @@ id: regressions/issue-merge-changing-nothing
 feature: film.collab.drafts
 intent: >-
   A draft whose merge the model's repair takes back entirely records nothing. The agent's draft
-  moves a colour matte into a bin while the person clears the matte; the merge leaves the bin
-  naming an item that is gone, the repair removes that entry, and the project is as it was. The
-  merge answers no scope; the state (the replica's hash and the engine's view), the version, the
-  replica's undo depth, the history with its labels and the person's selection are unchanged (before:
-  a "Merge Draft" entry over a step that changed nothing); the person's next Undo is their Clear and
-  gives back the exact state before it.
+  moves the clip on V1 to one added track while the person moves it to the other; the merge lists
+  the clip on both, the repair keeps one listing (the track first by object id, here the
+  person's), and the project is as it was. The merge answers no scope; the state (the replica's
+  hash and the engine's view), the version, the replica's undo depth, the history with its labels
+  and the person's selection are unchanged (before: a "Merge Draft" entry over a step that changed
+  nothing); the person's next Undo is their move and gives back the exact state before it.
 layer: gate
 dimension: data-safety
 source: { kind: synthetic, from: bindings/wasm/src/drafts.rs, license: owned }

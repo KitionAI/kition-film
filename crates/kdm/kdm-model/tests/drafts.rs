@@ -14,7 +14,9 @@
 
 mod common;
 
-use common::{add_clip, assert_same_content, assert_view_is_replica, demo_project, draft, first, media_id, merge, person, record, sequence_id, try_merge};
+use common::{
+    add_clip, assert_same_content, assert_view_is_replica, demo_project, draft, first, media_id, merge, merge_scope, person, record, sequence_id, try_merge,
+};
 use kition_film_project::caption::{Caption, CaptionTrack};
 use kition_film_project::{ClipId, EffectInstance, ItemKind, Label, Marker, MarkerId, ParamValue, Project, TrackId};
 use kition_film_time::Tick;
@@ -241,7 +243,20 @@ fn one_clip_moved_to_two_tracks_keeps_one_copy() {
             seq.video_tracks[to].items.push(clip);
         });
     }
-    merge(&mut doc, &agent, &base);
+    // The repair keeps the clip on the track first by object id. When that is the document's,
+    // the merge leaves the document as it was and records nothing (no change, no step, the
+    // version stays); otherwise it is one step of the person.
+    let (hash, version, depth) = (doc.state_hash().unwrap(), doc.version(), doc.replica().undo_depth(UndoScope::Person));
+    let (scope, _) = merge_scope(&mut doc, &agent, &base).unwrap_or_else(|error| panic!("merge: {error}"));
+    assert_view_is_replica(&doc);
+    if doc.state_hash().unwrap() == hash {
+        assert_eq!(scope, None, "a merge that changes nothing records no step");
+        assert_eq!(doc.version(), version, "and keeps the version");
+        assert_eq!(doc.replica().undo_depth(UndoScope::Person), depth);
+    } else {
+        assert_eq!(scope, Some(UndoScope::Person), "a merged draft is a step of the person");
+        assert_eq!(doc.replica().undo_depth(UndoScope::Person), depth + 1);
+    }
     let project = &doc.model().project;
     let seq = project.sequence(sequence_id(project)).unwrap();
     let clips: usize = seq.video_tracks.iter().map(|t| t.items.len()).sum();
