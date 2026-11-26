@@ -356,10 +356,12 @@ impl FilmSession {
     }
 
     /// The state merging a draft's changes would give, nothing changed (`compareChanges`): as
-    /// [`FilmSession::merge_changes`] takes them in, but without the repair.
+    /// [`FilmSession::merge_changes`] takes them in, the model's repair included
+    /// (`KitSession::merged_state`, the merge and the repair on a copy), so a draft's preview is
+    /// what accepting it gives (a sequence's length set from the merged clips).
     pub fn merged_state(&self, bytes: &[u8]) -> Result<serde_json::Value> {
         let bytes = crate::draft_changes(self.inner.replica(), bytes)?;
-        Ok(self.inner.replica().merged_state(&bytes)?)
+        self.inner.merged_state(&bytes)
     }
 
     /// Writes the state `snapshot` holds (a snapshot or content of this document, as a host's

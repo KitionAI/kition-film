@@ -142,6 +142,13 @@ fn clips_added_at_the_end_on_both_sides_merge_and_the_length_follows() {
         let media = media_id(p);
         add_clip(p, s, media, rate.tick_of(10), rate.tick_of(5));
     });
+    // The draft's preview (`FilmSession::merged_state`, `compareChanges`), before accepting it: the
+    // repair runs on its copy, so its length is the merged one, not the person's 15 frames.
+    let changes = agent.export_changes(&base).unwrap_or_else(|error| panic!("export: {error}"));
+    let changes = kdm_model::draft_changes(doc.replica(), &changes).unwrap_or_else(|error| panic!("draft changes: {error}"));
+    let preview = doc.merged_state(&changes).unwrap_or_else(|error| panic!("preview: {error}"));
+    let unrepaired = doc.replica().merged_state(&changes).unwrap_or_else(|error| panic!("merged state: {error}"));
+    assert_ne!(preview, unrepaired, "without the repair the preview's length would be stale");
     merge(&mut doc, &agent, &base);
     let starts: Vec<Tick> = v1(&doc).iter().map(|clip| clip.start).collect();
     assert_eq!(starts, [Tick::ZERO, rate.tick_of(10), rate.tick_of(30)], "both clips are there");
@@ -150,6 +157,7 @@ fn clips_added_at_the_end_on_both_sides_merge_and_the_length_follows() {
     let replica = doc.replica();
     let lengths: Vec<serde_json::Value> = replica.objects_of_type("Sequence").iter().map(|object| replica.get(object, "duration").unwrap()).collect();
     assert_eq!(lengths, [serde_json::json!(rate.tick_of(40).0.to_string())], "the replica holds the merged length");
+    assert_eq!(preview, replica.state_json().unwrap(), "the draft's preview is the state accepting it gave, the merged length included");
 }
 
 #[test]
