@@ -450,6 +450,7 @@ mod tests {
     fn a_merge_the_repair_takes_back_records_nothing() {
         let agent = Origin::agent("agent:test");
         let mut doc = FilmDocument::open("Edit.kfilm", &fixture()).unwrap();
+        let existing = doc.session.active_sequence().unwrap().video_tracks.len();
         doc.execute("sequence.addTracks", json!({ "video": 2, "audio": 0 })).unwrap();
         let base = doc.version().unwrap();
         // The two added tracks, the one the repair keeps a clip on first (by object id).
@@ -464,10 +465,11 @@ mod tests {
                 .unwrap_or_else(|| panic!("track {track} in {state}"))
         };
         let tracks = &doc.session.active_sequence().unwrap().video_tracks;
-        assert_eq!(tracks.len(), 3, "V1 and the two added tracks");
-        let mut added = [(object_of(tracks[1].id.0), "V2"), (object_of(tracks[2].id.0), "V3")];
+        assert_eq!(tracks.len(), existing + 2, "the sequence's tracks and the two added");
+        let mut added =
+            [(object_of(tracks[existing].id.0), format!("V{}", existing + 1)), (object_of(tracks[existing + 1].id.0), format!("V{}", existing + 2))];
         added.sort();
-        let (kept, other) = (added[0].1, added[1].1);
+        let (kept, other) = (added[0].1.clone(), added[1].1.clone());
         let clip = doc.session.active_sequence().unwrap().video_tracks[0].items[0].id.0;
         let mut draft = FilmDocument::open_with_replica("Edit.kfilm", &[], &doc.snapshot().unwrap(), &doc.blobs().unwrap()).unwrap();
         draft.execute_as("timeline.move", json!({ "moves": [{ "clip": clip, "track": other, "time": 0 }], "linked": false }), &agent).unwrap();
