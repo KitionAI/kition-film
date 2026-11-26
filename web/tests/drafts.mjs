@@ -52,6 +52,7 @@ const press = async (testId) => {
 }
 const version = () => page.evaluate((name) => window.devHost.files.get(name)?.version ?? 0, path)
 let failures = 0
+let step = 'opening'
 
 try {
   await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/dev.html?locale=en-US&replica=1&checkpoints=1`)
@@ -59,6 +60,7 @@ try {
   await kit.getByTestId('film-clip-10').waitFor({ timeout: 60_000 })
   const start = await markers()
 
+  step = '(a) the draft accepted'
   // (a) The person adds a marker; the agent's draft adds one of its own and is compared.
   await addMarker(0.5)
   const first = await markers()
@@ -76,10 +78,11 @@ try {
   assert.equal(all.length, mine.length + 1, 'one marker from the draft')
   for (const each of mine) assert.ok(all.includes(each), `the person's marker ${each} stays`)
   await kit.getByTestId('film-menu-Window').click()
-  await kit.getByTestId('film-cmd-window.panel.Markers').click()
+  await kit.locator('[data-testid="film-cmd-window.panel.Markers"], [data-testid="film-control-window.panel.Markers"]').first().click()
   await until(async () => (await rows()).some((row) => row.includes('From the draft')) && (await rows()).length === all.length, `the Markers panel lists every marker (${JSON.stringify(await rows())})`)
   console.log(`PASS ${which}: a draft accepted over the person's edits keeps both`)
 
+  step = '(b) Undo and Redo'
   // (b) One Undo takes back the draft's marker only; Redo brings it back.
   await press('film-undo')
   await until(async () => !(await named('From the draft')), 'Undo takes the draft back')
@@ -89,6 +92,7 @@ try {
   assert.deepEqual(await markers(), all)
   console.log(`PASS ${which}: one Undo takes back the draft only, Redo brings it back`)
 
+  step = '(d) the checkpoint restored'
   // (d) A checkpoint of the saved film; a marker after it; the checkpoint restored; Undo.
   const saved = await version()
   await kit.getByTestId('film-save').click()
@@ -107,7 +111,7 @@ try {
   assert.deepEqual(errors, [], 'no page errors')
 } catch (error) {
   failures += 1
-  console.log(`FAIL ${which}: ${error instanceof Error ? error.message.split('\n')[0] : String(error)}`)
+  console.log(`FAIL ${which} at ${step}: ${error instanceof Error ? error.message.split('\n').slice(0, 4).join(' | ') : String(error)}`)
 } finally {
   if (errors.length) console.log(`page errors:\n${errors.slice(0, 8).join('\n')}`)
   await browser.close()
