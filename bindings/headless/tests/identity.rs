@@ -1,4 +1,4 @@
-//! `document.identity` and `document.fork` (Kit Process Protocol section 5.6, KitModel M7a)
+//! `file.identity` and `file.fork` (Kit Process Protocol section 5.6, KitModel M7a)
 //! through the real `kition-film` process: a `.kfilm` is the project as JSON (the envelope
 //! `kition_film_format::encode` writes) and embeds no replica; the kit makes one under a
 //! new id each time it opens a file (`FilmModel::import`). So a file carries no identity, and a
@@ -41,7 +41,7 @@ async fn a_film_carries_no_identity_and_forks_into_the_same_bytes() {
     // An empty `.kfilm` (a file made for the kit before it saved a project there).
     std::fs::write(dir.join("New.kfilm"), b"").unwrap();
     let kit = launch(&dir).await;
-    assert!(kit.serves("document.identity"), "{}", kit.capabilities());
+    assert!(kit.serves("file.identity"), "{}", kit.capabilities());
 
     // No file carries an identity, a byte copy neither.
     std::fs::copy(dir.join("Cut.kfilm"), dir.join("Copy.kfilm")).unwrap();

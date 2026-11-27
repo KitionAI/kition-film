@@ -118,7 +118,7 @@ features:
     cases: [film.platform.document-text/titles-and-captions]
     since: "2026-11-17"
   - id: film.platform.document-identity
-    title: "A host asks the document id a .kfilm carries and forks a copied project (document.identity, document.fork; Kit Process Protocol 5.6): a .kfilm embeds no replica, so it carries none and forks into the same bytes"
+    title: "A host asks the document id a .kfilm carries and forks a copied project (file.identity, file.fork; Kit Process Protocol 5.6): a .kfilm embeds no replica, so it carries none and forks into the same bytes"
     dimension: [platform, data-safety]
     priority: P1
     status: has
