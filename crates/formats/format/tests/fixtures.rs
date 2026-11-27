@@ -1,6 +1,8 @@
 //! A hand-made project file opens: the edit in `tests/fixtures/edit.kfilm` (format version 1).
+//! Every project file the repository commits (conformance, case inputs, the editor's sample) is
+//! exactly what the writer writes.
 
-use kition_film_format::{SCHEMA_VERSION, decode, encode};
+use kition_film_format::{SCHEMA_VERSION, decode, encode, encode_file};
 use kition_film_project::{ClipId, ItemId, ItemKind, Project};
 use kition_film_time::Tick;
 
@@ -159,4 +161,39 @@ fn transcripts_round_trip() {
     let again = decode(&encode(&p, true)).unwrap();
     assert_eq!(again.project, p);
     assert_eq!(again.project.transcripts[&ItemId(5)].speakers[0].name, "Speaker 1");
+}
+
+/// The `.kfilm` files under `dir` (and its sub-folders, to a bounded depth).
+fn project_files(dir: &std::path::Path, depth: usize, out: &mut Vec<std::path::PathBuf>) {
+    let Ok(entries) = std::fs::read_dir(dir) else { return };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() && depth > 0 {
+            project_files(&path, depth - 1, out);
+        } else if path.extension().is_some_and(|e| e == "kfilm") {
+            out.push(path);
+        }
+    }
+}
+
+/// Every committed project file (conformance, case inputs, the editor's sample) reads and is
+/// written back as the same bytes: its envelope is `format`, `schema_version` and `project` only
+/// (no writer name, no view), as the writer makes it.
+#[test]
+fn every_committed_project_file_is_what_the_writer_writes() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let mut files = Vec::new();
+    project_files(&root.join("conformance"), 0, &mut files);
+    project_files(&root.join("cases"), 4, &mut files);
+    project_files(&root.join("web/public/sample/films"), 0, &mut files);
+    assert!(files.len() >= 16, "the committed project files: {files:?}");
+    for path in files {
+        let bytes = std::fs::read(&path).unwrap();
+        let loaded = decode(&bytes).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+        let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        let mut keys: Vec<&str> = v.as_object().unwrap().keys().map(String::as_str).collect();
+        keys.sort_unstable();
+        assert_eq!(keys, ["format", "project", "schema_version"], "{}", path.display());
+        assert!(encode_file(&loaded.project, false) == bytes, "{}: written back, the bytes differ", path.display());
+    }
 }

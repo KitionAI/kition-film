@@ -9,7 +9,6 @@ writing them is `crates/formats/format` (`kition-film-format`); the engine's `fi
 {
   "format": "kition-film.project",
   "schema_version": 1,
-  "generator": "Kition Film 0.1.0",
   "project": { "name": "…", "settings": { … }, "root": { … }, "items": { … }, "next_id": 48 }
 }
 ```
@@ -19,6 +18,9 @@ writing them is `crates/formats/format` (`kition-film-format`); the engine's `fi
 - `project` is the serialized `kition_film_project::Project` (bins, media clips, sequences, tracks,
   clips, effects, keyframes, markers). Media is referenced by path, never embedded.
 - Files are written compact (no indentation). A 2,000-clip project is about 1.4 MB.
+- The envelope holds these three keys and no other: nothing names the build that wrote the file,
+  so its bytes depend on the project alone. A file with any other top-level key is refused as
+  damaged.
 - The file holds the project only. What one person has open (the Timeline's sequence tabs in
   order, the active one, the nest toggle, and each sequence's zoom, scroll and track heights,
   `kition_film_project::ProjectView`) is their view state, which the host keeps apart from the

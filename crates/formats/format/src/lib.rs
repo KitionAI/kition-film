@@ -3,7 +3,7 @@
 //! A project file is UTF-8 JSON with an explicit format version:
 //!
 //! ```json
-//! { "format": "kition-film.project", "schema_version": 1, "generator": "Kition Film 0.1.0", "project": { … } }
+//! { "format": "kition-film.project", "schema_version": 1, "project": { … } }
 //! ```
 //!
 //! - **Versioning.** [`SCHEMA_VERSION`] is the one version this build reads and writes. There is
@@ -20,7 +20,10 @@
 //!   counter: a document is saved with [`encode_file`], whose `next_id` is the first id past every
 //!   id the project holds, so it depends on the content alone. Two sessions that open the same
 //!   file and save it without an edit write the same bytes, also when one of them opened it with
-//!   its stored replica.
+//!   its stored replica. Nor does it name the build that wrote it: the bytes depend on the
+//!   content alone, whichever version of Kition Film saves it.
+//! - **Listed keys only.** The envelope holds `format`, `schema_version` and `project`; a file with
+//!   any other top-level key is refused as damaged ([`FormatError::Corrupt`]), never read in part.
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
@@ -55,33 +58,30 @@ pub struct Loaded {
     pub project: Project,
     /// Format version found in the file (always [`SCHEMA_VERSION`]: no other is read).
     pub schema_version: u32,
-    /// The `generator` string of the writer, if recorded.
-    pub generator: Option<String>,
-}
-
-/// Writer identification stored in the envelope.
-pub fn generator() -> String {
-    format!("Kition Film {}", env!("CARGO_PKG_VERSION"))
 }
 
 #[derive(Serialize)]
 struct EnvelopeOut<'a> {
     format: &'static str,
     schema_version: u32,
-    generator: String,
     project: &'a Project,
 }
 
+/// The envelope as read: its listed keys and no other (`format` and `schema_version` are checked
+/// by [`Probe`] first).
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct EnvelopeIn {
-    #[serde(default)]
-    generator: Option<String>,
+    #[serde(rename = "format")]
+    _format: Value,
+    #[serde(rename = "schema_version")]
+    _schema_version: Value,
     project: Project,
 }
 
 impl EnvelopeIn {
     fn loaded(self, schema_version: u32) -> Loaded {
-        Loaded { project: self.project, schema_version, generator: self.generator }
+        Loaded { project: self.project, schema_version }
     }
 }
 
@@ -97,7 +97,7 @@ struct Probe {
 /// Serialize a project. `pretty` = indented (human-diffable), compact otherwise (what project
 /// files and recovery snapshots are written as).
 pub fn encode(project: &Project, pretty: bool) -> Vec<u8> {
-    let env = EnvelopeOut { format: FORMAT_ID, schema_version: SCHEMA_VERSION, generator: generator(), project };
+    let env = EnvelopeOut { format: FORMAT_ID, schema_version: SCHEMA_VERSION, project };
     let r = if pretty { serde_json::to_vec_pretty(&env) } else { serde_json::to_vec(&env) };
     // Serializing plain data (string keys, finite numbers or null) cannot fail.
     r.unwrap_or_default()
@@ -253,7 +253,6 @@ mod tests {
             let l = decode(&b).unwrap();
             assert_eq!(l.project, p);
             assert_eq!(l.schema_version, SCHEMA_VERSION);
-            assert_eq!(l.generator.as_deref(), Some(generator().as_str()));
         }
     }
 
@@ -269,7 +268,7 @@ mod tests {
             let doc: Value = serde_json::from_slice(&bytes).unwrap();
             let mut keys: Vec<&str> = doc.as_object().unwrap().keys().map(String::as_str).collect();
             keys.sort_unstable();
-            assert_eq!(keys, ["format", "generator", "project", "schema_version"], "the envelope's fields");
+            assert_eq!(keys, ["format", "project", "schema_version"], "the envelope's fields");
             assert_eq!(decode(&bytes).unwrap().project, p);
             assert_eq!(encode(&decode(&bytes).unwrap().project, pretty), bytes, "read and written again: the same bytes");
         }
@@ -333,6 +332,21 @@ mod tests {
     fn refuses_a_bare_project() {
         let v: Value = serde_json::from_slice(&encode(&Project::new("x"), false)).unwrap();
         assert!(matches!(decode(&serde_json::to_vec(&v["project"]).unwrap()), Err(FormatError::NotAProject(_))));
+    }
+
+    /// The envelope holds its listed keys only: a file with another top-level key (a writer's
+    /// name, a person's view) is refused as damaged, not read with the key dropped.
+    #[test]
+    fn refuses_an_unlisted_envelope_key() {
+        let v: Value = serde_json::from_slice(&encode(&Project::new("x"), false)).unwrap();
+        for (key, value) in [("generator", Value::from("Kition Film 0.1.0")), ("view", serde_json::json!({"open_sequences": []})), ("extra", Value::Null)] {
+            let mut with = v.clone();
+            with[key] = value;
+            let e = decode(&serde_json::to_vec(&with).unwrap()).unwrap_err();
+            assert!(matches!(e, FormatError::Corrupt(_)), "{key}: {e}");
+            assert!(e.to_string().contains(key), "{key}: {e}");
+        }
+        assert!(decode(&serde_json::to_vec(&v).unwrap()).is_ok(), "the listed keys alone read");
     }
 
     #[test]

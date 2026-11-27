@@ -728,7 +728,7 @@ impl Persistence {
             first_pending: None,
             last_change: Instant::now(),
             next_autosave: Instant::now(),
-            meta: JournalMeta { pid, started_unix: started, generator: kition_film_format::generator(), ..Default::default() },
+            meta: JournalMeta { pid, started_unix: started, generator: format!("Kition Film {}", env!("CARGO_PKG_VERSION")), ..Default::default() },
         };
         w.next_autosave = Instant::now() + w.autosave_interval();
         let thread = std::thread::Builder::new().name("kition-film-autosave".into()).spawn(move || w.run(rx))?;
