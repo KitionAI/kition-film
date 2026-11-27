@@ -187,6 +187,7 @@ fn every_committed_project_file_is_what_the_writer_writes() {
     project_files(&root.join("cases"), 4, &mut files);
     project_files(&root.join("web/public/sample/films"), 0, &mut files);
     assert!(files.len() >= 16, "the committed project files: {files:?}");
+    let mut differ = Vec::new();
     for path in files {
         let bytes = std::fs::read(&path).unwrap();
         let loaded = decode(&bytes).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
@@ -194,6 +195,13 @@ fn every_committed_project_file_is_what_the_writer_writes() {
         let mut keys: Vec<&str> = v.as_object().unwrap().keys().map(String::as_str).collect();
         keys.sort_unstable();
         assert_eq!(keys, ["format", "project", "schema_version"], "{}", path.display());
-        assert!(encode_file(&loaded.project, false) == bytes, "{}: written back, the bytes differ", path.display());
+        let written = encode_file(&loaded.project, false);
+        if written != bytes {
+            // Where they part, with some of each around it.
+            let at = written.iter().zip(&bytes).position(|(a, b)| a != b).unwrap_or(written.len().min(bytes.len()));
+            let around = |b: &[u8]| String::from_utf8_lossy(&b[at.saturating_sub(120)..(at + 120).min(b.len())]).into_owned();
+            differ.push(format!("{}: written back, the bytes differ at {at}:\n  file:    {}\n  written: {}", path.display(), around(&bytes), around(&written)));
+        }
     }
+    assert!(differ.is_empty(), "{}", differ.join("\n"));
 }
